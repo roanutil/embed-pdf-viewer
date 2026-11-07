@@ -324,8 +324,8 @@ impl DocumentHandle for TestHandle {
         self.inner.subscribe(listener)
     }
 
-    fn last_server_id(&self) -> Option<String> {
-        self.inner.last_server_id()
+    fn last_server_sequence(&self) -> Option<String> {
+        self.inner.last_server_sequence()
     }
 }
 

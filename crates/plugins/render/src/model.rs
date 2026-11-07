@@ -1,5 +1,6 @@
-//! `model.ts`: the render ledger, per-page raster versions. Every function
-//! here is a pure transition or projection; the controller applies the
+//! `model.ts`: the render ledger, per-page raster versions, and the
+//! snapshot tool's box. Every function here is a pure transition or
+//! projection; the controller applies the
 //! transitions with `ctx.state.update`.
 //!
 //! The page-layer rule (`PageRenderLayers`, `PageLayerRights`,
@@ -10,7 +11,9 @@
 
 use std::collections::BTreeMap;
 
+use epdf_geometry::{PageRotation, Point};
 use epdf_kernel::Error;
+use epdf_kernel::geometry::PageRef;
 use serde::{Deserialize, Serialize};
 
 use crate::contract::InvalidateScope;
@@ -28,6 +31,33 @@ pub struct RenderState {
     /// Form field versions, bumped by form facts: a fill, a widget's move or
     /// look, a signing.
     pub field_epochs: BTreeMap<u32, u64>,
+    /// The snapshot tool's box, while it is dragged or held.
+    #[serde(default)]
+    pub snapshot: Option<SnapshotBox>,
+}
+
+/// `SnapshotBox`: the snapshot tool's box, two corners on the page the
+/// press was on, in page space. Dragged until the release; held from then
+/// on, as the snapshot.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct SnapshotBox {
+    pub page: PageRef,
+    /// Where the press was.
+    pub from: Point,
+    /// Where the pointer is, kept on the page.
+    pub to: Point,
+    /// View px per page unit at the press, which tells a box from a click.
+    pub scale: f64,
+    /// The page's turn on screen at the press: the picture turns with it.
+    pub rotation: PageRotation,
+    /// Released: the box is the snapshot.
+    pub held: bool,
+}
+
+/// `setSnapshotBox(state, snapshot)`: `None` when the box is already that
+/// one (the TypeScript returns `state` itself).
+pub fn set_snapshot_box(state: &RenderState, snapshot: Option<SnapshotBox>) -> Option<RenderState> {
+    (state.snapshot != snapshot).then(|| RenderState { snapshot, ..state.clone() })
 }
 
 /// `initialRenderState()`.
@@ -171,6 +201,7 @@ mod tests {
             content_epochs: [(11, 2)].into(),
             annotation_epochs: [(11, 3)].into(),
             field_epochs: [(11, 5)].into(),
+            snapshot: None,
         };
         let pick = |a, f| PageRenderLayers { include_annotations: a, include_form_fields: f };
         assert_eq!(render_epoch_of(&state, 11, pick(false, false)), 2);

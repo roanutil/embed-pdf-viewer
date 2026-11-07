@@ -861,7 +861,7 @@ fn validate_checks_every_kind_of_place() {
             "bar \"orphan\" rides along \"mian\": no such bar (did you mean \"main\"?)",
             "bar \"loopA\" rides along a bar that rides along it",
             "bar \"loopB\" rides along a bar that rides along it",
-            "bar \"selected\": \"everything\" is not selection or annotation",
+            "bar \"selected\": \"everything\" is not selection, annotation or snapshot",
             "bar \"unknown\": {\"near\":\"main\"} is not a place (an edge, { edge, before | after }, { float }, { with } or { at })",
         ]
     );

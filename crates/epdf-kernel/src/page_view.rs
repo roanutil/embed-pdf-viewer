@@ -61,10 +61,10 @@ impl Serialize for PendingPage {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         let mut map = s.serialize_map(None)?;
         match self {
-            PendingPage::Blank => map.serialize_entry("look", "blank")?,
-            PendingPage::Own => map.serialize_entry("look", "own")?,
+            PendingPage::Blank => map.serialize_entry("kind", "blank")?,
+            PendingPage::Own => map.serialize_entry("kind", "own")?,
             PendingPage::Copy { of } => {
-                map.serialize_entry("look", "copy")?;
+                map.serialize_entry("kind", "copy")?;
                 map.serialize_entry("of", of)?;
             }
         }
@@ -525,7 +525,7 @@ mod tests {
         let layout = json!({ "pages": [one, engine_page(40, 1, 300.0, 200.0)], "labels": [] });
         view.set_engine_pages(&layout);
         view.fold(&json!({ "type": "pages.inserted", "layout": layout,
-            "origin": { "kind": "local", "tx": { "id": change.op_id(), "index": 0, "count": 1 } } }));
+            "origin": { "kind": "local", "transaction": { "id": change.op_id(), "index": 0, "count": 1 } } }));
         let answered = view.refresh().unwrap().expect("the page is no longer pending");
         assert!(Rc::ptr_eq(&answered.pages, &shown.pages), "the same pages, kept whole");
         assert!(answered.pending.is_empty());

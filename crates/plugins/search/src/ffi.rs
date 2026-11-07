@@ -21,7 +21,7 @@ use epdf_ffi::{
 use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::{Error, Unsubscribe};
-use epdf_plugin_stage::{RevealAnchor, RevealAnchorValue, RevealWord, ScrollBehaviorKind};
+use epdf_plugin_stage::{RevealAlignment, RevealAnchorValue, RevealWord, ScrollBehaviorKind};
 
 use crate::{
     HitTarget, OperationOptions, PageTarget, SearchCapability, SearchFindAllOptions, SearchOptions,
@@ -142,9 +142,9 @@ pub struct SearchRevealAnchor {
     pub y: Option<SearchRevealAxis>,
 }
 
-impl From<SearchRevealAnchor> for RevealAnchor {
+impl From<SearchRevealAnchor> for RevealAlignment {
     fn from(anchor: SearchRevealAnchor) -> Self {
-        RevealAnchor { x: anchor.x.map(Into::into), y: anchor.y.map(Into::into) }
+        RevealAlignment { x: anchor.x.map(Into::into), y: anchor.y.map(Into::into) }
     }
 }
 
@@ -177,7 +177,7 @@ pub struct SearchRevealOptions {
 impl From<SearchRevealOptions> for crate::SearchRevealOptions {
     fn from(options: SearchRevealOptions) -> Self {
         crate::SearchRevealOptions {
-            anchor: options.anchor.map(|anchor| Some(anchor.into())),
+            align: options.anchor.map(|anchor| Some(anchor.into())),
             behavior: options.behavior.map(|behavior| Some(behavior.into())),
         }
     }
@@ -195,7 +195,7 @@ impl From<SearchConfig> for crate::SearchConfig {
     fn from(config: SearchConfig) -> Self {
         crate::SearchConfig {
             reveal: config.reveal.map(|reveal| crate::SearchRevealConfig {
-                anchor: reveal.anchor.map(|anchor| Some(anchor.into())),
+                align: reveal.anchor.map(|anchor| Some(anchor.into())),
                 behavior: reveal.behavior.map(Into::into),
             }),
             highlight: None,
@@ -362,8 +362,8 @@ impl SearchHandle {
     }
 
     /// Re-run the current query from scratch. The plugin does this itself
-    /// after document mutations.
-    pub async fn refresh(&self, cancel: Arc<CancelToken>) -> Result<SearchResult, ViewerError> {
+    /// after document mutations. The result is in the state and the events.
+    pub async fn refresh(&self, cancel: Arc<CancelToken>) -> Result<(), ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
@@ -373,7 +373,7 @@ impl SearchHandle {
                         .refresh(OperationOptions { signal: Some(signal) })
                         .with_abort(abort))
                 },
-                |result| SearchResult::try_from(result).map_err(Into::into),
+                |()| Ok(()),
             )
             .await?
     }

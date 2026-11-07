@@ -149,7 +149,7 @@
     "name": "remove-unknown-is-ignored",
     "input": {
       "name": "remove-unknown-is-ignored",
-      "fn": "removePane",
+      "fn": "deletePane",
       "args": [
         {
           "panes": {
@@ -186,7 +186,7 @@
         "nope"
       ]
     },
-    "inputSha256": "1b972e066e413ab836b730802e2198585ac6aa0a49bbf9ee88b80c52fa668a45",
+    "inputSha256": "b427093f3679c681b8f8cb4aa5479341048c8444c4640f0b3e2860f95de08da9",
     "outcome": {
       "returned": {
         "panes": {
@@ -230,7 +230,7 @@
     "name": "remove-focused-focuses-the-last",
     "input": {
       "name": "remove-focused-focuses-the-last",
-      "fn": "removePane",
+      "fn": "deletePane",
       "args": [
         {
           "panes": {
@@ -267,7 +267,7 @@
         "pane-2"
       ]
     },
-    "inputSha256": "126fc27423473ff95338ca1fcd38524b1b0a1ab9bf394a2877454049fad69574",
+    "inputSha256": "877c1ba1b39cd5ed67d0facab5b2994181a2aed9152e979f1cbeebc562a5660f",
     "outcome": {
       "returned": {
         "panes": {
@@ -303,7 +303,7 @@
     "name": "remove-unfocused-keeps-focus",
     "input": {
       "name": "remove-unfocused-keeps-focus",
-      "fn": "removePane",
+      "fn": "deletePane",
       "args": [
         {
           "panes": {
@@ -340,7 +340,7 @@
         "pane-1"
       ]
     },
-    "inputSha256": "8757501fa55274c9e0c8e52fd69c71aa72345c1d4259b4555a6e530217b57f86",
+    "inputSha256": "e24935b047fca1dd2c468af3234ce9058185ee7eb50809de23b4b6fce3b535f9",
     "outcome": {
       "returned": {
         "panes": {
@@ -374,7 +374,7 @@
     "name": "remove-the-only-view",
     "input": {
       "name": "remove-the-only-view",
-      "fn": "removePane",
+      "fn": "deletePane",
       "args": [
         {
           "panes": {
@@ -395,7 +395,7 @@
         "pane-1"
       ]
     },
-    "inputSha256": "49d9d9780d185e2d01a6fd5a98cb3d29744bb095e80a1b62d6c7e09f015572e8",
+    "inputSha256": "82bec18f51a45a90a28dc691257b47597247c05a81e7ec2a7fcb99837760e165",
     "outcome": {
       "returned": {
         "panes": {},
@@ -11050,7 +11050,7 @@
     "name": "panes",
     "input": {
       "name": "panes",
-      "covers": "createPane focuses the new pane and later opens land there; removePane refocuses; movePane reorders with clamping and ignores unknown ids; setFocused takes any id.",
+      "covers": "createPane focuses the new pane and later opens land there; deletePane refocuses; movePane reorders with clamping and ignores unknown ids; setFocused takes any id.",
       "plugins": [
         {
           "factory": "view-manager"
@@ -11421,7 +11421,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-1"
           ]
@@ -11455,7 +11455,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-1"
           ]
@@ -11512,7 +11512,7 @@
         }
       ]
     },
-    "inputSha256": "0998bf5094559f6bf7414a11de0b061019f4787f26a30878088ca7449ab9ee3c",
+    "inputSha256": "ddb3d43ba353a7846573f112ef87eb28bc607555837842c1ac3b381c6204db8f",
     "result": {
       "trace": [
         {
@@ -20046,7 +20046,7 @@
     "name": "remove-pane-targets",
     "input": {
       "name": "remove-pane-targets",
-      "covers": "removePane moves its documents to moveDocumentsTo when given, else to the focused pane when that is another one, else to the last remaining pane; a target that is the pane itself or unknown moves nothing, and removing the only pane drops its documents with it.",
+      "covers": "deletePane moves its documents to moveDocumentsTo when given, else to the focused pane when that is another one, else to the last remaining pane; a target that is the pane itself or unknown moves nothing, and removing the only pane drops its documents with it.",
       "plugins": [
         {
           "factory": "view-manager"
@@ -20408,7 +20408,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-4",
             {
@@ -20455,7 +20455,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-3"
           ]
@@ -20489,7 +20489,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-1"
           ]
@@ -20531,7 +20531,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-2",
             {
@@ -20582,7 +20582,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-6",
             {
@@ -20619,7 +20619,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-5"
           ]
@@ -20650,7 +20650,7 @@
         }
       ]
     },
-    "inputSha256": "c76e1d2d60b7547d5bcd1e598f74f09282e9aa0948060ea8291935b524d3a393",
+    "inputSha256": "318785fac9876506cf2d42e7cf883fe48d907045badc9de639d397185d5dcd3e",
     "result": {
       "trace": [
         {
@@ -24324,7 +24324,7 @@
     "name": "events",
     "input": {
       "name": "events",
-      "covers": "Every write is diffed: onPaneCreated for each new pane in order, onPaneRemoved for each removed one, onFocusChanged when the focus changes, and onDocumentMoved for each document whose pane changed (a document opening moves from null, one closing to null). A throwing listener is reported and its siblings still fire; after unsubscribing nothing fires.",
+      "covers": "Every write is diffed: onPaneCreated for each new pane in order, onPaneDeleted for each deleted one, onFocusChanged when the focus changes, and onDocumentMoved for each document whose pane changed (a document opening moves from null, one closing to null). A throwing listener is reported and its siblings still fire; after unsubscribing nothing fires.",
       "plugins": [
         {
           "factory": "view-manager"
@@ -24469,7 +24469,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "onPaneRemoved",
+          "method": "onPaneDeleted",
           "args": [
             {
               "$fn": "removed",
@@ -24589,7 +24589,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-2"
           ]
@@ -24648,7 +24648,7 @@
         }
       ]
     },
-    "inputSha256": "7e41e8ba635078f81e11af8cf475a2acac0966d40e30d87acfde3686ae2088fa",
+    "inputSha256": "158affbcff2311a37f41d0d52d87138ee12f7393dd80cd58c202a0d7681c063f",
     "result": {
       "trace": [
         {

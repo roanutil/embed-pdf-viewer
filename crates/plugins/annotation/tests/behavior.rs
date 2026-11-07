@@ -345,8 +345,8 @@ impl DocumentHandle for LosingHandle {
     fn subscribe(&self, listener: Rc<dyn Fn(&Value)>) -> epdf_kernel::Unsubscribe {
         self.0.subscribe(listener)
     }
-    fn last_server_id(&self) -> Option<String> {
-        self.0.last_server_id()
+    fn last_server_sequence(&self) -> Option<String> {
+        self.0.last_server_sequence()
     }
 }
 

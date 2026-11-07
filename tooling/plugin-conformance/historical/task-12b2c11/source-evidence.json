@@ -7,23 +7,23 @@
   "owners": [
     {
       "path": "packages/plugin/view-manager/src/model.ts",
-      "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+      "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
     },
     {
       "path": "packages/plugin/view-manager/src/controller.ts",
-      "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+      "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
     },
     {
       "path": "packages/plugin/view-manager/src/contract.ts",
-      "sha256": "7510f569ae0fd9e4c18cfb184e5f7a45bf9e32650125aadfe10a38538af5c7a0"
+      "sha256": "8a9ebfc1ea3e65b97cbe645e56987aa9531e09e0b94aeb008dbbe8128c4a390f"
     },
     {
       "path": "packages/plugin/view-manager/src/view-manager.plugin.ts",
-      "sha256": "61b693cb04bf10e2c5c2a74f76290dbe24c9e86f766b088560ca4728c3f70ad7"
+      "sha256": "41558f9590746a8a88b900f4a23300d3a968784da40946603d130742ca4f20e6"
     },
     {
       "path": "packages/plugin/view-manager/src/state.ts",
-      "sha256": "a265539530f88a73ab62b168d480b852c3c77c35a95451da5c10935932ad12cb"
+      "sha256": "2879c3cdf4c433bfd2be11a8c9e096abfb5bc541f12be0ea3cce88db704f83f6"
     },
     {
       "path": "packages/plugin/view-manager/src/token.ts",
@@ -31,15 +31,15 @@
     },
     {
       "path": "packages/plugin/view-manager/src/index.ts",
-      "sha256": "a86a1d11eb0e81f56834b2b4df935655bd3ec010513277aaf5b60bc56af566b3"
+      "sha256": "3bfa3480aa40f8eead60b27e967a03d752e2f0ff19ece81df4b4bd7aca0b5fe0"
     },
     {
       "path": "packages/plugin/view-manager/test/controller.test.ts",
-      "sha256": "6e1017b72e05478a4435b2be1f85f1eb1da8088c278f23e95b4c63a1c6524215"
+      "sha256": "c46c343f00e197f1cd34f3267e1d5fde7a01259a393be48cebc71db200a01613"
     },
     {
       "path": "packages/plugin/view-manager/test/partition.test.ts",
-      "sha256": "12a24b9d3488ff8df3845895f18b3120571b67dc351a67e0c8f8f59d763f7089"
+      "sha256": "70800c6a139b82a07c0ecf89e5050cde77049de3a47b29c7d167621babe725ce"
     }
   ],
   "contracts": {

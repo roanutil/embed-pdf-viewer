@@ -354,7 +354,7 @@ impl FakeEngine {
                 *b.borrow_mut() = layout.get("labels").cloned().unwrap_or_else(|| json!([]));
                 *n.borrow_mut() = layout.get("namedPages").cloned().unwrap_or_else(|| json!([]));
             }
-            if let Some(server) = event["origin"]["serverId"].as_i64() {
+            if let Some(server) = event["origin"]["serverSequence"].as_i64() {
                 c.set(Some(c.get().unwrap_or(0).max(server)));
             }
             let listeners = l.borrow().iter().map(|(_, f)| f.clone()).collect::<Vec<_>>();
@@ -503,7 +503,7 @@ const DEFAULT_PRESENT: &[&str] =
     &["forms.applyEffects", "pages.flatten", "pages.extract", "page.annotations.downloadFile"];
 
 fn default_security() -> Value {
-    json!({"encryption":{"state":"none","requiresPassword":false},"permissions":{"known":true,"bits":null,"allAllowed":true,"openedAs":"none","securityHandlerRevision":null,"canUpgradeToOwner":false},"access":{"required":false,"reasons":[]}})
+    json!({"encryption":{"state":"none","requiresPassword":false},"permissions":{"known":true,"flags":null,"allAllowed":true,"openedAs":"none","securityHandlerRevision":null,"canUpgradeToOwner":false},"access":{"required":false,"reasons":[]}})
 }
 fn password_prompt(state: &Value) -> Value {
     if state["encryption"]["state"] == "none" {
@@ -738,7 +738,7 @@ impl DocumentHandle for FakeHandle {
             .ok_or_else(|| Error::engine("NotFound", format!("no page {pon}")))
     }
 
-    fn last_server_id(&self) -> Option<String> {
+    fn last_server_sequence(&self) -> Option<String> {
         self.cursor.get().map(|n| n.to_string())
     }
 
@@ -775,10 +775,11 @@ impl FakeSecurity {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    /// `decodePdfBits(currentSecurityState.permissions.bits)`, as the TypeScript fake
-    /// engine still reads it (`permissionFlagsOf` since a780243ba).
+    /// `currentSecurityState.permissions.flags ?? permissionFlagsOf(null)`, as the
+    /// TypeScript fake engine reads it (`flags` since a780243ba).
     fn bits(&self) -> scope::PdfPermissionFlags {
-        scope::permission_flags_of(self.state.borrow().0["permissions"]["bits"].as_i64())
+        let flags = self.state.borrow().0["permissions"]["flags"].clone();
+        serde_json::from_value(flags).unwrap_or_else(|_| scope::permission_flags_of(None))
     }
 
     #[cfg(not(target_arch = "wasm32"))]

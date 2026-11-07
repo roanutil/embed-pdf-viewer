@@ -82,7 +82,14 @@ test('confirmed engine events reach the kernel before an immediate or deferred m
     const event: DocumentEvent = {
       type: 'pages.reordered',
       origin: { kind: 'local', sessionId: 's', subject: null, at: '1970-01-01T00:00:00.000Z', serverSequence: null },
-      layout: { pageCount: 0, pages: [], labels: [], namedPages: [] },
+      // A page the document didn't have: the layout moves, so pagesSequence does. (A
+      // layout equal to the one shown keeps it, since b32e74e4a.)
+      layout: {
+        pageCount: 1,
+        pages: [scenarioNamed('controller-pages').engine!.documents!.a.pages![0] as PageLayout],
+        labels: [],
+        namedPages: [],
+      },
       pages: [],
       meta: { affectedPages: [], cacheDelta: null, opId: 'write', undoable: true },
     };

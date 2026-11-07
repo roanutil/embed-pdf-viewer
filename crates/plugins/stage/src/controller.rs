@@ -8,7 +8,7 @@
 //! re-anchor through arrivals), so here they are `impl StageCapability`
 //! blocks over one shared state, one file per TypeScript area:
 //! `services/{events,scene}`, `read/pages`, `camera/{write,animation,
-//! gestures}`, `navigation/{arrive,reveal,zoom}`, `settings/area` (the
+//! gestures}`, `navigation/{arrive,turn,reveal,zoom}`, `settings/area` (the
 //! TypeScript's `settings/settings.ts`) and `view/lifecycle`.
 //!
 //! The pure spatial math is `epdf-stage-core`; this is the impure shell. It
@@ -129,6 +129,8 @@ pub(crate) struct Inner {
     pub(crate) registry_cache: RefCell<Option<(Rc<Value>, Rc<Vec<Option<PageRow>>>)>>,
     // camera/write
     pub(crate) gesture: Gesture,
+    // navigation/turn
+    pub(crate) turns: crate::navigation::turn::Turns,
     pub(crate) cancel_rest: RefCell<Option<Cancel>>,
     // camera/animation: the frame the running motion waits for
     pub(crate) cancel_frame: RefCell<Option<Cancel>>,
@@ -184,6 +186,7 @@ pub(crate) fn create_stage_controller(
             scene_cache: RefCell::new(None),
             registry_cache: RefCell::new(None),
             gesture: Gesture::default(),
+            turns: Default::default(),
             cancel_rest: RefCell::new(None),
             cancel_frame: RefCell::new(None),
             last_metrics: Cell::new(None),

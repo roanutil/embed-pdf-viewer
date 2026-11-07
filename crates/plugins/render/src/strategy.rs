@@ -19,7 +19,7 @@ pub struct ResolvedStrategy {
     /// Tile levels (device px per point); `None` is the exact scale at rest.
     pub pyramid: Option<Vec<f64>>,
     pub tile_size: f64,
-    pub engage_at: f64,
+    pub engage_ratio: f64,
     pub tile_max_scale: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub format: Option<RenderFormat>,
@@ -80,7 +80,8 @@ pub fn resolve_strategy(
         _ => options.tiles.size,
     };
 
-    let engage_at = options.tiles.engage_at.unwrap_or(if widths.is_none() { 1.0 } else { 1.25 });
+    let engage_ratio =
+        options.tiles.engage_ratio.unwrap_or(if widths.is_none() { 1.0 } else { 1.25 });
 
     let format = match (options.format, lattice) {
         (None, _) => None,
@@ -94,7 +95,7 @@ pub fn resolve_strategy(
         max_width: options.full_page.max_width,
         pyramid,
         tile_size,
-        engage_at,
+        engage_ratio,
         tile_max_scale: options.tiles.max_scale,
         format,
         quality: options.quality,

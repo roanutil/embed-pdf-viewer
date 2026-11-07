@@ -264,7 +264,7 @@ impl Core {
 
     /// The view's inputs now.
     fn view_inputs(&self) -> ViewInputs {
-        let document = self.cx.document().map(|meta| (meta.pages, meta.revision));
+        let document = self.cx.document().map(|meta| (meta.pages, meta.pages_sequence));
         ViewInputs {
             truths: self.records.get(),
             shown: self.records.view(),

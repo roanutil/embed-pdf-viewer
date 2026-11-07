@@ -87,7 +87,7 @@ impl StageCapability {
         let item = if self.paged() {
             before.items.first()
         } else {
-            before.items.get(self.item_index_of_page(self.st().cursor))
+            before.items.get(self.item_index_of_page(self.st().page_index))
         };
         let fit = self.fit_box(item);
         let limits = self.zoom_limits();

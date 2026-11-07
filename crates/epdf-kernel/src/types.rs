@@ -60,7 +60,7 @@ pub struct DocumentMeta {
     /// changing other than shown. Anything caching a derivation of `pages`
     /// keys on it, so a change that keeps the page count (a rotation) still
     /// invalidates.
-    pub revision: u64,
+    pub pages_sequence: u64,
     pub render_policy: Value,
     #[serde(default)]
     pub has_unsaved_changes: bool,
@@ -224,7 +224,7 @@ pub fn origin_of(event: &Value) -> Value {
     }
     out.insert(
         "actorId".into(),
-        origin.get("sub").cloned().filter(|s| !s.is_null()).unwrap_or(Value::Null),
+        origin.get("subject").cloned().filter(|s| !s.is_null()).unwrap_or(Value::Null),
     );
     Value::Object(out)
 }

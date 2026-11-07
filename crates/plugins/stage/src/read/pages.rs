@@ -43,7 +43,7 @@ impl StageCapability {
     /// whose square underflows (a huge device ratio over a tiny content
     /// scale, which the zoom limits leave only `view_units_per_point` to
     /// reach). No read here returns a `Result`, so the page is left out of
-    /// the visible list and `get_page_frame` answers `None` (a Rust-only
+    /// the visible list and `get_page_box` answers `None` (a Rust-only
     /// divergence, registered with the crate's other kept ones).
     pub(crate) fn with_transform(&self, b: &PageBox) -> Option<VisiblePage> {
         let registry = self.registry();
@@ -209,12 +209,12 @@ impl StageCapability {
 
     /// The current page's display index, from 0.
     pub fn get_current_page_index(&self) -> usize {
-        self.st().cursor
+        self.st().page_index
     }
 
     /// The current page's ref, `None` before the document has pages.
     pub fn get_current_page(&self) -> Option<PageRef> {
-        let cursor = self.st().cursor;
+        let cursor = self.st().page_index;
         let rows = self.registry_rows();
         rows.as_array()?.get(cursor)?.get("ref").and_then(PageRef::from_json)
     }
@@ -233,9 +233,19 @@ impl StageCapability {
         item.page_indexes.iter().filter_map(|&i| pages.get(i).cloned()).collect()
     }
 
+    /// The pages you're on: the current item's pages while the item fits
+    /// across the view (a spread you see side by side, however tall), else
+    /// the current page alone. What a page number names, and what
+    /// `next_page` and `previous_page` step past.
+    pub fn list_current_pages(&self) -> Vec<PageInfo> {
+        let rows = self.registry_rows();
+        let pages = rows.as_array().map(Vec::as_slice).unwrap_or_default();
+        self.current_pages().iter().filter_map(|&i| pages.get(i).cloned()).collect()
+    }
+
     /// The laid-out box for a page (its ref or its index), on screen or
     /// not; `None` before placement or for a page the document lacks.
-    pub fn get_page_frame(&self, page: impl Into<PageTarget>) -> Option<VisiblePage> {
+    pub fn get_page_box(&self, page: impl Into<PageTarget>) -> Option<VisiblePage> {
         if !self.st().placed {
             return None;
         }
@@ -293,7 +303,7 @@ impl StageCapability {
     /// A page-space point to world space; `None` when the page is not laid
     /// out.
     pub fn page_to_world(&self, page: impl Into<PageTarget>, point: Point) -> Option<Point> {
-        let frame = self.get_page_frame(page)?;
+        let frame = self.get_page_box(page)?;
         let b = frame.page;
         let content = display_size(Size { width: b.width, height: b.height }, b.rotation);
         let matrix =
@@ -309,7 +319,7 @@ impl StageCapability {
         page: impl Into<PageTarget>,
         rect: Rect,
     ) -> Option<ViewportRect> {
-        let frame = self.get_page_frame(page)?;
+        let frame = self.get_page_box(page)?;
         let b = frame.page;
         let content = display_size(Size { width: b.width, height: b.height }, b.rotation);
         let matrix =

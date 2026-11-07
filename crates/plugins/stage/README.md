@@ -31,7 +31,7 @@ package and are stale; not re-run since 172f5369d.
 
 `stage_plugin(StagePluginOptions)` builds the plugin. `STAGE` is the main lens's token and
 `StageCapability` its capability, with the TypeScript's members in snake case (`get_camera`,
-`list_visible_pages`, `get_page_frame`, `go_to_page`, `go_to_destination`, `reveal`,
+`list_visible_pages`, `get_page_box`, `go_to_page`, `go_to_destination`, `reveal`,
 `get_current_destination`, `zoom_to`, `update_settings`, `on_page_changed`, ...). The TypeScript
 types the same object twice, as `StageCapability` and the wider `StageHostCapability`; Rust has one
 type, and the host-only members (`set_viewport_size`, `begin_gesture`, `fling`, `zoom_around`,
@@ -124,7 +124,7 @@ A page transform whose view scale squares to zero (a huge device ratio over a ti
 is not invertible. The zoom limits keep the camera at 5% or more, so only `view_units_per_point`
 reaches it now. The TypeScript throws `Mat2D.invert: non-invertible matrix` from the page reads;
 no Rust page read returns a `Result`, so the page is left out of `list_visible_pages` and
-`get_page_frame` answers `None` (`a_non_invertible_page_transform_leaves_the_page_out`).
+`get_page_box` answers `None` (`a_non_invertible_page_transform_leaves_the_page_out`).
 
 Engine JSON reaches the stage carrying the kernel's `{"$undefined": true}` marker (a page without
 `userUnit`, say). `without_undefined` drops those members before the page registry and destinations

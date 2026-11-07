@@ -1,8 +1,10 @@
 //! `camera/gestures.ts`: direct manipulation. Set, pan, scroll and
-//! pinch-zoom the camera, and the gesture bracket. The camera moves freely
-//! and the cursor is derived from it.
+//! pinch-zoom the camera, the gesture bracket and the release fling. The
+//! camera moves freely and the cursor is derived from it. In paged flow the
+//! same input turns pages (`navigation/turn.rs`).
 
 use crate::model::{CameraObject, patch_settings};
+use crate::navigation::turn::{Push, refused_by};
 use crate::prelude::*;
 
 impl StageCapability {
@@ -25,6 +27,9 @@ impl StageCapability {
 
     /// Pan by a viewport delta.
     pub fn pan_by(&self, dx: f64, dy: f64) -> Result<(), Error> {
+        if self.turn_before_pan() {
+            return Ok(()); // this stream already turned the page
+        }
         self.mark_cause(MotionCause::User);
         self.cancel_animation();
         let gesture = &self.inner.gesture;
@@ -39,11 +44,9 @@ impl StageCapability {
             gesture.raw.set(Some(raw));
             self.write_camera_unclamped(CameraObject::zoom_xy(self.rubberize(raw)?));
         } else {
-            self.write_camera_stay(CameraObject::xy_zoom(sc::pan_by_screen(
-                self.camera(),
-                dx,
-                dy,
-            )))?;
+            let wanted = sc::pan_by_screen(self.camera(), dx, dy);
+            self.write_camera_stay(CameraObject::xy_zoom(wanted))?;
+            self.turn_refused(refused_by(wanted, self.camera()));
         }
         self.sync_cursor_from_camera()
     }
@@ -146,6 +149,7 @@ impl StageCapability {
             gesture.zoomed.set(false);
             gesture.elastic.set(options.and_then(|o| o.elastic) == Some(true));
             gesture.raw.set(None);
+            self.turn_drag_began();
         }
     }
 
@@ -158,6 +162,16 @@ impl StageCapability {
         if gesture.depth.get() > 0 {
             return Ok(());
         }
+        // How far the finger pulled past the edge, read before the bracket
+        // forgets it.
+        let overshoot = match gesture.raw.get() {
+            Some(raw) => refused_by(
+                raw,
+                sc::clamp_camera(raw, self.stay_bounds()?, self.viewport(), self.constraint()),
+            ),
+            None => Push::default(),
+        };
+        let zoomed = gesture.zoomed.get();
         gesture.raw.set(None);
         let was_elastic = gesture.elastic.get();
         gesture.elastic.set(false);
@@ -171,6 +185,11 @@ impl StageCapability {
             self.arm_rest();
         }
         self.sync_cursor_from_camera()?;
+        // A pull past a paged view's edge turns the page instead of springing
+        // home.
+        if self.turn_drag_ended(overshoot, zoomed) {
+            return Ok(());
+        }
         if was_elastic {
             // Released while stretched: spring home.
             let current = self.camera();
@@ -181,5 +200,15 @@ impl StageCapability {
             }
         }
         Ok(())
+    }
+
+    /// Momentum pan from a release velocity in viewport px/s. Without frames
+    /// it only snaps into bounds. A flick past a paged view's edge turns the
+    /// page instead of gliding.
+    pub fn fling(&self, velocity_x: f64, velocity_y: f64) -> Result<(), Error> {
+        if self.turn_flung(Push { x: velocity_x, y: velocity_y }) {
+            return Ok(());
+        }
+        self.start_camera_physics(velocity_x, velocity_y)
     }
 }

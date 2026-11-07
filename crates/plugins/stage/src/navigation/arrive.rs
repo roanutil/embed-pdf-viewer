@@ -62,7 +62,7 @@ impl StageCapability {
     pub(crate) fn reapply(&self, anchor: Anchor, align: Option<AlignmentValue>) {
         if self.is_fit_all() {
             self.go_to_target(
-                self.st().cursor as isize,
+                self.st().page_index as isize,
                 Some(GoToOptions::behavior(ScrollBehaviorKind::Instant)),
             );
         } else {
@@ -109,7 +109,7 @@ impl StageCapability {
             );
             let subject = if self.is_fit_all() {
                 self.scene_rect()
-            } else if self.fits(Self::item_rect(item), zoom) {
+            } else if self.fits_across(Self::item_rect(item), zoom) {
                 Self::item_rect(item)
             } else {
                 Self::page_rect_of(item, target)
@@ -168,19 +168,18 @@ impl StageCapability {
         }
     }
 
-    /// Step by the navigation unit: the item when it fits the viewport,
-    /// else the page.
+    /// Step past the pages you're on (`current_pages`): forward to the page
+    /// after them, back to the unit before them, so a step always reaches a
+    /// page you weren't on. Nothing past either end.
     fn step(&self, direction: isize, options: Option<GoToOptions>) {
-        let Some(item) = self.cursor_item() else { return };
-        let grouping = self.grouping();
-        let groups = &grouping.grouping;
-        if self.is_fit_all() || self.fits(Self::item_rect(&item), self.camera().zoom) {
-            let index = (self.item_index_of_page(self.st().cursor) as isize + direction)
-                .min(groups.len() as isize - 1)
-                .max(0) as usize;
-            self.go_to_target(groups[index][0] as isize, options);
-        } else {
-            self.go_to_target(self.st().cursor as isize + direction, options);
+        let pages = self.current_pages();
+        let (Some(&first), Some(&last)) = (pages.iter().min(), pages.iter().max()) else { return };
+        if direction == 1 {
+            if last + 1 < self.page_count() {
+                self.go_to_target(last as isize + 1, options);
+            }
+        } else if first >= 1 {
+            self.go_to_target(self.unit_start_of(first - 1) as isize, options);
         }
     }
 
@@ -241,18 +240,18 @@ impl StageCapability {
         });
     }
 
-    /// The cursor is before the last page.
+    /// There's a page after the pages you're on.
     pub fn can_go_next(&self) -> bool {
-        (self.st().cursor as isize) < self.page_count() as isize - 1
+        self.current_pages().iter().max().is_some_and(|&last| last + 1 < self.page_count())
     }
 
-    /// The cursor is after the first page.
+    /// There's a page before the pages you're on.
     pub fn can_go_previous(&self) -> bool {
-        self.st().cursor > 0
+        self.current_pages().iter().min().is_some_and(|&first| first > 0)
     }
 
-    /// Step forward by the navigation unit (the item if it fits the
-    /// viewport, else the page).
+    /// Step past the pages you're on (`list_current_pages`): forward to the
+    /// page after them, back to the spread or page before them.
     pub fn next_page(&self, options: Option<GoToOptions>) {
         self.when_placed_go(options, |stage, go| stage.step(1, go));
     }

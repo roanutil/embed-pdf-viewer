@@ -202,7 +202,7 @@ pub struct StageState {
     /// Device px per view px.
     pub dpr: f64,
     /// The current page index, valid in both flows.
-    pub cursor: usize,
+    pub page_index: usize,
     pub motion_cause: MotionCause,
     /// Names of the matching responsive rules, in source order.
     pub active_rules: Vec<String>,
@@ -241,7 +241,7 @@ struct StateOut<'a> {
     camera_resting: bool,
     viewport: Size,
     dpr: f64,
-    cursor: usize,
+    page_index: usize,
     motion_cause: MotionCause,
     active_rules: &'a [String],
     zoom_drag: &'a Option<ZoomDrag>,
@@ -258,7 +258,7 @@ impl Serialize for StageState {
             camera_resting: self.camera_resting,
             viewport: self.viewport,
             dpr: self.dpr,
-            cursor: self.cursor,
+            page_index: self.page_index,
             motion_cause: self.motion_cause,
             active_rules: &self.active_rules,
             zoom_drag: &self.zoom_drag,
@@ -278,7 +278,7 @@ pub(crate) struct StateJson {
     camera_resting: bool,
     viewport: Size,
     dpr: f64,
-    cursor: usize,
+    page_index: usize,
     motion_cause: MotionCause,
     active_rules: Vec<String>,
     #[serde(default)]
@@ -304,7 +304,7 @@ impl StageState {
             camera_resting: json.camera_resting,
             viewport: json.viewport,
             dpr: json.dpr,
-            cursor: json.cursor,
+            page_index: json.page_index,
             motion_cause: json.motion_cause,
             active_rules: json.active_rules,
             zoom_drag: json.zoom_drag,
@@ -327,7 +327,7 @@ pub fn initial_stage_state(overrides: &StageSettingsPatch) -> StageState {
         camera_resting: true,
         viewport: Size { width: 0.0, height: 0.0 },
         dpr: 1.0,
-        cursor: 0,
+        page_index: 0,
         motion_cause: MotionCause::User,
         active_rules: Vec::new(),
         zoom_drag: None,
@@ -395,10 +395,10 @@ pub fn set_dpr(state: &Rc<StageState>, dpr: f64) -> Rc<StageState> {
 }
 
 pub fn set_cursor(state: &Rc<StageState>, cursor: usize) -> Rc<StageState> {
-    if state.cursor == cursor {
+    if state.page_index == cursor {
         return state.clone();
     }
-    with(state, |next| next.cursor = cursor)
+    with(state, |next| next.page_index = cursor)
 }
 
 pub fn set_motion_cause(state: &Rc<StageState>, cause: MotionCause) -> Rc<StageState> {

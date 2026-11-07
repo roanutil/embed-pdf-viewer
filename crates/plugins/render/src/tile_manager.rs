@@ -275,7 +275,7 @@ impl TileManager {
         // empty ladder supplies `undefined`, and the deficit is NaN (M26).
         let supplied = base_ask_width(&strategy, demand.desired_device_width).unwrap_or(f64::NAN);
         let deficit = demand.desired_device_width / supplied;
-        if deficit <= strategy.engage_at {
+        if deficit <= strategy.engage_ratio {
             let engaged = {
                 let s = state.borrow();
                 !s.entries.is_empty() || s.want_scale.is_some()

@@ -170,7 +170,7 @@ impl Core {
             AppearanceFamily::Annotations
         };
         render
-            .kept_appearances(family, reference)
+            .get_kept_appearances(family, reference)
             .iter()
             .map(|p| serde_json::to_value(p).unwrap_or(Value::Null))
             .collect()

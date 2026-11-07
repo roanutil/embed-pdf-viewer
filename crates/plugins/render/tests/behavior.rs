@@ -299,7 +299,7 @@ fn a_tile_answer_that_lands_after_its_tile_left_the_want_set_changes_nothing() {
     let rig = Rig::new(
         json!("*"),
         RenderConfig {
-            tiles: Some(TilesSetting::On(TilesOptions {
+            tiles: Some(TilesSetting::On(TilesSettings {
                 prefetch: Some(PrefetchOptions { margin: Some(0.0), velocity_bias: None }),
                 ..Default::default()
             })),
@@ -355,7 +355,7 @@ fn closing_cancels_tile_work_the_settle_timer_and_renders_in_flight() {
     let rig = Rig::new(
         json!("*"),
         RenderConfig {
-            tiles: Some(TilesSetting::On(TilesOptions {
+            tiles: Some(TilesSetting::On(TilesSettings {
                 prefetch: Some(PrefetchOptions { margin: Some(0.0), velocity_bias: None }),
                 ..Default::default()
             })),
@@ -409,7 +409,7 @@ fn settings_apply_at_once_and_reset_goes_back() {
     let changes: Rc<RefCell<Vec<Vec<String>>>> = Rc::default();
     let sink = changes.clone();
     let _ = rig.render.on_settings_changed(move |event| {
-        sink.borrow_mut().push(event.changed.clone());
+        sink.borrow_mut().push(event.changed_keys.clone());
         Ok(())
     });
     let width = |rig: &Rig| match rig.render.conform_viewport(PAGE, 8.0).unwrap() {
@@ -419,7 +419,7 @@ fn settings_apply_at_once_and_reset_goes_back() {
     assert_eq!(width(&rig), 640.0);
     let paint = rig.render.get_paint_settings();
     rig.render.update_settings(&RenderConfig {
-        full_page: Some(FullPageOptions { max_width: Some(300.0), quantize: None }),
+        full_page: Some(FullPageSettings { max_width: Some(300.0), quantize: None }),
         ..Default::default()
     });
     assert_eq!(width(&rig), 300.0, "a new budget applies at once");
@@ -513,8 +513,8 @@ fn appearance_asks_share_a_fetch_and_keep_their_sets() {
     assert_eq!(again.peek().expect("settled").expect("pictures").len(), 2);
     assert_eq!(calls(&rig), 1);
     // The item's last pictures are kept, by its ref.
-    assert_eq!(rig.render.kept_appearances(AppearanceFamily::Annotations, &item(5)).len(), 2);
-    assert!(rig.render.kept_appearances(AppearanceFamily::Widgets, &item(5)).is_empty());
+    assert_eq!(rig.render.get_kept_appearances(AppearanceFamily::Annotations, &item(5)).len(), 2);
+    assert!(rig.render.get_kept_appearances(AppearanceFamily::Widgets, &item(5)).is_empty());
     // Widgets need doc.forms.read.
     let widgets = rig.render.render_appearances(
         PAGE,

@@ -35,7 +35,7 @@ struct Memos {
 struct Inner {
     cx: Controller<ViewManagerState, Value>,
     pane_created: EventHookSource<PaneEvent>,
-    pane_removed: EventHookSource<PaneEvent>,
+    pane_deleted: EventHookSource<PaneEvent>,
     focus_changed: EventHookSource<PaneFocusChangedEvent>,
     document_moved: EventHookSource<DocumentMovedEvent>,
     memos: RefCell<Memos>,
@@ -153,7 +153,7 @@ impl ViewManagerCapability {
     /// Close a pane. Its documents move to `move_documents_to`, or else to
     /// the focused or the last pane; a target that is the pane itself or
     /// no pane moves nothing.
-    pub fn remove_pane(&self, id: &str, move_documents_to: Option<&str>) {
+    pub fn delete_pane(&self, id: &str, move_documents_to: Option<&str>) {
         let state = self.state();
         let Some(pane) = state.panes.get(id).cloned() else { return };
         let remaining: Vec<&PaneId> = state.order.iter().filter(|other| *other != id).collect();
@@ -173,7 +173,7 @@ impl ViewManagerCapability {
                 });
             }
         }
-        self.update(|state| model::remove_pane(state, id));
+        self.update(|state| model::delete_pane(state, id));
     }
 
     /// Move a pane to another place in the order. Unknown ids are ignored.
@@ -241,11 +241,11 @@ impl ViewManagerCapability {
         self.0.pane_created.on(listener)
     }
 
-    pub fn on_pane_removed(
+    pub fn on_pane_deleted(
         &self,
         listener: impl Fn(&PaneEvent) -> Result<(), Error> + 'static,
     ) -> Unsubscribe {
-        self.0.pane_removed.on(listener)
+        self.0.pane_deleted.on(listener)
     }
 
     pub fn on_focus_changed(
@@ -303,7 +303,7 @@ fn announce(
     previous: &ViewManagerState,
     next: &ViewManagerState,
     pane_created: &EventHookSource<PaneEvent>,
-    pane_removed: &EventHookSource<PaneEvent>,
+    pane_deleted: &EventHookSource<PaneEvent>,
     focus_changed: &EventHookSource<PaneFocusChangedEvent>,
     document_moved: &EventHookSource<DocumentMovedEvent>,
 ) {
@@ -314,7 +314,7 @@ fn announce(
     }
     for id in previous.order.iter() {
         if !next.panes.contains_key(id) {
-            pane_removed.emit(&PaneEvent { pane_id: id.clone() });
+            pane_deleted.emit(&PaneEvent { pane_id: id.clone() });
         }
     }
     if previous.focused_pane_id != next.focused_pane_id {
@@ -349,13 +349,13 @@ pub fn create_view_manager_controller(
     cx: Controller<ViewManagerState, Value>,
 ) -> (ViewManagerCapability, ConnectFn) {
     let pane_created = cx.event_source::<PaneEvent>();
-    let pane_removed = cx.event_source::<PaneEvent>();
+    let pane_deleted = cx.event_source::<PaneEvent>();
     let focus_changed = cx.event_source::<PaneFocusChangedEvent>();
     let document_moved = cx.event_source::<DocumentMovedEvent>();
     {
-        let (pane_created, pane_removed, focus_changed, document_moved) = (
+        let (pane_created, pane_deleted, focus_changed, document_moved) = (
             pane_created.clone(),
-            pane_removed.clone(),
+            pane_deleted.clone(),
             focus_changed.clone(),
             document_moved.clone(),
         );
@@ -364,7 +364,7 @@ pub fn create_view_manager_controller(
                 &previous,
                 &next,
                 &pane_created,
-                &pane_removed,
+                &pane_deleted,
                 &focus_changed,
                 &document_moved,
             );
@@ -374,7 +374,7 @@ pub fn create_view_manager_controller(
     let api = ViewManagerCapability(Rc::new(Inner {
         cx,
         pane_created,
-        pane_removed,
+        pane_deleted,
         focus_changed,
         document_moved,
         memos: RefCell::default(),

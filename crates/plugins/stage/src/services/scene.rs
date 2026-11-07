@@ -337,7 +337,7 @@ impl StageCapability {
 
     fn document_key(&self) -> String {
         match self.ctx.document() {
-            Some(document) => format!("{}.{}", document.page_count, document.revision),
+            Some(document) => format!("{}.{}", document.page_count, document.pages_sequence),
             None => "0.0".into(),
         }
     }
@@ -352,7 +352,7 @@ impl StageCapability {
             let index = if groups.is_empty() {
                 0
             } else {
-                self.item_index_of_page(self.st().cursor).min(groups.len() - 1)
+                self.item_index_of_page(self.st().page_index).min(groups.len() - 1)
             };
             (format!("paged|{}|{}|{index}", self.document_key(), self.settings_key()), Some(index))
         } else {
@@ -411,7 +411,7 @@ impl StageCapability {
         if self.paged() {
             scene.items.first().cloned()
         } else {
-            scene.items.get(self.item_index_of_page(self.st().cursor)).cloned()
+            scene.items.get(self.item_index_of_page(self.st().page_index)).cloned()
         }
     }
 
@@ -426,14 +426,52 @@ impl StageCapability {
         Rect { x: b.x + world.x, y: b.y + world.y, width: world.width, height: world.height }
     }
 
-    /// Does this rect fit the padded viewport at this zoom? It decides the
-    /// navigation step size and the arrival subject, never the alignment.
-    pub(crate) fn fits(&self, rect: Rect, zoom: f64) -> bool {
+    /// Whether an item is one navigation unit now: it fits across the
+    /// view, or fit-all shows all.
+    pub(crate) fn is_whole(&self, item: &SceneItem) -> bool {
+        self.is_fit_all() || self.fits_across(Self::item_rect(item), self.camera().zoom)
+    }
+
+    /// The pages you're on, the navigation unit: the cursor's item while it
+    /// is whole (a spread you see side by side), else the cursor page alone.
+    /// The page number names them, and `next_page` and `previous_page` step
+    /// past them.
+    pub(crate) fn current_pages(&self) -> Vec<usize> {
+        let Some(item) = self.cursor_item() else { return Vec::new() };
+        if self.is_whole(&item) { item.page_indexes.clone() } else { vec![self.st().page_index] }
+    }
+
+    /// Where the unit that holds `page_index` starts: its item's first page
+    /// while that item is whole, else the page itself. A paged scene holds
+    /// only the cursor's item, so there it measures that one.
+    pub(crate) fn unit_start_of(&self, page_index: usize) -> usize {
+        let grouping = self.grouping();
+        let Some(group) = grouping.grouping.get(self.item_index_of_page(page_index)) else {
+            return page_index;
+        };
+        if group.len() == 1 {
+            return page_index;
+        }
+        let scene = self.build_scene();
+        let item = if self.paged() {
+            scene.items.first()
+        } else {
+            scene.items.get(self.item_index_of_page(page_index))
+        };
+        match item {
+            Some(item) if self.is_whole(item) => group[0],
+            _ => page_index,
+        }
+    }
+
+    /// Does this rect fit across the padded viewport at this zoom: its
+    /// width, the axis an item's pages sit side by side on? An item that fits
+    /// across is seen whole, however tall it is. It decides the navigation
+    /// unit and the arrival subject, never the alignment.
+    pub(crate) fn fits_across(&self, rect: Rect, zoom: f64) -> bool {
         let size = self.viewport();
         let inset = self.padding();
-        let tolerance = 0.5;
-        rect.width * zoom <= size.width - 2.0 * inset + tolerance
-            && rect.height * zoom <= size.height - 2.0 * inset + tolerance
+        rect.width * zoom <= size.width - 2.0 * inset + 0.5
     }
 
     pub(crate) fn align_fraction(value: AlignValue) -> f64 {
@@ -520,7 +558,7 @@ impl StageCapability {
             sc::anchor_from_camera(self.camera(), &scene, self.viewport(), Some(at))
                 .map_err(stage_error)
         } else {
-            Ok(Anchor { page_index: self.st().cursor, fx: 0.5, fy: 0.0 })
+            Ok(Anchor { page_index: self.st().page_index, fraction_x: 0.5, fraction_y: 0.0 })
         }
     }
 

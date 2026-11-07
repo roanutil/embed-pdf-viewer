@@ -769,7 +769,7 @@ impl DocumentHandle for Passthrough {
     fn subscribe(&self, _: Rc<dyn Fn(&Value)>) -> epdf_kernel::Unsubscribe {
         epdf_kernel::Unsubscribe::noop()
     }
-    fn last_server_id(&self) -> Option<String> {
+    fn last_server_sequence(&self) -> Option<String> {
         Some("server-1".into())
     }
 }
@@ -782,7 +782,7 @@ fn the_guard_passes_feature_checks_and_the_server_id_through() {
     let guarded = guard_handle(Rc::new(Passthrough), lifetime, "probe");
     assert!(guarded.has("render"));
     assert!(!guarded.has("fonts"));
-    assert_eq!(guarded.last_server_id().as_deref(), Some("server-1"));
+    assert_eq!(guarded.last_server_sequence().as_deref(), Some("server-1"));
 }
 
 #[test]

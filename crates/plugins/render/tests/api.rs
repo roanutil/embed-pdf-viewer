@@ -272,7 +272,7 @@ fn refusing_manager(
     failures: Rc<std::cell::Cell<u32>>,
 ) -> TileManager {
     let options = Rc::new(resolve_render_options(&RenderConfig {
-        tiles: Some(TilesSetting::On(TilesOptions { settle_ms: Some(0.0), ..Default::default() })),
+        tiles: Some(TilesSetting::On(TilesSettings { settle_ms: Some(0.0), ..Default::default() })),
         ..Default::default()
     }));
     TileManager::new(TileManagerDeps {

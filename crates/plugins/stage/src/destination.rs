@@ -5,7 +5,7 @@
 //! - `rect`: what to look at, a point for `xyz`, a rect for `fitR`, the page
 //!   for `fit` and the `fitB*` kinds;
 //! - `zoom`: `'keep'`, `{level}`, `'fit'`, `'fit-width'` or `'fit-height'`;
-//! - `anchor`: where it lands; `'keep'` is the specification's `null`, keep
+//! - `align`: where it lands; `'keep'` is the specification's `null`, keep
 //!   the current value on that axis.
 //!
 //! Destinations are in page space, the stage's own space, so nothing
@@ -30,7 +30,7 @@ pub fn reveal_of_destination(destination: &PageDestination, size: Size) -> Revea
             // A null axis keeps the current camera value; the number fed in
             // for it is never read (the 'keep' anchor).
             rect: Some(Rect { x: x.unwrap_or(0.0), y: y.unwrap_or(0.0), width: 0.0, height: 0.0 }),
-            anchor: Some(RevealAnchor { x: Some(keep_or_start(x)), y: Some(keep_or_start(y)) }),
+            align: Some(RevealAlignment { x: Some(keep_or_start(x)), y: Some(keep_or_start(y)) }),
             // A zoom of 0 means the same as null: keep the current zoom.
             zoom: Some(match zoom {
                 Some(level) if level != 0.0 => RevealZoom::Level { level },
@@ -49,13 +49,13 @@ pub fn reveal_of_destination(destination: &PageDestination, size: Size) -> Revea
         PageDestination::FitH { y, .. } | PageDestination::FitBh { y, .. } => RevealOptions {
             rect: Some(Rect { x: 0.0, y: y.unwrap_or(0.0), width, height: 0.0 }),
             zoom: Some(RevealZoom::Word(RevealZoomWord::FitWidth)),
-            anchor: Some(RevealAnchor { x: None, y: Some(keep_or_start(y)) }),
+            align: Some(RevealAlignment { x: None, y: Some(keep_or_start(y)) }),
             behavior: None,
         },
         PageDestination::FitV { x, .. } | PageDestination::FitBv { x, .. } => RevealOptions {
             rect: Some(Rect { x: x.unwrap_or(0.0), y: 0.0, width: 0.0, height }),
             zoom: Some(RevealZoom::Word(RevealZoomWord::FitHeight)),
-            anchor: Some(RevealAnchor { x: Some(keep_or_start(x)), y: None }),
+            align: Some(RevealAlignment { x: Some(keep_or_start(x)), y: None }),
             behavior: None,
         },
         PageDestination::FitR { x, y, width: rect_width, height: rect_height, .. } => {

@@ -139,10 +139,10 @@ impl RenderFormat {
     }
 }
 
-/// `FullPageOptions`: the base-plane budget and render points.
+/// `FullPageSettings`: the base-plane budget and render points.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct FullPageOptions {
+pub struct FullPageSettings {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub max_width: Option<f64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -158,10 +158,10 @@ pub struct PrefetchOptions {
     pub velocity_bias: Option<bool>,
 }
 
-/// `TilesOptions`: the tile-plane strategy.
+/// `TilesSettings`: the tile-plane strategy.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TilesOptions {
+pub struct TilesSettings {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub size: Option<f64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -169,9 +169,9 @@ pub struct TilesOptions {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub max_scale: Option<f64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub bleed: Option<f64>,
+    pub bleed_px: Option<f64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub engage_at: Option<f64>,
+    pub engage_ratio: Option<f64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub prefetch: Option<PrefetchOptions>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -200,7 +200,7 @@ pub struct ResolvedTiles {
     pub max_scale: f64,
     pub bleed_px: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub engage_at: Option<f64>,
+    pub engage_ratio: Option<f64>,
     pub prefetch_margin: f64,
     pub velocity_bias: bool,
     pub settle_ms: f64,
@@ -247,15 +247,15 @@ pub fn resolve_render_options(options: &RenderConfig) -> ResolvedRenderOptions {
             size: tiles.and_then(|t| t.size).unwrap_or(512.0),
             quantize: tiles.and_then(|t| t.quantize.clone()).unwrap_or(Quantize::Exact),
             max_scale: tiles.and_then(|t| t.max_scale).unwrap_or(128.0),
-            bleed_px: tiles.and_then(|t| t.bleed).unwrap_or(1.0),
-            engage_at: tiles.and_then(|t| t.engage_at),
+            bleed_px: tiles.and_then(|t| t.bleed_px).unwrap_or(1.0),
+            engage_ratio: tiles.and_then(|t| t.engage_ratio),
             prefetch_margin: prefetch.and_then(|p| p.margin).unwrap_or(0.5),
             velocity_bias: prefetch.and_then(|p| p.velocity_bias).unwrap_or(true),
             settle_ms: tiles.and_then(|t| t.settle_ms).unwrap_or(150.0),
             fallback_pyramid: DEFAULT_TILE_PYRAMID.to_vec(),
         },
-        format: options.format,
-        quality: options.quality,
+        format: options.format.flatten(),
+        quality: options.quality.flatten(),
         debug: options.debug.unwrap_or(false),
     }
 }

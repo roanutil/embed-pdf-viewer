@@ -65,8 +65,8 @@
         {
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 30,
-          "symbol": "export const initialViewManagerState",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "symbol": "export const initialViewManagerModel",
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": null
@@ -228,7 +228,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 77,
           "symbol": "export function createPane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -320,7 +320,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 77,
           "symbol": "export function createPane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -422,7 +422,7 @@
       "currentName": "remove-unknown-is-ignored",
       "currentInput": {
         "name": "remove-unknown-is-ignored",
-        "fn": "removePane",
+        "fn": "deletePane",
         "args": [
           {
             "panes": {
@@ -459,7 +459,7 @@
           "nope"
         ]
       },
-      "currentInputSha256": "1b972e066e413ab836b730802e2198585ac6aa0a49bbf9ee88b80c52fa668a45",
+      "currentInputSha256": "b427093f3679c681b8f8cb4aa5479341048c8444c4640f0b3e2860f95de08da9",
       "currentOutcome": {
         "returned": {
           "panes": {
@@ -507,8 +507,8 @@
         {
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 88,
-          "symbol": "export function removePane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "symbol": "export function deletePane",
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -602,7 +602,7 @@
       "currentName": "remove-focused-focuses-the-last",
       "currentInput": {
         "name": "remove-focused-focuses-the-last",
-        "fn": "removePane",
+        "fn": "deletePane",
         "args": [
           {
             "panes": {
@@ -639,7 +639,7 @@
           "pane-2"
         ]
       },
-      "currentInputSha256": "126fc27423473ff95338ca1fcd38524b1b0a1ab9bf394a2877454049fad69574",
+      "currentInputSha256": "877c1ba1b39cd5ed67d0facab5b2994181a2aed9152e979f1cbeebc562a5660f",
       "currentOutcome": {
         "returned": {
           "panes": {
@@ -679,8 +679,8 @@
         {
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 88,
-          "symbol": "export function removePane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "symbol": "export function deletePane",
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -772,7 +772,7 @@
       "currentName": "remove-unfocused-keeps-focus",
       "currentInput": {
         "name": "remove-unfocused-keeps-focus",
-        "fn": "removePane",
+        "fn": "deletePane",
         "args": [
           {
             "panes": {
@@ -809,7 +809,7 @@
           "pane-1"
         ]
       },
-      "currentInputSha256": "8757501fa55274c9e0c8e52fd69c71aa72345c1d4259b4555a6e530217b57f86",
+      "currentInputSha256": "e24935b047fca1dd2c468af3234ce9058185ee7eb50809de23b4b6fce3b535f9",
       "currentOutcome": {
         "returned": {
           "panes": {
@@ -847,8 +847,8 @@
         {
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 88,
-          "symbol": "export function removePane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "symbol": "export function deletePane",
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -908,7 +908,7 @@
       "currentName": "remove-the-only-view",
       "currentInput": {
         "name": "remove-the-only-view",
-        "fn": "removePane",
+        "fn": "deletePane",
         "args": [
           {
             "panes": {
@@ -929,7 +929,7 @@
           "pane-1"
         ]
       },
-      "currentInputSha256": "49d9d9780d185e2d01a6fd5a98cb3d29744bb095e80a1b62d6c7e09f015572e8",
+      "currentInputSha256": "82bec18f51a45a90a28dc691257b47597247c05a81e7ec2a7fcb99837760e165",
       "currentOutcome": {
         "returned": {
           "panes": {},
@@ -951,8 +951,8 @@
         {
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 88,
-          "symbol": "export function removePane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "symbol": "export function deletePane",
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -1117,7 +1117,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 97,
           "symbol": "export function movePane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -1305,7 +1305,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 104,
           "symbol": "export function setFocusedPane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -1493,7 +1493,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 104,
           "symbol": "export function setFocusedPane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -1682,7 +1682,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 104,
           "symbol": "export function setFocusedPane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -1873,7 +1873,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 108,
           "symbol": "export function setActiveDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -2064,7 +2064,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 108,
           "symbol": "export function setActiveDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -2255,7 +2255,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 108,
           "symbol": "export function setActiveDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -2446,7 +2446,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 108,
           "symbol": "export function setActiveDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -2639,7 +2639,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 120,
           "symbol": "export function addDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -2835,7 +2835,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 120,
           "symbol": "export function addDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -3031,7 +3031,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 120,
           "symbol": "export function addDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -3227,7 +3227,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 120,
           "symbol": "export function addDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -3423,7 +3423,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 120,
           "symbol": "export function addDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -3619,7 +3619,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 120,
           "symbol": "export function addDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -3819,7 +3819,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 120,
           "symbol": "export function addDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -4019,7 +4019,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 120,
           "symbol": "export function addDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -4219,7 +4219,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 120,
           "symbol": "export function addDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -4414,7 +4414,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 120,
           "symbol": "export function addDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -4605,7 +4605,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 120,
           "symbol": "export function addDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -4796,7 +4796,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 120,
           "symbol": "export function addDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -4988,7 +4988,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 120,
           "symbol": "export function addDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -5181,7 +5181,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 120,
           "symbol": "export function addDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -5371,7 +5371,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 120,
           "symbol": "export function addDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -5560,7 +5560,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 140,
           "symbol": "export function removeDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -5749,7 +5749,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 140,
           "symbol": "export function removeDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -5882,7 +5882,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 140,
           "symbol": "export function removeDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -6069,7 +6069,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 140,
           "symbol": "export function removeDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -6261,7 +6261,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 140,
           "symbol": "export function removeDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -6452,7 +6452,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 140,
           "symbol": "export function removeDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -6646,7 +6646,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 151,
           "symbol": "export function moveDocumentWithin",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -6840,7 +6840,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 151,
           "symbol": "export function moveDocumentWithin",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -7034,7 +7034,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 151,
           "symbol": "export function moveDocumentWithin",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -7232,7 +7232,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 151,
           "symbol": "export function moveDocumentWithin",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -7426,7 +7426,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 151,
           "symbol": "export function moveDocumentWithin",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -7620,7 +7620,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 151,
           "symbol": "export function moveDocumentWithin",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -7814,7 +7814,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 163,
           "symbol": "export function moveDocumentBetween",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -8011,7 +8011,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 163,
           "symbol": "export function moveDocumentBetween",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -8208,7 +8208,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 163,
           "symbol": "export function moveDocumentBetween",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -8402,7 +8402,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 163,
           "symbol": "export function moveDocumentBetween",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -8599,7 +8599,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 163,
           "symbol": "export function moveDocumentBetween",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -8793,7 +8793,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 163,
           "symbol": "export function moveDocumentBetween",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -8987,7 +8987,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 163,
           "symbol": "export function moveDocumentBetween",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -9181,7 +9181,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 163,
           "symbol": "export function moveDocumentBetween",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -9374,7 +9374,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 214,
           "symbol": "export function reconcile",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -9571,7 +9571,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 214,
           "symbol": "export function reconcile",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -9782,7 +9782,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 214,
           "symbol": "export function reconcile",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -9987,7 +9987,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 214,
           "symbol": "export function reconcile",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -10192,7 +10192,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 214,
           "symbol": "export function reconcile",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -10379,7 +10379,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 214,
           "symbol": "export function reconcile",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -10494,7 +10494,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 214,
           "symbol": "export function reconcile",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -10605,7 +10605,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 214,
           "symbol": "export function reconcile",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -10784,7 +10784,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 214,
           "symbol": "export function reconcile",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -10871,7 +10871,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 214,
           "symbol": "export function reconcile",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -11008,7 +11008,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 214,
           "symbol": "export function reconcile",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -11177,7 +11177,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 214,
           "symbol": "export function reconcile",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -11378,7 +11378,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 214,
           "symbol": "export function reconcile",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -11534,7 +11534,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 38,
           "symbol": "export const nextPaneId",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -11925,19 +11925,19 @@
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 37,
           "symbol": "export function createViewManagerController",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 137,
           "symbol": "connect()",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/view-manager.plugin.ts",
           "line": 11,
           "symbol": "export const viewManagerPlugin",
-          "sha256": "61b693cb04bf10e2c5c2a74f76290dbe24c9e86f766b088560ca4728c3f70ad7"
+          "sha256": "41558f9590746a8a88b900f4a23300d3a968784da40946603d130742ca4f20e6"
         }
       ],
       "retirementSource": null
@@ -14916,19 +14916,19 @@
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 37,
           "symbol": "export function createViewManagerController",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 137,
           "symbol": "connect()",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/view-manager.plugin.ts",
           "line": 11,
           "symbol": "export const viewManagerPlugin",
-          "sha256": "61b693cb04bf10e2c5c2a74f76290dbe24c9e86f766b088560ca4728c3f70ad7"
+          "sha256": "41558f9590746a8a88b900f4a23300d3a968784da40946603d130742ca4f20e6"
         }
       ],
       "retirementSource": null
@@ -17688,19 +17688,19 @@
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 37,
           "symbol": "export function createViewManagerController",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 137,
           "symbol": "connect()",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/view-manager.plugin.ts",
           "line": 11,
           "symbol": "export const viewManagerPlugin",
-          "sha256": "61b693cb04bf10e2c5c2a74f76290dbe24c9e86f766b088560ca4728c3f70ad7"
+          "sha256": "41558f9590746a8a88b900f4a23300d3a968784da40946603d130742ca4f20e6"
         }
       ],
       "retirementSource": null
@@ -20845,7 +20845,7 @@
       "currentName": "panes",
       "currentInput": {
         "name": "panes",
-        "covers": "createPane focuses the new pane and later opens land there; removePane refocuses; movePane reorders with clamping and ignores unknown ids; setFocused takes any id.",
+        "covers": "createPane focuses the new pane and later opens land there; deletePane refocuses; movePane reorders with clamping and ignores unknown ids; setFocused takes any id.",
         "plugins": [
           {
             "factory": "view-manager"
@@ -21216,7 +21216,7 @@
             "target": {
               "token": "view-manager"
             },
-            "method": "removePane",
+            "method": "deletePane",
             "args": [
               "pane-1"
             ]
@@ -21250,7 +21250,7 @@
             "target": {
               "token": "view-manager"
             },
-            "method": "removePane",
+            "method": "deletePane",
             "args": [
               "pane-1"
             ]
@@ -21307,7 +21307,7 @@
           }
         ]
       },
-      "currentInputSha256": "0998bf5094559f6bf7414a11de0b061019f4787f26a30878088ca7449ab9ee3c",
+      "currentInputSha256": "ddb3d43ba353a7846573f112ef87eb28bc607555837842c1ac3b381c6204db8f",
       "currentOutcome": {
         "trace": [
           {
@@ -24118,7 +24118,9 @@
         "$.engine.documents.c.pages[0].boxes.trim",
         "$.engine.documents.c.pages[0].boxes.art",
         "$.engine.documents.c.pages[0].tabOrder",
-        "$.engine.documents.c.pages[0].pdfCropBox"
+        "$.engine.documents.c.pages[0].pdfCropBox",
+        "$.steps[18].method",
+        "$.steps[22].method"
       ],
       "disposition": "preserved-current-contract",
       "removedPaneMessageContract": null,
@@ -24129,19 +24131,19 @@
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 37,
           "symbol": "export function createViewManagerController",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 137,
           "symbol": "connect()",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/view-manager.plugin.ts",
           "line": 11,
           "symbol": "export const viewManagerPlugin",
-          "sha256": "61b693cb04bf10e2c5c2a74f76290dbe24c9e86f766b088560ca4728c3f70ad7"
+          "sha256": "41558f9590746a8a88b900f4a23300d3a968784da40946603d130742ca4f20e6"
         }
       ],
       "retirementSource": null
@@ -28830,19 +28832,19 @@
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 37,
           "symbol": "export function createViewManagerController",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 137,
           "symbol": "connect()",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/view-manager.plugin.ts",
           "line": 11,
           "symbol": "export const viewManagerPlugin",
-          "sha256": "61b693cb04bf10e2c5c2a74f76290dbe24c9e86f766b088560ca4728c3f70ad7"
+          "sha256": "41558f9590746a8a88b900f4a23300d3a968784da40946603d130742ca4f20e6"
         }
       ],
       "retirementSource": null
@@ -30422,19 +30424,19 @@
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 37,
           "symbol": "export function createViewManagerController",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 137,
           "symbol": "connect()",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/view-manager.plugin.ts",
           "line": 11,
           "symbol": "export const viewManagerPlugin",
-          "sha256": "61b693cb04bf10e2c5c2a74f76290dbe24c9e86f766b088560ca4728c3f70ad7"
+          "sha256": "41558f9590746a8a88b900f4a23300d3a968784da40946603d130742ca4f20e6"
         }
       ],
       "retirementSource": null
@@ -32112,19 +32114,19 @@
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 37,
           "symbol": "export function createViewManagerController",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 137,
           "symbol": "connect()",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/view-manager.plugin.ts",
           "line": 11,
           "symbol": "export const viewManagerPlugin",
-          "sha256": "61b693cb04bf10e2c5c2a74f76290dbe24c9e86f766b088560ca4728c3f70ad7"
+          "sha256": "41558f9590746a8a88b900f4a23300d3a968784da40946603d130742ca4f20e6"
         }
       ],
       "retirementSource": null
@@ -35779,19 +35781,19 @@
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 37,
           "symbol": "export function createViewManagerController",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 137,
           "symbol": "connect()",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/view-manager.plugin.ts",
           "line": 11,
           "symbol": "export const viewManagerPlugin",
-          "sha256": "61b693cb04bf10e2c5c2a74f76290dbe24c9e86f766b088560ca4728c3f70ad7"
+          "sha256": "41558f9590746a8a88b900f4a23300d3a968784da40946603d130742ca4f20e6"
         }
       ],
       "retirementSource": null
@@ -39978,7 +39980,7 @@
       "currentName": "remove-pane-targets",
       "currentInput": {
         "name": "remove-pane-targets",
-        "covers": "removePane moves its documents to moveDocumentsTo when given, else to the focused pane when that is another one, else to the last remaining pane; a target that is the pane itself or unknown moves nothing, and removing the only pane drops its documents with it.",
+        "covers": "deletePane moves its documents to moveDocumentsTo when given, else to the focused pane when that is another one, else to the last remaining pane; a target that is the pane itself or unknown moves nothing, and removing the only pane drops its documents with it.",
         "plugins": [
           {
             "factory": "view-manager"
@@ -40340,7 +40342,7 @@
             "target": {
               "token": "view-manager"
             },
-            "method": "removePane",
+            "method": "deletePane",
             "args": [
               "pane-4",
               {
@@ -40387,7 +40389,7 @@
             "target": {
               "token": "view-manager"
             },
-            "method": "removePane",
+            "method": "deletePane",
             "args": [
               "pane-3"
             ]
@@ -40421,7 +40423,7 @@
             "target": {
               "token": "view-manager"
             },
-            "method": "removePane",
+            "method": "deletePane",
             "args": [
               "pane-1"
             ]
@@ -40463,7 +40465,7 @@
             "target": {
               "token": "view-manager"
             },
-            "method": "removePane",
+            "method": "deletePane",
             "args": [
               "pane-2",
               {
@@ -40514,7 +40516,7 @@
             "target": {
               "token": "view-manager"
             },
-            "method": "removePane",
+            "method": "deletePane",
             "args": [
               "pane-6",
               {
@@ -40551,7 +40553,7 @@
             "target": {
               "token": "view-manager"
             },
-            "method": "removePane",
+            "method": "deletePane",
             "args": [
               "pane-5"
             ]
@@ -40582,7 +40584,7 @@
           }
         ]
       },
-      "currentInputSha256": "c76e1d2d60b7547d5bcd1e598f74f09282e9aa0948060ea8291935b524d3a393",
+      "currentInputSha256": "318785fac9876506cf2d42e7cf883fe48d907045badc9de639d397185d5dcd3e",
       "currentOutcome": {
         "trace": [
           {
@@ -44249,6 +44251,7 @@
       },
       "currentOutcomeSha256": "4a7af2890b8615062b2d4c47109fdd6e623b82fe1f858ea9292743e22df31935",
       "changedInputPaths": [
+        "$.covers",
         "$.engine.documents.a.pages[0].ref.pageObjectNumber",
         "$.engine.documents.a.pages[0].ref.objectNumber",
         "$.engine.documents.a.pages[0].boxes.media.left",
@@ -44340,7 +44343,13 @@
         "$.engine.documents.d.pages[0].boxes.trim",
         "$.engine.documents.d.pages[0].boxes.art",
         "$.engine.documents.d.pages[0].tabOrder",
-        "$.engine.documents.d.pages[0].pdfCropBox"
+        "$.engine.documents.d.pages[0].pdfCropBox",
+        "$.steps[11].method",
+        "$.steps[16].method",
+        "$.steps[20].method",
+        "$.steps[25].method",
+        "$.steps[30].method",
+        "$.steps[34].method"
       ],
       "disposition": "preserved-current-contract",
       "removedPaneMessageContract": null,
@@ -44351,19 +44360,19 @@
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 37,
           "symbol": "export function createViewManagerController",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 137,
           "symbol": "connect()",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/view-manager.plugin.ts",
           "line": 11,
           "symbol": "export const viewManagerPlugin",
-          "sha256": "61b693cb04bf10e2c5c2a74f76290dbe24c9e86f766b088560ca4728c3f70ad7"
+          "sha256": "41558f9590746a8a88b900f4a23300d3a968784da40946603d130742ca4f20e6"
         }
       ],
       "retirementSource": null
@@ -45796,7 +45805,7 @@
       "currentName": "events",
       "currentInput": {
         "name": "events",
-        "covers": "Every write is diffed: onPaneCreated for each new pane in order, onPaneRemoved for each removed one, onFocusChanged when the focus changes, and onDocumentMoved for each document whose pane changed (a document opening moves from null, one closing to null). A throwing listener is reported and its siblings still fire; after unsubscribing nothing fires.",
+        "covers": "Every write is diffed: onPaneCreated for each new pane in order, onPaneDeleted for each deleted one, onFocusChanged when the focus changes, and onDocumentMoved for each document whose pane changed (a document opening moves from null, one closing to null). A throwing listener is reported and its siblings still fire; after unsubscribing nothing fires.",
         "plugins": [
           {
             "factory": "view-manager"
@@ -45941,7 +45950,7 @@
             "target": {
               "token": "view-manager"
             },
-            "method": "onPaneRemoved",
+            "method": "onPaneDeleted",
             "args": [
               {
                 "$fn": "removed",
@@ -46061,7 +46070,7 @@
             "target": {
               "token": "view-manager"
             },
-            "method": "removePane",
+            "method": "deletePane",
             "args": [
               "pane-2"
             ]
@@ -46120,7 +46129,7 @@
           }
         ]
       },
-      "currentInputSha256": "7e41e8ba635078f81e11af8cf475a2acac0966d40e30d87acfde3686ae2088fa",
+      "currentInputSha256": "158affbcff2311a37f41d0d52d87138ee12f7393dd80cd58c202a0d7681c063f",
       "currentOutcome": {
         "trace": [
           {
@@ -47263,6 +47272,7 @@
       },
       "currentOutcomeSha256": "4f763b88511eb57d0cc8a379fd79a8829c5772739a2b49097c00e9993b710732",
       "changedInputPaths": [
+        "$.covers",
         "$.reason",
         "$.engine.documents.a.pages[0].ref.pageObjectNumber",
         "$.engine.documents.a.pages[0].ref.objectNumber",
@@ -47309,7 +47319,9 @@
         "$.engine.documents.b.pages[0].boxes.trim",
         "$.engine.documents.b.pages[0].boxes.art",
         "$.engine.documents.b.pages[0].tabOrder",
-        "$.engine.documents.b.pages[0].pdfCropBox"
+        "$.engine.documents.b.pages[0].pdfCropBox",
+        "$.steps[1].method",
+        "$.steps[11].method"
       ],
       "disposition": "preserved-current-contract",
       "removedPaneMessageContract": null,
@@ -47320,19 +47332,19 @@
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 37,
           "symbol": "export function createViewManagerController",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 137,
           "symbol": "connect()",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/view-manager.plugin.ts",
           "line": 11,
           "symbol": "export const viewManagerPlugin",
-          "sha256": "61b693cb04bf10e2c5c2a74f76290dbe24c9e86f766b088560ca4728c3f70ad7"
+          "sha256": "41558f9590746a8a88b900f4a23300d3a968784da40946603d130742ca4f20e6"
         }
       ],
       "retirementSource": null
@@ -47616,19 +47628,19 @@
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 37,
           "symbol": "export function createViewManagerController",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 137,
           "symbol": "connect()",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/view-manager.plugin.ts",
           "line": 11,
           "symbol": "export const viewManagerPlugin",
-          "sha256": "61b693cb04bf10e2c5c2a74f76290dbe24c9e86f766b088560ca4728c3f70ad7"
+          "sha256": "41558f9590746a8a88b900f4a23300d3a968784da40946603d130742ca4f20e6"
         }
       ],
       "retirementSource": null
@@ -48422,19 +48434,19 @@
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 37,
           "symbol": "export function createViewManagerController",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 137,
           "symbol": "connect()",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/view-manager.plugin.ts",
           "line": 11,
           "symbol": "export const viewManagerPlugin",
-          "sha256": "61b693cb04bf10e2c5c2a74f76290dbe24c9e86f766b088560ca4728c3f70ad7"
+          "sha256": "41558f9590746a8a88b900f4a23300d3a968784da40946603d130742ca4f20e6"
         }
       ],
       "retirementSource": null
@@ -48586,7 +48598,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 38,
           "symbol": "export const nextPaneId",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "retirementSource": {
@@ -48690,7 +48702,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 77,
           "symbol": "export function createPane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "reason": "Current generated ids/sequence, positional move boundaries, rename/selectors, holder order or pending-ticket/split-placement coverage."
@@ -48786,7 +48798,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 77,
           "symbol": "export function createPane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "reason": "Current generated ids/sequence, positional move boundaries, rename/selectors, holder order or pending-ticket/split-placement coverage."
@@ -48882,7 +48894,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 77,
           "symbol": "export function createPane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "reason": "Current generated ids/sequence, positional move boundaries, rename/selectors, holder order or pending-ticket/split-placement coverage."
@@ -48980,7 +48992,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 77,
           "symbol": "export function createPane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "reason": "Current generated ids/sequence, positional move boundaries, rename/selectors, holder order or pending-ticket/split-placement coverage."
@@ -49078,7 +49090,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 77,
           "symbol": "export function createPane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "reason": "Current generated ids/sequence, positional move boundaries, rename/selectors, holder order or pending-ticket/split-placement coverage."
@@ -49123,7 +49135,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 77,
           "symbol": "export function createPane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "reason": "Current generated ids/sequence, positional move boundaries, rename/selectors, holder order or pending-ticket/split-placement coverage."
@@ -49214,7 +49226,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 97,
           "symbol": "export function movePane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "reason": "Current generated ids/sequence, positional move boundaries, rename/selectors, holder order or pending-ticket/split-placement coverage."
@@ -49307,7 +49319,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 97,
           "symbol": "export function movePane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "reason": "Current generated ids/sequence, positional move boundaries, rename/selectors, holder order or pending-ticket/split-placement coverage."
@@ -49398,7 +49410,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 97,
           "symbol": "export function movePane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "reason": "Current generated ids/sequence, positional move boundaries, rename/selectors, holder order or pending-ticket/split-placement coverage."
@@ -49491,7 +49503,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 97,
           "symbol": "export function movePane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "reason": "Current generated ids/sequence, positional move boundaries, rename/selectors, holder order or pending-ticket/split-placement coverage."
@@ -49582,7 +49594,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 97,
           "symbol": "export function movePane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "reason": "Current generated ids/sequence, positional move boundaries, rename/selectors, holder order or pending-ticket/split-placement coverage."
@@ -49673,7 +49685,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 97,
           "symbol": "export function movePane",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "reason": "Current generated ids/sequence, positional move boundaries, rename/selectors, holder order or pending-ticket/split-placement coverage."
@@ -49764,7 +49776,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 193,
           "symbol": "export function renameDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "reason": "Current generated ids/sequence, positional move boundaries, rename/selectors, holder order or pending-ticket/split-placement coverage."
@@ -49855,7 +49867,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 193,
           "symbol": "export function renameDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "reason": "Current generated ids/sequence, positional move boundaries, rename/selectors, holder order or pending-ticket/split-placement coverage."
@@ -49946,7 +49958,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 193,
           "symbol": "export function renameDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "reason": "Current generated ids/sequence, positional move boundaries, rename/selectors, holder order or pending-ticket/split-placement coverage."
@@ -50005,7 +50017,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 41,
           "symbol": "export const paneOfDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "reason": "Current generated ids/sequence, positional move boundaries, rename/selectors, holder order or pending-ticket/split-placement coverage."
@@ -50064,7 +50076,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 41,
           "symbol": "export const paneOfDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "reason": "Current generated ids/sequence, positional move boundaries, rename/selectors, holder order or pending-ticket/split-placement coverage."
@@ -50153,7 +50165,7 @@
           "path": "packages/plugin/view-manager/src/model.ts",
           "line": 120,
           "symbol": "export function addDocument",
-          "sha256": "c569bdd904e1bedfabfdfdb57ecffb9cbb38c9a0747423c9b96d747e4729e8e5"
+          "sha256": "3b8fd917f318088194524f9bc33ff6d00c66a2403b46fc27bf0aec9d8aece776"
         }
       ],
       "reason": "Current generated ids/sequence, positional move boundaries, rename/selectors, holder order or pending-ticket/split-placement coverage."
@@ -51847,19 +51859,19 @@
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 37,
           "symbol": "export function createViewManagerController",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/controller.ts",
           "line": 137,
           "symbol": "connect()",
-          "sha256": "4fa472488c878c5f0a6bca13c44c95b1e9242e59782c93d5376c240278901d88"
+          "sha256": "dc79a121de3d594d524a6e10bd000ee4dfd4e11fd1b3e7174bde272792330ace"
         },
         {
           "path": "packages/plugin/view-manager/src/view-manager.plugin.ts",
           "line": 11,
           "symbol": "export const viewManagerPlugin",
-          "sha256": "61b693cb04bf10e2c5c2a74f76290dbe24c9e86f766b088560ca4728c3f70ad7"
+          "sha256": "41558f9590746a8a88b900f4a23300d3a968784da40946603d130742ca4f20e6"
         }
       ],
       "reason": "Current generated ids/sequence, positional move boundaries, rename/selectors, holder order or pending-ticket/split-placement coverage."

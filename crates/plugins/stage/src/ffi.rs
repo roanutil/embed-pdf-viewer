@@ -38,7 +38,7 @@ use crate::{
     ArrivalAlignValue, ArrivalAlignment, BoxQuery, ColumnsPolicy, FlowMode, Gap, GestureOptions,
     GoToDestinationOptions, GoToOptions, GridColumns, Keep, LayoutKind, Orientation,
     PageDestination, PageHit, PageTarget, PartialArrivalAlignment, PartialPageFrame,
-    ResponsiveRule, RevealAnchor, RevealAnchorValue, RevealOptions, RevealWord, RevealZoom,
+    ResponsiveRule, RevealAlignment, RevealAnchorValue, RevealOptions, RevealWord, RevealZoom,
     RevealZoomWord, RuleWhen, ScrollBehaviorKind, ScrollHandlerOptions, StageCapability,
     StageZoomMode as CoreZoomMode, Viewpoint, VisiblePage, ZoomTarget, ZoomToOptions,
     create_scroll_handler,
@@ -115,13 +115,14 @@ pub enum StageSettingKey {
     Interaction,
     PanFallback,
     ZoomGestures,
+    TurnGestures,
     ZoomBox,
     ViewUnitsPerPoint,
 }
 mirror_enum!(StageSettingKey <=> SettingKey {
     Flow, Layout, Spread, Sizing, Columns, Bounded, Padding, Gap, PageFrame, Direction,
     FitAlign, ArrivalAlign, ZoomAlign, AnchorAlign, ViewRotation, Zoom, MinZoom, MaxZoom,
-    ScrollBehavior, Interaction, PanFallback, ZoomGestures, ZoomBox, ViewUnitsPerPoint,
+    ScrollBehavior, Interaction, PanFallback, ZoomGestures, TurnGestures, ZoomBox, ViewUnitsPerPoint,
 });
 
 /// Grid columns: about the square root of the item count, as many as fit,
@@ -280,6 +281,7 @@ pub struct StageSettings {
     pub pan_fallback: bool,
     /// Whether a pinch or a zoom wheel zooms this view.
     pub zoom_gestures: bool,
+    pub turn_gestures: bool,
     /// The look of the box the `zoom` tool drags.
     pub zoom_box: StageZoomBoxLook,
     pub view_units_per_point: f64,
@@ -311,6 +313,7 @@ impl TryFrom<crate::StageSettings> for StageSettings {
             interaction: s.interaction,
             pan_fallback: s.pan_fallback,
             zoom_gestures: s.zoom_gestures,
+            turn_gestures: s.turn_gestures,
             zoom_box: StageZoomBoxLook { fill: s.zoom_box.fill, stroke: s.zoom_box.stroke },
             view_units_per_point: s.view_units_per_point,
         })
@@ -343,6 +346,7 @@ impl TryFrom<StageSettings> for crate::StageSettings {
             interaction: s.interaction,
             pan_fallback: s.pan_fallback,
             zoom_gestures: s.zoom_gestures,
+            turn_gestures: s.turn_gestures,
             zoom_box: crate::ZoomBoxLook { fill: s.zoom_box.fill, stroke: s.zoom_box.stroke },
             view_units_per_point: s.view_units_per_point,
         })
@@ -396,6 +400,7 @@ pub struct StageSettingsPatch {
     pub pan_fallback: Option<bool>,
     #[uniffi(default = None)]
     pub zoom_gestures: Option<bool>,
+    pub turn_gestures: Option<bool>,
     /// The colors it names; the ones left `None` follow the accent.
     #[uniffi(default = None)]
     pub zoom_box: Option<StageZoomBoxLook>,
@@ -431,6 +436,7 @@ impl TryFrom<StageSettingsPatch> for crate::StageSettingsPatch {
             interaction: p.interaction,
             pan_fallback: p.pan_fallback,
             zoom_gestures: p.zoom_gestures,
+            turn_gestures: p.turn_gestures,
             zoom_box: p
                 .zoom_box
                 .map(|look| crate::PartialZoomBoxLook { fill: look.fill, stroke: look.stroke }),
@@ -597,7 +603,7 @@ impl TryFrom<StageViewState> for crate::StageViewState {
     fn try_from(v: StageViewState) -> Result<Self, Error> {
         Ok(crate::StageViewState {
             settings: v.settings.try_into()?,
-            cursor: v.cursor.map(|c| c as usize),
+            page_index: v.cursor.map(|c| c as usize),
             anchor: v.anchor.into(),
         })
     }
@@ -608,7 +614,7 @@ impl TryFrom<crate::StageViewState> for StageViewState {
     fn try_from(v: crate::StageViewState) -> Result<Self, Error> {
         Ok(StageViewState {
             settings: v.settings.try_into()?,
-            cursor: v.cursor.map(|c| to_u32(c, "a view state's cursor")).transpose()?,
+            cursor: v.page_index.map(|c| to_u32(c, "a view state's cursor")).transpose()?,
             anchor: v.anchor.try_into()?,
         })
     }
@@ -688,15 +694,15 @@ pub struct StageRevealAnchor {
     pub y: Option<StageRevealAnchorValue>,
 }
 
-impl From<RevealAnchor> for StageRevealAnchor {
-    fn from(a: RevealAnchor) -> Self {
+impl From<RevealAlignment> for StageRevealAnchor {
+    fn from(a: RevealAlignment) -> Self {
         StageRevealAnchor { x: a.x.map(Into::into), y: a.y.map(Into::into) }
     }
 }
 
-impl From<StageRevealAnchor> for RevealAnchor {
+impl From<StageRevealAnchor> for RevealAlignment {
     fn from(a: StageRevealAnchor) -> Self {
-        RevealAnchor { x: a.x.map(Into::into), y: a.y.map(Into::into) }
+        RevealAlignment { x: a.x.map(Into::into), y: a.y.map(Into::into) }
     }
 }
 
@@ -754,7 +760,7 @@ impl From<RevealOptions> for StageRevealOptions {
             behavior: o.behavior.map(Into::into),
             rect: o.rect.map(Into::into),
             zoom: o.zoom.map(Into::into),
-            anchor: o.anchor.map(Into::into),
+            anchor: o.align.map(Into::into),
         }
     }
 }
@@ -765,7 +771,7 @@ impl From<StageRevealOptions> for RevealOptions {
             behavior: o.behavior.map(Into::into),
             rect: o.rect.map(Into::into),
             zoom: o.zoom.map(Into::into),
-            anchor: o.anchor.map(Into::into),
+            align: o.anchor.map(Into::into),
         }
     }
 }
@@ -1066,7 +1072,7 @@ impl StageHandle {
 
     pub async fn page_frame(&self, page: PageRef) -> Result<Option<StageVisiblePage>, ViewerError> {
         self.read(move |c| {
-            c.get_page_frame(page_target(page)).as_ref().map(StageVisiblePage::try_from).transpose()
+            c.get_page_box(page_target(page)).as_ref().map(StageVisiblePage::try_from).transpose()
         })
         .await
     }
@@ -1636,7 +1642,7 @@ impl StageHandle {
                         relay!(on_settings_changed, |e| StageEvent::SettingsChanged {
                             event: StageSettingsChangedEvent {
                                 settings: e.settings.clone().try_into()?,
-                                changed: e.changed.iter().map(|k| (*k).into()).collect(),
+                                changed: e.changed_keys.iter().map(|k| (*k).into()).collect(),
                             },
                         }),
                         relay!(on_viewport_changed, |e| StageEvent::ViewportChanged {

@@ -59,8 +59,14 @@ pub struct CustomItem {
     pub terminal: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub variants: Option<Vec<String>>,
+    /// Default: its group's. Without a `terminal`, always [`PINNED`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub importance: Option<Importance>,
+    /// Takes the room the toolbar has left: the fit counts it at its own
+    /// length, like any item, and the toolbar then grows it, and its
+    /// section, into the rest. Default false.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub grow: Option<bool>,
 }
 
 /// `BarItem | CustomItem | string`. An object with a `slot` member is a
@@ -215,6 +221,8 @@ pub struct CustomOpts {
     pub variants: Option<Vec<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub importance: Option<Importance>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub grow: Option<bool>,
 }
 
 /// `Omit<BarGroup, 'id' | 'items'>`.
@@ -254,6 +262,7 @@ pub fn custom(slot: &str, terminal: Option<&str>, options: Option<CustomOpts>) -
         terminal: terminal.map(str::to_string),
         variants: options.variants,
         importance: options.importance,
+        grow: options.grow,
     }
 }
 
@@ -293,6 +302,10 @@ pub enum NormalizedUnit {
         /// without one, which [`filter_bar`] keeps, pinned.
         terminal: Option<String>,
         importance: Importance,
+        /// Takes the room the toolbar has left: see [`CustomItem::grow`]. A
+        /// unit given without it (`undefined`) doesn't.
+        #[serde(default)]
+        grow: bool,
     },
 }
 
@@ -368,11 +381,16 @@ pub struct NormalizedBar {
 const DEFAULT_COMMAND_VARIANTS: [Variant; 1] = [Variant::Icon];
 const DEFAULT_CUSTOM_VARIANT: &str = "default";
 
+/// A child with its defaults: `importance` is its group's when it has none
+/// of its own.
 fn normalize_child(
     group_id: &str,
+    group_importance: Option<Importance>,
     child: &BarChild,
     seen: &mut HashSet<String>,
 ) -> Result<NormalizedUnit, Error> {
+    let inherited =
+        |own: Option<Importance>| own.or(group_importance).unwrap_or(DEFAULT_IMPORTANCE);
     let unit = match child {
         BarChild::Custom(c) => NormalizedUnit::Custom {
             key: format!("{group_id}:{}", c.slot),
@@ -384,14 +402,15 @@ fn normalize_child(
             terminal: c.terminal.clone(),
             importance: match c.terminal {
                 None => PINNED,
-                Some(_) => c.importance.unwrap_or(DEFAULT_IMPORTANCE),
+                Some(_) => inherited(c.importance),
             },
+            grow: c.grow == Some(true),
         },
         BarChild::Command(command) => NormalizedUnit::Command {
             key: format!("{group_id}:{command}"),
             command: command.clone(),
             variants: DEFAULT_COMMAND_VARIANTS.iter().map(|v| v.as_str().to_string()).collect(),
-            importance: DEFAULT_IMPORTANCE,
+            importance: inherited(None),
         },
         BarChild::Item(i) => NormalizedUnit::Command {
             key: format!("{group_id}:{}", i.command),
@@ -403,7 +422,7 @@ fn normalize_child(
                 .iter()
                 .map(|v| v.as_str().to_string())
                 .collect(),
-            importance: i.importance.unwrap_or(DEFAULT_IMPORTANCE),
+            importance: inherited(i.importance),
         },
     };
     if unit.variants().is_empty() {
@@ -435,7 +454,7 @@ pub fn normalize_bar(bar: &BarSchema) -> Result<NormalizedBar, Error> {
             let units = g
                 .items
                 .iter()
-                .map(|c| normalize_child(&g.id, c, &mut seen))
+                .map(|c| normalize_child(&g.id, g.importance, c, &mut seen))
                 .collect::<Result<Vec<_>, _>>()?;
             out.push(NormalizedGroup {
                 id: g.id.clone(),

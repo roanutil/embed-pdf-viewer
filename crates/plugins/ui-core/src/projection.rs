@@ -9,7 +9,7 @@ use crate::schema::{
 use crate::solver::{FitResult, UnitAssignment};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "lowercase")]
+#[serde(tag = "kind", rename_all = "lowercase")]
 pub enum OverflowRow {
     /// A plain command row.
     Command { command: String },

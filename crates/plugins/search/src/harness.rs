@@ -21,7 +21,7 @@ use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::{
     AnyPlugin, AnyToken, Error, Token, Unsubscribe, define, is_undefined, undefined,
 };
-use epdf_plugin_stage::{RevealAnchor, ScrollBehaviorKind};
+use epdf_plugin_stage::{RevealAlignment, ScrollBehaviorKind};
 use plugin_conformance::js::{from_value, to_value};
 use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome};
 use serde::Serialize;
@@ -155,21 +155,21 @@ fn hook<E: Serialize + 'static>(
 }
 
 /// A `SearchRevealOptions` object as the spread reads it: an absent key
-/// leaves the setting, `undefined` overrides it away, and a `null` anchor is
+/// leaves the setting, `undefined` overrides it away, and a `null` align is
 /// present with no axes.
 pub fn reveal_from_json(value: &Value) -> Result<SearchRevealOptions, Error> {
-    let anchor = match value.get("anchor") {
+    let align = match value.get("align") {
         None => None,
         Some(v) if is_undefined(v) => Some(None),
-        Some(Value::Null) => Some(Some(RevealAnchor::default())),
-        Some(v) => Some(Some(from_value::<RevealAnchor>(v)?)),
+        Some(Value::Null) => Some(Some(RevealAlignment::default())),
+        Some(v) => Some(Some(from_value::<RevealAlignment>(v)?)),
     };
     let behavior = match value.get("behavior") {
         None => None,
         Some(v) if is_undefined(v) || v.is_null() => Some(None),
         Some(v) => Some(Some(from_value::<ScrollBehaviorKind>(v)?)),
     };
-    Ok(SearchRevealOptions { anchor, behavior })
+    Ok(SearchRevealOptions { align, behavior })
 }
 
 /// The generator's `SearchConfig` from a vector's config.
@@ -214,9 +214,9 @@ impl Search {
                 };
                 as_json(cap.search(query_arg(args)?, options))
             }
-            "refresh" => {
-                as_json(cap.refresh(OperationOptions { signal: signal_member(present(args, 0)) }))
-            }
+            "refresh" => Outcome::promise_unit(
+                cap.refresh(OperationOptions { signal: signal_member(present(args, 0)) }),
+            ),
             "cancel" => {
                 cap.cancel();
                 Outcome::undefined()

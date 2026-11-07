@@ -69,9 +69,9 @@ pub use model::{
     layers_key_of, render_epoch_of, resolve_page_layers,
 };
 pub use paint_plan::{
-    DEFAULT_TILE_PYRAMID, FullPageOptions, PageViewDemand, PrefetchOptions, Quantize, RenderFormat,
-    ResolvedRenderOptions, TilePaintPlan, TilePaintSource, TilesOptions, Velocity, empty_tile_plan,
-    resolve_render_options, same_page_view_demand,
+    DEFAULT_TILE_PYRAMID, FullPageSettings, PageViewDemand, PrefetchOptions, Quantize,
+    RenderFormat, ResolvedRenderOptions, TilePaintPlan, TilePaintSource, TilesSettings, Velocity,
+    empty_tile_plan, resolve_render_options, same_page_view_demand,
 };
 pub use policy::{
     CONTINUOUS_RENDER_POLICY, EngineRenderPolicy, LatticePolicy, PageRenderViewport, SnapOptions,
@@ -99,7 +99,7 @@ pub fn render_plugin_with_host(config: RenderConfig, host: RenderHost) -> AnyPlu
         .settings(SettingsDeclaration {
             defaults: contract::render_defaults_json(),
             registered: Some(serde_json::to_value(&config).expect("plain data")),
-            whole: Vec::new(),
+            whole: vec!["snapshot.box".into()],
         })
         .create(&RENDER, move |cx| create_render_controller(cx, host.clone()))
         .build()

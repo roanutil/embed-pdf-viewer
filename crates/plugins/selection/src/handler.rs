@@ -30,8 +30,8 @@ const CURSOR_TOKEN: &str = "selection-text";
 #[derive(Clone, Default)]
 pub struct TextSelectHandlerOptions {
     /// Viewport px the pointer must move before a drag-select begins, read
-    /// when the drag would start. `SELECTION_DEFAULTS.dragThreshold` without one.
-    pub drag_threshold: Option<Rc<dyn Fn() -> f64>>,
+    /// when the drag would start. `SELECTION_DEFAULTS.dragThresholdPx` without one.
+    pub drag_threshold_px: Option<Rc<dyn Fn() -> f64>>,
 }
 
 #[derive(Clone, Copy)]
@@ -47,7 +47,7 @@ pub struct TextSelectHandler {
     selection: SelectionCapability,
     interaction: InteractionCapability,
     feedback: Option<Feedback>,
-    drag_threshold: Rc<dyn Fn() -> f64>,
+    drag_threshold_px: Rc<dyn Fn() -> f64>,
     anchor: RefCell<Option<Anchor>>,
     dragging: Cell<bool>,
 }
@@ -62,8 +62,8 @@ pub fn create_text_select_handler(
         selection,
         interaction,
         feedback,
-        drag_threshold: options.drag_threshold.unwrap_or_else(|| {
-            let threshold = selection_defaults().drag_threshold;
+        drag_threshold_px: options.drag_threshold_px.unwrap_or_else(|| {
+            let threshold = selection_defaults().drag_threshold_px;
             Rc::new(move || threshold)
         }),
         anchor: RefCell::new(None),
@@ -127,7 +127,7 @@ impl InteractionHandler for TextSelectHandler {
         let Some(anchor) = *self.anchor.borrow() else { return };
         if !self.dragging.get() {
             if js::hypot(s.viewport.x - anchor.vx, s.viewport.y - anchor.vy)
-                < (self.drag_threshold)()
+                < (self.drag_threshold_px)()
             {
                 return; // still a click
             }

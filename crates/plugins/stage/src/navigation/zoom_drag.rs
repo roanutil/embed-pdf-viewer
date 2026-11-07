@@ -31,7 +31,7 @@ impl StageCapability {
     /// exact inverse of `viewport_to_page`, so the box sits under the
     /// pointer and its middle lands on the point the user saw there.
     fn drag_to_viewport(&self, page: PageRef, point: Point) -> Option<Point> {
-        let frame = self.get_page_frame(page)?;
+        let frame = self.get_page_box(page)?;
         let view = frame.transform.page_to_view(point);
         Some(Point { x: frame.screen_x + view.x, y: frame.screen_y + view.y })
     }

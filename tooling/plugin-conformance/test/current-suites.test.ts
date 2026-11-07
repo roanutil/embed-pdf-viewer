@@ -395,7 +395,7 @@ const stageState = (trace: TraceEntry[], at: number) =>
     trace[at].state as {
       plugins: Record<
         string,
-        { camera: { x: number; y: number; zoom: number }; cursor: number; motionCause: string }
+        { camera: { x: number; y: number; zoom: number }; pageIndex: number; motionCause: string }
       >;
     }
   ).plugins['stage::a'];
@@ -442,7 +442,7 @@ test('review: page lifecycle triggers navigate and produce no failure diagnostic
     [],
   );
   assert.deepEqual(result.trace[6].outcome, { returned: 2 });
-  assert.equal(stageState(result.trace, 6).cursor, 2);
+  assert.equal(stageState(result.trace, 6).pageIndex, 2);
   assert.equal(stageState(result.trace, 6).motionCause, 'programmatic');
 });
 
@@ -454,8 +454,8 @@ test('review: navigation executors honor smooth and instant settings with real h
     [{ returned: true }, { returned: true }, { returned: true }],
   );
   assert.equal(stageState(result.trace, 5).camera.zoom, 2);
-  assert.equal(stageState(result.trace, 8).cursor, 3);
-  assert.equal(stageState(result.trace, 11).cursor, 4);
+  assert.equal(stageState(result.trace, 8).pageIndex, 3);
+  assert.equal(stageState(result.trace, 11).pageIndex, 4);
   const probe = await runScenario({
     ...smooth,
     steps: [...smooth.steps.slice(0, 4), { op: 'advance', ms: 32 }, { op: 'advance', ms: 300 }],

@@ -207,6 +207,7 @@ pub struct StageSettings {
     pub pan_fallback: bool,
     /// Whether a pinch or a zoom wheel zooms this view.
     pub zoom_gestures: bool,
+    pub turn_gestures: bool,
     /// The look of the box the `zoom` tool drags. A color left `None`
     /// follows the viewer's accent.
     pub zoom_box: ZoomBoxLook,
@@ -342,6 +343,8 @@ pub struct StageSettingsPatch {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub zoom_gestures: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub turn_gestures: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub zoom_box: Option<PartialZoomBoxLook>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub view_units_per_point: Option<f64>,
@@ -379,6 +382,7 @@ impl From<StageSettings> for StageSettingsPatch {
             interaction: Some(s.interaction),
             pan_fallback: Some(s.pan_fallback),
             zoom_gestures: Some(s.zoom_gestures),
+            turn_gestures: Some(s.turn_gestures),
             zoom_box: Some(s.zoom_box.into()),
             view_units_per_point: Some(s.view_units_per_point),
         }
@@ -414,9 +418,9 @@ pub struct Viewpoint {
 pub struct StageViewState {
     #[serde(flatten)]
     pub settings: StageSettings,
-    /// `None` restores page 0 (`view.cursor ?? 0`).
+    /// `None` restores page 0 (`view.pageIndex ?? 0`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub cursor: Option<usize>,
+    pub page_index: Option<usize>,
     pub anchor: Anchor,
 }
 
@@ -428,15 +432,19 @@ pub struct StageViewState {
 pub struct StageViewPatch {
     #[serde(flatten)]
     pub settings: StageSettingsPatch,
-    /// `None` restores page 0 (`view.cursor ?? 0`).
+    /// `None` restores page 0 (`view.pageIndex ?? 0`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub cursor: Option<usize>,
+    pub page_index: Option<usize>,
     pub anchor: Anchor,
 }
 
 impl From<StageViewState> for StageViewPatch {
     fn from(view: StageViewState) -> Self {
-        StageViewPatch { settings: view.settings.into(), cursor: view.cursor, anchor: view.anchor }
+        StageViewPatch {
+            settings: view.settings.into(),
+            page_index: view.page_index,
+            anchor: view.anchor,
+        }
     }
 }
 
@@ -499,7 +507,7 @@ pub enum RevealAnchorValue {
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub struct RevealAnchor {
+pub struct RevealAlignment {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub x: Option<RevealAnchorValue>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -523,20 +531,20 @@ pub enum RevealZoom {
     Level { level: f64 },
 }
 
-/// Options for `reveal`. With none of `rect`, `zoom` and `anchor` set it is
+/// Options for `reveal`. With none of `rect`, `zoom` and `align` set it is
 /// a bare reveal (minimal movement, cursor untouched).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct RevealOptions {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub behavior: Option<ScrollBehaviorKind>,
-    /// Page space (points from the page's top-left, y down); `None`
-    /// (absent or `null`) is the whole page.
+    /// Page space (points from the page's top-left, y down); `None` is the
+    /// whole page.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rect: Option<Rect>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub zoom: Option<RevealZoom>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub anchor: Option<RevealAnchor>,
+    pub align: Option<RevealAlignment>,
 }
 
 /// `PageDestination` (`@embedpdf/core`, from engine-core): a destination
@@ -770,10 +778,11 @@ impl Serialize for StageMotionEndedEvent {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct StageSettingsChangedEvent {
     pub settings: StageSettings,
     /// The keys whose value changed, in `SETTING_KEYS` order.
-    pub changed: Vec<SettingKey>,
+    pub changed_keys: Vec<SettingKey>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize)]

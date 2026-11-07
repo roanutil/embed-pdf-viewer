@@ -16,7 +16,7 @@ function run(program,value="") {
 }
 test("the shipped prelude requests the field cursor without an unsupported diagnostic",()=>{
  const output=run("this.getField(\"date\").setFocus();");
- assert.deepEqual(output.uiEffects,[{kind:"focusField",field:"date"}]);
+ assert.deepEqual(output.uiEffects,[{type:"focusField",field:"date"}]);
  assert.equal(output.diagnostics.length,0);
 });
 test("the shipped prelude reads the fields date format before the JavaScript parser",()=>{

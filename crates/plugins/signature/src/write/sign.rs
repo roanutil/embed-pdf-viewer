@@ -106,8 +106,8 @@ impl DocumentHandle for SealUnlessCancelled {
     fn on_lost_object_numbers(&self, listener: Rc<dyn Fn(&ObjectNumbersLost)>) -> Unsubscribe {
         self.doc.on_lost_object_numbers(listener)
     }
-    fn last_server_id(&self) -> Option<String> {
-        self.doc.last_server_id()
+    fn last_server_sequence(&self) -> Option<String> {
+        self.doc.last_server_sequence()
     }
     fn set_working_set(&self, view: &str, pages: Value) {
         self.doc.set_working_set(view, pages)

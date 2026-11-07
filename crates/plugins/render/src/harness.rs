@@ -95,13 +95,13 @@ const MEMBERS: &[&str] = &[
     "getLayerRights",
     "createViewDemand",
     "renderAppearances",
-    "keptAppearances",
+    "getKeptAppearances",
     "getAppearanceScale",
     "onRenderCompleted",
     "onRenderFailed",
 ];
 const VIEW_MEMBERS: &[&str] =
-    &["setDemand", "getPlan", "markPainted", "markUnpainted", "release", "dispose"];
+    &["setDemand", "getPlan", "markPainted", "markUnpainted", "release", "destroy"];
 
 thread_local! {
     /// The case's abort controllers by name; a render build starts a case.
@@ -362,11 +362,11 @@ impl Render {
                 let pictures = cap.render_appearances(page_target_arg(args, 0)?, options);
                 Outcome::promise(Promise::spawn(async move { Ok(to_value(&*pictures.await?)) }))
             }
-            "keptAppearances" => {
+            "getKeptAppearances" => {
                 let family =
                     from_value::<AppearanceFamily>(present(args, 0).unwrap_or(&Value::Null))?;
                 let item = present(args, 1).cloned().unwrap_or(Value::Null);
-                Outcome::Returned(to_value(&*cap.kept_appearances(family, &item)))
+                Outcome::Returned(to_value(&*cap.get_kept_appearances(family, &item)))
             }
             "getAppearanceScale" => {
                 let scale = present(args, 0).and_then(Value::as_f64).unwrap_or(f64::NAN);
@@ -406,8 +406,8 @@ impl Render {
                 view.release(page_ref_arg(args, 0)?);
                 Outcome::undefined()
             }
-            "dispose" => {
-                view.dispose();
+            "destroy" => {
+                view.destroy();
                 Outcome::undefined()
             }
             other => not_a_function(other),

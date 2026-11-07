@@ -144,7 +144,8 @@ struct ViewRecord {
 #[derive(Clone, Debug, PartialEq, serde::Serialize)]
 pub struct RenderSettingsChanged {
     pub settings: RenderSettings,
-    pub changed: Vec<String>,
+    #[serde(rename = "changedKeys")]
+    pub changed_keys: Vec<String>,
 }
 
 struct Core {
@@ -1110,7 +1111,7 @@ impl RenderCapability {
                 Some(core) => core.decode_settings(&event.settings),
                 None => config_of(&event.settings).unwrap_or_else(|_| render_defaults()),
             };
-            listener(&RenderSettingsChanged { settings, changed: event.changed.clone() })
+            listener(&RenderSettingsChanged { settings, changed_keys: event.changed.clone() })
         })
     }
 
@@ -1241,7 +1242,7 @@ impl RenderCapability {
         self.0.rights()
     }
 
-    /// This view's tile surface. Stable per view id; pair with `dispose`.
+    /// This view's tile surface. Stable per view id; pair with `destroy`.
     pub fn create_view_demand(&self, view_id: &str) -> ViewDemand {
         let mut views = self.0.views.borrow_mut();
         if let Some(record) = views.get_mut(view_id) {
@@ -1291,7 +1292,7 @@ impl RenderCapability {
 
     /// An item's last pictures, every state, kept a while after it left its
     /// page. Empty for one never drawn.
-    pub fn kept_appearances(
+    pub fn get_kept_appearances(
         &self,
         family: AppearanceFamily,
         item: &Value,
@@ -1405,8 +1406,8 @@ impl ViewDemand {
     }
 
     /// Drop one reference; the last releases every page of this view. The
-    /// view's entry stays, so a handle reused after a dispose keeps working.
-    pub fn dispose(&self) {
+    /// view's entry stays, so a handle reused after a destroy keeps working.
+    pub fn destroy(&self) {
         let refs = &self.0.refs;
         if refs.get() == 0 {
             return;
