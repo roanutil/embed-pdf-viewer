@@ -23,7 +23,8 @@ use super::prepare::{DraftFields, FieldOwner, owner_of, read_field, standard_sta
 use super::shape_for_rect::pdf_resolve_rect_command;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::annotation::rich_text::{
-    RichTextParagraph, face_for_free_text_font, paragraphs_from_plain_text, plain_text,
+    RichTextParagraph, assert_agreement, default_rich_text_body, face_for_free_text_font,
+    paragraphs_from_plain_text, plain_text,
 };
 use crate::features::annotation::subtype::AnnotationSubtype;
 use crate::geom::{PdfPoint, PdfPointTurn, PdfRect, pdf_point_turned, pdf_point_unturned};
@@ -67,20 +68,89 @@ fn assert_declared_fields(
     Err(invalid(format!("{} has no field {}", subtype.as_str(), unknown.join(", "))))
 }
 
-/// `annotationPatchForTarget`: the patch as the target's kind. A different
-/// subtype, a changed name, a field the kind doesn't declare, or any change
-/// to an annotation of a type the engine doesn't model is refused.
+/// `SIBLING_KINDS`: kinds that take the same fields, so an update turns one
+/// into another by its `subtype` (ISO 32000-2 describes each group with one
+/// table of entries).
+const SIBLING_KINDS: &[&[AnnotationSubtype]] = &[
+    &[
+        AnnotationSubtype::Highlight,
+        AnnotationSubtype::Underline,
+        AnnotationSubtype::Squiggly,
+        AnnotationSubtype::Strikeout,
+    ],
+    &[AnnotationSubtype::Square, AnnotationSubtype::Circle],
+];
+
+/// `siblingKindsOf`: the kinds an annotation of `subtype` can become.
+pub fn sibling_kinds_of(subtype: AnnotationSubtype) -> Vec<AnnotationSubtype> {
+    SIBLING_KINDS
+        .iter()
+        .find(|kinds| kinds.contains(&subtype))
+        .map(|kinds| kinds.iter().copied().filter(|kind| *kind != subtype).collect())
+        .unwrap_or_default()
+}
+
+/// `orList`: `["a", "b", "c"]` as "a, b or c".
+fn or_list(names: &[&str]) -> String {
+    match names.split_last() {
+        Some((last, rest)) if !rest.is_empty() => format!("{} or {last}", rest.join(", ")),
+        _ => names.join(""),
+    }
+}
+
+/// `kindAfter`: the kind an update leaves the annotation, its own or the
+/// sibling the patch names. Any other subtype is refused, naming the kinds
+/// it can become. A value the new kind has no field for is refused, never
+/// dropped: the caller clears it first, in the same change.
+fn kind_after(
+    current: &Map<String, Value>,
+    subtype: AnnotationSubtype,
+    requested: Option<&Value>,
+) -> Result<AnnotationSubtype, EngineError> {
+    let Some(requested) = requested.filter(|named| named.as_str() != Some(subtype.as_str())) else {
+        return Ok(subtype);
+    };
+    let siblings = sibling_kinds_of(subtype);
+    let named = requested.as_str().unwrap_or_default();
+    let Some(target) = siblings.iter().copied().find(|kind| kind.as_str() == named) else {
+        let names: Vec<&str> = siblings.iter().map(|kind| kind.as_str()).collect();
+        let message = if names.is_empty() {
+            format!("{} has no other kind it can become", subtype.as_str())
+        } else {
+            let shown = requested.as_str().map_or_else(|| requested.to_string(), str::to_owned);
+            format!("{} can become {}, not {shown}", subtype.as_str(), or_list(&names))
+        };
+        return Err(invalid(message).with_details(serde_json::json!({ "field": "subtype" })));
+    };
+    for (name, _) in super::prepare::declared_fields(subtype) {
+        let Some(value) = current.get(name).filter(|value| !value.is_null()) else {
+            continue;
+        };
+        if owner_of(target, name).is_some() {
+            continue;
+        }
+        let shown = value.as_str().map_or_else(|| value.to_string(), |text| format!("'{text}'"));
+        return Err(invalid(format!(
+            "{} field '{name}' holds {shown}, and {} has no such field: clear it first, in the same change",
+            subtype.as_str(),
+            target.as_str()
+        ))
+        .with_details(serde_json::json!({ "field": name })));
+    }
+    Ok(target)
+}
+
+/// `annotationPatchForTarget`: the patch as the kind it leaves the
+/// annotation (`kindAfter`). A subtype the annotation can't become, a
+/// changed name, a field the kind doesn't declare, or any change to an
+/// annotation of a type the engine doesn't model is refused.
 fn patch_for_target(
     current: &Map<String, Value>,
     mut patch: Map<String, Value>,
 ) -> Result<(AnnotationSubtype, Map<String, Value>), EngineError> {
-    let subtype = subtype_of(current)?;
-    if let Some(named) = patch.get("subtype")
-        && named.as_str() != Some(subtype.as_str())
-    {
-        return Err(invalid("Annotation subtype cannot change"));
-    }
-    if subtype == AnnotationSubtype::Unsupported {
+    let own = subtype_of(current)?;
+    let subtype = kind_after(current, own, patch.get("subtype"))?;
+    if own == AnnotationSubtype::Unsupported {
         return Err(invalid("an annotation of a type the engine doesn't model can't be updated"));
     }
     if let Some(nm) = patch.get("nm")
@@ -241,24 +311,76 @@ fn paragraphs_of(value: Option<&Value>) -> Option<Vec<RichTextParagraph>> {
 }
 
 /// `assertRichTextAgreement`: `contents` beside `richText` is its plain
-/// projection.
+/// projection, line breaks however spelled.
 fn assert_rich_text_agreement(patch: &Map<String, Value>) -> Result<(), EngineError> {
-    let (Some(contents), Some(rich)) =
-        (patch.get("contents").and_then(Value::as_str), patch.get("richText"))
-    else {
+    let Some(rich) = patch.get("richText").filter(|rich| !rich.is_null()) else {
         return Ok(());
     };
     let paragraphs = paragraphs_of(rich.get("paragraphs")).unwrap_or_default();
-    if contents != plain_text(&paragraphs) {
-        return Err(invalid(
-            "free-text: `contents` must equal the plain projection of `richText` when both are given",
-        ));
+    assert_agreement(
+        patch.get("subtype").and_then(Value::as_str),
+        patch.get("contents").and_then(Value::as_str),
+        Some(&paragraphs),
+    )
+}
+
+/// `dashPatchFollows`: a patch that makes a border dashed and leaves its
+/// pattern out, on a border that has none, states the default, as a draft
+/// does. A pattern the patch gives, `null` among them, is written as given,
+/// and a patch that leaves the style alone leaves the border as the file has
+/// it.
+fn dash_patch_follows(
+    subtype: AnnotationSubtype,
+    current: &Map<String, Value>,
+    patch: &mut Map<String, Value>,
+) {
+    if owner_of(subtype, "dashArray").is_none()
+        || patch.get("borderStyle").and_then(Value::as_str) != Some("dashed")
+        || patch.contains_key("dashArray")
+        || current.get("dashArray").is_some_and(|dashes| !dashes.is_null())
+    {
+        return;
     }
-    Ok(())
+    patch.insert("dashArray".into(), serde_json::json!(super::prepare::DEFAULT_DASH_ARRAY));
+}
+
+/// `commentFollows`: a markup annotation's comment follows its text (free
+/// text has its own rule). New rich text brings its `contents`;
+/// `richText: null` makes the comment plain, `contents` as it is; new
+/// `contents` on a rich comment becomes paragraphs, one per line break, over
+/// the comment's body; `null` contents clear both; a plain comment stays
+/// plain.
+fn comment_follows(current: &Map<String, Value>, patch: &mut Map<String, Value>) {
+    match patch.get("richText") {
+        Some(Value::Null) => return,
+        Some(rich) => {
+            let paragraphs = paragraphs_of(rich.get("paragraphs")).unwrap_or_default();
+            patch.insert("contents".into(), Value::String(plain_text(&paragraphs)));
+            return;
+        }
+        None => {}
+    }
+    let Some(contents) = patch.get("contents").cloned() else {
+        return;
+    };
+    if current.get("richText").is_none_or(Value::is_null) {
+        return;
+    }
+    let Some(contents) = contents.as_str() else {
+        patch.insert("richText".into(), Value::Null);
+        return;
+    };
+    let paragraphs = paragraphs_from_plain_text(contents);
+    patch.insert(
+        "richText".into(),
+        serde_json::json!({ "paragraphs": serde_json::to_value(&paragraphs).unwrap_or_default() }),
+    );
+    patch.insert("contents".into(), Value::String(plain_text(&paragraphs)));
 }
 
 /// `freeTextFollows`: a free text's text lives in its rich text. New
-/// `richText` brings its `contents`; new `contents` becomes body-style
+/// `richText` brings its `contents`, and a body it gives is replaced whole;
+/// new `contents` becomes body-style
 /// paragraphs; a new font, size, text colour or alignment moves the body;
 /// whatever moves the body states the complete rich text, and the size,
 /// text colour and alignment it reads back with. A callout line needs the
@@ -309,16 +431,22 @@ fn free_text_follows(
         return Ok(());
     }
     let read_rich = current.get("richText");
-    let mut body = read_rich
-        .and_then(|rich| rich.get("body"))
-        .and_then(Value::as_object)
-        .cloned()
-        .unwrap_or_default();
-    if let Some(given) =
-        patch.get("richText").and_then(|rich| rich.get("body")).and_then(Value::as_object)
-    {
-        body.extend(given.clone());
-    }
+    // A body the new rich text gives is replaced whole: what it leaves out
+    // takes the default, never the current value. Without one the current
+    // body stays, as on a comment.
+    let mut body =
+        match patch.get("richText").and_then(|rich| rich.get("body")).and_then(Value::as_object) {
+            Some(given) => {
+                let mut body = default_rich_text_body();
+                body.extend(given.clone());
+                body
+            }
+            None => read_rich
+                .and_then(|rich| rich.get("body"))
+                .and_then(Value::as_object)
+                .cloned()
+                .unwrap_or_default(),
+        };
     body.extend(changes);
     let paragraphs = match patch.get("richText").and_then(|rich| rich.get("paragraphs")) {
         Some(paragraphs) => paragraphs.clone(),
@@ -353,8 +481,8 @@ fn free_text_follows(
     }
     if text_changed {
         let projected = paragraphs_of(Some(&paragraphs)).unwrap_or_default();
-        // The engine writes `/Contents` from the rich text: a line break
-        // reads back as `\r`.
+        // The engine writes `/Contents` from the rich text; `contents` is its
+        // plain projection.
         patch.insert("contents".into(), Value::String(plain_text(&projected)));
     }
     patch.insert(
@@ -579,10 +707,13 @@ pub fn pdf_derive_annotation_patch(
     if subtype == AnnotationSubtype::Text {
         note_state_follows(current, &mut patch)?;
     }
+    dash_patch_follows(subtype, current, &mut patch);
+    assert_rich_text_agreement(&patch)?;
     if subtype == AnnotationSubtype::FreeText {
-        assert_rich_text_agreement(&patch)?;
         free_text_follows(current, &mut patch, describe)?;
         callout_end_follows(current, &mut patch);
+    } else if owner_of(subtype, "richText").is_some() {
+        comment_follows(current, &mut patch);
     }
     measurement_follows(subtype, current, &mut patch)?;
     Ok(patch)
@@ -633,7 +764,7 @@ mod tests {
 
     #[test]
     fn a_subtype_or_name_change_is_refused() {
-        for patch in [json!({ "subtype": "circle" }), json!({ "nm": "other" })] {
+        for patch in [json!({ "subtype": "ink" }), json!({ "nm": "other" })] {
             let refused = pdf_prepare_annotation_patch(&square(), map(patch)).unwrap_err();
             assert_eq!(refused.code, EngineErrorCode::InvalidArg);
         }
@@ -679,7 +810,7 @@ mod tests {
         assert!(!resolved.data.contains_key("contents"), "the text isn't rewritten");
         let text = pdf_resolve_annotation_patch(&current, map(json!({ "contents": "a\nb" })), None)
             .unwrap();
-        assert_eq!(text.data["contents"], "a\rb");
+        assert_eq!(text.data["contents"], "a\nb");
     }
 
     #[test]

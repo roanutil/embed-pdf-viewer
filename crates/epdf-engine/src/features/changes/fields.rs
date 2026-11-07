@@ -1263,7 +1263,7 @@ mod tests {
     #[test]
     fn a_script_right_is_asked_per_event_and_a_read_tree_asks_none() {
         let tree = json!({ "root": { "type": "javascript", "script": "x", "subtype": "JavaScript",
-            "next": [] }, "incomplete": false, "warningFlags": 0, "warnings": [] });
+            "next": [] }, "incomplete": false, "warnings": [] });
         let script = json!({ "type": "javascript", "script": "x" });
         assert!(!super::writes_scripts(&json!({ "activate": tree.clone() })));
         assert!(super::writes_scripts(&json!({ "activate": tree, "focus": script })));

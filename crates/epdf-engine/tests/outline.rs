@@ -312,7 +312,7 @@ fn action_tree_of(target: &Value) -> Value {
             "destination": target["destination"], "next": [] }),
         _ => json!({ "type": "named", "subtype": "Named", "name": target["name"], "next": [] }),
     };
-    json!({ "root": root, "incomplete": false, "warningFlags": 0, "warnings": [] })
+    json!({ "root": root, "incomplete": false, "warnings": [] })
 }
 
 /// `targetFieldsOf`: the target, and the `/A` action it is written as.

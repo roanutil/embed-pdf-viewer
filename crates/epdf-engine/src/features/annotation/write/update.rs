@@ -54,7 +54,7 @@ use super::stamp::{DrawingIndex, author_stamp_appearance, write_stamp_fit};
 use crate::cancel::CancelToken;
 use crate::clock::{Clock, format_pdf_timestamp};
 use crate::error::{EngineError, EngineErrorCode};
-use crate::features::annotation::read::kinds::{AnnotationRecord, read_annotation_record_kind};
+use crate::features::annotation::read::kinds::{AnnotationRecord, read_annotation_record};
 use crate::features::annotation::read::record::read_annotation_record_base;
 use crate::features::annotation::subtype::AnnotationSubtype;
 use crate::features::annotation::vocabulary::{
@@ -137,8 +137,7 @@ pub fn read_record(
 ) -> Result<AnnotationRecord, EngineError> {
     let mut budget = crate::features::actions::vocabulary::ActionReadBudgetTracker::default();
     let base = read_annotation_record_base(document, annotation, page, index, &mut budget)?;
-    let kind = read_annotation_record_kind(document, annotation, &base, annotation.subtype_code())?;
-    Ok(AnnotationRecord { base, kind })
+    read_annotation_record(document, annotation, base, annotation.subtype_code())
 }
 
 /// The annotation at `index`, as the JSON object the resolution reads: a
@@ -250,6 +249,13 @@ pub fn update_annotation(
         p::settle_annotation_turn(&annotation)?;
     }
 
+    // A sibling kind (the resolver allows no other) is named first: its
+    // fields are then written as its own, and its appearance drawn below.
+    if current.get("subtype").and_then(Value::as_str) != Some(resolved.subtype.as_str())
+        && !annotation.set_subtype(resolved.subtype.code())
+    {
+        return Err(unknown("EPDFAnnot_SetSubtype returned false"));
+    }
     apply_patch(document, &annotation, &current, &resolved, &resources, services)?;
     // A derived plain label supersedes imported rich contents: a stale `/RC`
     // would show a different value where rich text is preferred.
@@ -477,8 +483,25 @@ fn preflight_patch(
 
 // ── The writers ─────────────────────────────────────────────────────────────
 
-/// `applyPatch`: the kind's writer.
+/// `applyPatch`: the kind's fields, then a markup annotation's comment.
 fn apply_patch(
+    document: &Document,
+    annotation: &Annotation<'_>,
+    current: &Map<String, Value>,
+    resolved: &ResolvedPatch,
+    resources: &DraftResources<'_>,
+    services: &UpdateServices<'_>,
+) -> Result<(), EngineError> {
+    apply_kind_patch(document, annotation, current, resolved, resources, services)?;
+    super::create::apply_comment(
+        annotation,
+        resolved.subtype,
+        &resolved.fields.comment,
+        services.context,
+    )
+}
+
+fn apply_kind_patch(
     document: &Document,
     annotation: &Annotation<'_>,
     current: &Map<String, Value>,
@@ -673,6 +696,10 @@ fn apply_patch(
 /// flags the patch names.
 fn apply_base(annotation: &Annotation<'_>, f: &DraftFields) -> Result<(), EngineError> {
     if let Some(contents) = &f.contents {
+        // `/Contents` spells a line break `\r`, as Acrobat writes them.
+        let contents = contents
+            .as_deref()
+            .map(|text| crate::features::annotation::rich_text::to_line_breaks(text, "\r"));
         p::set_string_or_clear(annotation, "Contents", contents.as_deref())?;
     }
     if let Some(subject) = &f.subject {
@@ -721,7 +748,9 @@ fn apply_geometry_style_patch(
     annotation: &Annotation<'_>,
     f: &DraftFields,
 ) -> Result<(), EngineError> {
-    if let Some(color) = f.color {
+    if f.no_stroke {
+        p::set_no_color(annotation, C::Color)?;
+    } else if let Some(color) = f.color {
         set_color(annotation, C::Color, color)?;
     }
     if let Some(opacity) = f.opacity {

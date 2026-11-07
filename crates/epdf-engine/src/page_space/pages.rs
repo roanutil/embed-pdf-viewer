@@ -94,7 +94,6 @@ mod tests {
     use super::*;
     use crate::features::actions::destination::PdfDestination;
     use crate::features::actions::reader::{ActionNode, ActionNodeKind, ActionTree};
-    use crate::features::actions::vocabulary::ActionWarningFlags;
     use crate::features::pages::PageActions;
     use crate::geom::{PdfRotation, PdfSize};
     use crate::page_space::destinations::PageDestination;
@@ -134,7 +133,6 @@ mod tests {
                         next: Vec::new(),
                     }),
                     incomplete: false,
-                    warning_flags: ActionWarningFlags(0),
                     warnings: Vec::new(),
                 }),
             }),

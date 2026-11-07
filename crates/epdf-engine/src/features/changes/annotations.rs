@@ -43,17 +43,27 @@ fn forbidden(what: &str) -> EngineError {
     EngineError::permission_denied(what, Some("target"), None)
 }
 
-/// `authorizeAnnotationCreate`: the group the annotation goes in, the
-/// caller's own when the data names none, checked as a group assignment,
-/// and the create checked against the scope's collab rules for that owner.
-/// Answers the actor the create stamps, or `None` when there is no one to
-/// name.
+/// `authorizeAnnotationCreate`: the group the annotation goes in (`None`
+/// left out, the caller's own; `Some(None)` no group, which a caller with a
+/// group can't choose), checked as a group assignment, and the create
+/// checked against the scope's collab rules for that owner. Answers the
+/// actor the create stamps, or `None` when there is no one to name.
 fn authorize_create(
     ctx: &ChangeContext<'_>,
-    group_id: Option<&str>,
+    group_id: Option<Option<&str>>,
 ) -> Result<Option<AnnotationActor>, EngineError> {
     let identity = &ctx.authority.identity;
-    let group = group_id.map(str::to_owned).or_else(|| identity.group_id.clone());
+    if group_id == Some(None) && identity.group_id.is_some() {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "your annotations have a group: leave groupId out for your own, or name another",
+        )
+        .with_details(serde_json::json!({ "field": "groupId" })));
+    }
+    let group = match group_id {
+        None => identity.group_id.clone(),
+        Some(group) => group.map(str::to_owned),
+    };
     if let Some(grants) = &ctx.authority.grants {
         if let Some(group) = group.as_deref()
             && !crate::auth::scope::resolver::check_set_group(
@@ -118,7 +128,7 @@ pub fn create_annotation(
         .with_details(serde_json::json!({ "field": "subtype" })));
     }
     ctx.authority.require_unprotected(DocCapability::DocAnnotateModify)?;
-    let group_id = data.get("groupId").and_then(Value::as_str);
+    let group_id = data.get("groupId").map(Value::as_str);
     let actor = authorize_create(ctx, group_id)?;
 
     let object_number = object_number.map(object_number_of).transpose()?;
@@ -160,7 +170,7 @@ pub fn create_annotation(
     let reverse = ReverseStep::AnnotationRemove(AnnotationRemoveStep {
         reference: AnnotationRef::ObjectNumber {
             page,
-            annot: match result.meta.changed.first() {
+            annot: match result.meta.changed_refs.first() {
                 Some(AnnotationRef::ObjectNumber { annot, .. }) => *annot,
                 _ => {
                     return Err(EngineError::with_message(
@@ -214,9 +224,10 @@ pub fn import_annotations(
     let mut authorize = |draft: &Map<String, Value>| -> Result<(), EngineError> {
         ctx_ref.authority.require_unprotected(DocCapability::DocAnnotateModify)?;
         // A restoring import writes attribution that isn't the caller's,
-        // under the rights checked above; a copy is the caller's own create.
+        // under the rights checked above; a copy is the caller's own create,
+        // and an item in no group goes in the caller's.
         if rights.is_none() {
-            authorize_create(ctx_ref, draft.get("groupId").and_then(Value::as_str))?;
+            authorize_create(ctx_ref, draft.get("groupId").and_then(Value::as_str).map(Some))?;
         }
         Ok(())
     };
@@ -422,7 +433,7 @@ fn write_delete(
     )?;
     let reverse = ReverseStep::AnnotationRestore(AnnotationRestoreStep {
         page,
-        members: result.meta.changed.clone(),
+        members: result.meta.changed_refs.clone(),
         capture,
         unlinked: super::objects::capture_after(document, pending)?,
         rights,
@@ -1050,11 +1061,10 @@ fn values_changed(
     after: &Map<String, Value>,
     patch: &Map<String, Value>,
 ) -> RevertFallback {
+    // A `subtype` changed to a sibling kind is a change too.
     let keys: Vec<&String> = patch
         .keys()
-        .filter(|key| {
-            *key != "subtype" && !super::applier::values_equal(before.get(*key), after.get(*key))
-        })
+        .filter(|key| !super::applier::values_equal(before.get(*key), after.get(*key)))
         .collect();
     let pick = |from: &Map<String, Value>| {
         keys.iter()

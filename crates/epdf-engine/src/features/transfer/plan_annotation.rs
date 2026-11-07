@@ -456,7 +456,7 @@ pub fn annotation_import_facts(annotations: &[Value], meta: &Value) -> Vec<Value
                     "cacheDelta": if index == last { meta["cacheDelta"].clone() } else { Value::Null },
                     "opId": meta["opId"],
                     "undoable": meta["undoable"],
-                    "changed": [annotation["ref"]],
+                    "changedRefs": [annotation["ref"]],
                 },
             })
         })
@@ -843,7 +843,7 @@ mod tests {
 
     #[test]
     fn reports_the_actions_a_copy_leaves_out_and_not_the_one_a_link_target_carries() {
-        let goto = json!({ "incomplete": false, "warningFlags": 0, "warnings": [],
+        let goto = json!({ "incomplete": false, "warnings": [],
             "root": { "type": "goto", "subtype": "GoTo", "next": [],
                 "destination": { "kind": "fit", "page": page(3) } } });
         let target = json!({ "kind": "goto", "destination": { "kind": "fit", "page": page(3) } });

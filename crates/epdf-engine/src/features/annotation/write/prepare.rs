@@ -32,8 +32,8 @@ use crate::features::annotation::intent::{
     CaretIntent, FreeTextIntent, InkIntent, StrikeoutIntent,
 };
 use crate::features::annotation::rich_text::{
-    RichTextDocumentInput, RichTextParagraph, face_for_free_text_font, paragraphs_from_plain_text,
-    plain_text,
+    RichTextDocumentInput, RichTextParagraph, assert_agreement, face_for_free_text_font,
+    paragraphs_from_plain_text, plain_text,
 };
 use crate::features::annotation::subtype::AnnotationSubtype;
 use crate::features::annotation::vocabulary::{
@@ -91,11 +91,18 @@ const BASE_FIELDS: &[(&str, FieldOwner)] = &[
     ("importedBy", E),
 ];
 
-const MARKUP: &[(&str, FieldOwner)] =
-    &[("rect", E), ("actions", P), ("color", D), ("opacity", D), ("quadPoints", D)];
+const MARKUP: &[(&str, FieldOwner)] = &[
+    ("rect", E),
+    ("actions", P),
+    ("richText", D),
+    ("color", D),
+    ("opacity", D),
+    ("quadPoints", D),
+];
 const SHAPE: &[(&str, FieldOwner)] = &[
     ("rect", E),
     ("actions", P),
+    ("richText", D),
     ("color", D),
     ("opacity", D),
     ("strokeWidth", D),
@@ -116,6 +123,7 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
         S::Strikeout => &[
             ("rect", E),
             ("actions", P),
+            ("richText", D),
             ("color", D),
             ("opacity", D),
             ("quadPoints", D),
@@ -125,6 +133,7 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
         S::Polygon => &[
             ("rect", E),
             ("actions", P),
+            ("richText", D),
             ("color", D),
             ("opacity", D),
             ("strokeWidth", D),
@@ -142,6 +151,7 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
         S::Polyline => &[
             ("rect", E),
             ("actions", P),
+            ("richText", D),
             ("color", D),
             ("opacity", D),
             ("strokeWidth", D),
@@ -159,6 +169,7 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
         S::Line => &[
             ("rect", E),
             ("actions", P),
+            ("richText", D),
             ("color", D),
             ("opacity", D),
             ("strokeWidth", D),
@@ -179,6 +190,7 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
         S::Ink => &[
             ("rect", E),
             ("actions", P),
+            ("richText", D),
             ("color", D),
             ("opacity", D),
             ("strokeWidth", D),
@@ -191,6 +203,7 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
         S::FreeText => &[
             ("rect", E),
             ("actions", P),
+            ("richText", D),
             ("box", D),
             ("rotation", D),
             ("intent", D),
@@ -198,7 +211,6 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
             ("fontSize", D),
             ("textAlign", D),
             ("verticalAlign", D),
-            ("richText", D),
             ("color", D),
             ("fontColor", D),
             ("interiorColor", D),
@@ -213,6 +225,7 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
         S::Caret => &[
             ("rect", E),
             ("actions", P),
+            ("richText", D),
             ("color", D),
             ("opacity", D),
             ("box", D),
@@ -222,6 +235,7 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
         S::Text => &[
             ("rect", D),
             ("actions", P),
+            ("richText", D),
             ("color", D),
             ("opacity", D),
             ("icon", D),
@@ -232,15 +246,22 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
         S::Stamp => &[
             ("rect", E),
             ("actions", P),
+            ("richText", D),
             ("box", D),
             ("rotation", D),
             ("name", D),
             ("fit", D),
             ("opacity", D),
         ],
-        S::FileAttachment => {
-            &[("rect", D), ("actions", P), ("color", D), ("opacity", D), ("icon", D), ("file", D)]
-        }
+        S::FileAttachment => &[
+            ("rect", D),
+            ("actions", P),
+            ("richText", D),
+            ("color", D),
+            ("opacity", D),
+            ("icon", D),
+            ("file", D),
+        ],
         S::Widget => &[
             ("rect", E),
             ("actions", D),
@@ -264,6 +285,7 @@ pub fn kind_fields(subtype: AnnotationSubtype) -> &'static [(&'static str, Field
         S::Redact => &[
             ("rect", D),
             ("actions", P),
+            ("richText", D),
             ("color", D),
             ("opacity", D),
             ("quadPoints", D),
@@ -434,6 +456,8 @@ pub struct DraftFields {
     pub group_id: Nullable<String>,
     // Style.
     pub color: Option<Rgb>,
+    /// A stroked kind's `color: null`: no stroke, `/C []`.
+    pub no_stroke: bool,
     pub opacity: Option<f64>,
     pub stroke_width: Option<f64>,
     pub border_style: Option<AnnotationBorderStyle>,
@@ -461,7 +485,11 @@ pub struct DraftFields {
     /// A free text's alignment includes `justify` (`RichTextAlignSchema`).
     pub text_align: Option<String>,
     pub vertical_align: Option<String>,
+    /// A free text's rich text: what it draws.
     pub rich_text: Option<RichTextDocumentInput>,
+    /// Another markup kind's comment as rich text (`/RC`); `null` makes the
+    /// comment plain.
+    pub comment: Nullable<RichTextDocumentInput>,
     pub font_color: Option<Rgb>,
     pub callout_line: Nullable<CalloutLine>,
     pub line_ending: Nullable<LineEnding>,
@@ -515,6 +543,10 @@ pub const FLAG_NAMES: [&str; 10] = [
     "toggleNoView",
     "lockedContents",
 ];
+
+/// `DEFAULT_DASH_ARRAY`: ISO 32000's default dash, 3 on and 3 off, written
+/// as both lengths.
+pub const DEFAULT_DASH_ARRAY: [f64; 2] = [3.0, 3.0];
 
 /// A create, checked and stated whole, in the file's coordinates: what the
 /// writers write (`PlacedDraft`). A box kind states its `box`.
@@ -703,6 +735,16 @@ pub(crate) fn read_field(
             fields.group_id =
                 Some(if value.is_null() { None } else { Some(non_empty(kind, name, value)?) });
         }
+        // A stroked kind's `color: null` draws no stroke.
+        "color"
+            if value.is_null()
+                && matches!(
+                    subtype,
+                    S::Square | S::Circle | S::Polygon | S::Polyline | S::Line | S::Ink
+                ) =>
+        {
+            fields.no_stroke = true;
+        }
         "color" => fields.color = Some(read_color(kind, name, value)?),
         "fontColor" => fields.font_color = Some(read_color(kind, name, value)?),
         "interiorColor" => {
@@ -738,6 +780,11 @@ pub(crate) fn read_field(
             let dashes: Option<Vec<f64>> = read_nullable(kind, name, value)?;
             if dashes.iter().flatten().any(|d| !nonnegative(*d)) {
                 return Err(invalid(kind, name, "expected numbers of 0 or more"));
+            }
+            // `DashArrayWriteSchema`: an empty pattern is a solid line, which
+            // is `borderStyle: 'solid'`.
+            if dashes.as_ref().is_some_and(Vec::is_empty) {
+                return Err(invalid(kind, name, "expected at least one length"));
             }
             fields.dash_array = Some(dashes);
         }
@@ -826,7 +873,10 @@ pub(crate) fn read_field(
         "verticalAlign" => {
             fields.vertical_align = Some(one_of(kind, name, value, &["top", "middle", "bottom"])?);
         }
-        "richText" => fields.rich_text = Some(read(kind, name, value)?),
+        "richText" if subtype == AnnotationSubtype::FreeText => {
+            fields.rich_text = Some(read(kind, name, value)?);
+        }
+        "richText" => fields.comment = Some(read_nullable(kind, name, value)?),
         "calloutLine" => fields.callout_line = Some(read_nullable(kind, name, value)?),
         "lineEnding" => fields.line_ending = Some(read_nullable(kind, name, value)?),
         "name" => fields.name = Some(read_nullable(kind, name, value)?),
@@ -849,7 +899,7 @@ pub(crate) fn read_field(
                 None
             } else {
                 // `AttachmentFileWriteSchema` strips the keys it doesn't
-                // name: what a read adds (size, checksum, dates) is ignored,
+                // name: what a read adds (size, MD5, dates) is ignored,
                 // so a read can be sent back.
                 #[derive(serde::Deserialize)]
                 #[serde(rename_all = "camelCase")]
@@ -886,6 +936,10 @@ pub(crate) fn read_field(
                 }
             }
             fields.leader = Some(leader);
+        }
+        // A line's `/Cap` takes no `null`: a file without it reads `false`.
+        "captionEnabled" if subtype == S::Line => {
+            fields.caption_enabled = Some(Some(read(kind, name, value)?));
         }
         "captionEnabled" => fields.caption_enabled = Some(read_nullable(kind, name, value)?),
         "captionPosition" => {
@@ -969,8 +1023,7 @@ fn resolve_measurement_draft(
         || fields.caption_center.is_some();
     if touches {
         if subtype == S::Line {
-            // `null` is a line without a caption flag, as a read says.
-            fields.caption_enabled = Some(fields.caption_enabled.unwrap_or(Some(false)));
+            fields.caption_enabled = Some(Some(fields.caption_enabled.flatten().unwrap_or(false)));
             fields.caption_position =
                 Some(fields.caption_position.take().unwrap_or_else(|| "inline".into()));
             fields.caption_offset = Some(fields.caption_offset.flatten());
@@ -1221,7 +1274,8 @@ fn body_with_style(
 /// `pdfDeriveAnnotationDraft`: everything that follows from a checked draft
 /// stated. A note's standard state brings its model; a free text states its
 /// intent and its text as rich text carrying its text style, `contents`
-/// its plain projection; a redaction over text without a `rect` covers its
+/// its plain projection; another markup annotation's rich comment brings
+/// its `contents`; a redaction over text without a `rect` covers its
 /// quads. Refused where nothing can follow: a custom state with no model,
 /// `contents` that disagree with the rich text, a callout line without the
 /// callout intent.
@@ -1232,14 +1286,25 @@ pub fn derive_draft(
     use AnnotationSubtype as S;
     let fields = &mut draft.fields;
     // `assertRichTextAgreement`.
-    if draft.subtype == S::FreeText
-        && let (Some(Some(contents)), Some(rich)) = (&fields.contents, &fields.rich_text)
-        && *contents != plain_text(&rich.paragraphs)
+    let rich = fields.rich_text.as_ref().or(fields.comment.as_ref().and_then(Option::as_ref));
+    assert_agreement(
+        Some(draft.subtype.as_str()),
+        fields.contents.as_ref().and_then(Option::as_deref),
+        rich.map(|rich| rich.paragraphs.as_slice()),
+    )?;
+    // `dashDraftFollows`: a dashed border with its pattern left out states
+    // the default, which Acrobat needs to draw it dashed. `null` is no
+    // pattern. Every kind's default border is solid.
+    if owner_of(draft.subtype, "dashArray").is_some()
+        && fields.border_style == Some(AnnotationBorderStyle::Dashed)
+        && fields.dash_array.is_none()
     {
-        return Err(EngineError::with_message(
-            EngineErrorCode::InvalidArg,
-            "free-text: `contents` must equal the plain projection of `richText` when both are given",
-        ));
+        fields.dash_array = Some(Some(DEFAULT_DASH_ARRAY.to_vec()));
+    }
+    // `commentDraftFollows`: a markup comment's rich text brings its
+    // `contents`, its plain projection.
+    if let Some(Some(comment)) = &fields.comment {
+        fields.contents = Some(Some(plain_text(&comment.paragraphs)));
     }
     match draft.subtype {
         // `noteDraftStateFollows`.
@@ -1283,8 +1348,8 @@ pub fn derive_draft(
             };
             let body = body_with_style(base, fields, context);
             let rich = RichTextDocumentInput { body: Some(body), paragraphs };
-            // The engine writes `/Contents` from the rich text: a line break
-            // reads back as `\r`.
+            // The engine writes `/Contents` from the rich text; `contents` is
+            // its plain projection.
             fields.contents = Some(Some(plain_text(&rich.paragraphs)));
             fields.rich_text = Some(rich);
         }
@@ -1518,7 +1583,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!(derived.fields.intent, Some(Some("free-text".to_owned())));
-        assert_eq!(derived.fields.contents, Some(Some("a\rb".to_owned())));
+        assert_eq!(derived.fields.contents, Some(Some("a\nb".to_owned())));
         let body = derived.fields.rich_text.unwrap().body.unwrap();
         assert_eq!(body["family"], "Times");
         assert_eq!(body["weight"], 700);

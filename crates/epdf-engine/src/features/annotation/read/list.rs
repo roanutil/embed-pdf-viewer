@@ -13,7 +13,7 @@
 use pdfium::Document;
 use serde::Serialize;
 
-use super::kinds::{AnnotationRecord, is_widget_code, read_annotation_record_kind};
+use super::kinds::{AnnotationRecord, is_widget_code, read_annotation_record};
 use super::record::read_annotation_record_base;
 use crate::access::OwnedDocument;
 use crate::cancel::CancelToken;
@@ -92,8 +92,7 @@ pub fn read_page_annotation_records(
             continue;
         }
         let base = read_annotation_record_base(document, &annotation, page, index, &mut budget)?;
-        let kind = read_annotation_record_kind(document, &annotation, &base, subtype)?;
-        annotations.push(AnnotationRecord { base, kind });
+        annotations.push(read_annotation_record(document, &annotation, base, subtype)?);
     }
     Ok(annotations)
 }

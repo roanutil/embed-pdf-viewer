@@ -318,7 +318,7 @@ mod tests {
     }
 
     fn calculate(destination: Value) -> Value {
-        json!({ "calculate": { "incomplete": false, "warningFlags": 0, "warnings": [],
+        json!({ "calculate": { "incomplete": false, "warnings": [],
             "root": { "subtype": "GoTo", "type": "goto", "destination": destination,
                 "next": [] } } })
     }
@@ -348,7 +348,7 @@ mod tests {
             "ref": { "kind": "objectNumber", "page": page_ref(4), "objectNumber": 8 },
             "page": page_ref(4), "hasAppearance": false, "appearanceState": null, "nm": null,
             "rect": rect, "box": rect, "rotation": null, "subtype": "widget",
-            "field": null, "fieldKind": "unknown", "actions": null
+            "field": null, "fieldKind": "unknown", "hasMark": false, "actions": null
         });
         let nulls = [
             "contents",

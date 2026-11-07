@@ -8,7 +8,7 @@
 //!   pnpm --filter @embedpdf/tooling-engine-conformance run actions
 
 use epdf_engine::features::actions::submit_flags::{
-    SubmitFormat, SubmitMethod, decode_submit_form_flags,
+    SubmitFormat, SubmitMethod, decode_submit_form_flags, encode_submit_form_flags,
 };
 use serde::Deserialize;
 
@@ -34,7 +34,6 @@ struct Case {
 #[derive(Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 struct WireFlags {
-    raw: u32,
     exclude: bool,
     include_no_value_fields: bool,
     format: String,
@@ -67,7 +66,6 @@ fn the_decode_agrees_with_typescript() {
     for case in &file.cases {
         let decoded = decode_submit_form_flags(case.raw);
         let actual = WireFlags {
-            raw: decoded.raw,
             exclude: decoded.exclude,
             include_no_value_fields: decoded.include_no_value_fields,
             format: match decoded.format {
@@ -124,13 +122,15 @@ fn the_reserved_bit_changes_nothing() {
 }
 
 #[test]
-fn the_raw_word_is_carried_through_unchanged() {
-    // So a consumer that needs a bit this decode does not name can still
-    // read it, rather than the engine being the ceiling on what a document
-    // can say.
-    for raw in [0u32, 1, 0xffff, 0xffff_ffff, 0xdead_beef] {
-        assert_eq!(decode_submit_form_flags(raw).raw, raw);
+fn the_encode_writes_back_what_the_decode_named() {
+    // `encodeSubmitFormFlags` is the inverse of the decode over the named
+    // bits: a write of a read's flags reads back the same flags.
+    for case in &load().cases {
+        let decoded = decode_submit_form_flags(case.raw);
+        let encoded = encode_submit_form_flags(&decoded.into());
+        assert_eq!(decode_submit_form_flags(encoded), decoded, "{}", case.name);
     }
+    assert_eq!(encode_submit_form_flags(&Default::default()), 0, "nothing named is no bits");
 }
 
 // --- G6: the shared action vocabulary.

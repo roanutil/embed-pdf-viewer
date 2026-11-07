@@ -300,7 +300,7 @@ fn attachment_writes_publish_the_typescript_events() {
     let item = &created["result"]["items"][0];
     assert_eq!(item["type"], json!("attachments.create"), "{created}");
     assert_eq!(item["attachment"]["ref"], json!({ "kind": "key", "key": "notes.txt" }));
-    assert_eq!(item["meta"]["changed"], json!([{ "kind": "key", "key": "notes.txt" }]));
+    assert_eq!(item["meta"]["changedRefs"], json!([{ "kind": "key", "key": "notes.txt" }]));
     let event = &created["events"][0];
     assert_eq!(event["type"], json!("attachments.created"), "{created}");
     assert_eq!(event["attachment"], item["attachment"], "{created}");

@@ -44,16 +44,22 @@ pub enum FieldSpace {
 /// engine doesn't know has the base fields.
 pub fn field_spaces(subtype: &str) -> &'static [(&'static str, FieldSpace)] {
     use FieldSpace as S;
+    // Every markup kind's comment, `richText`, is a length (`markupBaseFields`).
     match subtype {
-        "highlight" | "underline" | "squiggly" | "strikeout" | "redact" => {
-            &[("rect", S::Box), ("actions", S::Actions), ("quadPoints", S::Quads)]
+        "highlight" | "underline" | "squiggly" | "strikeout" | "redact" => &[
+            ("rect", S::Box),
+            ("actions", S::Actions),
+            ("richText", S::Length),
+            ("quadPoints", S::Quads),
+        ],
+        "circle" | "square" | "caret" | "stamp" => {
+            &[("rect", S::Box), ("actions", S::Actions), ("richText", S::Length), ("box", S::Box)]
         }
-        "circle" | "square" | "caret" | "stamp" | "widget" => {
-            &[("rect", S::Box), ("actions", S::Actions), ("box", S::Box)]
-        }
+        "widget" => &[("rect", S::Box), ("actions", S::Actions), ("box", S::Box)],
         "polygon" | "polyline" => &[
             ("rect", S::Box),
             ("actions", S::Actions),
+            ("richText", S::Length),
             ("vertices", S::Points),
             ("captionCenter", S::Point),
             ("measure", S::Measure),
@@ -61,18 +67,27 @@ pub fn field_spaces(subtype: &str) -> &'static [(&'static str, FieldSpace)] {
         "line" => &[
             ("rect", S::Box),
             ("actions", S::Actions),
+            ("richText", S::Length),
             ("linePoints", S::LinePoints),
             ("measure", S::Measure),
         ],
         "link" => &[("rect", S::Box), ("actions", S::Actions), ("target", S::LinkTarget)],
-        "ink" => &[("rect", S::Box), ("actions", S::Actions), ("inkList", S::Strokes)],
+        "ink" => &[
+            ("rect", S::Box),
+            ("actions", S::Actions),
+            ("richText", S::Length),
+            ("inkList", S::Strokes),
+        ],
         "free-text" => &[
             ("rect", S::Box),
             ("actions", S::Actions),
-            ("box", S::Box),
             ("richText", S::Length),
+            ("box", S::Box),
             ("calloutLine", S::CalloutLine),
         ],
+        "text" | "file-attachment" => {
+            &[("rect", S::Box), ("actions", S::Actions), ("richText", S::Length)]
+        }
         _ => &[("rect", S::Box), ("actions", S::Actions)],
     }
 }

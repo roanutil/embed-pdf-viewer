@@ -261,10 +261,13 @@ pub fn import_annotations(
         }
     }
     // A copy is a new annotation, so it gets a fresh name: a name the bundle
-    // carries is neither kept nor checked.
+    // carries is left out (`withoutNames`; `nm: null` would ask for none),
+    // neither kept nor checked.
     if attribution == Attribution::Stamp {
         for item in &mut items {
-            item["data"]["nm"] = Value::Null;
+            if let Some(data) = item.get_mut("data").and_then(Value::as_object_mut) {
+                data.shift_remove("nm");
+            }
         }
     }
     let owned = session.document()?;

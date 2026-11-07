@@ -22,7 +22,7 @@ use crate::clock::pdf_date_to_iso;
 use crate::error::EngineError;
 use crate::features::actions::vocabulary::ActionReadBudgetTracker;
 use crate::features::annotation::flags::AnnotationFlags;
-use crate::features::annotation::rich_text::free_text_font_for_face;
+use crate::features::annotation::rich_text::{free_text_font_for_face, to_line_breaks};
 use crate::features::annotation::vocabulary::{
     AnnotationBorderStyle, AnnotationReplyType, BlendMode, TextAlignment,
 };
@@ -191,10 +191,11 @@ pub struct WidgetAnnotation<C: Coordinates = PdfCoordinates> {
     pub check_style: Option<WidgetCheckStyle>,
     /// The field the widget belongs to, or `None` when it's in none.
     pub field: Option<FormFieldRef>,
+    /// The field's kind (`fieldKind`), `unknown` in none.
     pub field_kind: FormFieldFamily,
-    /// A mark is in the widget: its signature field is signed, or a mark was
-    /// drawn into it (14fbaf093). Its style no longer draws.
-    #[serde(default)]
+    /// Whether a mark is in the widget: its field is a signature field that
+    /// is signed, or that a mark was drawn into without signing. The widget
+    /// then shows that mark, not its box. `false` for every other widget.
     pub has_mark: bool,
 }
 
@@ -303,7 +304,9 @@ pub fn read_annotation_record_base(
             right: f64::from(rect.right),
             top: f64::from(rect.top),
         },
-        contents: dictionary_read("Contents", annotation.string_value("Contents"))?,
+        // Lines end in `\n`, however `/Contents` spells them.
+        contents: dictionary_read("Contents", annotation.string_value("Contents"))?
+            .map(|contents| to_line_breaks(&contents, "\n")),
         subject: dictionary_read("Subj", annotation.string_value("Subj"))?,
         author: dictionary_read("T", annotation.string_value("T"))?,
         created_at: date("CreationDate")?,
@@ -400,10 +403,13 @@ pub fn read_widget_annotation(
     })
 }
 
-/// Stamp a widget row with its field and family (`joinWidgetFieldNumbers`).
+/// `EPDFForm_GetFieldValueKind`: the field has no `/V`.
+const VALUE_KIND_NONE: i32 = 0;
+
+/// Stamp a widget row with its field and kind (`joinWidgetFieldNumbers`).
 /// `/MK /CA` is a push button's caption and a checkbox's or radio button's
-/// symbol; another widget's reads as neither. A signature field's widget has
-/// a mark in it when the field is signed (it has a value) or a mark was
+/// symbol; another widget's reads as neither. A signature field's widget
+/// has a mark in it when the field is signed (it has a value) or a mark was
 /// drawn into it (the read found its fit); no other widget has one.
 pub fn join_widget_field(model: &pdfium::FormModel<'_>, widget: &mut WidgetAnnotation) {
     let AnnotationRef::ObjectNumber { annot, .. } = widget.base.annotation_ref else {
@@ -431,9 +437,6 @@ pub fn join_widget_field(model: &pdfium::FormModel<'_>, widget: &mut WidgetAnnot
     widget.has_mark = widget.field_kind == FormFieldFamily::Signature
         && (widget.has_mark || field.value_kind() != VALUE_KIND_NONE);
 }
-
-/// `EPDFForm_GetFieldValueKind`: the field has no `/V`.
-const VALUE_KIND_NONE: i32 = 0;
 
 #[cfg(test)]
 mod tests {

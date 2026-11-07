@@ -50,8 +50,9 @@ struct Case {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct ExpectedMeta {
-    changed: Vec<Value>,
+    changed_refs: Vec<Value>,
 }
 
 fn load() -> VectorFile {
@@ -187,13 +188,13 @@ fn a_move_is_structural_and_says_so() {
         let reordered = run(&file, case);
         let meta = &reordered.result["meta"];
         assert_eq!(
-            meta["changed"].as_array().cloned().unwrap_or_default(),
-            case.meta.changed,
+            meta["changedRefs"].as_array().cloned().unwrap_or_default(),
+            case.meta.changed_refs,
             "{}: the changed list",
             case.name,
         );
         assert_eq!(
-            meta["changed"],
+            meta["changedRefs"],
             json!(request_refs(case)),
             "{}: the rows moved, as given",
             case.name
@@ -234,7 +235,7 @@ fn a_move_that_changes_nothing_is_still_structural() {
         reordered.result["meta"]["affectedPages"],
         json!([page_ref(case.page_object_number)])
     );
-    assert_eq!(reordered.result["meta"]["changed"], json!(request_refs(case)));
+    assert_eq!(reordered.result["meta"]["changedRefs"], json!(request_refs(case)));
     assert_eq!(reordered.event["type"], "annotations.reordered");
 }
 
@@ -336,7 +337,7 @@ fn an_undo_leaves_a_row_that_moved_since() {
         .replay(&json!({ "kind": "document.apply", "jobId": "<job>", "docId": DOC,
             "opId": "undo-1", "change": { "undoOf": "reorder-1" } }))
         .expect("undone");
-    assert_eq!(undone["result"]["items"][0]["meta"]["changed"], json!([row(5)]), "{undone}");
+    assert_eq!(undone["result"]["items"][0]["meta"]["changedRefs"], json!([row(5)]), "{undone}");
     // The first row had nothing below it, so it goes back to the bottom;
     // the row that moved since stays where it went, now above it.
     let after = refs(&listed(&mut replay, pon));
@@ -410,7 +411,7 @@ fn an_inline_annotation_reordered_keeps_its_birth_name() {
     let order = result["order"].as_array().expect("order");
     let at = if at_bottom { order.len() - 1 } else { 0 };
     assert_eq!(order[at], inline["ref"]);
-    assert_eq!(result["meta"]["changed"], json!([inline["ref"]]));
+    assert_eq!(result["meta"]["changedRefs"], json!([inline["ref"]]));
     let read = &listed(&mut replay, pon)[at];
     assert_eq!(read["ref"], inline["ref"]);
     assert_eq!(read["nm"], inline["nm"]);
@@ -430,7 +431,7 @@ fn a_reorder_puts_rows_right_after_or_before_their_neighbour() {
     let result = reorder(&mut replay, pon, json!([a]), json!({ "after": c }));
     assert_eq!(result["meta"]["affectedPages"], json!([page_ref(pon)]));
     assert!(result["meta"].get("cacheDelta").is_some(), "{result}");
-    assert_eq!(result["meta"]["changed"], json!([a]));
+    assert_eq!(result["meta"]["changedRefs"], json!([a]));
     let mut after_c = others.clone();
     after_c.extend([b.clone(), c.clone(), a.clone()]);
     assert_eq!(result["order"], json!(after_c));
@@ -450,7 +451,7 @@ fn a_reorder_keeps_the_order_given_at_the_bottom_or_the_top() {
     let ids = ["multi-1", "multi-2", "multi-3"].map(|label| highlight(&mut replay, pon, label));
     let given = json!([ids[2], ids[0], ids[1]]);
     let bottom = reorder(&mut replay, pon, given.clone(), json!("start"));
-    assert_eq!(bottom["meta"]["changed"], given);
+    assert_eq!(bottom["meta"]["changedRefs"], given);
     assert_eq!(json!(bottom["order"].as_array().unwrap()[..3]), given);
     let top = reorder(&mut replay, pon, json!([ids[2]]), json!("end"));
     assert_eq!(top["order"].as_array().unwrap().last(), Some(&ids[2]));

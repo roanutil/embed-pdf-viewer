@@ -34,15 +34,12 @@ pub enum SubmitMethod {
     Get,
 }
 
-/// The decoded flags word, with the raw value retained.
+/// The flags word, named. The engine reads and writes the bits; the API only
+/// names them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SubmitFormFlags {
-    pub raw: u32,
     /// Bit 1. When set, `fields` lists the fields to EXCLUDE.
-    ///
-    /// Derived here rather than stored separately, so it cannot disagree with
-    /// `raw`.
     pub exclude: bool,
     /// Bit 2. Submit designated valueless fields as name-only entries.
     pub include_no_value_fields: bool,
@@ -94,7 +91,6 @@ pub fn decode_submit_form_flags(raw: u32) -> SubmitFormFlags {
     };
 
     SubmitFormFlags {
-        raw,
         exclude: bit(1),
         include_no_value_fields: bit(2),
         format,
@@ -107,4 +103,74 @@ pub fn decode_submit_form_flags(raw: u32) -> SubmitFormFlags {
         excl_f_key: bit(12),
         embed_form: bit(14),
     }
+}
+
+/// A write's flags (`Partial<SubmitFormFlags>`): each optional, off (or
+/// `fdf`, `post`) when left out.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SubmitFormFlagWrites {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub exclude: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub include_no_value_fields: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub format: Option<SubmitFormat>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub method: Option<SubmitMethod>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub submit_coordinates: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub include_append_saves: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub include_annotations: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub canonical_format: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub excl_non_user_annots: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub excl_f_key: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub embed_form: Option<bool>,
+}
+
+impl From<SubmitFormFlags> for SubmitFormFlagWrites {
+    fn from(flags: SubmitFormFlags) -> Self {
+        Self {
+            exclude: Some(flags.exclude),
+            include_no_value_fields: Some(flags.include_no_value_fields),
+            format: Some(flags.format),
+            method: Some(flags.method),
+            submit_coordinates: Some(flags.submit_coordinates),
+            include_append_saves: Some(flags.include_append_saves),
+            include_annotations: Some(flags.include_annotations),
+            canonical_format: Some(flags.canonical_format),
+            excl_non_user_annots: Some(flags.excl_non_user_annots),
+            excl_f_key: Some(flags.excl_f_key),
+            embed_form: Some(flags.embed_form),
+        }
+    }
+}
+
+/// The `/Flags` word for named flags (`encodeSubmitFormFlags`), the inverse
+/// of [`decode_submit_form_flags`]: a flag left out is off, `format` is
+/// `fdf` and `method` is `post`.
+pub fn encode_submit_form_flags(flags: &SubmitFormFlagWrites) -> u32 {
+    let on = |flag: Option<bool>| flag.unwrap_or(false);
+    let bits: [(u32, bool); 13] = [
+        (1, on(flags.exclude)),
+        (2, on(flags.include_no_value_fields)),
+        (3, flags.format == Some(SubmitFormat::Html)),
+        (4, flags.method == Some(SubmitMethod::Get)),
+        (5, on(flags.submit_coordinates)),
+        (6, flags.format == Some(SubmitFormat::Xfdf)),
+        (7, on(flags.include_append_saves)),
+        (8, on(flags.include_annotations)),
+        (9, flags.format == Some(SubmitFormat::Pdf)),
+        (10, on(flags.canonical_format)),
+        (11, on(flags.excl_non_user_annots)),
+        (12, on(flags.excl_f_key)),
+        (14, on(flags.embed_form)),
+    ];
+    bits.iter().fold(0, |word, &(bit, on)| if on { word | (1 << (bit - 1)) } else { word })
 }

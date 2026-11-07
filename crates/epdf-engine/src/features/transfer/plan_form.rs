@@ -693,7 +693,7 @@ mod tests {
     fn tree(node: Value) -> Value {
         let mut root = json!({ "subtype": "", "next": [] });
         root.as_object_mut().unwrap().extend(node.as_object().unwrap().clone());
-        json!({ "root": root, "incomplete": false, "warningFlags": 0, "warnings": [] })
+        json!({ "root": root, "incomplete": false, "warnings": [] })
     }
 
     fn with(mut value: Value, fields: Value) -> Value {

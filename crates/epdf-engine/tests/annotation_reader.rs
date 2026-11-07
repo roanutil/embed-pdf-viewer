@@ -546,7 +546,7 @@ fn a_text_box_acrobat_turned_a_quarter_reads_its_turn() {
     assert_eq!(turned["rotation"], 270.0, "{turned}");
     let content_box = page_box(&mut replay, [233.423, 309.413, 341.423, 341.423]);
     assert_box(&turned["box"], content_box, 0.01);
-    let upright = by_contents("test\rtest 123");
+    let upright = by_contents("test\ntest 123");
     assert_eq!(upright["rotation"], Value::Null);
     assert_eq!(upright["box"], upright["rect"]);
 }

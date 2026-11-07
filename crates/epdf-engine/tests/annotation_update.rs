@@ -76,7 +76,7 @@ struct Case {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ExpectedMeta {
-    changed: Value,
+    changed_refs: Value,
 }
 
 fn load() -> VectorFile {
@@ -305,8 +305,8 @@ fn an_update_is_not_structural() {
         let result = updated.outcome.unwrap_or_else(|e| panic!("{}: {e}", case.name));
         let meta = &result["meta"];
         assert_eq!(
-            test_support::canonical_numbers(&meta["changed"]),
-            test_support::canonical_numbers(&case.meta.as_ref().expect("a meta").changed),
+            test_support::canonical_numbers(&meta["changedRefs"]),
+            test_support::canonical_numbers(&case.meta.as_ref().expect("a meta").changed_refs),
             "{}: the changed list",
             case.name,
         );
@@ -367,7 +367,11 @@ fn a_patch_for_the_wrong_subtype_is_refused() {
     .outcome
     .expect_err("a square patch on a highlight");
     assert_eq!(refused["code"], "InvalidArg", "{refused}");
-    assert!(refused["message"].as_str().unwrap().contains("subtype cannot change"), "{refused}");
+    assert_eq!(
+        refused["message"], "highlight can become underline, squiggly or strikeout, not square",
+        "{refused}"
+    );
+    assert_eq!(refused["details"]["field"], "subtype");
 
     // An empty quad list is refused: a markup marks something.
     let refused =
@@ -689,6 +693,335 @@ fn a_color_sent_back_unchanged_stays_as_the_file_stores_it() {
     let after = listed(&mut replay).into_iter().find(|a| a["nm"] == "colored").unwrap();
     assert_eq!(after["contents"], "kept");
     assert_eq!(after["color"], square["color"]);
+}
+
+// ── runAnnotationMutationConformance's kind changes ─────────────────────────
+
+const KIND_QUAD: &str = r#"[{ "upperLeft": { "x": 72, "y": 92 }, "upperRight": { "x": 200, "y": 92 },
+    "lowerLeft": { "x": 72, "y": 72 }, "lowerRight": { "x": 200, "y": 72 } }]"#;
+
+fn kind_quad() -> Value {
+    serde_json::from_str(KIND_QUAD).unwrap()
+}
+
+fn apply_change(replay: &mut Replay, op_id: &str, change: Value) -> Result<Value, Value> {
+    replay.replay(&json!({ "kind": "document.apply", "jobId": "<job>", "docId": DOC,
+        "opId": op_id, "change": change }))
+}
+
+fn read_back(replay: &mut Replay, reference: &Value) -> Value {
+    listed(replay).into_iter().find(|a| &a["ref"] == reference).expect("the annotation")
+}
+
+#[test]
+fn a_highlight_becomes_a_squiggly_line_and_stays_the_same_annotation() {
+    let mut replay = open(&load());
+    let mark = markup(
+        &mut replay,
+        json!({ "subtype": "highlight", "contents": "kind change", "color": "#1d4ed8",
+            "quadPoints": kind_quad() }),
+    );
+    let reply = markup(
+        &mut replay,
+        json!({ "subtype": "text", "rect": icon_rect(), "contents": "a reply to the mark",
+            "reply": { "to": mark["ref"], "type": "reply" } }),
+    );
+    let order: Vec<Value> = listed(&mut replay).iter().map(|a| a["ref"].clone()).collect();
+
+    let result =
+        update(&mut replay, &mark["ref"], &json!({ "subtype": "squiggly" }), &BTreeMap::new())
+            .outcome
+            .expect("a sibling kind");
+    assert_eq!(result["appearance"]["changed"], true, "{result}");
+    let changed = &result["annotation"];
+    assert_eq!(changed["subtype"], "squiggly");
+    for field in ["ref", "nm", "contents", "author", "createdAt", "color", "quadPoints"] {
+        assert_eq!(changed[field], mark[field], "{field}");
+    }
+    // Same place in the drawing order; its reply still answers it.
+    let after: Vec<Value> = listed(&mut replay).iter().map(|a| a["ref"].clone()).collect();
+    assert_eq!(after, order);
+    assert_eq!(read_back(&mut replay, &reply["ref"])["reply"]["to"], mark["ref"]);
+    assert_eq!(read_back(&mut replay, &mark["ref"])["subtype"], "squiggly");
+}
+
+#[test]
+fn a_square_becomes_a_circle_with_a_new_color_and_back() {
+    let mut replay = open(&load());
+    let square = markup(
+        &mut replay,
+        json!({ "subtype": "square", "box": shape_box(), "color": "#008000", "strokeWidth": 2 }),
+    );
+    let circle = update(
+        &mut replay,
+        &square["ref"],
+        &json!({ "subtype": "circle", "color": "#dc143c" }),
+        &BTreeMap::new(),
+    )
+    .outcome
+    .expect("a circle")["annotation"]
+        .clone();
+    assert_eq!(circle["subtype"], "circle");
+    assert_eq!(circle["ref"], square["ref"]);
+    assert_eq!(circle["box"], square["box"]);
+    assert_eq!(circle["color"], "#dc143c");
+    assert_eq!(circle["strokeWidth"], 2.0);
+    let back =
+        update(&mut replay, &square["ref"], &json!({ "subtype": "square" }), &BTreeMap::new())
+            .outcome
+            .expect("a square again")["annotation"]
+            .clone();
+    assert_eq!(back["subtype"], "square");
+    assert_eq!(back["color"], "#dc143c");
+}
+
+#[test]
+fn a_kind_outside_the_group_or_over_a_value_the_new_kind_cannot_hold_is_refused() {
+    let mut replay = open(&load());
+    let mark = markup(&mut replay, json!({ "subtype": "highlight", "quadPoints": kind_quad() }));
+    let refused = update(&mut replay, &mark["ref"], &json!({ "subtype": "ink" }), &BTreeMap::new())
+        .outcome
+        .expect_err("another family");
+    assert_eq!(refused["code"], "InvalidArg", "{refused}");
+    assert_eq!(refused["details"]["field"], "subtype");
+    let ink = markup(
+        &mut replay,
+        json!({ "subtype": "ink", "inkList": [[{ "x": 80, "y": 80 }, { "x": 120, "y": 120 }]] }),
+    );
+    let refused =
+        update(&mut replay, &ink["ref"], &json!({ "subtype": "square" }), &BTreeMap::new())
+            .outcome
+            .expect_err("a kind with no siblings");
+    assert_eq!(refused["details"]["field"], "subtype", "{refused}");
+
+    // A replacement's strikeout holds an intent a highlight has no field for.
+    let caret = markup(
+        &mut replay,
+        json!({ "subtype": "caret", "intent": "replace", "contents": "invoice",
+            "box": { "x": 72, "y": 72, "width": 8, "height": 12 } }),
+    );
+    let strikeout = markup(
+        &mut replay,
+        json!({ "subtype": "strikeout", "intent": "strikeout-text-edit",
+            "quadPoints": kind_quad(), "reply": { "to": caret["ref"], "type": "group" } }),
+    );
+    let refused = update(
+        &mut replay,
+        &strikeout["ref"],
+        &json!({ "subtype": "highlight" }),
+        &BTreeMap::new(),
+    )
+    .outcome
+    .expect_err("an intent a highlight can't hold");
+    assert_eq!(refused["code"], "InvalidArg", "{refused}");
+    assert_eq!(refused["details"]["field"], "intent");
+    let kept = read_back(&mut replay, &strikeout["ref"]);
+    assert_eq!(kept["subtype"], "strikeout");
+    assert_eq!(kept["intent"], "strikeout-text-edit");
+
+    // Cleared first, in the same change, it becomes a highlight, still in
+    // its group.
+    apply_change(
+        &mut replay,
+        "op-k",
+        json!({ "ops": [
+            { "type": "annotations.update", "ref": strikeout["ref"], "patch": { "intent": null } },
+            { "type": "annotations.update", "ref": strikeout["ref"],
+                "patch": { "subtype": "highlight" } }] }),
+    )
+    .expect("cleared first");
+    let changed = read_back(&mut replay, &strikeout["ref"]);
+    assert_eq!(changed["subtype"], "highlight");
+    assert_eq!(changed["reply"]["type"], "group");
+    assert_eq!(changed["reply"]["to"], caret["ref"]);
+}
+
+#[test]
+fn undo_puts_the_old_kind_back_and_so_does_an_undo_after_a_later_change() {
+    let mut replay = open(&load());
+    let highlight =
+        json!({ "subtype": "highlight", "color": "#ffff00", "quadPoints": kind_quad() });
+    let mark = markup(&mut replay, highlight.clone());
+    let retype = |reference: &Value| {
+        json!({ "ops": [{ "type": "annotations.update", "ref": reference,
+            "patch": { "subtype": "underline" } }] })
+    };
+    apply_change(&mut replay, "op-a", retype(&mark["ref"])).expect("retyped");
+    assert_eq!(read_back(&mut replay, &mark["ref"])["subtype"], "underline");
+    apply_change(&mut replay, "op-b", json!({ "undoOf": "op-a" })).expect("undone");
+    assert_eq!(read_back(&mut replay, &mark["ref"])["subtype"], "highlight");
+    apply_change(&mut replay, "op-c", json!({ "undoOf": "op-b" })).expect("redone");
+    assert_eq!(read_back(&mut replay, &mark["ref"])["subtype"], "underline");
+
+    // Restyled since: the undo puts back the kind by value and keeps the new
+    // color.
+    let other = markup(&mut replay, highlight);
+    apply_change(&mut replay, "op-d", retype(&other["ref"])).expect("retyped");
+    update(&mut replay, &other["ref"], &json!({ "color": "#16a34a" }), &BTreeMap::new())
+        .outcome
+        .expect("restyled");
+    apply_change(&mut replay, "op-e", json!({ "undoOf": "op-d" })).expect("undone");
+    let restored = read_back(&mut replay, &other["ref"]);
+    assert_eq!(restored["subtype"], "highlight", "{restored}");
+    assert_eq!(restored["color"], "#16a34a");
+}
+
+// ── runDrawingDetailsConformance's dash patterns ────────────────────────────
+
+/// Another app's two dashed squares that name no pattern: one without `/D`,
+/// one with `/D []`.
+fn dash_fixture() -> Replay {
+    let mut host = host();
+    let opened = host.call_filled(
+        &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": DOC,
+            "password": null })
+        .to_string(),
+        vec![pdf_of(&[
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Annots [4 0 R 5 0 R] >>",
+            "<< /Type /Annot /Subtype /Square /Rect [140 20 240 120] /BS << /S /D /W 2 >> \
+             /C [1 0 0] /NM (dashed-no-pattern) /F 4 >>",
+            "<< /Type /Annot /Subtype /Square /Rect [140 140 240 220] \
+             /BS << /S /D /W 2 /D [] >> /C [1 0 0] /NM (dashed-empty-pattern) /F 4 >>",
+        ])],
+    );
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+    Replay::adopt(host, DOC)
+}
+
+#[test]
+fn a_dashed_border_states_its_pattern_never_an_empty_one() {
+    let mut replay = dash_fixture();
+    let listed_now = listed(&mut replay);
+    let named = |nm: &str| listed_now.iter().find(|a| a["nm"] == nm).cloned().expect(nm);
+    // Another app's dashed border without /D reads as it stands; an empty
+    // /D is a solid line and reads solid.
+    let no_pattern = named("dashed-no-pattern");
+    assert_eq!(no_pattern["borderStyle"], "dashed", "{no_pattern}");
+    assert_eq!(no_pattern["dashArray"], Value::Null);
+    let empty_pattern = named("dashed-empty-pattern");
+    assert_eq!(empty_pattern["borderStyle"], "solid", "{empty_pattern}");
+    assert_eq!(empty_pattern["dashArray"], Value::Null);
+
+    let page = 3;
+    let square = |extra: Value| {
+        let mut draft = json!({ "subtype": "square",
+            "box": { "x": 20, "y": 20, "width": 100, "height": 100 } });
+        for (k, v) in extra.as_object().unwrap() {
+            draft[k] = v.clone();
+        }
+        draft
+    };
+    let patterned = create(
+        &mut replay,
+        &square(json!({ "borderStyle": "solid", "dashArray": [2, 2] })),
+        page,
+        &BTreeMap::new(),
+    );
+    assert_eq!(patterned["borderStyle"], "solid");
+    assert_eq!(patterned["dashArray"], json!([2.0, 2.0]));
+
+    // A dashed border whose pattern is left out is written with the
+    // default; `null` is no pattern, written as none.
+    let dashed =
+        create(&mut replay, &square(json!({ "borderStyle": "dashed" })), page, &BTreeMap::new());
+    assert_eq!(dashed["borderStyle"], "dashed");
+    assert_eq!(dashed["dashArray"], json!([3.0, 3.0]));
+    let none = create(
+        &mut replay,
+        &square(json!({ "borderStyle": "dashed", "dashArray": null })),
+        page,
+        &BTreeMap::new(),
+    );
+    assert_eq!(none["borderStyle"], "dashed");
+    assert_eq!(none["dashArray"], Value::Null);
+    let cleared = update(
+        &mut replay,
+        &patterned["ref"],
+        &json!({ "borderStyle": "dashed", "dashArray": null }),
+        &BTreeMap::new(),
+    )
+    .outcome
+    .expect("a dashed border without a pattern")["annotation"]
+        .clone();
+    assert_eq!(cleared["borderStyle"], "dashed");
+    assert_eq!(cleared["dashArray"], Value::Null);
+    // A border made dashed with no pattern of its own states the default.
+    let made_dashed = update(
+        &mut replay,
+        &named("dashed-empty-pattern")["ref"],
+        &json!({ "borderStyle": "dashed" }),
+        &BTreeMap::new(),
+    )
+    .outcome
+    .expect("a border made dashed")["annotation"]
+        .clone();
+    assert_eq!(made_dashed["dashArray"], json!([3.0, 3.0]));
+
+    // An empty pattern is a solid line, which is borderStyle 'solid': a
+    // write refuses it, on create and update alike.
+    let request = json!({ "kind": "annotations.create", "jobId": "<job>", "docId": DOC,
+        "opId": "<op>", "page": page_ref(page),
+        "draft": square(json!({ "borderStyle": "dashed", "dashArray": [] })) });
+    let refused = replay.send(&request, Vec::new()).outcome.expect_err("an empty pattern");
+    assert_eq!(refused["code"], "InvalidArg", "{refused}");
+    let refused =
+        update(&mut replay, &dashed["ref"], &json!({ "dashArray": [] }), &BTreeMap::new())
+            .outcome
+            .expect_err("an empty pattern");
+    assert_eq!(refused["code"], "InvalidArg", "{refused}");
+}
+
+// ── runNoStrokeConformance's writes ─────────────────────────────────────────
+
+#[test]
+fn color_null_writes_an_empty_c_and_keeps_the_width_and_a_color_brings_the_stroke_back() {
+    let mut replay = color_fixture();
+    let square = listed(&mut replay).pop().expect("the square");
+    let cleared = update(&mut replay, &square["ref"], &json!({ "color": null }), &BTreeMap::new())
+        .outcome
+        .expect("no stroke")["annotation"]
+        .clone();
+    assert_eq!(cleared["color"], Value::Null, "{cleared}");
+    assert_eq!(cleared["strokeWidth"], square["strokeWidth"]);
+    assert_eq!(last_array(&saved_text(&mut replay), "C"), Some(Vec::new()));
+
+    let restroked =
+        update(&mut replay, &square["ref"], &json!({ "color": "#00ff00" }), &BTreeMap::new())
+            .outcome
+            .expect("a stroke")["annotation"]
+            .clone();
+    assert_eq!(restroked["color"], "#00ff00");
+    assert_eq!(restroked["strokeWidth"], square["strokeWidth"]);
+}
+
+#[test]
+fn every_stroked_kind_is_created_without_a_stroke_from_color_null() {
+    let mut replay = open(&load());
+    let page = load().cases[0].page_object_number;
+    let box_ = json!({ "x": 40, "y": 40, "width": 60, "height": 60 });
+    let points = json!([{ "x": 40, "y": 100 }, { "x": 70, "y": 40 }, { "x": 100, "y": 100 }]);
+    let drafts = [
+        json!({ "subtype": "square", "box": box_, "color": null, "interiorColor": "#0000ff" }),
+        json!({ "subtype": "circle", "box": box_, "color": null, "interiorColor": "#0000ff" }),
+        json!({ "subtype": "polygon", "vertices": points, "color": null,
+            "interiorColor": "#0000ff" }),
+        json!({ "subtype": "polyline", "vertices": points, "color": null }),
+        json!({ "subtype": "line", "linePoints": { "start": points[0], "end": points[2] },
+            "lineEndings": { "start": "none", "end": "closed-arrow" }, "color": null,
+            "interiorColor": "#0000ff" }),
+        json!({ "subtype": "ink", "inkList": [points], "color": null }),
+    ];
+    for draft in drafts {
+        let annotation = create(&mut replay, &draft, page, &BTreeMap::new());
+        assert_eq!(annotation["color"], Value::Null, "{annotation}");
+        assert_eq!(annotation["strokeWidth"], 1.0, "{annotation}");
+    }
+    // A color left out is the kind's default, a red stroke.
+    let defaulted =
+        create(&mut replay, &json!({ "subtype": "square", "box": box_ }), page, &BTreeMap::new());
+    assert_eq!(defaulted["color"], "#ff0000");
 }
 
 #[test]
@@ -1193,7 +1526,7 @@ fn a_paragraphs_only_patch_keeps_the_body_and_contents_rewrite_body_style_paragr
             .outcome
             .expect("a contents rewrite")["annotation"]
             .clone();
-    assert_eq!(rewritten["contents"], "one\rtwo");
+    assert_eq!(rewritten["contents"], "one\ntwo");
     assert_eq!(
         rewritten["richText"]["paragraphs"],
         json!([{ "runs": [{ "text": "one" }] }, { "runs": [{ "text": "two" }] }])
@@ -1253,6 +1586,119 @@ fn contents_and_rich_text_that_disagree_are_refused() {
     .outcome
     .expect("an agreement");
     assert_eq!(agreed["annotation"]["contents"], "yes");
+}
+
+/// A shape's or note's draft at the case's spot.
+fn markup(replay: &mut Replay, draft: Value) -> Value {
+    let page = load().cases[0].page_object_number;
+    create(replay, &draft, page, &BTreeMap::new())
+}
+
+const SHAPE_BOX: &str = r#"{ "x": 72, "y": 72, "width": 100, "height": 60 }"#;
+const ICON_RECT: &str = r#"{ "x": 72, "y": 72, "width": 20, "height": 20 }"#;
+
+fn shape_box() -> Value {
+    serde_json::from_str(SHAPE_BOX).unwrap()
+}
+
+fn icon_rect() -> Value {
+    serde_json::from_str(ICON_RECT).unwrap()
+}
+
+#[test]
+fn a_comment_as_rich_text_reads_back_with_its_plain_projection_and_a_plain_one_reads_null() {
+    let mut replay = open(&load());
+    let paragraphs = json!([
+        { "runs": [{ "text": "Hello " }, { "text": "bold", "style": { "weight": 700 } }] },
+        { "runs": [{ "text": "two", "style": { "decoration": ["underline"] } }] },
+    ]);
+    let note = markup(
+        &mut replay,
+        json!({ "subtype": "text", "rect": icon_rect(), "richText": { "paragraphs": paragraphs } }),
+    );
+    assert_eq!(note["contents"], "Hello bold\ntwo", "{note}");
+    assert_eq!(note["richText"]["paragraphs"], paragraphs);
+    // A body nobody stated: the engine's default.
+    assert_eq!(note["richText"]["body"]["family"], "Helvetica");
+    assert_eq!(note["richText"]["body"]["size"], 12.0);
+
+    let plain =
+        markup(&mut replay, json!({ "subtype": "text", "rect": icon_rect(), "contents": "plain" }));
+    assert_eq!(plain["richText"], Value::Null, "{plain}");
+}
+
+#[test]
+fn new_contents_rewrite_a_rich_comment_and_null_makes_it_plain() {
+    let mut replay = open(&load());
+    let created = markup(
+        &mut replay,
+        json!({ "subtype": "square", "box": shape_box(), "richText": {
+            "body": { "color": "#102030" },
+            "paragraphs": [{ "runs": [{ "text": "was " },
+                { "text": "bold", "style": { "weight": 700 } }] }] } }),
+    );
+    // A plain-text client's edit: the comment's /RC follows, not just
+    // /Contents.
+    let rewritten = update(
+        &mut replay,
+        &created["ref"],
+        &json!({ "subtype": "square", "contents": "now\nplain" }),
+        &BTreeMap::new(),
+    )
+    .outcome
+    .expect("a contents rewrite")["annotation"]
+        .clone();
+    assert_eq!(rewritten["contents"], "now\nplain");
+    assert_eq!(
+        rewritten["richText"]["paragraphs"],
+        json!([{ "runs": [{ "text": "now" }] }, { "runs": [{ "text": "plain" }] }])
+    );
+    assert_eq!(rewritten["richText"]["body"]["color"], "#102030");
+
+    let unstyled = update(
+        &mut replay,
+        &created["ref"],
+        &json!({ "subtype": "square", "richText": null }),
+        &BTreeMap::new(),
+    )
+    .outcome
+    .expect("a plain comment")["annotation"]
+        .clone();
+    assert_eq!(unstyled["richText"], Value::Null, "{unstyled}");
+    assert_eq!(unstyled["contents"], "now\nplain");
+}
+
+#[test]
+fn a_redacts_comment_in_another_font_leaves_its_overlays() {
+    let mut replay = open(&load());
+    let redact = markup(
+        &mut replay,
+        json!({ "subtype": "redact", "rect": shape_box(), "overlayText": "CONFIDENTIAL",
+            "fontFamily": "courier", "fontSize": 10, "fontColor": "#ff0000",
+            "richText": { "body": { "family": "Times", "size": 14 },
+                "paragraphs": [{ "runs": [{ "text": "why" }] }] } }),
+    );
+    assert_eq!(redact["richText"]["body"]["family"], "Times", "{redact}");
+    assert_eq!(redact["richText"]["body"]["size"], 14.0);
+    assert_eq!(redact["fontFamily"], "courier");
+    assert_eq!(redact["fontSize"], 10.0);
+    assert_eq!(redact["fontColor"], "#ff0000");
+}
+
+#[test]
+fn a_comments_line_breaks_are_newlines_in_contents_and_returns_in_the_file() {
+    let mut replay = open(&load());
+    let note = markup(
+        &mut replay,
+        json!({ "subtype": "text", "rect": icon_rect(), "contents": "first\nsecond\r\nthird" }),
+    );
+    assert_eq!(note["contents"], "first\nsecond\nthird");
+    // As Acrobat writes it: every line break a carriage return.
+    let text = saved_text(&mut replay);
+    assert!(
+        text.contains("(first\\rsecond\\rthird)") || text.contains("(first\rsecond\rthird)"),
+        "no /Contents with carriage returns"
+    );
 }
 
 #[test]
@@ -1341,14 +1787,14 @@ fn a_note_and_its_popup_share_open_and_the_change_names_both() {
         .outcome
         .expect("a closed note");
     assert_eq!(closed["annotation"]["open"], false);
-    assert_eq!(closed["meta"]["changed"], json!([note["ref"], popup["ref"]]), "{closed}");
+    assert_eq!(closed["meta"]["changedRefs"], json!([note["ref"], popup["ref"]]), "{closed}");
     let shown = listed(&mut replay).into_iter().find(|a| a["ref"] == popup["ref"]).unwrap();
     assert_eq!(shown["open"], false, "the popup's /Open follows its note's");
     // Opened from the popup, the note opens too.
     let opened = update(&mut replay, &popup["ref"], &json!({ "open": true }), &BTreeMap::new())
         .outcome
         .expect("an opened popup");
-    assert_eq!(opened["meta"]["changed"], json!([popup["ref"], note["ref"]]), "{opened}");
+    assert_eq!(opened["meta"]["changedRefs"], json!([popup["ref"], note["ref"]]), "{opened}");
     let shown = listed(&mut replay).into_iter().find(|a| a["ref"] == note["ref"]).unwrap();
     assert_eq!(shown["open"], true);
 }
@@ -1374,7 +1820,7 @@ fn an_update_ops_expectation_compares_values_not_spellings() {
 
 #[test]
 fn a_file_sent_back_renamed_is_renamed_and_its_undo_restores_the_annotation() {
-    // `AttachmentFileWriteSchema` ignores what a read adds (size, checksum,
+    // `AttachmentFileWriteSchema` ignores what a read adds (size, MD5,
     // dates), so the whole `file` a read gives can be sent back changed.
     let file = load();
     let attachment = case(&file, "file-attachment-icon");
@@ -1397,7 +1843,7 @@ fn a_file_sent_back_renamed_is_renamed_and_its_undo_restores_the_annotation() {
     let item = &applied["result"]["items"][0]["annotation"];
     assert_eq!(item["file"]["name"], "renamed.txt", "{item}");
     assert_eq!(item["file"]["description"], "described", "{item}");
-    assert_eq!(item["file"]["size"], created["file"]["size"], "the bytes stay: {item}");
+    assert_eq!(item["file"]["sizeBytes"], created["file"]["sizeBytes"], "the bytes stay: {item}");
 
     // The undo puts the annotation's dictionary back from its capture
     // (`revertObjects`). The rename was written into the file
