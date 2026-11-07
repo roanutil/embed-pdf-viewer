@@ -1,3 +1,4 @@
+import UIKit
 import XCTest
 
 final class PluginControlsTests: XCTestCase {
@@ -80,21 +81,54 @@ final class PluginControlsTests: XCTestCase {
   }
 
   @MainActor
-  func testAddNoteUndoRedo() throws {
+  func testAddNoteUndoRedo() async throws {
     let app = XCUIApplication()
     app.launch()
     let add = app.buttons["addNote"]
     XCTAssertTrue(add.waitForExistence(timeout: 20))
+    let page = app.images["pages"].firstMatch
+    XCTAssertTrue(page.waitForExistence(timeout: 20))
+    let original = try rasterPixels(page)
     let undo = app.buttons["historyUndo"]
     let redo = app.buttons["historyRedo"]
     XCTAssertTrue(undo.waitForExistence(timeout: 10))
     XCTAssertFalse(undo.isEnabled)
     add.tap()
-    waitUntilEnabled(undo)
+    try await waitForEnabled(undo)
+    let edited = try await waitForRaster(page, matching: original, differs: true)
     undo.tap()
-    waitUntilEnabled(redo)
+    try await waitForEnabled(redo)
+    _ = try await waitForRaster(page, matching: original)
     redo.tap()
-    waitUntilEnabled(undo)
+    try await waitForEnabled(undo)
+    _ = try await waitForRaster(page, matching: edited)
+  }
+
+  @MainActor
+  private func rasterPixels(_ page: XCUIElement) throws -> Data {
+    let image = try XCTUnwrap(page.screenshot().image.cgImage)
+    return try XCTUnwrap(image.dataProvider?.data) as Data
+  }
+
+  @MainActor
+  private func waitForRaster(_ page: XCUIElement, matching expected: Data, differs: Bool = false) async throws -> Data {
+    let deadline = ContinuousClock.now + .seconds(10)
+    while true {
+      let pixels = try rasterPixels(page)
+      if (pixels == expected) != differs { return pixels }
+      if ContinuousClock.now >= deadline {
+        XCTFail(differs ? "The displayed PDF pixels did not reflect the edit" : "The displayed PDF pixels did not match the confirmed history state")
+        return pixels
+      }
+      try await Task.sleep(for: .milliseconds(50))
+    }
+  }
+
+  @MainActor
+  private func waitForEnabled(_ element: XCUIElement) async throws {
+    let deadline = ContinuousClock.now + .seconds(10)
+    while !element.isEnabled, ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(50)) }
+    XCTAssertTrue(element.isEnabled)
   }
 
   @MainActor

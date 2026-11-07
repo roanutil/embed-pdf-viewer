@@ -12,6 +12,7 @@ public final class StageReaderModel {
   public private(set) var camera: Camera?
   public private(set) var currentPageIndex: UInt32 = 0
   public private(set) var error: PDFError?
+  private var renderRevisions: [PageRef: UInt64] = [:]
   @ObservationIgnored public let stage: StageCapability
   @ObservationIgnored public let render: RenderCapability
   @ObservationIgnored private var lastTranslation = CGSize.zero
@@ -43,16 +44,41 @@ public final class StageReaderModel {
     self.render = render
   }
 
-  /// Run for the view's lifetime: mirrors the stage's camera and page.
+  /// Run for the view's lifetime, projecting stage and render events.
   public func task() async {
-    for await event in stage.events {
-      switch event {
-      case .cameraChanged, .motionEnded, .viewportChanged, .zoomChanged, .settingsChanged:
-        await refresh()
-      case let .pageChanged(event):
-        currentPageIndex = event.pageIndex
+    let stageEvents = stage.events
+    let renderEvents = render.events
+    await withTaskGroup(of: Void.self) { group in
+      group.addTask {
+        for await event in stageEvents {
+          guard !Task.isCancelled else { return }
+          await self.receiveStage(event)
+        }
       }
+      group.addTask {
+        for await event in renderEvents { await self.receiveRender(event) }
+      }
+      await refresh()
+      _ = await group.next()
+      group.cancelAll()
     }
+  }
+
+  /// A presentation revision that changes when Rust invalidates this page.
+  public func renderRevision(for page: PageRef) -> UInt64 { renderRevisions[page, default: 0] }
+
+  private func receiveStage(_ event: StageEvent) async {
+    switch event {
+    case .cameraChanged, .motionEnded, .viewportChanged, .zoomChanged, .settingsChanged:
+      await refresh()
+    case let .pageChanged(event):
+      currentPageIndex = event.pageIndex
+    }
+  }
+
+  private func receiveRender(_ event: RenderEvent) {
+    guard !Task.isCancelled, case let .invalidated(pages, _) = event else { return }
+    for page in pages { renderRevisions[page, default: 0] &+= 1 }
   }
 
   public func sizeChanged(_ size: CGSize, displayScale: CGFloat) async {
