@@ -883,15 +883,22 @@ impl Core {
                 signal.remove(id);
             }
             let answer = answer?;
+            let release = this.host.release_image.clone();
             let drawn: Vec<AppearancePicture> = answer
                 .get("appearances")
                 .and_then(Value::as_array)
                 .into_iter()
                 .flatten()
                 .filter_map(|picture| {
+                    // Every image is held, so one no item asked for is let
+                    // go of at once.
+                    let image = release.as_ref().and_then(|release| {
+                        let image = picture.get("image").filter(|image| image.is_object())?;
+                        Some(PageImageHandle::with_release(image.clone(), release.clone()))
+                    });
                     let reference = picture.get("ref").unwrap_or(&Value::Null);
                     let version = versions.get(&annotation_key(reference))?;
-                    Some(AppearancePicture { picture: picture.clone(), version: *version })
+                    Some(AppearancePicture { picture: picture.clone(), version: *version, image })
                 })
                 .collect();
             this.recent_appearances
