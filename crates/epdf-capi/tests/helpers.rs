@@ -138,8 +138,8 @@ fn same_quantized(actual: &Value, expected: &Value) -> bool {
 fn charmap_snapshot(case: &Value) -> Value {
     let mut snapshot = json!({ "text": case["text"], "charCount": case["charCount"] });
     if let Some(map) = case.get("charMap") {
-        snapshot["charMap"] =
-            map.as_array().unwrap().iter().map(|p| json!({ "char": p[0], "text": p[1] })).collect();
+        // Anchors are `[char, text]` pairs on the wire, as the TypeScript sends them.
+        snapshot["charMap"] = map.clone();
     }
     snapshot
 }
@@ -383,8 +383,7 @@ fn malformed_character_maps_are_refused_as_the_vectors_say() {
 #[test]
 fn out_of_range_text_indices_are_refused_and_inverted_ranges_are_empty() {
     // "a😀b": three characters, four UTF-16 units.
-    let text =
-        json!({ "text": "a\u{1F600}b", "charCount": 3, "charMap": [{ "char": 2, "text": 3 }] });
+    let text = json!({ "text": "a\u{1F600}b", "charCount": 3, "charMap": [[2, 3]] });
     assert_eq!(
         ok(SLICE_TEXT, &json!({ "text": text, "range": { "start": 1, "end": 2 } })),
         "\u{1F600}"
@@ -686,7 +685,7 @@ fn argument_doubles_decode_exactly() {
 
 #[test]
 fn character_maps_with_overflowing_tail_projections_are_refused() {
-    let text = json!({ "text": "", "charCount": u32::MAX, "charMap": [{ "char": 1, "text": 2 }] });
+    let text = json!({ "text": "", "charCount": u32::MAX, "charMap": [[1, 2]] });
     for (operation, args) in [
         (SLICE_TEXT, json!({ "text": text, "range": { "start": 0, "end": 0 } })),
         (TEXT_OFFSETS_TO_CHARS, json!({ "text": text, "range": { "start": 0, "end": 0 } })),
