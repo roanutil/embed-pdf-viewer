@@ -345,7 +345,7 @@ async function runInstalled(
     metering = false;
     entry.engine = fake.log.slice(loggedEngine);
     loggedEngine = fake.log.length;
-    entry.status = kernel.status();
+    entry.status = kernel.getStatus();
     entry.engineState = fake.snapshot();
     if (scenario.snapshot !== 'none') entry.state = snapshot(kernel, scenario.snapshot);
     trace.push(entry);

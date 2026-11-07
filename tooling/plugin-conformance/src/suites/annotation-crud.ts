@@ -41,7 +41,7 @@ const seed = [
 ];
 const after = (n: number, patch: Parameters<typeof annotationAfter>[1]) =>
   annotationAfter(seed[n - 1]!, patch);
-const select = (...refs: ReturnType<typeof objRef>[]) => call('selection.set', [refs]);
+const select = (...refs: ReturnType<typeof objRef>[]) => call('selection.select', [refs]);
 const draw = (tool: string, phase: string, x: number, y: number) =>
   call('createPointer', [tool, phase, pr(1), { x, y }]);
 const cases: ScenarioCase[] = [
@@ -118,20 +118,20 @@ const cases: ScenarioCase[] = [
     'selection-reads',
     'Nested selection set/add/list and properties read complete current annotations; grouped parts select with their parent.',
     [
-      call('selection.list'),
+      call('selection.getSelected'),
       call('selection.getProperties'),
       select(objRef(1)),
       call('selection.add', [[objRef(2)]]),
-      call('selection.list'),
+      call('selection.getSelected'),
       call('selection.getProperties'),
       select(objRef(3)),
       call('selection.getProperties'),
       call('selection.add', [[objRef(5)]]),
       call('selection.getProperties'),
       call('selection.clear'),
-      call('selection.list'),
+      call('selection.getSelected'),
       select(objRef(77)),
-      call('selection.list'),
+      call('selection.getSelected'),
     ],
     [
       hydrate([
@@ -168,7 +168,7 @@ const cases: ScenarioCase[] = [
     [
       select(objRef(1), objRef(2)),
       call('selection.update', [{ locked: false, print: false }]),
-      call('selection.list'),
+      call('selection.getSelected'),
       call('selection.update', [{ hidden: true }]),
       call('list'),
     ],
@@ -211,7 +211,7 @@ const cases: ScenarioCase[] = [
       call('list'),
       draw('circle', 'down', 10, 10),
       draw('circle', 'up', 60, 50),
-      call('selection.list'),
+      call('selection.getSelected'),
       call('draft.get'),
       call('draft.cancel'),
     ],
@@ -341,7 +341,7 @@ const cases: ScenarioCase[] = [
       call('getSettings'),
       call('updateSettings', [
         {
-          snap: { rotationThreshold: 10 },
+          snap: { rotationThresholdDeg: 10 },
           chrome: { handles: { hitSize: 40 }, rotationHandle: { enabled: false } },
         },
       ]),
@@ -395,7 +395,7 @@ const cases: ScenarioCase[] = [
       draw('square', 'down', 100, 500),
       draw('square', 'move', 180, 560),
       draw('square', 'up', 180, 560),
-      call('selection.list'),
+      call('selection.getSelected'),
       call('isPending', [objRef(10001)]),
       call('selection.update', [{ color: '#000000' }]),
       settle(

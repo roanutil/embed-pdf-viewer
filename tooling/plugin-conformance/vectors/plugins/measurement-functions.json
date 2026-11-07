@@ -233,7 +233,6 @@
             "skipped": [],
             "failed": [],
             "scaleError": {
-              "name": "EngineError",
               "code": "Unknown",
               "message": "x"
             }
@@ -254,7 +253,6 @@
               "skipped": [],
               "failed": [],
               "scaleError": {
-                "name": "EngineError",
                 "code": "Unknown",
                 "message": "x"
               }
@@ -2532,7 +2530,6 @@
           ],
           "status": "error",
           "error": {
-            "name": "EngineError",
             "code": "RuntimeUnavailable",
             "message": "offline"
           },
@@ -2599,7 +2596,6 @@
           "ready": true,
           "persistent": true,
           "error": {
-            "name": "EngineError",
             "code": "RuntimeUnavailable",
             "message": "offline"
           }
@@ -2613,7 +2609,6 @@
         {
           "status": "error",
           "error": {
-            "name": "EngineError",
             "code": "RuntimeUnavailable",
             "message": "offline"
           },
@@ -2652,7 +2647,6 @@
           "ready": false,
           "persistent": false,
           "error": {
-            "name": "EngineError",
             "code": "RuntimeUnavailable",
             "message": "offline"
           }

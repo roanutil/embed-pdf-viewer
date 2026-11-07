@@ -197,7 +197,7 @@ export function scriptedSandboxFactory(spec: SandboxSpec, env: PluginEnv): Scrip
       return emptyOutput(answer.output);
     };
     const sandbox: ScriptSandbox = {
-      get disposed() {
+      get destroyed() {
         return disposed;
       },
       boot(sources, input, budget) {
@@ -210,7 +210,7 @@ export function scriptedSandboxFactory(spec: SandboxSpec, env: PluginEnv): Scrip
         runs += 1;
         return respond(build.run, runs - 1);
       },
-      dispose() {
+      destroy() {
         env.log('sandbox.dispose', [id]);
         disposed = true;
       },
@@ -263,7 +263,7 @@ function scriptHostDriver(config: ScriptHostDriverConfig = {}, env: PluginEnv): 
         >,
         ...(config.budget ? { budget: config.budget } : {}),
       });
-      ctx.cleanup(() => host.dispose());
+      ctx.cleanup(() => host.destroy());
       const api: ScriptHostDriver = {
         transaction: (ops) =>
           host.transaction(async (txn) => {
@@ -279,7 +279,7 @@ function scriptHostDriver(config: ScriptHostDriverConfig = {}, env: PluginEnv): 
             }
             return out;
           }),
-        dispose: () => host.dispose(),
+        dispose: () => host.destroy(),
       };
       return { api };
     },
@@ -299,7 +299,7 @@ const node = (type: string, extra: Record<string, unknown> = {}, next: unknown[]
   ...extra,
   next,
 });
-const actionTree = (root: unknown, incomplete = false) => ({ root, incomplete, warningFlags: 0, warnings: [] });
+const actionTree = (root: unknown, incomplete = false) => ({ root, incomplete, warnings: [] });
 const claims = (over: Partial<Identity> = {}): Identity => ({
   userId: 'u-1',
   displayName: 'Ada',
@@ -464,7 +464,7 @@ const hostCases: ScenarioCase[] = [
     plugins: host({ bootSources: { returns: [] }, sandbox: { builds: [{ run: [{ output: {
       event: { rc: false, value: 'edited', change: 'x', selStart: 1, selEnd: 2 },
       formEffects: [{ kind: 'setValue', ref: { kind: 'fqn', name: 't' }, value: { value: 'edited' } }],
-      uiEffects: [{ kind: 'print' }],
+      uiEffects: [{ type: 'print' }],
       diagnostics: [{ code: 'script-error', message: 'script refusal' }],
     } }] }] } }),
     steps: [start, txn(run('output()'))],
@@ -517,7 +517,7 @@ const hostCases: ScenarioCase[] = [
   },
   {
     name: 'resource-fault-rebuilds-and-reboots',
-    covers: 'A sandbox that reports disposed after a run poisons the realm; the next transaction builds a new one and boots it again.',
+    covers: 'A sandbox that reports destroyed after a run poisons the realm; the next transaction builds a new one and boots it again.',
     plugins: host({ sandbox: { builds: [{ run: [{ dispose: true }] }, {}] } }),
     steps: [start, txn(boot(), run('boom()')), txn(run('after()'))],
     ...UNSNAPSHOTTED,
@@ -563,7 +563,7 @@ const hostCases: ScenarioCase[] = [
               annotPages: [0, 2],
               annotsCoverDocument: false,
               fields: [
-                { ref: { kind: 'fqn', name: 't' }, name: 't', family: 'text', value: 'v', defaultValue: null, display: 'visible', readOnly: false, required: true, options: [{ label: 'l', value: 'v' }] },
+                { ref: { kind: 'fqn', name: 't' }, name: 't', kind: 'text', value: 'v', defaultValue: null, display: 'visible', readOnly: false, required: true, options: [{ label: 'l', value: 'v' }] },
               ],
             },
           ),
@@ -610,7 +610,7 @@ const hostCases: ScenarioCase[] = [
   },
   {
     name: 'dispose',
-    covers: 'dispose() releases the realm one turn after its factory settled, is safe to repeat, and every later transaction rejects.',
+    covers: 'destroy() releases the realm one turn after its factory settled, is safe to repeat, and every later transaction rejects.',
     plugins: host({ bootSources: { returns: [] } }),
     steps: [
       start,
@@ -623,7 +623,7 @@ const hostCases: ScenarioCase[] = [
   },
   {
     name: 'dispose-before-any-realm',
-    covers: 'dispose() with no realm built does nothing but refuse later transactions.',
+    covers: 'destroy() with no realm built does nothing but refuse later transactions.',
     plugins: host(),
     steps: [start, { op: 'call', target: { token: 'script-host' }, method: 'dispose' }, txn(boot())],
     ...UNSNAPSHOTTED,

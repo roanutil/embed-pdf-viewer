@@ -38,7 +38,7 @@ const draft: AnnotationDraft = {
   print: true,
 };
 const ref = objRef(10001);
-const select = (...refs: ReturnType<typeof objRef>[]) => call('selection.set', [refs]);
+const select = (...refs: ReturnType<typeof objRef>[]) => call('selection.select', [refs]);
 const edit = (phase: string, x: number, y: number): Step =>
   call('editPointer', [phase, pr(1), { x, y }, false]);
 const point = { move: { x: 100, y: 125 }, handle: { x: 200, y: 200 }, rotate: { x: 150, y: 76 } };
@@ -60,7 +60,7 @@ const caption = measurementLayout(shapeOf(measured), measurementOf(measured)!, s
   .caption!.center;
 const snapshotSteps = [
   call('list'),
-  call('selection.list'),
+  call('selection.getSelected'),
   call('listPageItems', [pr(1)]),
   call('text.getEditing'),
   call('getHovered'),
@@ -97,7 +97,7 @@ function pending(
     if (outcome === 'disappear') steps.push(call('refresh'));
   }
   steps.push(
-    call('selection.list'),
+    call('selection.getSelected'),
     edit('move', to.x, to.y),
     edit('up', to.x, to.y),
     ...snapshotSteps,

@@ -45,7 +45,7 @@ import type {
   DocumentEvent,
   FormEffect,
   FormFieldValue,
-  FormFieldDTO,
+  FormField,
   FormSnapshot,
   Identity,
   DocumentActionsSnapshot,
@@ -89,8 +89,8 @@ const textValue = (value: string) => ({ value });
 const alert = (
   message: string,
   icon = 0,
-): Extract<ScriptOutput['uiEffects'][number], { kind: 'alert' }> => ({
-  kind: 'alert',
+): Extract<ScriptOutput['uiEffects'][number], { type: 'alert' }> => ({
+  type: 'alert',
   message,
   icon,
 });
@@ -104,7 +104,7 @@ const ACTIONS_READ = (scripts: string[] = ['var lib = 1;']): ResponseSpec => ({
   } satisfies DocumentActionsSnapshot,
 });
 
-const kvcf = (over: NonNullable<FormFieldDTO['actions']>) => ({ actions: over });
+const kvcf = (over: NonNullable<FormField['actions']>) => ({ actions: over });
 const K = (script = 'AFNumber_Keystroke(2)') => tree(js(script));
 
 /** A standalone driver case: the driver over document `a`. */
@@ -177,7 +177,7 @@ const environmentCases: ScenarioCase[] = [
   },
   {
     name: 'standalone-dispose',
-    covers: 'dispose() releases the owned realm; a later transaction rejects.',
+    covers: 'destroy() releases the owned realm; a later transaction rejects.',
     plugins: solo({ sandbox: { builds: [{}] } }),
     engine: { documents: { a: doc([list([NAME]), ACTIONS_READ()]) } },
     ...UNSNAPSHOTTED,
@@ -439,7 +439,7 @@ const activationCases: ScenarioCase[] = [
             run: [
               out({
                 formEffects: [setValue(1, textValue('Mouse Up:Field'))],
-                uiEffects: [alert('Summary ready'), { kind: 'gotoPage', page: 1 }],
+                uiEffects: [alert('Summary ready'), { type: 'goToPage', pageIndex: 1 }],
               }),
             ],
           },
@@ -502,7 +502,7 @@ const activationCases: ScenarioCase[] = [
   },
 ];
 
-const CODE = (over: NonNullable<FormFieldDTO['actions']> = {}, value = 'old') =>
+const CODE = (over: NonNullable<FormField['actions']> = {}, value = 'old') =>
   text(2, 'code', value, kvcf({ keystroke: K('ks()'), ...over }));
 
 const keystrokeCases: ScenarioCase[] = [
@@ -655,7 +655,7 @@ const keystrokeCases: ScenarioCase[] = [
   },
 ];
 
-const GUARD = (over: NonNullable<FormFieldDTO['actions']> = {}) =>
+const GUARD = (over: NonNullable<FormField['actions']> = {}) =>
   text(2, 'email', '', kvcf({ validate: tree(js('check()')), ...over }));
 
 const validateCases: ScenarioCase[] = [
@@ -1080,7 +1080,7 @@ const budgetCases: ScenarioCase[] = [
 // ── the capability over the actions plugin's realm ───────────────────────────
 
 // The capability cases below use the actual form plugin, which owns native writes.
-const USER = { origin: 'user', source: { kind: 'api' }, event: { scope: 'activate' } } as const;
+const USER = { origin: 'user', source: { kind: 'api' }, event: { type: 'activate' } } as const;
 const sharedFields = [
   text(2, 'amount', '3', kvcf({ keystroke: K(), validate: tree(js('validate()')) })),
   text(3, 'total', '6', kvcf({ calculate: tree(js('calc()')), format: tree(js('fmt()')) })),
@@ -1103,7 +1103,7 @@ const sharedAnswer = {
   events: sharedValues.events
     .map((event, index) => ({
       ...event,
-      origin: { ...LOCAL, tx: { id: operationAt(1), index, count: 3 } },
+      origin: { ...LOCAL, transaction: { id: operationAt(1), index, count: 3 } },
     }))
     .concat([
       {
@@ -1111,7 +1111,7 @@ const sharedAnswer = {
         field: sharedFields[1]!,
         widgets: [row(103, ref(3))],
         meta: appearanceMeta,
-        origin: { ...LOCAL, tx: { id: operationAt(1), index: 2, count: 3 } },
+        origin: { ...LOCAL, transaction: { id: operationAt(1), index: 2, count: 3 } },
       },
     ] satisfies DocumentEvent[]),
 };
@@ -1128,7 +1128,7 @@ const resetCalculationAnswer = {
   },
   events: [...resetBase.events, ...resetCalculated.events].map((event, index) => ({
     ...event,
-    origin: { ...LOCAL, tx: { id: operationAt(1), index, count: 2 } },
+    origin: { ...LOCAL, transaction: { id: operationAt(1), index, count: 2 } },
   })),
 };
 const observe: Step[] = [
@@ -1250,7 +1250,7 @@ const capabilityCases: ScenarioCase[] = [
         {
           origin: 'lifecycle',
           source: { kind: 'api' },
-          event: { scope: 'document', name: 'open' },
+          event: { type: 'document', event: 'open' },
         },
       ]),
     ],
@@ -1261,10 +1261,10 @@ const capabilityCases: ScenarioCase[] = [
           run: [
             out({
               formEffects: [setValue(4, textValue('0'))],
-              uiEffects: [alert('recalculated'), { kind: 'print' }],
+              uiEffects: [alert('recalculated'), { type: 'print' }],
             }),
             budgetFault('recalc budget'),
-            out({ uiEffects: [{ kind: 'print' }] }),
+            out({ uiEffects: [{ type: 'print' }] }),
           ],
         },
       ],
@@ -1278,10 +1278,10 @@ const capabilityCases: ScenarioCase[] = [
       [
         row(101, ref(1)),
         row(108, ref(8), 1, undefined, {
-          fieldFamily: 'pushbutton',
+          fieldKind: 'pushbutton',
           actions: { activate: tree(js('click()')) },
         }),
-        row(109, ref(8), 1, undefined, { fieldFamily: 'pushbutton' }),
+        row(109, ref(8), 1, undefined, { fieldKind: 'pushbutton' }),
       ],
     ),
     [
@@ -1297,7 +1297,7 @@ const capabilityCases: ScenarioCase[] = [
   formScenario(
     'scripted-activation-matches-refs',
     'Current baseIndex refs and unknown widget numbers are refused before dispatch. An object number with another page has no matching action row on that page and falls back to the form owner.',
-    snapshot([NAME, BUTTON], [row(108, ref(8), 1, undefined, { fieldFamily: 'pushbutton' })]),
+    snapshot([NAME, BUTTON], [row(108, ref(8), 1, undefined, { fieldKind: 'pushbutton' })]),
     [
       call('activateWidget', [{ kind: 'baseIndex', page: pr(1), baseIndex: 3 }]),
       call('activateWidget', [{ kind: 'baseIndex', page: pr(1), baseIndex: 4 }]),
@@ -1310,7 +1310,7 @@ const capabilityCases: ScenarioCase[] = [
   formScenario(
     'a-kindless-address-matches-no-candidate',
     'The surviving no-candidate refusal uses a current baseIndex widget address; malformed removed nm/index addresses remain archived.',
-    snapshot([BUTTON], [row(108, ref(8), 1, undefined, { fieldFamily: 'pushbutton' })]),
+    snapshot([BUTTON], [row(108, ref(8), 1, undefined, { fieldKind: 'pushbutton' })]),
     [call('activateWidget', [{ kind: 'baseIndex', page: pr(1), baseIndex: 0 }])],
     [],
     { builds: [{}] },
@@ -1323,14 +1323,14 @@ const capabilityCases: ScenarioCase[] = [
       [
         row(101, ref(1)),
         row(108, ref(8), 1, undefined, {
-          fieldFamily: 'pushbutton',
+          fieldKind: 'pushbutton',
           actions: { activate: tree(js('click()')) },
         }),
         row(109, ref(8), 1, undefined, {
-          fieldFamily: 'pushbutton',
+          fieldKind: 'pushbutton',
           actions: { cursorEnter: tree(null) },
         }),
-        row(110, ref(8), 1, undefined, { fieldFamily: 'pushbutton' }),
+        row(110, ref(8), 1, undefined, { fieldKind: 'pushbutton' }),
       ],
     ),
     [

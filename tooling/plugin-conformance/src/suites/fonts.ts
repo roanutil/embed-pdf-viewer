@@ -24,13 +24,13 @@ import {
   standardFontCss,
   standardFontMetrics,
   standardFontProgram,
-  type FontProgram,
+  type MountableFontProgram,
 } from '../../../../packages/core/fonts/src/index';
 import { FACES } from '../../../../packages/core/fonts/src/standard/faces.generated';
 
 import type { FunctionCase, Suite } from '../vectors';
 
-const loaded = new Map<FontProgram, Uint8Array>();
+const loaded = new Map<MountableFontProgram, Uint8Array>();
 for (const font of STANDARD_FONTS) {
   const program = standardFontProgram(font);
   loaded.set(program, await program.load());

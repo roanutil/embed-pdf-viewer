@@ -10,6 +10,7 @@ import type {
   PageLayout,
 } from '@embedpdf/engine-core/runtime';
 import { createFakeEngine } from '../src/fake-engine';
+import { permissionFlagsOf } from '@embedpdf/engine-core/runtime';
 
 const start = { op: 'call', target: 'kernel', method: 'start' } as const;
 const open = {
@@ -80,8 +81,8 @@ test('confirmed engine events reach the kernel before an immediate or deferred m
   for (const deferred of [false, true]) {
     const event: DocumentEvent = {
       type: 'pages.reordered',
-      origin: { kind: 'local', sessionId: 's', sub: null, ts: 0, serverId: null },
-      layout: { pageCount: 0, pages: [], namedPages: [] },
+      origin: { kind: 'local', sessionId: 's', subject: null, at: '1970-01-01T00:00:00.000Z', serverSequence: null },
+      layout: { pageCount: 0, pages: [], labels: [], namedPages: [] },
       pages: [],
       meta: { affectedPages: [], cacheDelta: null, opId: 'write', undoable: true },
     };
@@ -127,8 +128,8 @@ test('confirmed engine events reach the kernel before an immediate or deferred m
     assert.ok(eventIndex >= 0);
     assert.ok(callbacks.findIndex((c) => c.fn === '@@settled') > eventIndex);
     assert.equal(
-      (result.trace.at(-1)!.state as { core: { documents: Record<string, { revision: number }> } })
-        .core.documents.a.revision,
+      (result.trace.at(-1)!.state as { core: { documents: Record<string, { pagesSequence: number }> } })
+        .core.documents.a.pagesSequence,
       1,
     );
   }
@@ -156,7 +157,7 @@ const runNamed = (name: string) => runScenario(scenarioNamed(name));
 const stateOf = (entry: TraceEntry) =>
   entry.state as {
     core: {
-      documents: Record<string, { revision: number }>;
+      documents: Record<string, { pagesSequence: number }>;
       pending: Record<string, { status: string }>;
       order: string[];
     };
@@ -363,17 +364,17 @@ test('the fake exposes current service methods and isolates listeners while adva
   doc.events.on('pages.reordered', () => {
     delivered += 1;
   });
-  for (const serverId of [9, 3])
+  for (const serverSequence of [9, 3])
     fake.emit('a', {
       type: 'pages.reordered',
-      origin: { kind: 'remote', sessionId: 's', sub: null, ts: 0, serverId },
-      layout: { pageCount: 0, pages: [], namedPages: [] },
+      origin: { kind: 'remote', sessionId: 's', subject: null, at: '1970-01-01T00:00:00.000Z', serverSequence },
+      layout: { pageCount: 0, pages: [], labels: [], namedPages: [] },
       pages: [],
       meta: { affectedPages: [], cacheDelta: null, opId: 'write', undoable: true },
     });
   assert.equal(delivered, 2);
   assert.equal(reports.length, 2);
-  assert.equal(doc.events.lastServerId(), 9);
+  assert.equal(doc.events.lastServerSequence(), 9);
 });
 
 test('late responses and retained old handles cannot publish into a reopened document session', async () => {
@@ -382,8 +383,8 @@ test('late responses and retained old handles cannot publish into a reopened doc
     const event: DocumentEvent = {
       type: 'pages.reordered',
       pages: [page.ref],
-      origin: { kind: 'local', sessionId: 'old', sub: null, ts: 0, serverId: null },
-      layout: { pageCount: 1, pages: [page], namedPages: [] },
+      origin: { kind: 'local', sessionId: 'old', subject: null, at: '1970-01-01T00:00:00.000Z', serverSequence: null },
+      layout: { pageCount: 1, pages: [page], labels: [], namedPages: [] },
       meta: { affectedPages: [], cacheDelta: null, opId: 'old-write', undoable: true },
     };
     const fake = createFakeEngine(
@@ -425,7 +426,7 @@ test('successful unlock refreshes state, prompt and PDF-bit authorization before
       encryption: { state: 'encrypted', requiresPassword: true },
       permissions: {
         known: true,
-        bits: 0,
+        flags: permissionFlagsOf(0),
         allAllowed: false,
         openedAs: 'none',
         securityHandlerRevision: 6,
@@ -435,7 +436,7 @@ test('successful unlock refreshes state, prompt and PDF-bit authorization before
     };
     const owner: DocumentSecurityState = {
       ...locked,
-      permissions: { ...locked.permissions, bits: 0xffffffff, allAllowed: true, openedAs: 'owner' },
+      permissions: { ...locked.permissions, flags: permissionFlagsOf(0xffffffff), allAllowed: true, openedAs: 'owner' },
       access: { required: false, reasons: [] },
     };
     const result = { security: owner } satisfies DocumentUnlockResult;

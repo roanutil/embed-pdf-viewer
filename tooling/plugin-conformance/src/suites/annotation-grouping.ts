@@ -19,7 +19,7 @@ import {
   open,
 } from './annotation-live-fixtures';
 const group = (parent: number) => ({ to: objRef(parent), type: 'group' as const });
-const select = (...numbers: number[]) => call('selection.set', [numbers.map((n) => objRef(n))]);
+const select = (...numbers: number[]) => call('selection.select', [numbers.map((n) => objRef(n))]);
 const quad = {
   upperLeft: { x: 10, y: 40 },
   upperRight: { x: 90, y: 40 },
@@ -73,7 +73,7 @@ export const suites: Suite[] = [
           select(1, 2),
           call('selection.canGroup'),
           call('selection.group'),
-          call('selection.list'),
+          call('selection.getSelected'),
           call('list'),
         ],
         [
@@ -97,7 +97,7 @@ export const suites: Suite[] = [
           call('selection.canGroup'),
           call('selection.canUngroup'),
           call('selection.group'),
-          call('selection.list'),
+          call('selection.getSelected'),
           call('selection.canGroup'),
           call('selection.canUngroup'),
           call('selection.ungroup'),
@@ -122,12 +122,12 @@ export const suites: Suite[] = [
           call('selection.canUngroup'),
           call('selection.group'),
           call('selection.ungroup'),
-          call('selection.list'),
+          call('selection.getSelected'),
           open('b'),
-          call('selection.set', [[objRef(1), objRef(3)]], 'b'),
+          call('selection.select', [[objRef(1), objRef(3)]], 'b'),
           call('selection.canGroup', [], 'b'),
           call('selection.group', [], 'b'),
-          call('selection.list', [], 'b'),
+          call('selection.getSelected', [], 'b'),
         ],
         [],
         {
@@ -149,7 +149,7 @@ export const suites: Suite[] = [
       scenario(
         'replace-text-creates-a-group',
         'One Change creates the Caret primary and StrikeOut subordinate under stable born refs; both stay selected.',
-        [replace(), call('selection.list'), call('list')],
+        [replace(), call('selection.getSelected'), call('list')],
         [
           hydrate(),
           write(

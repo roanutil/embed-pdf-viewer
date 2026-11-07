@@ -22,7 +22,7 @@ import type {
   ANNOTATION_DEFAULTS,
 } from '../../../packages/plugin/annotation/src/contract';
 import {
-  initialAnnotationState,
+  initialAnnotationModel,
   withSession,
   setGhostAt,
   withSnap,
@@ -34,6 +34,15 @@ const expectedFailures = new Map<string, [string, string]>([
   ['fromDTO/no-ref', ['TypeError', "undefined (reading 'kind')"]],
   ['fromDTO/null-ref', ['TypeError', "null (reading 'kind')"]],
   ['buildToolRegistry/unknown-base', ['Error', "tool 'nope' extends an unknown tool"]],
+  // 595fa2bd5 removed both; the cases record the removal (`removedUpstream`).
+  ...['Helvetica', 'courier new', 'Inter', 'Unknown Face', 'no-fonts'].map(
+    (label) =>
+      [`cssFontFamilyForFace/${label}`, ['Error', 'was removed upstream in 595fa2bd5']] as [string, [string, string]],
+  ),
+  ...['helvetica-bold', 'courier', 'symbol', 'inter-bold'].map(
+    (label) =>
+      [`cssFontFamilyForFont/${label}`, ['Error', 'was removed upstream in 595fa2bd5']] as [string, [string, string]],
+  ),
   ...[
     ['bad-default', 'square', 'fontSize', 'square'],
     ['bad-default-line', 'bad-line', 'icon', 'line'],
@@ -368,11 +377,11 @@ test('tool defaults preserve URI, flags and ghost and accept current supported f
 });
 
 test('named transitions preserve identity and settings use actual chrome/snap members', () => {
-  const initial = initialAnnotationState();
+  const initial = initialAnnotationModel();
   assert.equal(withSession(initial, initial.session), initial);
   assert.equal(setGhostAt(initial, null), initial);
   assert.equal(withSnap(initial, initial.session.snap), initial);
-  const state = run<ReturnType<typeof initialAnnotationState>>('withSession/set-model');
+  const state = run<ReturnType<typeof initialAnnotationModel>>('withSession/set-model');
   assert.deepEqual(state.session.objectNumbers, [100001, 100002, 100003, 100004, 100005]);
   assert.equal('byId' in state.session, false);
   const settings = run<typeof ANNOTATION_DEFAULTS>('mergeSettings/configured');
@@ -437,6 +446,8 @@ test('every current create draft is writable except three explicit invalid geome
     'draftOf/toCreateDraft/callout-one-point',
     'draftOf/toCreateDraft/fresh/strikeout-rect-geom',
     'draftOf/toCreateDraft/fresh/markup-no-geometry',
+    // fe2941a27: an empty dash pattern is refused; `null` means none.
+    'draftOf/toCreateDraft/square-dashed-empty',
   ]);
   for (const c of (repository.suites[0] as FunctionSuite).cases.filter((c) => c.fn === 'draftOf')) {
     const checked = AnnotationDraftSchema.safeParse(run(c.name));

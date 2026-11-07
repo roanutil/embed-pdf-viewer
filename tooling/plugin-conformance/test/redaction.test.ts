@@ -484,10 +484,10 @@ test('applies bracket busy, settle with the confirmed result and deliver fact pr
       origin: {
         kind: 'local',
         sessionId: 's1',
-        sub: null,
-        ts: 0,
-        serverId: null,
-        tx: { id: 'redaction-apply', index: 0, count: 1 },
+        subject: null,
+        at: '1970-01-01T00:00:00.000Z',
+        serverSequence: null,
+        transaction: { id: 'redaction-apply', index: 0, count: 1 },
       },
     },
   ]);
@@ -643,7 +643,7 @@ test('all successful annotation answers match the actual authored operation fiel
           assert.equal(item.meta.opId, value.meta.opId);
           const event: DocumentEvent = response.events![i]!;
           assert.ok('origin' in event);
-          assert.deepEqual(event.origin.tx, { id: value.meta.opId, index: i, count: ops.length });
+          assert.deepEqual(event.origin.transaction, { id: value.meta.opId, index: i, count: ops.length });
           if ('annotation' in item) {
             AnnotationSchema.parse(item.annotation);
             const entries = new Map(Object.entries(item.annotation));
@@ -660,7 +660,7 @@ test('all successful annotation answers match the actual authored operation fiel
   }
 });
 test('the actual named transitions preserve object identity on their no-op branches', () => {
-  const idle = model.initialRedactionState(),
+  const idle = model.initialRedactionModel(),
     busy = model.startApply(idle),
     done = model.setLastResult(idle, answer({ pages: [pr(1)] }));
   assert.equal(model.startApply(busy), busy);

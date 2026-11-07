@@ -5102,6 +5102,7 @@
             "start": "none",
             "end": "none"
           },
+          "captionEnabled": false,
           "captionPosition": "inline"
         },
         {
@@ -5144,6 +5145,7 @@
             "start": "open-arrow",
             "end": "none"
           },
+          "captionEnabled": false,
           "captionPosition": "inline",
           "dashArray": null,
           "cloudyIntensity": 2
@@ -5188,6 +5190,7 @@
             "start": "none",
             "end": "none"
           },
+          "captionEnabled": false,
           "captionPosition": "inline"
         },
         {
@@ -5230,6 +5233,7 @@
             "start": "open-arrow",
             "end": "none"
           },
+          "captionEnabled": false,
           "captionPosition": "inline",
           "dashArray": null,
           "cloudyIntensity": 2
@@ -5274,6 +5278,7 @@
             "start": "none",
             "end": "none"
           },
+          "captionEnabled": false,
           "captionPosition": "inline"
         },
         {
@@ -5334,6 +5339,7 @@
             "start": "open-arrow",
             "end": "none"
           },
+          "captionEnabled": false,
           "captionPosition": "inline",
           "dashArray": null,
           "cloudyIntensity": 2

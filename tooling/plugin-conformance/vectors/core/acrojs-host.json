@@ -450,7 +450,7 @@
                         ],
                         "uiEffects": [
                           {
-                            "kind": "print"
+                            "type": "print"
                           }
                         ],
                         "diagnostics": [
@@ -547,7 +547,7 @@
                   "annotEffects": [],
                   "uiEffects": [
                     {
-                      "kind": "print"
+                      "type": "print"
                     }
                   ],
                   "diagnostics": [
@@ -2037,7 +2037,7 @@
     },
     {
       "name": "resource-fault-rebuilds-and-reboots",
-      "covers": "A sandbox that reports disposed after a run poisons the realm; the next transaction builds a new one and boots it again.",
+      "covers": "A sandbox that reports destroyed after a run poisons the realm; the next transaction builds a new one and boots it again.",
       "plugins": [
         {
           "factory": "script-host",
@@ -2983,7 +2983,7 @@
                         "name": "t"
                       },
                       "name": "t",
-                      "family": "text",
+                      "kind": "text",
                       "value": "v",
                       "defaultValue": null,
                       "display": "visible",
@@ -3142,7 +3142,7 @@
                         "name": "t"
                       },
                       "name": "t",
-                      "family": "text",
+                      "kind": "text",
                       "value": "v",
                       "defaultValue": null,
                       "display": "visible",
@@ -4300,7 +4300,7 @@
     },
     {
       "name": "dispose",
-      "covers": "dispose() releases the realm one turn after its factory settled, is safe to repeat, and every later transaction rejects.",
+      "covers": "destroy() releases the realm one turn after its factory settled, is safe to repeat, and every later transaction rejects.",
       "plugins": [
         {
           "factory": "script-host",
@@ -4541,7 +4541,7 @@
     },
     {
       "name": "dispose-before-any-realm",
-      "covers": "dispose() with no realm built does nothing but refuse later transactions.",
+      "covers": "destroy() with no realm built does nothing but refuse later transactions.",
       "plugins": [
         {
           "factory": "script-host",

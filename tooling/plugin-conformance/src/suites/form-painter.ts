@@ -8,66 +8,50 @@
  *
  * Pure functions, so one function suite. The widget matrix follows the
  * engine's parity gate (`packages/engine/main/test/widget-painter-parity.test.ts`),
- * which checks the same painter against PDFium's appearance generator. Five
+ * which checks the same painter against PDFium's appearance generator. Two
  * entries are wrappers, because the shipping values carry closures:
  *
- * - `layoutFontOf(fontFamily, codes)` records the font's data members and
- *   asks `width` for each code unit the case passes.
- * - `layoutVariableText(text, fontFamily, options)` lays out in
- *   `layoutFontOf(fontFamily)`, as every caller does.
  * - `widgetScene(widget, field, shown, placement)` draws the widget with
  *   `widgetDrawing` and places that drawing, as the form plugin does.
- * - `paints(family)` takes the family alone.
- * - `needsBreak(previous, currents)` asks the internal line-break rule for
- *   each current character after `previous`.
+ * - `paints(kind)` takes the field kind alone.
+ *
+ * `layoutFontOf`, `layoutVariableText` and `needsBreak` were the painter's
+ * CPVT port, which e40c9c236 removed: a widget's text is laid out by
+ * `@embedpdf/core-text` now. Their cases stay and record that removal
+ * (`removedUpstream`) until the port decides what replaces them.
  *
  * A font program in a result prints its `load` as `{"$function": true}`.
  */
-import type { FormFieldDTO, WidgetAnnotation } from '@embedpdf/engine-core/runtime';
+import type { FormField, WidgetAnnotation } from '@embedpdf/engine-core/runtime';
 import { STANDARD_FONTS } from '@embedpdf/engine-core/runtime';
 
 import {
-  layoutFontOf,
-  layoutVariableText,
   paints,
   textEditorLayout,
   widgetDrawing,
   widgetScene,
   type ShownValue,
-  type VariableTextOptions,
-  type WidgetPlacement,
+  type WidgetScenePlacement,
 } from '../../../../packages/core/form/src/index';
-import { needsBreak } from '../../../../packages/core/form/src/layout/breaks';
 
+import { removedUpstream } from '../removed';
 import type { FunctionCase, Suite } from '../vectors';
 
 const functions = {
-  layoutFontOf: (fontFamily: string | null | undefined, codes: readonly number[]) => {
-    const font = layoutFontOf(fontFamily);
-    return (
-      font && {
-        font: font.font,
-        ascent: font.ascent,
-        descent: font.descent,
-        widths: codes.map((code) => font.width(code)),
-      }
-    );
-  },
-  layoutVariableText: (text: string, fontFamily: string, options: VariableTextOptions) =>
-    layoutVariableText(text, layoutFontOf(fontFamily)!, options),
-  widgetDrawing: (widget: WidgetAnnotation, field: FormFieldDTO, shown?: ShownValue) =>
+  layoutFontOf: removedUpstream('layoutFontOf', 'e40c9c236'),
+  layoutVariableText: removedUpstream('layoutVariableText', 'e40c9c236'),
+  widgetDrawing: (widget: WidgetAnnotation, field: FormField, shown?: ShownValue) =>
     widgetDrawing(widget, field, shown),
   widgetScene: (
     widget: WidgetAnnotation,
-    field: FormFieldDTO,
+    field: FormField,
     shown: ShownValue,
-    placement: WidgetPlacement,
+    placement: WidgetScenePlacement,
   ) => widgetScene(widgetDrawing(widget, field, shown)!, placement),
-  textEditorLayout: (widget: WidgetAnnotation, field: FormFieldDTO, text: string) =>
+  textEditorLayout: (widget: WidgetAnnotation, field: FormField, text: string) =>
     textEditorLayout(widget, field, text),
-  paints: (family: FormFieldDTO['family']) => paints({ family }),
-  needsBreak: (previous: number, currents: readonly number[]) =>
-    currents.map((current) => needsBreak(previous, current)),
+  paints: (kind: FormField['kind']) => paints({ kind }),
+  needsBreak: removedUpstream('needsBreak', 'e40c9c236'),
 };
 
 const cases: FunctionCase[] = [];
@@ -101,7 +85,7 @@ const widget = (patch: Record<string, unknown> = {}, width = 160, height = 24) =
 });
 
 const text = (value: string, patch: Record<string, unknown> = {}) => ({
-  family: 'text',
+  kind: 'text',
   value,
   defaultValue: '',
   maxLength: null,
@@ -114,7 +98,7 @@ const text = (value: string, patch: Record<string, unknown> = {}) => ({
 const option = (label: string, value: string, selected = false) => ({ label, value, selected });
 
 const combo = (value: string) => ({
-  family: 'combobox',
+  kind: 'combobox',
   value,
   defaultValue: '',
   edit: false,
@@ -123,7 +107,7 @@ const combo = (value: string) => ({
 
 const LETTERS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const list = (selected: readonly string[], topIndex = 0) => ({
-  family: 'listbox',
+  kind: 'listbox',
   selectedValues: [...selected],
   defaultValue: [],
   multiSelect: true,
@@ -133,7 +117,7 @@ const list = (selected: readonly string[], topIndex = 0) => ({
   topIndex,
 });
 
-const toggle = (family: 'checkbox' | 'radio') => ({ family, widgets: [] });
+const toggle = (kind: 'checkbox' | 'radio') => ({ kind, widgets: [] });
 
 const ALIGNS = ['left', 'center', 'right'] as const;
 const BORDERS = [
@@ -322,15 +306,15 @@ add('widgetDrawing', 'list/dashed', widget({ fontSize: 9, borderStyle: 'dashed',
 
 for (const fontSize of [0, 10, 16]) {
   for (const caption of ['Submit', 'A much longer caption']) {
-    add('widgetDrawing', `button/${fontSize} ${caption}`, widget({ fontFamily: 'helvetica-bold', fontSize, caption }, 110, 28), { family: 'pushbutton' });
+    add('widgetDrawing', `button/${fontSize} ${caption}`, widget({ fontFamily: 'helvetica-bold', fontSize, caption }, 110, 28), { kind: 'pushbutton' });
   }
 }
-add('widgetDrawing', 'button/no caption', widget({ caption: null }, 110, 28), { family: 'pushbutton' });
-add('widgetDrawing', 'button/empty caption', widget({ caption: '' }, 110, 28), { family: 'pushbutton' });
-add('widgetDrawing', 'button/no colours', widget({ ...NO_LOOK, caption: 'Go' }, 110, 28), { family: 'pushbutton' });
-add('widgetDrawing', 'button/no border', widget({ strokeWidth: 0, caption: 'Go' }, 110, 28), { family: 'pushbutton' });
-add('widgetDrawing', 'button/beveled', widget({ borderStyle: 'beveled', caption: 'Go' }, 110, 28), { family: 'pushbutton' });
-add('widgetDrawing', 'button/missing glyphs', widget({ caption: 'Вперёд' }, 110, 28), { family: 'pushbutton' });
+add('widgetDrawing', 'button/no caption', widget({ caption: null }, 110, 28), { kind: 'pushbutton' });
+add('widgetDrawing', 'button/empty caption', widget({ caption: '' }, 110, 28), { kind: 'pushbutton' });
+add('widgetDrawing', 'button/no colours', widget({ ...NO_LOOK, caption: 'Go' }, 110, 28), { kind: 'pushbutton' });
+add('widgetDrawing', 'button/no border', widget({ strokeWidth: 0, caption: 'Go' }, 110, 28), { kind: 'pushbutton' });
+add('widgetDrawing', 'button/beveled', widget({ borderStyle: 'beveled', caption: 'Go' }, 110, 28), { kind: 'pushbutton' });
+add('widgetDrawing', 'button/missing glyphs', widget({ caption: 'Вперёд' }, 110, 28), { kind: 'pushbutton' });
 
 for (const checkStyle of ['check', 'cross', 'star', 'circle', 'square', 'diamond', null] as const) {
   for (const checked of [true, false]) {
@@ -361,8 +345,8 @@ add('widgetDrawing', 'radio/no border', widget({ strokeWidth: 0 }, 16, 16), togg
 add('widgetDrawing', 'radio/no colours', widget({ ...NO_LOOK }, 16, 16), toggle('radio'), { checked: true });
 add('widgetDrawing', 'radio/oval', widget({ strokeWidth: 2 }, 30, 14), toggle('radio'), { checked: true });
 
-add('widgetDrawing', 'signature', widget(), { family: 'signature' });
-add('widgetDrawing', 'unknown family', widget(), { family: 'unknown', rawValue: '' });
+add('widgetDrawing', 'signature', widget(), { kind: 'signature' });
+add('widgetDrawing', 'unknown family', widget(), { kind: 'unknown', rawValue: '' });
 
 // ── widgetScene ──
 
@@ -395,7 +379,7 @@ add('widgetScene', 'combo/turned 270', comboRow, combo('a'), {}, placementOf(com
 const listRow = widget({ fontSize: 9 }, 120, 60);
 add('widgetScene', 'list/selected', listRow, list(['b']), {}, placementOf(listRow));
 const buttonRow = widget({ caption: 'Go', rotation: 90 }, 90, 26);
-add('widgetScene', 'button/turned 90', buttonRow, { family: 'pushbutton' }, {}, placementOf(buttonRow, 90));
+add('widgetScene', 'button/turned 90', buttonRow, { kind: 'pushbutton' }, {}, placementOf(buttonRow, 90));
 add('widgetScene', 'colours clamp and round', widget({ color: '#808080', interiorColor: '#010203', fontColor: '#fefdfc' }), text('Hue'), {}, placementOf(widget()));
 
 // ── textEditorLayout ──
@@ -429,8 +413,8 @@ add('textEditorLayout', 'combo', editorRow(), combo('a'), 'Alpha');
 
 // ── paints ──
 
-for (const family of ['text', 'checkbox', 'radio', 'combobox', 'listbox', 'pushbutton', 'signature', 'unknown']) {
-  add('paints', family, family);
+for (const kind of ['text', 'checkbox', 'radio', 'combobox', 'listbox', 'pushbutton', 'signature', 'unknown']) {
+  add('paints', kind, kind);
 }
 
 // ── needsBreak ──

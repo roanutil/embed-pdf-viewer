@@ -412,7 +412,7 @@ test('current state transitions and full scale projection fields replace cached 
     ready: false,
     persistent: true,
   });
-  const e = { name: 'EngineError', code: 'RuntimeUnavailable', message: 'offline' };
+  const e = { code: 'RuntimeUnavailable', message: 'offline' };
   assert.deepEqual(pure('page-scale-failed-known'), {
     measure: FEET,
     source: 'owned',
@@ -497,7 +497,7 @@ test('mirrors retry failed reads preserve confirmed data through stale epochs an
     source: 'default',
     ready: false,
     persistent: true,
-    error: { name: 'EngineError', code: 'Unknown', message: 'offline' },
+    error: { code: 'Unknown', message: 'offline' },
   });
   assert.deepEqual(value(t, 5), {
     measure: METRES,
@@ -521,7 +521,7 @@ test('mirrors retry failed reads preserve confirmed data through stale epochs an
     source: 'owned',
     ready: true,
     persistent: true,
-    error: { name: 'EngineError', code: 'Unknown', message: 'gone' },
+    error: { code: 'Unknown', message: 'gone' },
   });
   const removed = (await run('pages-inserted-and-removed')).trace;
   assert.deepEqual(value(removed, 3), {
@@ -663,9 +663,9 @@ test('real annotation creates carry complete geometry styles labels refs resourc
       .filter((e) => e.type === 'annotations.created');
     const event = events[i]!;
     assert.ok(event.type === 'annotations.created');
-    assert.deepEqual(event.origin.tx, { id: call.args[1].opId, index: 0, count: 1 });
+    assert.deepEqual(event.origin.transaction, { id: call.args[1].opId, index: 0, count: 1 });
     assert.equal(event.meta.opId, call.args[1].opId);
-    assert.deepEqual(event.meta.changed, [dto.ref]);
+    assert.deepEqual(event.meta.changedRefs, [dto.ref]);
     assert.deepEqual(event.annotation, canonical(dto));
   }
   const distance = calls[0]!.args[0].ops[0]!.data;
@@ -774,8 +774,8 @@ test('scale changes remeasure actual refs skip locked records and clear back to 
     const event = response.events![0]!;
     assert.ok(event.type === 'annotations.updated');
     assert.equal(event.appearance.changed, true);
-    assert.deepEqual(event.meta.changed, [objRef(1)]);
-    assert.equal(event.origin.tx?.id, (writes[i]!.args[1] as { opId: string }).opId);
+    assert.deepEqual(event.meta.changedRefs, [objRef(1)]);
+    assert.equal(event.origin.transaction?.id, (writes[i]!.args[1] as { opId: string }).opId);
   }
 });
 test('multi-page strict preflight and tolerant scale errors remain separate channels', async () => {
@@ -798,7 +798,6 @@ test('multi-page strict preflight and tolerant scale errors remain separate chan
       skipped: [],
       failed: [],
       scaleError: {
-        name: 'EngineError',
         code: 'InvalidArg',
         message: 'Only rectilinear measures can be authored',
       },
@@ -909,7 +908,6 @@ test('closing and page deletion settle exact channels then a fresh document reco
       skipped: [],
       failed: [],
       scaleError: {
-        name: 'EngineError',
         code: 'Unknown',
         message: 'document instance a#1 was closed',
       },
@@ -963,7 +961,7 @@ test('all authored persistent scale results carry complete matching mutation pro
       const event = response.events![0]!;
       assert.ok(event.type === 'pages.scaleSet');
       assert.deepEqual(event.meta, result.meta);
-      assert.deepEqual(event.origin.tx, { id: result.meta.opId, index: 0, count: 1 });
+      assert.deepEqual(event.origin.transaction, { id: result.meta.opId, index: 0, count: 1 });
     }
   }
 });
