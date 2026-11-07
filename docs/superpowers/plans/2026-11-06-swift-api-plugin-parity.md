@@ -208,12 +208,12 @@ read-only `canUndo`, `canRedo`, labels, `submitting`, and `error: PDFError?`.
 Use the explicitly passed viewer for revision observation; `EmbedPDFUI` cannot
 reach the capability's internal retained viewer. Tasks 7–8 use the same pattern.
 
-- [ ] Add failing model tests for initial disabled state, edit → undo/redo availability, completion vs submission, refused/skipped undo, and cancellation/document replacement. Subscribe before initial reads; use a refresh generation or serialized refresh loop to discard stale answers.
-- [ ] Implement model task ownership with independent revisions plus history events. Render labels and errors, disable buttons while submission is active, and refresh availability from Rust. Clear `submitting` when the submission call returns, including an empty-history
+- [x] Add failing model tests for initial disabled state, edit → undo/redo availability, completion vs submission, refused/skipped undo, and cancellation/document replacement. Subscribe before initial reads; use a refresh generation or serialized refresh loop to discard stale answers.
+- [x] Implement model task ownership with independent revisions plus history events. Render labels and errors, disable buttons while submission is active, and refresh availability from Rust. Clear `submitting` when the submission call returns, including an empty-history
 no-op; never wait indefinitely for a completion event. A submitted undo is not
 an immediately confirmed edit. Completion/failure events still update feedback.
-- [ ] Add keyboard/VoiceOver labels and a demo scenario that edits an annotation, undoes, and redoes. Verify Dynamic Type and toolbar placement on iOS and macOS.
-- [ ] Run `EmbedPDFUITests/HistoryModelTests` and the demo scenario; commit as `feat(apple-ui): add history controls`.
+- [x] Add keyboard/VoiceOver labels and a demo scenario that edits an annotation, undoes, and redoes. Verify Dynamic Type and toolbar placement on iOS and macOS.
+- [x] Run `EmbedPDFUITests/HistoryModelTests` and the demo scenario; commit as `feat(apple-ui): add history controls`.
 
 ## Task 7: Outline panel
 
@@ -225,10 +225,10 @@ methods matching select/activate/expand/collapse/create/update/move/delete.
 Read-only rows, selected refs, status, incomplete, `canEdit`, operation state,
 and `error`. `OutlinePanel.init(model: OutlineModel)`.
 
-- [ ] Add failing tests for initial load/empty/error, Rust-provided flattened row indentation, independent expansion and selection, activation/current location, denied edits, explicit clearing, and document switch while refresh is pending. Two instances observing the same viewer must both refresh.
-- [ ] Implement snapshot projection from the capability, independent revisions and load/fact events; keep tree rules in Rust. Expose native edit sheets for title/target/style, add child/sibling, move to parent/position, and confirmed destructive delete. Use refs for list identity.
-- [ ] Add VoiceOver hierarchy/expanded state and keyboard activation; expose incomplete data explicitly. Integrate a panel in the demo alongside the reader and history controls without changing camera geometry in Swift.
-- [ ] Run `EmbedPDFUITests/OutlineModelTests`, `EmbedPDFTests/OutlineTests`, and the navigation/edit demo scenario on iOS and macOS; commit as `feat(apple-ui): add outline navigation and editing panel`.
+- [x] Add failing tests for initial load/empty/error, Rust-provided flattened row indentation, independent expansion and selection, activation/current location, denied edits, explicit clearing, and document switch while refresh is pending. Two instances observing the same viewer must both refresh.
+- [x] Implement snapshot projection from the capability, independent revisions and load/fact events; keep tree rules in Rust. Expose native edit sheets for title/target/style, add child/sibling, move to parent/position, and confirmed destructive delete. Use refs for list identity.
+- [x] Add VoiceOver hierarchy/expanded state and keyboard activation; expose incomplete data explicitly. Integrate a panel in the demo alongside the reader and history controls without changing camera geometry in Swift.
+- [x] Run `EmbedPDFUITests/OutlineModelTests`, `EmbedPDFTests/OutlineTests`, and the navigation/edit demo scenario on iOS and macOS; commit as `feat(apple-ui): add outline navigation and editing panel`.
 
 ## Task 8: Attachment panel and platform file handling
 

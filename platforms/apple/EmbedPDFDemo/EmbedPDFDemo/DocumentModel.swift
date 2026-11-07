@@ -14,6 +14,8 @@ final class DocumentModel {
     let metadata: MetadataCapability
     let annotations: AnnotationCapability
     let history: HistoryModel
+    let outline: OutlineModel
+    let reader: StageReaderModel
   }
 
   struct PasswordPrompt: Identifiable {
@@ -41,7 +43,7 @@ final class DocumentModel {
   func task() async {
     guard viewer == nil else { return }
     do {
-      let viewer = try PDFViewer(ViewerConfig(metadata: true, search: SearchConfig(), render: RenderConfig(), interaction: true, annotation: "", history: true))
+      let viewer = try PDFViewer(ViewerConfig(metadata: true, search: SearchConfig(), render: RenderConfig(), interaction: true, stage: StageConfig(), annotation: "", history: true, outline: true))
       try await viewer.start()
       self.viewer = viewer
     } catch {
@@ -126,7 +128,9 @@ final class DocumentModel {
         search: SearchModel(search: try await viewer.search(in: document)),
         metadata: try await viewer.metadata(for: document),
         annotations: try await viewer.annotations(for: document),
-        history: HistoryModel(viewer: viewer, history: try await viewer.history(for: document))
+        history: HistoryModel(viewer: viewer, history: try await viewer.history(for: document)),
+        outline: OutlineModel(viewer: viewer, outline: try await viewer.outline(for: document)),
+        reader: StageReaderModel(stage: try await viewer.stage(for: document), render: try await viewer.render(in: document))
       )
       canAddNote = try await opened?.annotations.canCreate() ?? false
       error = nil
