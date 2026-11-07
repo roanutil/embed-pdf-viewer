@@ -96,9 +96,9 @@ impl StampCapability {
         }))
     }
 
-    /// `readAssetBytes(assetId)`: a copy of the asset's placement bytes (a
+    /// `getAssetBytes(assetId)`: a copy of the asset's placement bytes (a
     /// one-page PDF), or `None`.
-    pub fn read_asset_bytes(&self, asset_id: &str) -> Option<Vec<u8>> {
+    pub fn get_asset_bytes(&self, asset_id: &str) -> Option<Vec<u8>> {
         self.0.binaries.binaries.borrow().get(asset_id).and_then(|b| b.bytes.clone())
     }
 

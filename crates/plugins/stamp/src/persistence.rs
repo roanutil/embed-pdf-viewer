@@ -186,8 +186,8 @@ pub fn persist_stamp_libraries(
         if except.contains(&change.library_id) {
             return Ok(());
         }
-        let step = match change.reason {
-            StampLibraryChangeReason::Removed => Step::Delete,
+        let step = match change.change_type {
+            StampLibraryChangeReason::Deleted => Step::Delete,
             _ => Step::Save,
         };
         lines.run(&change.library_id, step);

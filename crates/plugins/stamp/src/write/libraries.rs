@@ -146,7 +146,7 @@ impl StampCapability {
             this.update_state(|s| add_library(s, &library));
             this.0.events.library_changed.emit(&StampLibraryChangedEvent {
                 library_id: id.clone(),
-                reason: StampLibraryChangeReason::Created,
+                change_type: StampLibraryChangeReason::Created,
             });
             this.0
                 .events
@@ -210,7 +210,7 @@ impl StampCapability {
             }
             this.0.events.library_changed.emit(&StampLibraryChangedEvent {
                 library_id: library_id.clone(),
-                reason: StampLibraryChangeReason::Imported,
+                change_type: StampLibraryChangeReason::Imported,
             });
             this.0.events.library_created.emit(&StampLibraryEvent {
                 library_id: library_id.clone(),
@@ -398,7 +398,7 @@ impl StampCapability {
                 page_call(doc, "page.pieceInfo.get", pon, vec![json!(STAMP_PIECEINFO_APP)]).await?;
             let entries = optional_object(&read, "entries");
             let kind = options
-                .kind
+                .asset_kind
                 .or_else(|| kind_from_pdf_name(entry_name(&entries, "Kind").as_deref()))
                 .unwrap_or(StampAssetKind::Stamp);
             let subject = entry_string(&entries, "SubjectOverride");
@@ -469,7 +469,7 @@ impl StampCapability {
                     if existed {
                         this.0.events.library_changed.emit(&StampLibraryChangedEvent {
                             library_id: id.clone(),
-                            reason: StampLibraryChangeReason::Removed,
+                            change_type: StampLibraryChangeReason::Deleted,
                         });
                         this.0
                             .events
@@ -572,7 +572,7 @@ impl StampCapability {
         self.update_state(|s| set_library(s, &next));
         self.0.events.library_changed.emit(&StampLibraryChangedEvent {
             library_id: id.to_string(),
-            reason: StampLibraryChangeReason::Updated,
+            change_type: StampLibraryChangeReason::Updated,
         });
         self.0
             .events

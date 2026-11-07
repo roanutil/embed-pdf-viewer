@@ -262,7 +262,7 @@ fn verbs_settle_on_the_typescripts_turns() {
     let rig = Rig::new();
     library(&rig);
     let turn = turn_counter();
-    let input = AddAssetInput {
+    let input = CreateAssetInput {
         library_id: Some("a".into()),
         name: Some("X".into()),
         source: Some(pdf()),
@@ -294,7 +294,7 @@ fn verbs_settle_on_the_typescripts_turns() {
             let options = CreateLibraryOptions { id: Some(id.into()), ..Default::default() };
             success(&rig.stamp.create_library(id, options));
         }
-        let input = AddAssetInput {
+        let input = CreateAssetInput {
             library_id: Some("a".into()),
             name: Some("X".into()),
             source: Some(pdf()),
@@ -315,7 +315,8 @@ fn verbs_settle_on_the_typescripts_turns() {
 
     let rig = Rig::new();
     let turn = turn_counter();
-    let input = AddAssetInput { name: Some("X".into()), source: Some(pdf()), ..Default::default() };
+    let input =
+        CreateAssetInput { name: Some("X".into()), source: Some(pdf()), ..Default::default() };
     let created = rig.stamp.create_asset(input, none());
     assert_eq!(reacts_on(&created, &turn), 54, "createAsset into a library of its own");
 }
@@ -495,11 +496,11 @@ fn a_deleted_library_takes_its_assets_with_it() {
     let library = success(&rig.stamp.import_library(pdf(), ImportLibraryOptions::default()));
     let ids: Vec<String> = rig.stamp.list_assets(None).iter().map(|a| a.id.clone()).collect();
     assert!(!ids.is_empty());
-    assert!(ids.iter().all(|id| rig.stamp.read_asset_bytes(id).is_some()));
+    assert!(ids.iter().all(|id| rig.stamp.get_asset_bytes(id).is_some()));
     success(&rig.stamp.delete_library(&library.id, none()));
     for id in &ids {
         assert!(rig.stamp.get_asset(id).is_none());
-        assert!(rig.stamp.read_asset_bytes(id).is_none());
+        assert!(rig.stamp.get_asset_bytes(id).is_none());
         assert!(rig.stamp.get_asset_preview(id).is_none());
         let refused = failure(&rig.stamp.render_asset_preview(id, 64.0, none()));
         assert_eq!(refused.plugin_code(), Some(code::NOT_FOUND));

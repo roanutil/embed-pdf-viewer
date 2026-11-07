@@ -33,7 +33,7 @@ use crate::persistence::{
     restore_stamp_libraries,
 };
 use crate::{
-    AddAssetInput, CreateLibraryOptions, ImportLibraryOptions, MarkSource, OperationOptions,
+    CreateAssetInput, CreateLibraryOptions, ImportLibraryOptions, MarkSource, OperationOptions,
     PageSelection, PageTarget, StampArmOptions, StampAssetKind, StampAssetPatch as CorePatch,
     StampCapability, StampDocumentOptions, StampLibraryChangeReason, StampLibraryFilter,
     StampLibraryPatch as CoreLibraryPatch, StampSize,
@@ -301,9 +301,9 @@ pub struct StampAddAssetInput {
     pub size: Option<Size>,
 }
 
-impl From<StampAddAssetInput> for AddAssetInput {
+impl From<StampAddAssetInput> for CreateAssetInput {
     fn from(i: StampAddAssetInput) -> Self {
-        AddAssetInput {
+        CreateAssetInput {
             library_id: i.library_id,
             name: i.name,
             label: i.label,
@@ -338,7 +338,7 @@ impl From<StampImportOptions> for ImportLibraryOptions {
         ImportLibraryOptions {
             name: o.name,
             categories: o.categories,
-            kind: o.kind,
+            asset_kind: o.kind,
             library_kind: o.library_kind,
             asset_name: None,
             signal: None,
@@ -600,8 +600,8 @@ impl StampHandle {
     }
 
     /// The asset's own one-page PDF.
-    pub async fn read_asset_bytes(&self, id: String) -> Result<Option<Vec<u8>>, ViewerError> {
-        self.cap.call(move |c| Ok(c.read_asset_bytes(&id))).await
+    pub async fn get_asset_bytes(&self, id: String) -> Result<Option<Vec<u8>>, ViewerError> {
+        self.cap.call(move |c| Ok(c.get_asset_bytes(&id))).await
     }
 
     /// The library's canonical PDF.
@@ -962,7 +962,7 @@ fn subscribe_all(c: &StampCapability, l: Arc<dyn StampEventListener>) -> Vec<Uns
         c.on_library_changed({
             let l = l.clone();
             move |e| {
-                let (library_id, reason) = (e.library_id.clone(), e.reason);
+                let (library_id, reason) = (e.library_id.clone(), e.change_type);
                 l.on_event(StampEvent::LibraryChanged { library_id, reason });
                 Ok(())
             }

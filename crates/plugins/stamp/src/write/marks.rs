@@ -11,7 +11,7 @@ use epdf_plugin_annotation::binary::{WireResource, resolve_binary_source};
 use serde_json::{Value, json};
 
 use crate::blank_library::blank_library_pdf;
-use crate::contract::{AddAssetInput, MarkSource};
+use crate::contract::{CreateAssetInput, MarkSource};
 use crate::controller::StampCapability;
 use crate::js::{adopt, member, nullish, page_ref};
 use crate::services::asset_engine::{bytes_of, call, close, page_call, read_off};
@@ -166,7 +166,7 @@ impl StampCapability {
 
     /// `resolveAssetSource(input)`: the bytes an asset is made from, the
     /// caller's `source`, or its `mark` authored into one.
-    pub(crate) fn resolve_asset_source(&self, input: &AddAssetInput) -> Promise<WireResource> {
+    pub(crate) fn resolve_asset_source(&self, input: &CreateAssetInput) -> Promise<WireResource> {
         if input.source.is_some() == input.mark.is_some() {
             return Promise::rejected(stamp_error(
                 code::INVALID_INPUT,

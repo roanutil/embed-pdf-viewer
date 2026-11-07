@@ -55,7 +55,7 @@ struct Checked {
     label: String,
     raster_size: Option<Value>,
     supplied_preview: Option<StampAssetPreview>,
-    input: AddAssetInput,
+    input: CreateAssetInput,
 }
 
 impl StampCapability {
@@ -63,7 +63,7 @@ impl StampCapability {
     /// copies and stamps from annotations go through it.
     pub(crate) fn create_asset_now(
         &self,
-        input: AddAssetInput,
+        input: CreateAssetInput,
         options: OperationOptions,
     ) -> Promise<StampAsset> {
         let this = self.clone();
@@ -188,7 +188,7 @@ impl StampCapability {
         self.update_state(|s| add_asset(s, &appended.asset));
         self.0.events.library_changed.emit(&StampLibraryChangedEvent {
             library_id: live.id.clone(),
-            reason: StampLibraryChangeReason::AssetAdded,
+            change_type: StampLibraryChangeReason::AssetCreated,
         });
         self.0.events.asset_created.emit(&StampAssetEvent {
             asset_id: appended.asset.id.clone(),
@@ -331,7 +331,7 @@ impl StampCapability {
     /// aren't a picture or a taken identifier. Fires `onAssetCreated`.
     pub fn create_asset(
         &self,
-        input: AddAssetInput,
+        input: CreateAssetInput,
         options: OperationOptions,
     ) -> Promise<StampAsset> {
         verb(self.create_asset_now(input, options))
@@ -345,7 +345,7 @@ impl StampCapability {
         &self,
         page: PageTarget,
         refs: Vec<Value>,
-        input: AddAssetInput,
+        input: CreateAssetInput,
         options: StampDocumentOptions,
     ) -> Promise<StampAsset> {
         let this = self.clone();
@@ -373,7 +373,7 @@ impl StampCapability {
                 doc.call("page.annotations.exportAppearance", Some(pon), vec![Value::Array(refs)]),
             )
             .await?;
-            let input = AddAssetInput { source: Some(exported), ..input };
+            let input = CreateAssetInput { source: Some(exported), ..input };
             adopt(this.create_asset_now(input, OperationOptions { signal })).await
         }))
     }
@@ -435,7 +435,7 @@ impl StampCapability {
         self.update_state(|s| remove_asset(s, id));
         self.0.events.library_changed.emit(&StampLibraryChangedEvent {
             library_id: library.id.clone(),
-            reason: StampLibraryChangeReason::AssetRemoved,
+            change_type: StampLibraryChangeReason::AssetDeleted,
         });
         self.0.events.asset_deleted.emit(&StampAssetEvent {
             asset_id: id.to_string(),
@@ -554,7 +554,7 @@ impl StampCapability {
         self.update_state(|s| set_asset(s, &next));
         self.0.events.library_changed.emit(&StampLibraryChangedEvent {
             library_id: library.id.clone(),
-            reason: StampLibraryChangeReason::AssetUpdated,
+            change_type: StampLibraryChangeReason::AssetUpdated,
         });
         self.0.events.asset_updated.emit(&StampAssetEvent {
             asset_id: next.id.clone(),
@@ -572,8 +572,8 @@ impl StampCapability {
         binary: &AssetBinary,
         library_id: String,
         label: String,
-    ) -> AddAssetInput {
-        AddAssetInput {
+    ) -> CreateAssetInput {
+        CreateAssetInput {
             library_id: Some(library_id),
             source: Some(bytes_json(binary.bytes.clone().unwrap_or_default())),
             kind: Some(asset.kind),
@@ -582,7 +582,7 @@ impl StampCapability {
             categories: asset.categories.clone(),
             // `binary.preview ? { preview: binary.preview.bytes } : {}`
             preview: binary.preview.as_ref().and_then(|p| p.bytes.clone()),
-            ..AddAssetInput::default()
+            ..CreateAssetInput::default()
         }
     }
 
