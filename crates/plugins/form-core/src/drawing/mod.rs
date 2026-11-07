@@ -1,7 +1,9 @@
 //! `drawing/index.ts`: what a widget looks like for its facts, as the engine's
 //! appearance generator draws it. The widget row gives the look (`/MK`, `/BS`,
-//! `/DA`) and the box, the field gives the family and its flags, and `shown`
-//! what to show now: a value this session formatted, a toggle's state.
+//! `/DA`) and the box, the field gives the kind and its flags, `shown` what
+//! to show now (a value this session formatted, a toggle's state), and
+//! `fonts` what its text is drawn in: the widget's font, the fallbacks and the
+//! last resort, as the viewer knows them.
 
 mod border;
 mod text;
@@ -15,10 +17,11 @@ use serde::Deserialize;
 pub(crate) use text::{TextLook, text_field_layout};
 pub use types::{Approximation, DrawOp, PathSegment, Rgb, TextRun, WidgetDrawing};
 
-use self::border::{border_style_info, rgb_of};
+use self::border::{border_style_info, field_box_ops, rgb_of};
 use self::text::{combo_box_ops, list_box_ops, push_button_ops, text_field_ops};
 use self::toggle::{ToggleLook, checkbox_ops, radio_ops};
-use crate::{Alignment, LayoutFont, PdfRect, layout_font_of};
+use crate::PdfRect;
+use crate::text::{Alignment, PaintFonts, default_paint_fonts};
 
 /// A form widget's border (`/BS /S`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
@@ -125,10 +128,10 @@ pub struct TextFieldFacts {
     pub comb: bool,
 }
 
-/// What the painter reads of a form field (`FormFieldDTO`), by family.
-/// Deserializes from the DTO's JSON and ignores the rest of it.
+/// What the painter reads of a form field (`FormField`), by kind.
+/// Deserializes from the field's JSON and ignores the rest of it.
 #[derive(Clone, Debug, PartialEq, Deserialize)]
-#[serde(tag = "family")]
+#[serde(tag = "kind")]
 pub enum FieldFacts {
     #[serde(rename = "text")]
     Text(TextFieldFacts),
@@ -153,10 +156,10 @@ pub enum FieldFacts {
     Unknown,
 }
 
-/// A form field's family.
+/// A form field's kind (`FormField['kind']`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum FieldFamily {
+pub enum FieldKind {
     Text,
     Checkbox,
     Radio,
@@ -167,18 +170,26 @@ pub enum FieldFamily {
     Unknown,
 }
 
+/// The kind's name before c4b286a69 renamed `family` to `kind`.
+pub type FieldFamily = FieldKind;
+
 impl FieldFacts {
-    pub fn family(&self) -> FieldFamily {
+    pub fn kind(&self) -> FieldKind {
         match self {
-            FieldFacts::Text(_) => FieldFamily::Text,
-            FieldFacts::Checkbox => FieldFamily::Checkbox,
-            FieldFacts::Radio => FieldFamily::Radio,
-            FieldFacts::ComboBox { .. } => FieldFamily::Combobox,
-            FieldFacts::ListBox { .. } => FieldFamily::Listbox,
-            FieldFacts::PushButton => FieldFamily::Pushbutton,
-            FieldFacts::Signature => FieldFamily::Signature,
-            FieldFacts::Unknown => FieldFamily::Unknown,
+            FieldFacts::Text(_) => FieldKind::Text,
+            FieldFacts::Checkbox => FieldKind::Checkbox,
+            FieldFacts::Radio => FieldKind::Radio,
+            FieldFacts::ComboBox { .. } => FieldKind::Combobox,
+            FieldFacts::ListBox { .. } => FieldKind::Listbox,
+            FieldFacts::PushButton => FieldKind::Pushbutton,
+            FieldFacts::Signature => FieldKind::Signature,
+            FieldFacts::Unknown => FieldKind::Unknown,
         }
+    }
+
+    /// [`FieldFacts::kind`], by its name before c4b286a69.
+    pub fn family(&self) -> FieldKind {
+        self.kind()
     }
 }
 
@@ -203,26 +214,30 @@ fn bbox_of(row: &WidgetRow) -> PdfRect {
     PdfRect { left: 0.0, bottom: 0.0, right: frame.width, top: frame.height }
 }
 
-/// The look of a widget with text, and whether the painter draws its font
-/// only approximately: a font that isn't one of the 14 lays out with
-/// Helvetica's numbers (close, not exact).
-pub(crate) fn text_look_of(row: &WidgetRow) -> (TextLook, Option<Approximation>) {
-    let standard = layout_font_of(row.font_family.as_deref());
-    let font: LayoutFont = standard
-        .unwrap_or_else(|| layout_font_of(Some("helvetica")).expect("helvetica is standard"));
+/// The look of a widget with text, in `fonts` (the widget's standard font
+/// when none are given), and whether the painter draws its font only
+/// approximately: without fonts, a font that isn't one of the 14 lays out
+/// with Helvetica's numbers (close, not exact).
+pub(crate) fn text_look_of(
+    row: &WidgetRow,
+    fonts: Option<&PaintFonts>,
+) -> (TextLook, Option<Approximation>) {
+    let family = row.font_family.as_deref().unwrap_or("");
+    let standard = StandardFont::from_name(family);
     let approximate = match standard {
-        None => Some(Approximation::Font),
-        Some(font) if matches!(font.font, StandardFont::Symbol | StandardFont::ZapfDingbats) => {
+        Some(StandardFont::Symbol | StandardFont::ZapfDingbats) => {
             Some(Approximation::SymbolicFont)
         }
         Some(_) => None,
+        None if fonts.is_some() => None,
+        None => Some(Approximation::Font),
     };
     let look = TextLook {
         bbox: bbox_of(row),
         border: border_style_info(row),
         background: color_of(&row.interior_color),
         border_color: color_of(&row.color),
-        font,
+        fonts: fonts.cloned().unwrap_or_else(|| default_paint_fonts(row.font_family.as_deref())),
         font_size: row.font_size.unwrap_or(0.0),
         text_color: color_of(&row.font_color),
         alignment: row.text_align.unwrap_or_default().into(),
@@ -230,23 +245,56 @@ pub(crate) fn text_look_of(row: &WidgetRow) -> (TextLook, Option<Approximation>)
     (look, approximate)
 }
 
-/// Whether the painter draws this family's widgets: not a signature, nor a
-/// family the engine doesn't know.
-pub fn paints(family: FieldFamily) -> bool {
-    !matches!(family, FieldFamily::Signature | FieldFamily::Unknown)
+/// Whether the painter draws this field's widgets: not a kind the engine
+/// doesn't know.
+pub fn paints(kind: FieldKind) -> bool {
+    kind != FieldKind::Unknown
 }
 
-/// The drawing, or `None` for a widget the painter doesn't draw (a signature,
-/// a family the engine doesn't know).
+/// Every character the painter draws for a widget, as one string: what a
+/// viewer finds the widget's fonts for. A password's characters are drawn as
+/// `*`; a check box or a radio button draws none.
+pub fn widget_text(row: &WidgetRow, field: &FieldFacts, shown: &ShownValue) -> String {
+    match field {
+        FieldFacts::Text(facts) => {
+            let value = shown.text.as_deref().unwrap_or(&facts.value);
+            if facts.password && !value.is_empty() { "*".into() } else { value.into() }
+        }
+        FieldFacts::ComboBox { value } => shown.text.as_deref().unwrap_or(value).into(),
+        FieldFacts::ListBox { options, .. } => {
+            options.iter().map(|option| option.label.as_str()).collect::<Vec<_>>().join("\n")
+        }
+        FieldFacts::PushButton => row.caption.clone().unwrap_or_default(),
+        _ => String::new(),
+    }
+}
+
+/// The drawing, or `None` for a widget the painter doesn't draw: a kind the
+/// engine doesn't know. A signature field's is its box, with no mark in it.
 pub fn widget_drawing(
     row: &WidgetRow,
     field: &FieldFacts,
     shown: &ShownValue,
 ) -> Option<WidgetDrawing> {
-    if !paints(field.family()) {
+    widget_drawing_in(row, field, shown, None)
+}
+
+/// [`widget_drawing`] in `fonts`, as the form plugin draws a widget when it
+/// knows the document's fonts.
+pub fn widget_drawing_in(
+    row: &WidgetRow,
+    field: &FieldFacts,
+    shown: &ShownValue,
+    fonts: Option<&PaintFonts>,
+) -> Option<WidgetDrawing> {
+    if !paints(field.kind()) {
         return None;
     }
     let frame = row.frame();
+    let bbox = bbox_of(row);
+    let border = border_style_info(row);
+    let background = color_of(&row.interior_color);
+    let border_color = color_of(&row.color);
     let drawing = |ops, approximate| WidgetDrawing {
         width: frame.width,
         height: frame.height,
@@ -254,12 +302,16 @@ pub fn widget_drawing(
         approximate,
     };
 
+    if let FieldFacts::Signature = field {
+        return Some(drawing(field_box_ops(bbox, &border, background, border_color), None));
+    }
+
     if let FieldFacts::Checkbox | FieldFacts::Radio = field {
         let look = ToggleLook {
-            bbox: bbox_of(row),
-            border: border_style_info(row),
-            background: color_of(&row.interior_color),
-            border_color: color_of(&row.color),
+            bbox,
+            border,
+            background,
+            border_color,
             symbol_color: color_of(&row.font_color),
             check_style: row.check_style,
         };
@@ -275,7 +327,7 @@ pub fn widget_drawing(
         return Some(drawing(ops, None));
     }
 
-    let (look, approximate) = text_look_of(row);
+    let (look, approximate) = text_look_of(row, fonts);
     let drawn = match field {
         FieldFacts::Text(facts) => {
             text_field_ops(&look, facts, shown.text.as_deref().unwrap_or(&facts.value))
@@ -286,8 +338,9 @@ pub fn widget_drawing(
         FieldFacts::ListBox { options, top_index } => list_box_ops(&look, options, *top_index),
         _ => push_button_ops(&look, row.caption.as_deref()),
     };
+    // A box the painter drew may be a character a font it wasn't given has.
     let approximate = match approximate {
-        None if drawn.approximate => Some(Approximation::Glyph),
+        None if !drawn.missing.is_empty() && fonts.is_none() => Some(Approximation::Glyph),
         other => other,
     };
     Some(drawing(drawn.ops, approximate))

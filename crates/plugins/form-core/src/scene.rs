@@ -1,19 +1,16 @@
 //! `scene.ts`: a widget's drawing on the page. The generator's operations go
 //! from the widget's upright frame (PDF points, y up) to page space (y down),
 //! turned by the widget's quarter turn about the middle of its box, as scene
-//! nodes. Paths become SVG path data; each text run becomes a `glyphs` node,
-//! every character at the place the engine puts it, in the standard face's
-//! CSS (its program first, which the node carries for mounting).
+//! nodes. Paths become SVG path data; each text run becomes a `textRun` node
+//! at the place the engine puts it, in its font's CSS (its program first,
+//! which the node carries for mounting).
 //!
 //! [`SceneNode`] and [`Paint`] are `core-annotation`'s types
 //! (`epdf-annotation-core`), as the TypeScript imports them: a `path` and a
-//! `glyphs` node, each optionally clipped.
+//! `textRun` node, each optionally clipped.
 
-use std::rc::Rc;
-
-use epdf_annotation_core::json::Object;
-use epdf_annotation_core::{FontProgramRef, GlyphsScene, SceneFontProgram, ShapeScene};
-use epdf_fonts::{FontProgram, FontStyle, standard_font_css, standard_font_program};
+use epdf_annotation_core::{FontProgramRef, ShapeScene, TextRunScene};
+use epdf_fonts::FontStyle;
 use epdf_geometry::{Point, Rect, js};
 use serde::Deserialize;
 use serde_json::Value;
@@ -31,35 +28,10 @@ pub struct WidgetPlacement {
     pub rotation: Option<f64>,
 }
 
-/// A standard face's program as a scene's font program.
-#[derive(Debug)]
-pub struct StandardProgram(pub &'static FontProgram);
-
 fn style_name(style: FontStyle) -> &'static str {
     match style {
         FontStyle::Normal => "normal",
         FontStyle::Italic => "italic",
-    }
-}
-
-impl SceneFontProgram for StandardProgram {
-    fn members(&self) -> Object {
-        match serde_json::to_value(self.0) {
-            Ok(Value::Object(members)) => members,
-            _ => Object::new(),
-        }
-    }
-    fn family(&self) -> &str {
-        &self.0.family
-    }
-    fn weight(&self) -> f64 {
-        f64::from(self.0.weight)
-    }
-    fn style(&self) -> &str {
-        style_name(self.0.style)
-    }
-    fn load(&self) -> &[u8] {
-        self.0.load()
     }
 }
 
@@ -185,29 +157,23 @@ pub fn widget_scene(drawing: &WidgetDrawing, placement: &WidgetPlacement) -> Vec
                 clip,
             )),
             DrawOp::Clip { rect, ops } => stack.push((ops, Some(clip_of(rect)), 0)),
-            DrawOp::Text { font, size, color: rgb, runs } => {
-                let css = standard_font_css(*font);
+            DrawOp::Text { size, color: rgb, runs } => {
                 for run in runs {
-                    let mut offsets = Vec::with_capacity(run.advances.len());
-                    let mut along = 0.0;
-                    for advance in &run.advances {
-                        offsets.push(round(along));
-                        along += advance;
-                    }
                     let at = to_page(run.x, run.y);
-                    nodes.push(SceneNode::Glyphs(GlyphsScene {
+                    nodes.push(SceneNode::TextRun(TextRunScene {
                         at: Point { x: round(at.x), y: round(at.y) },
                         text: run.text.clone(),
-                        offsets,
+                        rtl: run.rtl,
+                        plain: run.plain,
+                        joins_previous: run.joins_previous.then_some(true),
+                        joins_next: run.joins_next.then_some(true),
                         font_size: *size,
-                        font_family: css.font_family.clone(),
-                        font_weight: Some(f64::from(css.font_weight)),
-                        font_style: Some(style_name(css.font_style).into()),
+                        font_family: run.font.font_family.clone(),
+                        font_weight: Some(f64::from(run.font.font_weight)),
+                        font_style: Some(style_name(run.font.font_style).into()),
                         // `turn` is falsy at 0 and NaN.
                         rotation: (turn != 0.0 && !turn.is_nan()).then_some(turn),
-                        program: Some(FontProgramRef(Rc::new(StandardProgram(
-                            standard_font_program(*font),
-                        )))),
+                        program: Some(FontProgramRef(run.font.program.clone())),
                         paint: Paint { fill: color(hex_of(*rgb)), ..Paint::default() },
                         clip,
                         order: Default::default(),

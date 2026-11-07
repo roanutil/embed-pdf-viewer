@@ -1,15 +1,16 @@
 # epdf-form-core
 
 `packages/core/form` in Rust: the form widget painter. Given a widget row and its field, it says
-what the engine's appearance generator would draw (`widget_drawing`), lays out text the way PDFium's
-variable text does (`layout_variable_text`), places a drawing on the page (`widget_scene`), and
-tells an HTML editor where typed text will land (`text_editor_layout`). It's pure: no PDFium, no
-DOM, and it builds for `wasm32-unknown-unknown` with `--no-default-features`. All 438 cases replay
-identically (`cargo test -p epdf-form-core`):
+what the engine's appearance generator would draw (`widget_drawing`), places a drawing on the page
+(`widget_scene`), and tells an HTML editor where typed text will land (`text_editor_layout`). Its
+`text` module ports `packages/core/text`, the layout the painter draws text with since upstream
+e40c9c236: fonts with fallbacks and a last resort, bidi order, graphemes, joins (`layout_field`).
+It's pure: no PDFium, no DOM, and it builds for `wasm32-unknown-unknown` with
+`--no-default-features`. All 514 cases replay identically (`cargo test -p epdf-form-core`):
 
 | File | Cases | Covers |
 |---|---|---|
-| `vectors/core/form-painter.json` | 438 | `layoutFontOf` (21), `layoutVariableText` (54), `widgetDrawing` (239), `widgetScene` (26), `textEditorLayout` (19), `paints` (8), the line-break rule `needsBreak` (71) |
+| `vectors/core/form-painter.json` | 514 | `defaultPaintFonts` (21), `programPaintFont` (5), `layoutField` (100), `widgetDrawing` (248), `widgetScene` (26), `textEditorLayout` (24), `widgetText` (11), `paints` (8), the line-break rule `needsBreak` (71) |
 
 This is not `vectors/plugins/form-core.json`. That file records the form plugin
 (`crates/plugins/form`); this one records the painter it draws with.
@@ -20,8 +21,9 @@ the same TypeScript against PDFium's real appearance streams: every standard fac
 alignments, the five border styles, multi-line wrapping, combs, passwords, `/MaxLen`, combo and
 list boxes, push buttons, and each check style on and off. It adds what the gate can't build through
 the engine: a font that isn't one of the 14, missing glyphs, absent colours, empty and negative boxes,
-negative and out-of-range `/TI`. Five entries are wrappers because the shipping values hold
-closures; the suite's header names them. `tests/behavior.rs` ports
+negative and out-of-range `/TI`. Fonts arrive in a case as data (a standard name, the last resort,
+or a program font's ranges and advance), because the shipping values hold closures; the suite's
+header names every wrapper. `tests/behavior.rs` ports
 `packages/core/form/test/painter.test.ts` and `editor.test.ts`.
 
 The arithmetic matches bit for bit, not within a tolerance. The TypeScript rounds to single
@@ -30,25 +32,27 @@ places, so a line that only just fits breaks in the same spot.
 
 ## Where the port differs
 
-Run text is a `String`. The TypeScript builds it with `String.fromCharCode` from UTF-16 code units
-(`packages/core/form/src/layout/edit.ts:25,33`), so a comb that puts the two halves of a surrogate
-pair in two cells writes each half alone. A Rust `String` can't hold a lone surrogate, so each half
-becomes U+FFFD. `LaidWord::code` still carries both units. No vector pins this, because a lone
-surrogate can't round-trip through the JSON the replay reads; `tests/behavior.rs` pins the Rust
-choice.
+Text is UTF-16 inside the layout, as the TypeScript reads a string, and becomes a `String` only in
+a run. A run is whole graphemes, so it never splits a surrogate pair.
+
+Bidi levels come from `unicode-bidi`, not `bidi-js`. Both pass Unicode's conformance tests, which
+leave open the levels of characters rule X9 removes; `src/text/bidi.rs` assigns those, and applies
+rule L1, the way `bidi-js` does. Scripts, marks and mirrors come from `unicode-script`,
+`unicode-properties` and `unicode-bidi-mirroring` (Unicode 16 to 18, where Node 22 has 17), so a
+character assigned in the newest versions can classify differently. No vector reaches one.
 
 The inputs are typed. `WidgetRow` and `FieldFacts` deserialize from the engine's widget and field
 DTOs and keep only what the painter reads. Colours are parsed as `parseInt(pair, 16)` would parse
 each pair (`drawing/border.ts:36-38`); the schema allows only `#rrggbb`, so other text isn't pinned.
 
-`FontProgram` serializes its data members only. The TypeScript object also carries `load`, which the
-canonical form prints as `{"$function": true}`; `src/harness.rs` appends that member to every
-`program` it returns.
+`PaintFont` and `MountableFontProgram` serialize their data members only. The TypeScript objects
+also carry `covers`, `width` and `load`, which the canonical form prints as `{"$function": true}`;
+`src/harness.rs` adds those members where the TypeScript has them.
 
 `SceneNode` and `Paint` are `core-annotation`'s, re-exported from `epdf-annotation-core`, as the
 TypeScript imports them. That crate builds without its harness for `wasm32-unknown-unknown`, so
-depending on it adds no PDFium. A `glyphs` node holds its font program as a `FontProgramRef`;
-`StandardProgram` is the standard face's program behind it.
+depending on it adds no PDFium. A `textRun` node holds its font program as a `FontProgramRef`, the
+run's `MountableFontProgram` behind it.
 
 ## What it costs a binary
 

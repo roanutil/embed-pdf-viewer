@@ -1,17 +1,18 @@
-//! `drawing/text.ts`: the families with text. A text field
+//! `drawing/text.ts`: the kinds with text. A text field
 //! (`GenerateTextFieldFormAP` and `GenerateTextFieldAP`), a combo box
 //! (`GenerateComboBoxFormAP`, `GenerateComboBoxAP`), a list box
 //! (`GenerateListBoxFormAP`, `GenerateListBoxAP`) and a push button's caption
 //! (`GeneratePushButtonFormAP`). Each draws what its generator function
-//! writes, in the same order.
+//! writes, in the same order, its text laid out by [`crate::text`].
 
 use epdf_geometry::js;
 
-use super::border::{BLACK, BorderStyleInfo, border_ops, box_ops, deflate, rect_path};
-use super::{DrawOp, FieldOption, PathSegment, Rgb, TextFieldFacts, TextRun, WidgetBorderStyle};
-use crate::layout::text_runs;
-use crate::layout_variable_text;
-use crate::{Alignment, LayoutFont, PdfRect, TextLayout, VariableTextOptions, fround};
+use super::border::{
+    BLACK, BorderStyleInfo, border_ops, box_ops, deflate, field_box_ops, rect_path,
+};
+use super::{DrawOp, FieldOption, PathSegment, Rgb, TextFieldFacts, TextRun};
+use crate::text::{Alignment, FieldText, FieldTextOptions, PaintFonts, layout_field};
+use crate::{PdfRect, fround};
 
 fn is_float_zero(value: f64) -> bool {
     value < 0.0001 && value > -0.0001
@@ -25,14 +26,14 @@ fn is_float_smaller(left: f64, right: f64) -> bool {
     left < right && !is_float_zero(fround(left - right))
 }
 
-/// What every text family reads from its widget.
+/// What every text kind reads from its widget.
 #[derive(Clone, Debug)]
 pub(crate) struct TextLook {
     pub bbox: PdfRect,
     pub border: BorderStyleInfo,
     pub background: Option<Rgb>,
     pub border_color: Option<Rgb>,
-    pub font: LayoutFont,
+    pub fonts: PaintFonts,
     pub font_size: f64,
     pub text_color: Option<Rgb>,
     pub alignment: Alignment,
@@ -40,44 +41,55 @@ pub(crate) struct TextLook {
 
 pub(crate) struct Drawn {
     pub ops: Vec<DrawOp>,
-    /// A character the font can't write.
-    pub approximate: bool,
+    /// Characters no font the painter has: drawn as boxes.
+    pub missing: Vec<String>,
 }
 
-fn content_height(layout: &TextLayout) -> f64 {
-    fround(layout.content.top - layout.content.bottom)
-}
-
-fn plate_height(plate: PdfRect) -> f64 {
-    fround(plate.top - plate.bottom)
-}
-
-fn text_op(look: &TextLook, layout: &TextLayout, runs: Vec<TextRun>, color: Rgb) -> DrawOp {
-    DrawOp::Text { font: look.font.font, size: layout.font_size, color, runs }
-}
-
-/// One line of text the generator lays out in `plate`, aligned and sized as
-/// it says, without a limit or cells.
+/// One line, as a combo box, a list box row and a caption draw it.
 fn one_line(
-    text: &str,
-    look: &TextLook,
     plate: PdfRect,
-    size: f64,
+    font_size: f64,
     alignment: Alignment,
-) -> TextLayout {
-    layout_variable_text(
-        text,
-        &look.font,
-        &VariableTextOptions {
-            plate,
-            font_size: size,
-            alignment,
-            multiline: false,
-            substitute: None,
-            limit: 0,
-            cells: 0,
-        },
-    )
+    centered: bool,
+) -> FieldTextOptions {
+    FieldTextOptions {
+        plate,
+        font_size,
+        alignment,
+        multiline: false,
+        password: false,
+        limit: 0,
+        cells: 0,
+        centered,
+    }
+}
+
+/// Every run of the laid-out text, line by line, left to right.
+fn runs_of(laid: &FieldText) -> Vec<TextRun> {
+    laid.lines
+        .iter()
+        .flat_map(|line| {
+            line.runs.iter().map(move |run| TextRun {
+                x: run.x,
+                y: line.baseline,
+                text: run.text.clone(),
+                font: run.font.clone(),
+                rtl: run.rtl,
+                plain: run.plain,
+                width: run.width,
+                joins_previous: run.joins_previous,
+                joins_next: run.joins_next,
+            })
+        })
+        .collect()
+}
+
+fn text_op(laid: &FieldText, color: Rgb) -> DrawOp {
+    DrawOp::Text { size: laid.font_size, color, runs: runs_of(laid) }
+}
+
+fn has_runs(op: &DrawOp) -> bool {
+    matches!(op, DrawOp::Text { runs, .. } if !runs.is_empty())
 }
 
 /// A text field's text as the generator lays it out, in its plate: the box
@@ -86,62 +98,37 @@ pub(crate) fn text_field_layout(
     look: &TextLook,
     field: &TextFieldFacts,
     value: &str,
-) -> (PdfRect, TextLayout) {
+) -> (PdfRect, FieldText) {
     let width = look.border.width;
     let plate = deflate(look.bbox, fround(2.0 * width), width);
     let max_length = field.max_length.unwrap_or(0);
-    let layout = layout_variable_text(
+    let laid = layout_field(
         value,
-        &look.font,
-        &VariableTextOptions {
+        &look.fonts,
+        &FieldTextOptions {
             plate,
             font_size: look.font_size,
             alignment: look.alignment,
             multiline: field.multiline,
-            substitute: field.password.then_some('*'),
+            password: field.password,
             limit: if field.comb { 0 } else { max_length },
             cells: if field.comb { max_length } else { 0 },
+            // A one-line field's text has its middle at the plate's.
+            centered: !field.multiline,
         },
     );
-    (plate, layout)
+    (plate, laid)
 }
 
 pub(crate) fn text_field_ops(look: &TextLook, field: &TextFieldFacts, value: &str) -> Drawn {
     let bbox = look.bbox;
     let width = look.border.width;
-    let mut ops = Vec::new();
-    if let Some(background) = look.background {
-        ops.push(DrawOp::Fill { path: vec![rect_path(bbox)], color: background, even_odd: true });
-    }
-    if look.border.style == WidgetBorderStyle::Solid {
-        if let Some(border_color) = look.border_color
-            && width > 0.0
-        {
-            let half = fround(width / 2.0);
-            ops.push(DrawOp::Stroke {
-                path: vec![rect_path(deflate(bbox, half, half))],
-                color: border_color,
-                width,
-                dash: None,
-            });
-        }
-    } else {
-        ops.extend(border_ops(bbox, &look.border, look.border_color));
-    }
-    let (body, layout) = text_field_layout(look, field, value);
-    let offset = if field.multiline {
-        (0.0, 0.0)
-    } else {
-        (0.0, fround(fround(content_height(&layout) - plate_height(body)) / 2.0))
-    };
-    let runs = text_runs(&layout, offset, !field.comb);
-    let clipped = if runs.is_empty() {
-        Vec::new()
-    } else {
-        vec![text_op(look, &layout, runs, look.text_color.unwrap_or(BLACK))]
-    };
+    let mut ops = field_box_ops(bbox, &look.border, look.background, look.border_color);
+    let (_, laid) = text_field_layout(look, field, value);
+    let text = text_op(&laid, look.text_color.unwrap_or(BLACK));
+    let clipped = if has_runs(&text) { vec![text] } else { Vec::new() };
     ops.push(DrawOp::Clip { rect: deflate(bbox, width, width), ops: clipped });
-    Drawn { ops, approximate: layout.approximate }
+    Drawn { ops, missing: laid.missing }
 }
 
 /// `{...rect}` normalized: each side the lesser or greater of its pair.
@@ -169,14 +156,11 @@ pub(crate) fn combo_box_ops(look: &TextLook, value: &str) -> Drawn {
     let body = deflate(bbox, border.width, border.width);
     let button = normalized(PdfRect { left: fround(body.right - 13.0), ..body });
     let edit = deflate(normalized(PdfRect { right: button.left, ..body }), 4.0, 0.0);
-    let layout = one_line(value, look, edit, look.font_size, Alignment::Left);
-    let offset = (0.0, fround(fround(content_height(&layout) - plate_height(edit)) / 2.0));
-    let runs = text_runs(&layout, offset, true);
-    if !runs.is_empty() {
-        ops.push(DrawOp::Clip {
-            rect: edit,
-            ops: vec![text_op(look, &layout, runs, look.text_color.unwrap_or(BLACK))],
-        });
+    let laid =
+        layout_field(value, &look.fonts, &one_line(edit, look.font_size, Alignment::Left, true));
+    let text = text_op(&laid, look.text_color.unwrap_or(BLACK));
+    if has_runs(&text) {
+        ops.push(DrawOp::Clip { rect: edit, ops: vec![text] });
     }
     if !is_empty(button) {
         let center_x = fround(fround(button.left + button.right) / 2.0);
@@ -196,7 +180,7 @@ pub(crate) fn combo_box_ops(look: &TextLook, value: &str) -> Drawn {
             });
         }
     }
-    Drawn { ops, approximate: layout.approximate }
+    Drawn { ops, missing: laid.missing }
 }
 
 /// The list box's selected rows: PDFium's form highlight.
@@ -213,7 +197,7 @@ pub(crate) fn list_box_ops(look: &TextLook, options: &[FieldOption], top_index: 
     ops.extend(border_ops(bbox, border, look.border_color));
     let body = deflate(bbox, border.width, border.width);
     let mut rows = Vec::new();
-    let mut approximate = false;
+    let mut missing: Vec<String> = Vec::new();
     let mut y = body.top;
     // Text without a colour of its own paints in the colour the last row left.
     let mut fill = BLACK;
@@ -225,11 +209,19 @@ pub(crate) fn list_box_ops(look: &TextLook, options: &[FieldOption], top_index: 
         if is_float_smaller(y, body.bottom) {
             break;
         }
-        let plate = PdfRect { left: body.left, bottom: 0.0, right: body.right, top: 0.0 };
-        let layout = one_line(&option.label, look, plate, size, Alignment::Left);
-        approximate |= layout.approximate;
-        let height = content_height(&layout);
-        let runs = text_runs(&layout, (0.0, y), true);
+        // A row is one line, from the top of what is left.
+        let plate = PdfRect { left: body.left, bottom: y, right: body.right, top: y };
+        let laid = layout_field(
+            &option.label,
+            &look.fonts,
+            &one_line(plate, size, Alignment::Left, false),
+        );
+        for character in &laid.missing {
+            if !missing.contains(character) {
+                missing.push(character.clone());
+            }
+        }
+        let height = laid.content_height;
         if option.selected {
             rows.push(DrawOp::Fill {
                 path: vec![rect_path(PdfRect {
@@ -241,18 +233,18 @@ pub(crate) fn list_box_ops(look: &TextLook, options: &[FieldOption], top_index: 
                 color: SELECTED_ROW,
                 even_odd: false,
             });
-            rows.push(text_op(look, &layout, runs, WHITE));
+            rows.push(text_op(&laid, WHITE));
             fill = WHITE;
         } else {
             fill = look.text_color.unwrap_or(fill);
-            rows.push(text_op(look, &layout, runs, fill));
+            rows.push(text_op(&laid, fill));
         }
         y = fround(y - height);
     }
     if !rows.is_empty() {
         ops.push(DrawOp::Clip { rect: body, ops: rows });
     }
-    Drawn { ops, approximate }
+    Drawn { ops, missing }
 }
 
 pub(crate) fn push_button_ops(look: &TextLook, caption: Option<&str>) -> Drawn {
@@ -260,17 +252,17 @@ pub(crate) fn push_button_ops(look: &TextLook, caption: Option<&str>) -> Drawn {
     let border = &look.border;
     let mut ops = box_ops(bbox, border, look.background, look.border_color);
     let Some(caption) = caption.filter(|caption| !caption.is_empty()) else {
-        return Drawn { ops, approximate: false };
+        return Drawn { ops, missing: Vec::new() };
     };
     let body = deflate(bbox, fround(2.0 * border.width), border.width);
-    let layout = one_line(caption, look, body, look.font_size, Alignment::Center);
-    let offset = (0.0, fround(fround(content_height(&layout) - plate_height(body)) / 2.0));
-    let runs = text_runs(&layout, offset, true);
-    if !runs.is_empty() {
-        ops.push(DrawOp::Clip {
-            rect: deflate(bbox, border.width, border.width),
-            ops: vec![text_op(look, &layout, runs, look.text_color.unwrap_or(BLACK))],
-        });
+    let laid = layout_field(
+        caption,
+        &look.fonts,
+        &one_line(body, look.font_size, Alignment::Center, true),
+    );
+    let text = text_op(&laid, look.text_color.unwrap_or(BLACK));
+    if has_runs(&text) {
+        ops.push(DrawOp::Clip { rect: deflate(bbox, border.width, border.width), ops: vec![text] });
     }
-    Drawn { ops, approximate: layout.approximate }
+    Drawn { ops, missing: laid.missing }
 }

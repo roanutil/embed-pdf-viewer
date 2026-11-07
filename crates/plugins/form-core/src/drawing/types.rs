@@ -3,10 +3,12 @@
 //! frame (PDF points, y up, the origin at the frame's bottom left). One
 //! operation for each thing the engine's appearance stream paints.
 
-use epdf_fonts::StandardFont;
+use std::rc::Rc;
+
 use serde::Serialize;
 
 use crate::PdfRect;
+use crate::text::PaintFont;
 
 /// A colour as the stream paints it: red, green and blue from 0 to 1.
 pub type Rgb = [f64; 3];
@@ -21,19 +23,31 @@ pub enum PathSegment {
     Close,
 }
 
-/// A run of text on one baseline, each character after the one before.
-#[derive(Clone, Debug, PartialEq, Serialize)]
+/// Text one font draws in one direction, on one baseline.
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TextRun {
-    /// Where the baseline starts.
+    /// Where its left edge meets the baseline.
     pub x: f64,
     pub y: f64,
-    /// The characters as drawn (a password field's are `*`).
+    /// Its characters in typing order (a password field's are `*`).
     pub text: String,
-    /// Each character's advance, in points.
-    pub advances: Vec<f64>,
+    pub font: Rc<PaintFont>,
+    /// Drawn right to left: its first character on the right.
+    pub rtl: bool,
+    /// Kerning and ligatures off: a simple script or a standard font, as the
+    /// engine draws it.
+    pub plain: bool,
+    /// In points.
+    pub width: f64,
+    /// A comb cell's letter joined to the one before it, or after it (in
+    /// typing order), as the engine shapes the whole text: drawn alone, it
+    /// takes that joined form with a joiner (U+200D) on that side.
+    pub joins_previous: bool,
+    pub joins_next: bool,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 #[serde(tag = "kind", rename_all = "lowercase")]
 pub enum DrawOp {
     Fill {
@@ -53,7 +67,6 @@ pub enum DrawOp {
         ops: Vec<DrawOp>,
     },
     Text {
-        font: StandardFont,
         size: f64,
         color: Rgb,
         runs: Vec<TextRun>,
@@ -64,17 +77,17 @@ pub enum DrawOp {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Approximation {
-    /// The widget's font isn't one of the 14: it lays out with Helvetica's
-    /// numbers.
+    /// A font the painter wasn't given: one that isn't one of the 14 lays
+    /// out with Helvetica's numbers.
     Font,
-    /// Symbol or ZapfDingbats: the engine writes their text through another
-    /// encoding.
+    /// Symbol or ZapfDingbats.
     SymbolicFont,
-    /// A character its font can't write: the engine draws it in another font.
+    /// A character drawn as a box, which a font the painter wasn't given may
+    /// have.
     Glyph,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct WidgetDrawing {
     /// The upright frame's size, in points: the widget's box.
     pub width: f64,
