@@ -6,7 +6,7 @@ import { runScenario } from '../src/scenario';
 test('all 76 original command occurrences and current reason comparisons call surviving shipping owners', () => {
   assert.equal(
     suites.reduce((n, s) => n + s.cases.length, 0),
-    79,
+    83,
   );
   assert.doesNotMatch(
     readFileSync(new URL('../src/suites/commands.ts', import.meta.url), 'utf8'),
@@ -55,7 +55,7 @@ test('all original equality cases have independently specified boolean answers',
     'disabled-reason-equal',
   ]);
   const cases = suite.cases.filter((c) => c.fn.startsWith('resolvedCommandsEqual'));
-  assert.equal(cases.length, 27);
+  assert.equal(cases.length, 28);
   for (const c of cases)
     assert.equal(
       (suite.functions[c.fn] as (...args: unknown[]) => unknown)(...c.args),
@@ -153,13 +153,14 @@ test('resolution, safe derivations, accents, categories and search produce liter
     shortcuts: [],
     enabled: true,
     active: false,
+    pressable: false,
     visible: true,
     categories: [],
   });
   assert.equal(returned(r.trace[3]), null);
   r = await scenario('throwing-derivations-fall-back');
-  assert.deepEqual(resolved(r.trace[1]), [{ status: 'executed' }]);
-  assert.equal(record(returned(r.trace[0])).enabled, true);
+  assert.deepEqual(resolved(r.trace[1]), [{ status: 'rejected', reason: 'hidden' }]);
+  assert.equal(record(returned(r.trace[0])).enabled, false);
   assert.equal(record(returned(r.trace[0])).active, false);
   r = await scenario('icon-accent');
   assert.deepEqual(record(returned(r.trace[0])).iconAccent, {
@@ -411,7 +412,7 @@ test('permission and setting refusals preserve hidden/disabled distinction and s
     r.trace
       .flatMap((t) => t.callbacks)
       .filter((c) => c.fn === 'settings.changed')
-      .map((c) => record(c.args[0]).changed),
+      .map((c) => record(c.args[0]).changedKeys),
     [
       ['notAllowed'],
       ['disabledCommands'],
@@ -434,8 +435,8 @@ test('all current cases reproduce complete inputs and every diagnostic channel e
     outcome?: unknown;
     result?: unknown;
   }[];
-  assert.equal(saved.length, 79);
-  assert.equal(new Set(saved.map((s) => s.file + '/' + s.name)).size, 79);
+  assert.equal(saved.length, 83);
+  assert.equal(new Set(saved.map((s) => s.file + '/' + s.name)).size, 83);
   for (const row of saved) {
     const suite = suites.find((s) => s.file === row.file)!;
     const c = suite.cases.find((c) => c.name === row.name)!;
@@ -500,12 +501,12 @@ test('original definitions, occurrence accounting and archived source evidence r
   }
   assert.deepEqual(record(accounting.summary), {
     original: 76,
-    current: 79,
+    current: 83,
     mapped: 76,
     wholeRetirements: 0,
     partialRetirements: 25,
-    additions: 3,
-    changedInputs: 39,
+    additions: 7,
+    changedInputs: 65,
   });
   const integrity = read('integrity.json') as Record<string, string>;
   for (const [p, want] of Object.entries(integrity)) {
