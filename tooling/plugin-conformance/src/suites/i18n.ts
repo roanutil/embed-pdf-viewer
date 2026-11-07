@@ -24,17 +24,14 @@ import {
   i18nPlugin,
   negotiateLocale,
 } from '../../../../packages/plugin/i18n/src/index';
-import {
-  interpolate,
-  translate,
-  type TranslationSources,
-} from '../../../../packages/plugin/i18n/src/translate';
+import { translate, type TranslationSources } from '../../../../packages/plugin/i18n/src/translate';
 import * as model from '../../../../packages/plugin/i18n/src/model';
 import { initialI18nModel as initialI18nState, seedFromSettings } from '../../../../packages/plugin/i18n/src/model';
-import type {
-  I18nConfig,
-  Locale,
-  I18nCapability,
+import {
+  interpolate,
+  type I18nConfig,
+  type Locale,
+  type I18nCapability,
 } from '../../../../packages/plugin/i18n/src/contract';
 import type { I18nModel as I18nState } from '../../../../packages/plugin/i18n/src/model';
 
@@ -191,6 +188,8 @@ const state = (over: Partial<I18nState> = {}): I18nState => ({
   locale: 'es',
   locales: { en, es },
   loading: null,
+  loadingFallback: null,
+  fetched: {},
   waitingTranslations: {},
   ...over,
 });
@@ -987,7 +986,7 @@ const scenarios: ScenarioCase[] = [
   {
     name: 'lazy-pack-with-a-different-code',
     covers:
-      'The effect registers the pack under the code it carries and switches to that code, not the requested one.',
+      'The effect registers the pack under the code it carries and marks the requested code fetched, but since 58435c49a it waits for a pack under the requested code: the switch stays loading, and a second setLocale for it replaces the first, which rejects.',
     plugins: plugin({
       locales: [en],
       loaders: { ar: loader('load-ar', { resolves: { ...ar, code: 'ar-EG' } }) },
@@ -1013,7 +1012,7 @@ const scenarios: ScenarioCase[] = [
       locale: 'ar',
       loaders: { ar: loader('load-ar', { throws: { name: 'Error', message: 'no loader today' } }) },
     }),
-    steps: [start, ...reads, { op: 'call', target: 'kernel', method: 'status' }],
+    steps: [start, ...reads, { op: 'call', target: 'kernel', method: 'getStatus' }],
   },
   {
     name: 'empty-code-loader',

@@ -9,7 +9,7 @@
  * take the layout that builds their scene.
  */
 import * as S from '../../../../packages/core/stage/src/index';
-import type { PageGeom, Scene } from '../../../../packages/core/stage/src/index';
+import type { PageGeometry, Scene } from '../../../../packages/core/stage/src/index';
 
 import type { FunctionCase, Suite } from '../vectors';
 
@@ -43,13 +43,13 @@ function sceneProbe(scene: Scene, probe: Probe = {}) {
 }
 
 type Layout =
-  | { kind: 'linear'; pages: PageGeom[]; grouping: number[][]; opts?: S.LinearOptions }
-  | { kind: 'grid'; pages: PageGeom[]; grouping: number[][]; opts?: S.GridOptions };
+  | { kind: 'linear'; pages: PageGeometry[]; grouping: number[][]; opts?: S.LinearOptions }
+  | { kind: 'grid'; pages: PageGeometry[]; grouping: number[][]; opts?: S.GridOptions };
 
 const build = (l: Layout): Scene =>
   l.kind === 'linear' ? S.linearLayout(l.pages, l.grouping, l.opts) : S.gridLayout(l.pages, l.grouping, l.opts);
 
-const pg = (width: number, height: number, extra: Partial<PageGeom> = {}): PageGeom => ({ size: { width, height }, ...extra });
+const pg = (width: number, height: number, extra: Partial<PageGeometry> = {}): PageGeometry => ({ size: { width, height }, ...extra });
 const rect = (x: number, y: number, width: number, height: number): S.Rect => ({ x, y, width, height });
 const pt = (x: number, y: number): S.Point => ({ x, y });
 const cam = (x: number, y: number, zoom: number): S.Camera => ({ x, y, zoom });
@@ -230,9 +230,9 @@ const camera: FunctionCase[] = [
 
 const layoutFns: Record<string, Fn> = {
   groupPages: S.groupPages,
-  linearLayout: (pages: PageGeom[], grouping: number[][], opts?: S.LinearOptions, probe?: Probe) =>
+  linearLayout: (pages: PageGeometry[], grouping: number[][], opts?: S.LinearOptions, probe?: Probe) =>
     sceneProbe(S.linearLayout(pages, grouping, opts), probe),
-  gridLayout: (pages: PageGeom[], grouping: number[][], opts?: S.GridOptions, probe?: Probe) =>
+  gridLayout: (pages: PageGeometry[], grouping: number[][], opts?: S.GridOptions, probe?: Probe) =>
     sceneProbe(S.gridLayout(pages, grouping, opts), probe),
 };
 
@@ -297,7 +297,7 @@ const layout: FunctionCase[] = [
   c('linearLayout', 'view-units-uniform', [pg(600, 800), pg(1000, 700)], g(2), { sizing: 'uniform', viewUnitsPerPoint: 96 / 72 }, vprobe),
   c('linearLayout', 'rotations', [pg(600, 800, { rotation: 90 }), pg(600, 800, { rotation: 180 }), pg(600, 800, { rotation: 270 })], g(3), { gap: 16 }, vprobe),
   c('linearLayout', 'rotated-uniform', [pg(600, 800, { rotation: 90 }), pg(700, 500)], g(2), { gap: 16, sizing: 'uniform' }, vprobe),
-  c('linearLayout', 'odd-rotation', [pg(600, 800, { rotation: 45 as S.PageRotation }), pg(600, 800, { rotation: -90 as S.PageRotation })], g(2), {}, vprobe),
+  c('linearLayout', 'odd-rotation', [pg(600, 800, { rotation: 45 as S.Rotation }), pg(600, 800, { rotation: -90 as S.Rotation })], g(2), {}, vprobe),
   c('linearLayout', 'user-unit', [pg(100, 200), pg(100, 200, { userUnit: 5 })], g(2), { gap: 0 }, vprobe),
   c('linearLayout', 'user-unit-view-units', [pg(72, 72, { userUnit: 2 })], g(1), { gap: 0, viewUnitsPerPoint: 96 / 72 }, vprobe),
   c('linearLayout', 'user-unit-null-rotation-null', [pg(72, 72, { userUnit: null as never, rotation: null as never })], g(1), {}, vprobe),
@@ -404,24 +404,24 @@ const anchors: FunctionCase[] = [
   c('anchorAtPoint', 'empty-grid-throws', emptyGrid, pt(0, 0)),
   c('anchorAtPoint', 'empty-item-throws', emptyGroup, pt(0, 0)),
 
-  c('cameraForAnchorAtScreen', 'page-1', { pageIndex: 1, fx: 0.25, fy: 0.5 }, vertical, pt(500, 350), 1.3),
-  c('cameraForAnchorAtScreen', 'spread-second', { pageIndex: 1, fx: 0.5, fy: 0.5 }, spreads, pt(0, 0), 2),
-  c('cameraForAnchorAtScreen', 'spread-rtl-first', { pageIndex: 2, fx: 0, fy: 1 }, spreadsRtl, pt(10, 10), 0.5),
-  c('cameraForAnchorAtScreen', 'page-not-in-item', { pageIndex: 99, fx: 0.5, fy: 0.5 }, spreads, pt(0, 0), 1),
-  c('cameraForAnchorAtScreen', 'grid-page-beyond', { pageIndex: 40, fx: 0.5, fy: 0.5 }, grid, pt(0, 0), 1),
-  c('cameraForAnchorAtScreen', 'grid', { pageIndex: 5, fx: 1, fy: 0 }, grid, pt(100, 100), 0.7),
-  c('cameraForAnchorAtScreen', 'zoom-zero', { pageIndex: 0, fx: 0, fy: 0 }, vertical, pt(1, 1), 0),
-  c('cameraForAnchorAtScreen', 'empty-scene-throws', { pageIndex: 0, fx: 0, fy: 0 }, emptyScene, pt(0, 0), 1),
-  c('cameraForAnchorAtScreen', 'empty-grid-throws', { pageIndex: 0, fx: 0, fy: 0 }, emptyGrid, pt(0, 0), 1),
-  c('cameraForAnchorAtScreen', 'empty-item-throws', { pageIndex: 0, fx: 0, fy: 0 }, emptyGroup, pt(0, 0), 1),
+  c('cameraForAnchorAtScreen', 'page-1', { pageIndex: 1, fractionX: 0.25, fractionY: 0.5 }, vertical, pt(500, 350), 1.3),
+  c('cameraForAnchorAtScreen', 'spread-second', { pageIndex: 1, fractionX: 0.5, fractionY: 0.5 }, spreads, pt(0, 0), 2),
+  c('cameraForAnchorAtScreen', 'spread-rtl-first', { pageIndex: 2, fractionX: 0, fractionY: 1 }, spreadsRtl, pt(10, 10), 0.5),
+  c('cameraForAnchorAtScreen', 'page-not-in-item', { pageIndex: 99, fractionX: 0.5, fractionY: 0.5 }, spreads, pt(0, 0), 1),
+  c('cameraForAnchorAtScreen', 'grid-page-beyond', { pageIndex: 40, fractionX: 0.5, fractionY: 0.5 }, grid, pt(0, 0), 1),
+  c('cameraForAnchorAtScreen', 'grid', { pageIndex: 5, fractionX: 1, fractionY: 0 }, grid, pt(100, 100), 0.7),
+  c('cameraForAnchorAtScreen', 'zoom-zero', { pageIndex: 0, fractionX: 0, fractionY: 0 }, vertical, pt(1, 1), 0),
+  c('cameraForAnchorAtScreen', 'empty-scene-throws', { pageIndex: 0, fractionX: 0, fractionY: 0 }, emptyScene, pt(0, 0), 1),
+  c('cameraForAnchorAtScreen', 'empty-grid-throws', { pageIndex: 0, fractionX: 0, fractionY: 0 }, emptyGrid, pt(0, 0), 1),
+  c('cameraForAnchorAtScreen', 'empty-item-throws', { pageIndex: 0, fractionX: 0, fractionY: 0 }, emptyGroup, pt(0, 0), 1),
 
   c('anchorFromCamera', 'center', cam(0, 936, 1.3), vertical, vp),
   c('anchorFromCamera', 'at-origin', cam(-100, 300, 0.9), vertical, vp, pt(0, 0)),
   c('anchorFromCamera', 'at-fraction', cam(-100, 300, 0.9), vertical, vp, pt(500, 245)),
   c('anchorFromCamera', 'grid', cam(0, 0, 0.5), grid, vp),
-  c('cameraFromAnchor', 'center', { pageIndex: 1, fx: 0.5, fy: 0.3 }, vertical, vp, 1.3),
-  c('cameraFromAnchor', 'at-origin', { pageIndex: 0, fx: 0.1, fy: 0.9 }, vertical, vp, 0.9, pt(0, 0)),
-  c('cameraFromAnchor', 'spread', { pageIndex: 3, fx: 0.5, fy: 0.5 }, spreads, vp, 1),
+  c('cameraFromAnchor', 'center', { pageIndex: 1, fractionX: 0.5, fractionY: 0.3 }, vertical, vp, 1.3),
+  c('cameraFromAnchor', 'at-origin', { pageIndex: 0, fractionX: 0.1, fractionY: 0.9 }, vertical, vp, 0.9, pt(0, 0)),
+  c('cameraFromAnchor', 'spread', { pageIndex: 3, fractionX: 0.5, fractionY: 0.5 }, spreads, vp, 1),
 ];
 
 export const suites: Suite[] = [

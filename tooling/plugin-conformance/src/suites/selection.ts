@@ -29,7 +29,7 @@ import {
   HANDLE_HEAD,
   HANDLE_PAD,
   createSelectionHandleDrag,
-  selectionHandleGeom,
+  selectionHandleGeometry,
   selectionPlugin,
 } from '../../../../packages/plugin/selection/src/index';
 import type {
@@ -382,7 +382,13 @@ const fail = (label: string): Step => ({
   error: { name: 'EngineError', message: 'aborted read', code: 'Aborted' },
 });
 
-const LOCAL = { kind: 'local' as const, sessionId: 's1', sub: null, ts: 0, serverId: null };
+const LOCAL = {
+  kind: 'local' as const,
+  sessionId: 's1',
+  subject: null,
+  at: '1970-01-01T00:00:00.000Z',
+  serverSequence: null,
+};
 const noMods = { shift: false, alt: false, ctrl: false, meta: false };
 /** A pointer sample over page `pon` at content point (x, y); viewport = the
  *  point, so the drag threshold reads in the same units. */
@@ -605,7 +611,7 @@ const cases: ScenarioCase[] = [
         id: 'below',
         priority: 1,
         enabledFor: { $fn: 'below.enabledFor', returns: true },
-        onDown: { $fn: 'below.onDown', returns: false },
+        onPointerDown: { $fn: 'below.onDown', returns: false },
       }),
       hub('dispatch', offPage('down', 5, 5)),
       sel('hasSelection'),
@@ -942,8 +948,8 @@ const cases: ScenarioCase[] = [
         id: 'below',
         priority: 59,
         enabledFor: { $fn: 'below.enabledFor', returns: true },
-        onDown: { $fn: 'below.onDown', returns: true },
-        onUp: { $fn: 'below.onUp' },
+        onPointerDown: { $fn: 'below.onDown', returns: true },
+        onPointerUp: { $fn: 'below.onUp' },
       }),
       ptr('down', 1, H1.x, H1.y),
       ptr('up', 1, H1.x, H1.y),
@@ -1244,8 +1250,11 @@ const cases: ScenarioCase[] = [
   {
     name: 'drag-threshold-config',
     covers:
-      'selectionPlugin({ dragThreshold }) sets the viewport distance a press travels before it becomes a drag: 9.9 px is still a click at 10, exactly 10 begins the drag.',
-    plugins: [{ factory: 'interaction' }, { factory: 'selection', config: { dragThreshold: 10 } }],
+      'selectionPlugin({ dragThresholdPx }) sets the viewport distance a press travels before it becomes a drag: 9.9 px is still a click at 10, exactly 10 begins the drag.',
+    plugins: [
+      { factory: 'interaction' },
+      { factory: 'selection', config: { dragThresholdPx: 10 } },
+    ],
     engine: { documents: { a: doc() } },
     snapshot: slice,
     steps: [
@@ -2392,7 +2401,7 @@ const handleFns = {
   HANDLE_BAR: () => HANDLE_BAR,
   HANDLE_PAD: () => HANDLE_PAD,
   selectionHandleGeom: (view: ViewSpec, ep: SelectionHandleEndpoint, role: 'start' | 'end') =>
-    selectionHandleGeom(viewOf(view), ep, role),
+    selectionHandleGeometry(viewOf(view), ep, role),
   handleDrag,
 };
 

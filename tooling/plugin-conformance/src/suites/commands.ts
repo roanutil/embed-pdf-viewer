@@ -33,7 +33,7 @@ import {
 import { CommandsToken } from '../../../../packages/plugin/commands/src/host-contract';
 import type {
   CommandContext as CommandCtx,
-  CommandDef,
+  CommandDefinition,
   CommandsConfig,
   ResolvedCommand,
 } from '../../../../packages/plugin/commands/src/host-contract';
@@ -193,7 +193,7 @@ const settingsCase = (
   return { same: before === api.getDisabledCategories(), settings: api.getSettings() };
 };
 /** Current runtime registrations preserve prefix progress on a refused definition. */
-const register = (defs: CommandDef[]) => {
+const register = (defs: CommandDefinition[]) => {
   const { api } = currentController();
   let error: unknown;
   try {
@@ -290,6 +290,7 @@ const rc = (over: Partial<ResolvedCommand> = {}): ResolvedCommand => ({
   menu: 'zoom',
   enabled: true,
   active: false,
+  pressable: false,
   visible: true,
   categories: ['zoom'],
   ...over,
@@ -338,12 +339,12 @@ const equalCases: FunctionCase[] = [
   eq('categories-are-not-compared', rc(), rc({ categories: ['other', 'more'] })),
 ];
 
-const def = (id: string, over: Partial<CommandDef> = {}): CommandDef => ({
+const def = (id: string, over: Partial<CommandDefinition> = {}): CommandDefinition => ({
   id,
   labelKey: id,
   ...over,
 });
-const reg = (name: string, defs: CommandDef[]): FunctionCase => ({
+const reg = (name: string, defs: CommandDefinition[]): FunctionCase => ({
   name,
   fn: 'registerCurrentCommands',
   args: [defs],
@@ -463,7 +464,9 @@ const boom = (name: string, message = `${name} failed`) =>
   fn(name, { throws: { name: 'Error', message } });
 
 type CallbackMember = 'active' | 'enabled' | 'visible' | 'iconAccent' | 'run' | 'allowed';
-type VectorDef = Omit<CommandDef, CallbackMember> & { [K in CallbackMember]?: CommandFnSpec };
+type VectorDef = Omit<CommandDefinition, CallbackMember> & {
+  [K in CallbackMember]?: CommandFnSpec;
+};
 const vdef = (id: string, over: Partial<Omit<VectorDef, 'id'>> = {}): VectorDef => ({
   id,
   labelKey: id,
@@ -1030,7 +1033,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'match-stroke',
     covers:
-      'matchStroke returns the first command, in registry order, any of whose shortcuts matches the stroke on the given platform, and null when none does; it ignores enablement. The palette is registered last through the capability, so its remover can take it out.',
+      'matchStroke returns the first command, in registry order, any of whose shortcuts matches the stroke on the given platform, and null when none does; one that can run now wins, and a disabled one (its `enabled` is asked) still matches when nothing that can run does. The palette is registered last through the capability, so its remover can take it out.',
     plugins: [
       commands([
         vdef('zoom:in', { shortcut: ['Mod+=', 'Mod+Shift+=', 'Ctrl+NumpadAdd'] }),

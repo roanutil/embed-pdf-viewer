@@ -15,9 +15,9 @@ const run = async (name: string) => {
 const page = (objectNumber: number) => ({ kind: 'objectNumber', objectNumber });
 const ref = (objectNumber: number) => ({ kind: 'objectNumber', page: page(1), objectNumber });
 const trigger = (event: string, number: number) => ({
-  scope: 'annotation',
+  type: 'annotation',
   event,
-  ref: ref(number),
+  annotation: ref(number),
   page: page(1),
 });
 test('current hover driver calls the shipping pump with paired exit and enter triggers', async () => {
@@ -152,7 +152,7 @@ const hoverExpectations: Record<string, unknown[]> = {
     trigger('cursorEnter', 2),
   ],
   'an-unknown-ref-kind-has-no-key-and-matches-itself': [
-    { scope: 'annotation', event: 'cursorEnter', ref: { kind: 'mystery' }, page: page(1) },
+    { type: 'annotation', event: 'cursorEnter', annotation: { kind: 'mystery' }, page: page(1) },
   ],
 };
 test('hover coalesces only intermediate targets and releases paired work atomically', async () => {
@@ -186,9 +186,9 @@ test('hover coalesces only intermediate targets and releases paired work atomica
 test('hover compares stable object and base-index addresses and preserves current scope and source', async () => {
   const base = (baseIndex: number) => ({ kind: 'baseIndex', page: page(1), baseIndex });
   const target = (event: string, ref: unknown, pon = 1) => ({
-    scope: 'annotation',
+    type: 'annotation',
     event,
-    ref,
+    annotation: ref,
     page: page(pon),
   });
   const identities = [
@@ -220,7 +220,7 @@ test('hover compares stable object and base-index addresses and preserves curren
         {
           origin: 'hover',
           source: { kind: 'link', annotation: ref(5), page: page(1) },
-          event: { scope: 'annotation', name: 'cursorEnter' },
+          event: { type: 'annotation', event: 'cursorEnter' },
         },
       ],
       [
@@ -228,7 +228,7 @@ test('hover compares stable object and base-index addresses and preserves curren
         {
           origin: 'hover',
           source: { kind: 'link', annotation: ref(5), page: page(1) },
-          event: { scope: 'annotation', name: 'cursorExit' },
+          event: { type: 'annotation', event: 'cursorExit' },
         },
       ],
       [
@@ -236,7 +236,7 @@ test('hover compares stable object and base-index addresses and preserves curren
         {
           origin: 'hover',
           source: { kind: 'annotation', annotation: ref(6), page: page(1) },
-          event: { scope: 'annotation', name: 'cursorEnter' },
+          event: { type: 'annotation', event: 'cursorEnter' },
         },
       ],
     ],
@@ -250,7 +250,6 @@ test('hover compares stable object and base-index addresses and preserves curren
           tree: {
             root: { type: 'named', subtype: 'Named', name, next: [] },
             incomplete: false,
-            warningFlags: 0,
             warnings: [],
           },
           result: {
@@ -639,10 +638,9 @@ test('form surface preserves UI arguments, boot/user phases, detached/permission
     url: 'https://home.test/submit',
     method: 'post',
     format: 'fdf',
-    flagsRaw: 0,
     entries: [{ name: 'plain', value: 'visible' }],
     origin: 'user',
-    event: { scope: 'activate' },
+    event: { type: 'activate' },
   };
   assert.deepEqual(callbacks(submit), [
     cb(
@@ -654,9 +652,8 @@ test('form surface preserves UI arguments, boot/user phases, detached/permission
         includeNoValueFields: false,
         format: 'fdf',
         method: 'post',
-        flagsRaw: 0,
       },
-      { origin: 'user', source: { kind: 'api' }, event: { scope: 'activate' } },
+      { origin: 'user', source: { kind: 'api' }, event: { type: 'activate' } },
       { $function: true },
     ),
     cb('handler', request, { submitToDocumentHome: null }),
@@ -704,9 +701,8 @@ test('external print and submit run after transaction outputs and respect execut
       includeNoValueFields: true,
       format: 'xfdf',
       method: 'get',
-      flagsRaw: 0,
     },
-    { origin: 'user', source: { kind: 'api' }, event: { scope: 'activate' } },
+    { origin: 'user', source: { kind: 'api' }, event: { type: 'activate' } },
   ]);
   const policy = await run('script-print-obeys-the-print-policy');
   assert.deepEqual(
@@ -991,7 +987,7 @@ test('transaction ports return literal body and detached boot/run outputs', asyn
       promise: 4,
       resolved: {
         boot: output(),
-        run: output([{ kind: 'alert', message: 'hi', icon: 0 }]),
+        run: output([{ type: 'alert', message: 'hi', icon: 0 }]),
       },
     },
   ]);

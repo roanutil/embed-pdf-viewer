@@ -45,8 +45,10 @@ const focused: ShellState = s({
     free: { open: true, focusRequest: 4, props: { keep: 1 } },
   },
 });
+// `initialShellState` is the file's name for `initialShellModel` (renamed in 7c0aaff8d).
+const initialCase = (name: string): FunctionCase => ({ name, fn: 'initialShellState', args: [] });
 const reducerCases: FunctionCase[] = [
-  fn('initial-state', 'initialShellState'),
+  initialCase('initial-state'),
   fn('open-new', 'openSurface', s(), 'search'),
   fn('open-with-props', 'openSurface', s(), 'style', {
     props: { annotation: 'a1', nested: { x: [1, 2] } },
@@ -78,7 +80,7 @@ const reducerCases: FunctionCase[] = [
   fn('close-menu-not-open-is-ignored', 'closeMenu', two, 'view'),
   fn('close-all-menus', 'closeAllMenus', two),
   fn('close-all-menus-none-open-is-ignored', 'closeAllMenus', s()),
-  fn('initial-empty-state', 'initialShellState'),
+  initialCase('initial-empty-state'),
   fn('set-props-replaces-them', 'setSurfaceProps', two, 'right', { tab: 3, extra: null }),
   fn('set-props-on-a-closed-surface', 'setSurfaceProps', two, 'modal', { x: 1 }),
   fn('set-props-unknown-is-ignored', 'setSurfaceProps', two, 'nope', { x: 1 }),

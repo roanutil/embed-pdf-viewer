@@ -207,7 +207,7 @@ registerPlugin('detached-realm', {
       create: (ctx) => {
         let realm: DetachedScriptRealm | null = null;
         const documentRealm = ctx.tryGet(ActionsToken)?.scriptRealm;
-        ctx.cleanup(() => realm?.dispose());
+        ctx.cleanup(() => realm?.destroy());
         return {
           api: {
             transaction: () => documentRealm?.transaction(async () => 'body-result'),
@@ -216,11 +216,11 @@ registerPlugin('detached-realm', {
                 throw new Error('body threw');
               }),
             detachedTransaction: () => realm?.transaction(async () => 'body-result'),
-            dispose: () => realm?.dispose(),
+            dispose: () => realm?.destroy(),
             mint: () => {
               const mintRealm = ctx.tryForDocument(ActionsToken, owner)?.createDetachedScriptRealm;
               if (!mintRealm) return null;
-              realm?.dispose();
+              realm?.destroy();
               realm = mintRealm({
                 doc: ctx.doc!,
                 document: () => (meta === undefined ? ctx.document() : meta),
@@ -332,9 +332,9 @@ const catalog = (over: Record<string, unknown> = {}, extra: Partial<ResponseSpec
   ...extra,
 });
 
-const USER = { origin: 'user', source: { kind: 'api' }, event: { scope: 'activate' } };
-const HOVER = { origin: 'hover', source: { kind: 'api' }, event: { scope: 'annotation', name: 'cursorEnter' } };
-const LIFECYCLE = { origin: 'lifecycle', source: { kind: 'api' }, event: { scope: 'document', name: 'open' } };
+const USER = { origin: 'user', source: { kind: 'api' }, event: { type: 'activate' } };
+const HOVER = { origin: 'hover', source: { kind: 'api' }, event: { type: 'annotation', event: 'cursorEnter' } };
+const LIFECYCLE = { origin: 'lifecycle', source: { kind: 'api' }, event: { type: 'document', event: 'open' } };
 
 const start: Step = { op: 'call', target: 'kernel', method: 'start' };
 const open = (id = 'a', options?: Record<string, unknown>): Step => ({
@@ -357,7 +357,7 @@ const FORM_OK = (count = 1) => ({
   returns: { results: Array.from({ length: count }, (_, index) => ({ index, status: 'applied', fields: [], changedWidgets: [] })), changedWidgets: [], meta: null },
 });
 const ANNOT_OK = (numbers: number[]) => ({ returns: { results: numbers.map((annotObjectNumber) => ({ annotObjectNumber, status: 'applied' })) } });
-const RESOLVED = { url: 'https://home.test/submit', method: 'post', format: 'fdf', flagsRaw: 0, entries: [{ name: 'plain', value: 'visible' }], origin: 'user', event: { scope: 'activate' } };
+const RESOLVED = { url: 'https://home.test/submit', method: 'post', format: 'fdf', flagsRaw: 0, entries: [{ name: 'plain', value: 'visible' }], origin: 'user', event: { type: 'activate' } };
 const resolverEcho = (entries: unknown[] = RESOLVED.entries, extra: Record<string, unknown> = {}) =>
   fnSpec('resolver', { resolves: { ...RESOLVED, entries, ...extra } });
 const plugins = (config?: HarnessConfig) => [{ factory: 'actions', ...(config === undefined ? {} : { config }) }];
@@ -535,7 +535,7 @@ const dispatcherCases: ScenarioCase[] = [
       listenCurrent(),
       listenCurrent('onExecuted'),
       cap('executeNamed', 'NextPage'),
-      cap('executeNamed', 'FirstPage', { source: { kind: 'link' }, event: { scope: 'annotation', name: 'mouseUp' } }),
+      cap('executeNamed', 'FirstPage', { source: { kind: 'link' }, event: { type: 'annotation', event: 'mouseUp' } }),
       cap('executeNamed', 'Print'),
       cap('setUiAdapter', adapter()),
       cap('executeNamed', 'Print'),
@@ -546,7 +546,7 @@ const dispatcherCases: ScenarioCase[] = [
   {
     name: 'get-action-tree',
     covers:
-      'getActionTree reads the raw tree behind each source kind: an annotation (activate by default, or the named /AA event; the /A-shadows-U rule is not applied), a field by object number (not the first numbered field) or by name, a page (open by default or close), and the catalog (OpenAction by default, or the Table-200 tree for a verb). Anything absent is null; the required actions service returns an empty catalog for the second document.',
+      'readActionTree reads the raw tree behind each source kind: an annotation (activate by default, or the named /AA event; the /A-shadows-U rule is not applied), a field by object number (not the first numbered field) or by name, a page (open by default or close), and the catalog (OpenAction by default, or the Table-200 tree for a verb). Anything absent is null; the required actions service returns an empty catalog for the second document.',
     plugins: current.plugins(OFF),
     engine: {
       documents: {
@@ -1024,10 +1024,10 @@ const submitCases: ScenarioCase[] = [
 
 // ── triggers ──────────────────────────────────────────────────────────────────
 
-const activate = (pon: number, ref: unknown, source?: unknown) => ({ scope: 'activate', ref, page: pr(pon), ...(source === undefined ? {} : { source }) });
-const annotationEvent = (event: string, pon: number, ref: unknown, source?: unknown) => ({ scope: 'annotation', event, ref, page: pr(pon), ...(source === undefined ? {} : { source }) });
-const pageEvent = (event: string, pon: number) => ({ scope: 'page', event, page: pr(pon) });
-const docEvent = (event: string) => ({ scope: 'document', event });
+const activate = (pon: number, ref: unknown, source?: unknown) => ({ type: 'activate', annotation: ref, page: pr(pon), ...(source === undefined ? {} : { source }) });
+const annotationEvent = (event: string, pon: number, ref: unknown, source?: unknown) => ({ type: 'annotation', event, annotation: ref, page: pr(pon), ...(source === undefined ? {} : { source }) });
+const pageEvent = (event: string, pon: number) => ({ type: 'page', event, page: pr(pon) });
+const docEvent = (event: string) => ({ type: 'document', event });
 const dispatch = (trigger: unknown) => cap('dispatch', trigger);
 const nmRef = (pon: number, nm: string) => ({ kind: 'nm', page: pr(pon), nm });
 const indexRef = (pon: number, index: number, revision: unknown = 'r1') => ({ kind: 'index', page: pr(pon), index, revision });
@@ -1049,9 +1049,9 @@ const activateCurrent = (
   ref: AnnotationRef,
   source?: ActionSource,
 ): ActionTrigger => ({
-  scope: 'activate',
+  type: 'activate',
   page: current.pr(page),
-  ref,
+  annotation: ref,
   ...(source ? { source } : {}),
 });
 const annotationCurrent = (
@@ -1060,10 +1060,10 @@ const annotationCurrent = (
   ref: AnnotationRef,
   source?: ActionSource,
 ): ActionTrigger => ({
-  scope: 'annotation',
+  type: 'annotation',
   event,
   page: current.pr(page),
-  ref,
+  annotation: ref,
   ...(source ? { source } : {}),
 });
 const fanPage5 = [
@@ -1395,7 +1395,7 @@ const triggerCases: ScenarioCase[] = [
         doc: 'a',
         event: {
           type: 'metadata.updated',
-          origin: { kind: 'remote', sessionId: 'peer', sub: null, ts: 0, serverId: null },
+          origin: { kind: 'remote', sessionId: 'peer', subject: null, at: '1970-01-01T00:00:00.000Z', serverSequence: null },
           metadata: {
             title: 'Changed',
             author: null,
@@ -1419,7 +1419,7 @@ const triggerCases: ScenarioCase[] = [
         event: {
           type: 'stream.desynced',
           reason: 'backlog-overflow',
-          ts: 0,
+          at: '1970-01-01T00:00:00.000Z',
         } satisfies DocumentEvent,
       },
       dispatch(current.pageEvent('visible', 5)),
@@ -2116,7 +2116,7 @@ const scriptEngine = (
   });
 const widgetCtx = (
   field: FormFieldRef,
-  event: ActionContext['event'] = { scope: 'activate' },
+  event: ActionContext['event'] = { type: 'activate' },
 ): ActionContext => ({
   origin: 'user',
   source: { kind: 'widget', field, annotation: current.aref(1, 41), page: current.pr(1) },
@@ -2246,7 +2246,7 @@ const scriptCases: ScenarioCase[] = [
               boot: [
                 out({
                   formEffects: [formEffect],
-                  uiEffects: [{ kind: 'alert', message: 'booted', icon: 3 }],
+                  uiEffects: [{ type: 'alert', message: 'booted', icon: 3 }],
                   diagnostics: [{ code: 'unsupported-api', message: 'app.beep' }],
                   error: { kind: 'exception', message: 'boot threw', stack: 'at boot' },
                 }),
@@ -2330,21 +2330,21 @@ const scriptCases: ScenarioCase[] = [
         sandbox: {
           builds: [
             {
-              boot: [out({ uiEffects: [{ kind: 'print' }] })],
+              boot: [out({ uiEffects: [{ type: 'print' }] })],
               run: [
                 out({
                   uiEffects: [
-                    { kind: 'gotoPage', page: 2 },
+                    { type: 'goToPage', pageIndex: 2 },
                     {
-                      kind: 'submitForm',
+                      type: 'submitForm',
                       url: 'https://s.test/',
                       fieldNames: ['name', 'choice'],
                       includeEmpty: true,
                       format: 'xfdf',
                       method: 'get',
                     },
-                    { kind: 'alert', message: 'hi', icon: 1, title: 'T' },
-                    { kind: 'print' },
+                    { type: 'alert', message: 'hi', icon: 1, title: 'T' },
+                    { type: 'print' },
                   ],
                 }),
               ],
@@ -2356,7 +2356,7 @@ const scriptCases: ScenarioCase[] = [
     engine: scriptEngine(),
     steps: [
       ...boot,
-      cap('setUiAdapter', adapter({ alert: fnSpec('ui.alert'), gotoPage: fnSpec('ui.gotoPage') })),
+      cap('setUiAdapter', adapter({ alert: fnSpec('ui.alert'), goToPage: fnSpec('ui.gotoPage') })),
       cap('registerSubmitResolver', current.resolverEcho()),
       cap('setSubmitHandler', fnSpec('handler')),
       cap('execute', current.tree(current.js('a()')), current.USER),
@@ -2368,7 +2368,7 @@ const scriptCases: ScenarioCase[] = [
     covers:
       "A script's print() is gated by the print policy row for the dispatch origin: under the defaults a lifecycle script's print is blocked before the adapter, and a user script's still prints.",
     plugins: current.plugins(
-      JS_OFF({ sandbox: { builds: [{ run: [out({ uiEffects: [{ kind: 'print' }] })] }] } }),
+      JS_OFF({ sandbox: { builds: [{ run: [out({ uiEffects: [{ type: 'print' }] })] }] } }),
     ),
     engine: scriptEngine({}, { nameTreeScripts: [] }),
     steps: [
@@ -2409,97 +2409,97 @@ const scriptCases: ScenarioCase[] = [
       ...(
         [
           widgetCtx({ kind: 'objectNumber', objectNumber: 101 }),
-          widgetCtx({ kind: 'fqn', name: 'name' }, { scope: 'annotation', name: 'focus' }),
+          widgetCtx({ kind: 'fqn', name: 'name' }, { type: 'annotation', event: 'focus' }),
           widgetCtx({ kind: 'fqn', name: 'ghost' }),
           widgetCtx({ kind: 'objectNumber', objectNumber: 102 }),
           widgetCtx({ kind: 'fqn', name: 'empty' }),
           {
             origin: 'hover',
             source: { kind: 'link', annotation: current.aref(1, 7), page: current.pr(1) },
-            event: { scope: 'annotation', name: 'cursorEnter' },
+            event: { type: 'annotation', event: 'cursorEnter' },
           },
           {
             origin: 'hover',
             source: { kind: 'link', annotation: current.aref(2, 7), page: current.pr(2) },
-            event: { scope: 'annotation', name: 'cursorEnter' },
+            event: { type: 'annotation', event: 'cursorEnter' },
           },
           {
             origin: 'user',
             source: { kind: 'annotation', annotation: current.aref(2, 6), page: current.pr(2) },
-            event: { scope: 'annotation', name: 'mouseDown' },
+            event: { type: 'annotation', event: 'mouseDown' },
           },
           {
             origin: 'hover',
             source: { kind: 'annotation', annotation: current.aref(1, 6), page: current.pr(1) },
-            event: { scope: 'annotation', name: 'cursorExit' },
+            event: { type: 'annotation', event: 'cursorExit' },
           },
           {
             origin: 'user',
             source: { kind: 'annotation', annotation: current.aref(1, 6), page: current.pr(1) },
-            event: { scope: 'annotation', name: 'mouseDown' },
+            event: { type: 'annotation', event: 'mouseDown' },
           },
           {
             origin: 'user',
             source: { kind: 'annotation', annotation: current.aref(1, 6), page: current.pr(1) },
-            event: { scope: 'annotation', name: 'mouseUp' },
+            event: { type: 'annotation', event: 'mouseUp' },
           },
           {
             origin: 'user',
             source: { kind: 'annotation', annotation: current.aref(1, 6), page: current.pr(1) },
-            event: { scope: 'annotation', name: 'blur' },
+            event: { type: 'annotation', event: 'blur' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'page', page: current.pr(2) },
-            event: { scope: 'page', name: 'open' },
+            event: { type: 'page', event: 'open' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'page', page: current.pr(2) },
-            event: { scope: 'page', name: 'close' },
+            event: { type: 'page', event: 'close' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'page', page: current.pr(2) },
-            event: { scope: 'page', name: 'visible' },
+            event: { type: 'page', event: 'visible' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'page', page: current.pr(2) },
-            event: { scope: 'page', name: 'invisible' },
+            event: { type: 'page', event: 'invisible' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'document' },
-            event: { scope: 'document', name: 'open' },
+            event: { type: 'document', event: 'open' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'document' },
-            event: { scope: 'document', name: 'will-save' },
+            event: { type: 'document', event: 'will-save' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'document' },
-            event: { scope: 'document', name: 'did-save' },
+            event: { type: 'document', event: 'did-save' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'document' },
-            event: { scope: 'document', name: 'will-print' },
+            event: { type: 'document', event: 'will-print' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'document' },
-            event: { scope: 'document', name: 'did-print' },
+            event: { type: 'document', event: 'did-print' },
           },
           {
             origin: 'lifecycle',
             source: { kind: 'document' },
-            event: { scope: 'document', name: 'will-close' },
+            event: { type: 'document', event: 'will-close' },
           },
-          { origin: 'user', source: { kind: 'link' }, event: { scope: 'activate' } },
-          { origin: 'user', source: { kind: 'api' }, event: { scope: 'activate' } },
+          { origin: 'user', source: { kind: 'link' }, event: { type: 'activate' } },
+          { origin: 'user', source: { kind: 'api' }, event: { type: 'activate' } },
         ] satisfies ActionContext[]
       ).map((ctx) => cap('execute', current.tree(current.js('probe()')), ctx)),
     ],
@@ -2529,7 +2529,7 @@ const scriptCases: ScenarioCase[] = [
       cap('execute', current.tree(current.js('a()')), {
         origin: 'lifecycle',
         source: { kind: 'page', page: current.pr(42) },
-        event: { scope: 'page', name: 'open' },
+        event: { type: 'page', event: 'open' },
       }),
     ],
     snapshot: snap,
@@ -2705,7 +2705,7 @@ const scriptCases: ScenarioCase[] = [
           sandbox: {
             builds: [
               {},
-              { run: [{ output: { uiEffects: [{ kind: 'alert', message: 'hi', icon: 0 }] } }] },
+              { run: [{ output: { uiEffects: [{ type: 'alert', message: 'hi', icon: 0 }] } }] },
             ],
           },
           budget: {
@@ -2833,13 +2833,13 @@ const surfaceCases: ScenarioCase[] = [
       ...boot,
       listen('onScriptDiagnosticReported'),
       listen('onScriptFailed'),
-      cap('setUiAdapter', adapter({ alert: fnSpec('ui.alert'), gotoPage: fnSpec('ui.gotoPage') })),
+      cap('setUiAdapter', adapter({ alert: fnSpec('ui.alert'), goToPage: fnSpec('ui.gotoPage') })),
       surface({
         uiEffects: [
-          { kind: 'alert', message: 'm1', icon: 0 },
-          { kind: 'alert', message: 'm2', icon: 2, title: 'T' },
-          { kind: 'gotoPage', page: 3 },
-          { kind: 'print' },
+          { type: 'alert', message: 'm1', icon: 0 },
+          { type: 'alert', message: 'm2', icon: 2, title: 'T' },
+          { type: 'goToPage', pageIndex: 3 },
+          { type: 'print' },
         ],
         diagnostics: [{ code: 'unsupported-api', message: 'x' }],
         error: { kind: 'exception', message: 'boom' },
@@ -2849,8 +2849,8 @@ const surfaceCases: ScenarioCase[] = [
       cap('setUiAdapter', adapter()),
       surface({
         uiEffects: [
-          { kind: 'alert', message: 'm3', icon: 1 },
-          { kind: 'gotoPage', page: 1 },
+          { type: 'alert', message: 'm3', icon: 1 },
+          { type: 'goToPage', pageIndex: 1 },
         ],
       }),
     ],
@@ -2877,7 +2877,7 @@ const surfaceCases: ScenarioCase[] = [
       open('b'),
       listen('onDiagnosticReported'),
       listen('onScriptDiagnosticReported'),
-      surface({ uiEffects: [{ kind: 'alert', message: 'm', icon: 0 }, { kind: 'print' }] }),
+      surface({ uiEffects: [{ type: 'alert', message: 'm', icon: 0 }, { type: 'print' }] }),
       {
         op: 'call',
         target: { token: 'actions', doc: 'b' },
@@ -2900,14 +2900,14 @@ const surfaceCases: ScenarioCase[] = [
         op: 'call',
         target: { token: 'actions', doc: 'b' },
         method: 'surfaceScriptResult',
-        args: [surfaceResult({ uiEffects: [{ kind: 'print' }] })],
+        args: [surfaceResult({ uiEffects: [{ type: 'print' }] })],
       },
       settle('printing', 'done'),
       {
         op: 'call',
         target: { token: 'actions', doc: 'b' },
         method: 'surfaceScriptResult',
-        args: [surfaceResult({ uiEffects: [{ kind: 'print' }] })],
+        args: [surfaceResult({ uiEffects: [{ type: 'print' }] })],
       },
     ],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
@@ -2925,9 +2925,9 @@ const surfaceCases: ScenarioCase[] = [
       cap('setSubmitHandler', fnSpec('handler')),
       surface({
         uiEffects: [
-          { kind: 'submitForm', url: null, fieldNames: null, includeEmpty: false },
+          { type: 'submitForm', url: null, fieldNames: null, includeEmpty: false },
           {
-            kind: 'submitForm',
+            type: 'submitForm',
             url: 'https://x.test',
             fieldNames: ['a'],
             includeEmpty: true,
@@ -2938,7 +2938,7 @@ const surfaceCases: ScenarioCase[] = [
         origin: 'lifecycle',
       }),
       surface({
-        uiEffects: [{ kind: 'submitForm', url: null, fieldNames: null, includeEmpty: false }],
+        uiEffects: [{ type: 'submitForm', url: null, fieldNames: null, includeEmpty: false }],
         origin: 'user',
       }),
     ],
@@ -2956,17 +2956,17 @@ const surfaceCases: ScenarioCase[] = [
       listen('onScriptDiagnosticReported'),
       cap('registerSubmitResolver', current.resolverEcho()),
       cap('setSubmitHandler', fnSpec('handler')),
-      cap('setUiAdapter', adapter({ alert: fnSpec('ui.alert'), gotoPage: fnSpec('ui.gotoPage') })),
+      cap('setUiAdapter', adapter({ alert: fnSpec('ui.alert'), goToPage: fnSpec('ui.gotoPage') })),
       surface({
         uiEffects: [
-          { kind: 'print' },
-          { kind: 'gotoPage', page: 2 },
-          { kind: 'submitForm', url: null, fieldNames: null, includeEmpty: false },
-          { kind: 'alert', message: 'from the asset', icon: 3 },
+          { type: 'print' },
+          { type: 'goToPage', pageIndex: 2 },
+          { type: 'submitForm', url: null, fieldNames: null, includeEmpty: false },
+          { type: 'alert', message: 'from the asset', icon: 3 },
         ],
         realm: 'detached',
       }),
-      surface({ uiEffects: [{ kind: 'gotoPage', page: 2 }], realm: 'document' }),
+      surface({ uiEffects: [{ type: 'goToPage', pageIndex: 2 }], realm: 'document' }),
     ],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
@@ -2980,13 +2980,13 @@ const surfaceCases: ScenarioCase[] = [
       ...boot,
       listen('onScriptDiagnosticReported'),
       listen('onScriptFailed'),
-      cap('setUiAdapter', adapter({ alert: fnSpec('ui.alert'), gotoPage: fnSpec('ui.gotoPage') })),
+      cap('setUiAdapter', adapter({ alert: fnSpec('ui.alert'), goToPage: fnSpec('ui.gotoPage') })),
       surfaceCommit(
         {
           uiEffects: [
-            { kind: 'alert', message: 'boot', icon: 0, phase: 'boot' },
-            { kind: 'gotoPage', page: 1, phase: 'user' },
-            { kind: 'alert', message: 'user', icon: 1, phase: 'user' },
+            { type: 'alert', message: 'boot', icon: 0, phase: 'boot' },
+            { type: 'goToPage', pageIndex: 1, phase: 'user' },
+            { type: 'alert', message: 'user', icon: 1, phase: 'user' },
           ],
           diagnostics: [{ code: 'unsupported-api', message: 'd' }],
           error: { kind: 'exception', message: 'e' },
@@ -3005,8 +3005,8 @@ const surfaceCases: ScenarioCase[] = [
       surfaceCommit(
         {
           uiEffects: [
-            { kind: 'print', phase: 'boot' },
-            { kind: 'alert', message: 'asset', icon: 0, phase: 'user' },
+            { type: 'print', phase: 'boot' },
+            { type: 'alert', message: 'asset', icon: 0, phase: 'user' },
           ],
           diagnostics: [],
         },

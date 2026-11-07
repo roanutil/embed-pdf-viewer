@@ -14,7 +14,7 @@ import type { ScriptIdentity } from '../../../../packages/core/acrojs/src/index'
 import { actionsPlugin } from '../../../../packages/plugin/actions/src/actions.plugin';
 import {
   ActionsToken,
-  type AnnotCommitResult,
+  type AnnotationCommitResult,
   type FormCommitSinkResult,
 } from '../../../../packages/plugin/actions/src/host-contract';
 import type {
@@ -133,7 +133,6 @@ export const engineWith = (over: Partial<FakeDocumentSpec> = {}) => ({
 export const tree = (root: PdfActionNode | null, incomplete = false): PdfActionTree => ({
   root,
   incomplete,
-  warningFlags: 0,
   warnings: incomplete ? ['incomplete'] : [],
 });
 export const js = (script: string, next: PdfActionNode[] = []): PdfActionNode => ({
@@ -198,7 +197,6 @@ export const bare = (type: BareType, filePath = '', next: PdfActionNode[] = []):
 export const malformedTree = (type: 'print' | 'bogus') => ({
   root: { type, subtype: type, next: [] },
   incomplete: false,
-  warningFlags: 0,
   warnings: [],
 });
 export const byName = (name: string): PdfActionTargetRef => ({ kind: 'name', name });
@@ -209,20 +207,17 @@ export const byNumber = (objectNumber: number): PdfActionTargetRef => ({
 export const payload = (over: Partial<SubmitFormPayload> = {}): SubmitFormPayload => ({
   url: 'https://home.test/submit',
   fields: null,
-  flags: {
-    raw: 0,
-    exclude: false,
-    includeNoValueFields: false,
-    format: 'fdf',
-    method: 'post',
-    submitCoordinates: false,
-    includeAppendSaves: false,
-    includeAnnotations: false,
-    canonicalFormat: false,
-    exclNonUserAnnots: false,
-    exclFKey: false,
-    embedForm: false,
-  },
+  exclude: false,
+  includeNoValueFields: false,
+  format: 'fdf',
+  method: 'post',
+  submitCoordinates: false,
+  includeAppendSaves: false,
+  includeAnnotations: false,
+  canonicalFormat: false,
+  exclNonUserAnnots: false,
+  exclFKey: false,
+  embedForm: false,
   ...over,
 });
 export const submit = (payload?: SubmitFormPayload, next: PdfActionNode[] = []): PdfActionNode => ({
@@ -259,27 +254,26 @@ export const forms = (
 export const USER: ActionContext = {
   origin: 'user',
   source: { kind: 'api' },
-  event: { scope: 'activate' },
+  event: { type: 'activate' },
 };
 export const HOVER: ActionContext = {
   origin: 'hover',
   source: { kind: 'api' },
-  event: { scope: 'annotation', name: 'cursorEnter' },
+  event: { type: 'annotation', event: 'cursorEnter' },
 };
 export const LIFECYCLE: ActionContext = {
   origin: 'lifecycle',
   source: { kind: 'api' },
-  event: { scope: 'document', name: 'open' },
+  event: { type: 'document', event: 'open' },
 };
 export const FORM_OK = () => ({ returns: { status: 'applied' } satisfies FormCommitSinkResult });
 export const RESOLVED: ActionSubmitRequest = {
   url: 'https://home.test/submit',
   method: 'post',
   format: 'fdf',
-  flagsRaw: 0,
   entries: [{ name: 'plain', value: 'visible' }],
   origin: 'user',
-  event: { scope: 'activate' },
+  event: { type: 'activate' },
 };
 export const resolverEcho = (
   entries = RESOLVED.entries,
@@ -289,29 +283,29 @@ export const resolverEcho = (
   resolves: { ...RESOLVED, entries, ...extra } satisfies ActionSubmitRequest,
 });
 export const activate = (page: number): ActionTrigger => ({
-  scope: 'activate',
-  ref: aref(page, 1),
+  type: 'activate',
+  annotation: aref(page, 1),
   page: pr(page),
 });
 export const annotationEvent = (event: PdfAnnotationEventKind, page: number): ActionTrigger => ({
-  scope: 'annotation',
+  type: 'annotation',
   event,
-  ref: aref(page, 1),
+  annotation: aref(page, 1),
   page: pr(page),
 });
 export const pageEvent = (
   event: 'open' | 'close' | 'visible' | 'invisible',
   page: number,
-): ActionTrigger => ({ scope: 'page', event, page: pr(page) });
+): ActionTrigger => ({ type: 'page', event, page: pr(page) });
 export const docEvent = (event: DocumentTriggerEvent): ActionTrigger => ({
-  scope: 'document',
+  type: 'document',
   event,
 });
 
 export const readTree = (source: ActionTreeSource, document = 'a'): Step => ({
   op: 'call',
   target: { token: 'actions', doc: document },
-  method: 'getActionTree',
+  method: 'readActionTree',
   args: [source],
 });
 
@@ -326,7 +320,7 @@ export const ANNOT_OK = (numbers: number[]) => ({
       annotObjectNumber,
       status: 'applied' as const,
     })),
-  } satisfies AnnotCommitResult,
+  } satisfies AnnotationCommitResult,
 });
 export const formFailure = (error?: string) => ({
   returns: {

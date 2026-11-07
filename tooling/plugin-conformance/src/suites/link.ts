@@ -80,8 +80,8 @@ interface HarnessConfig {
 const printable = (event: LinkActivatedEvent) => ({
   target: event.target,
   activation:
-    event.activation.outcome === 'dispatched'
-      ? { outcome: 'dispatched', dispatch: '[promise]' }
+    event.activation.status === 'dispatched'
+      ? { status: 'dispatched', dispatch: '[promise]' }
       : event.activation,
 });
 
@@ -320,7 +320,7 @@ const cases: ScenarioCase[] = [
         meta: {
           affectedPages: [pr(1)],
           cacheDelta: null,
-          changed: [],
+          changedRefs: [],
           opId: 'reorder',
           undoable: true,
         },
@@ -334,6 +334,7 @@ const cases: ScenarioCase[] = [
         rotation: 90,
         layout: {
           pageCount: 2,
+          labels: [],
           namedPages: [],
           pages: [layout(0, 1, undefined, 90), layout(1, 2, CROP2)],
         },
@@ -735,10 +736,10 @@ const cases: ScenarioCase[] = [
       ...boot,
       lk('onLoaded', [{ $fn: 'loaded' }]),
       lk('isLoaded', [pr(1)]),
-      lk('listAllLinks'),
+      lk('readAllLinks'),
       lk('isLoaded', [pr(1)]),
       lk('isLoaded', [pr(2)]),
-      lk('listAllLinks'),
+      lk('readAllLinks'),
       emit(createdFact(link(2))),
       lk('listLinks', [pr(1)]),
     ],
@@ -750,7 +751,7 @@ const cases: ScenarioCase[] = [
     plugins: WITH_ANNOTATION,
     engine: { documents: { a: annotationDoc({ 1: [link(1)], 2: PAGE2 }) } },
     ...UNSNAPSHOTTED,
-    steps: [...boot, lk('isLoaded', [pr(1)]), lk('isLoaded', [pr(9)]), lk('listAllLinks')],
+    steps: [...boot, lk('isLoaded', [pr(1)]), lk('isLoaded', [pr(9)]), lk('readAllLinks')],
   },
 ];
 
@@ -774,6 +775,7 @@ const dropPage = (n: number) =>
     origin: REMOTE,
     layout: {
       pageCount: 2,
+      labels: [],
       namedPages: [],
       pages: [1, 2, 3]
         .filter((p) => p !== n)

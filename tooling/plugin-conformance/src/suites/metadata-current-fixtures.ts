@@ -43,16 +43,16 @@ export const pages: PageLayout[] = [
 export const local: EventOrigin = {
   kind: 'local',
   sessionId: 's1',
-  sub: null,
-  ts: 0,
-  serverId: null,
+  subject: null,
+  at: '1970-01-01T00:00:00.000Z',
+  serverSequence: null,
 };
 export const remote: EventOrigin = {
   kind: 'remote',
   sessionId: 's2',
-  sub: 'u-9',
-  ts: 0,
-  serverId: null,
+  subject: 'u-9',
+  at: '1970-01-01T00:00:00.000Z',
+  serverSequence: null,
 };
 const mutationMeta = {
   affectedPages: [],

@@ -112,7 +112,7 @@ const cases: ScenarioCase[] = [
         type: 'pages.reordered',
         origin: local,
         pages: [{ kind: 'objectNumber', objectNumber: 1 }],
-        layout: { pageCount: 1, pages, namedPages: [] },
+        layout: { pageCount: 1, pages, labels: [], namedPages: [] },
         meta: result(meta()).meta,
       }),
       call('getSnapshot', []),

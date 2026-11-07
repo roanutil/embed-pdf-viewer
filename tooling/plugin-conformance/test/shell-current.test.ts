@@ -69,7 +69,7 @@ test('current scenarios execute with exact named lifetime failures and no other 
   }
 });
 test('focus, exclusive closure, replacement props and snapshots have literal state and events', () => {
-  const ctx = createTestContext({ id: 'shell', state: model.initialShellState() });
+  const ctx = createTestContext({ id: 'shell', state: model.initialShellModel() });
   const api = ctx.connect(createShellController(ctx));
   try {
     const events: unknown[] = [];
@@ -168,7 +168,7 @@ test('focus, exclusive closure, replacement props and snapshots have literal sta
     api.closeAll();
     assert.equal(events.length, 12);
   } finally {
-    ctx.dispose();
+    ctx.destroy();
   }
 });
 import { canonical, snapshotHooks } from '../src/canonical';

@@ -61,6 +61,8 @@ type Fn = (...args: never[]) => unknown;
  * f5d70b67e moved destinations into page space: `destinationToReveal(dest,
  * layout, bbox?)` became `revealOfDestination(dest, size)`, which takes the
  * page's size and no bounding box, and answers the reveal options alone.
+ * 8bbed33af made every axis present (`null` keeps the viewer's value): the
+ * cases that left an axis out now give it as `null`.
  */
 
 const c = (fn: string, label: string, ...args: unknown[]): FunctionCase => {
@@ -144,8 +146,14 @@ const destinationCases: FunctionCase[] = [
   ),
   c(
     'destinationToReveal',
-    'xyz-absent',
-    { kind: 'xyz', page: { kind: 'objectNumber', objectNumber: 12 } },
+    'xyz-all-null',
+    {
+      kind: 'xyz',
+      page: { kind: 'objectNumber', objectNumber: 12 },
+      left: null,
+      top: null,
+      zoom: null,
+    },
     letter,
   ),
   c(
@@ -163,7 +171,13 @@ const destinationCases: FunctionCase[] = [
   c(
     'destinationToReveal',
     'xyz-user-unit',
-    { kind: 'xyz', page: { kind: 'objectNumber', objectNumber: 12 }, left: 100, top: 700 },
+    {
+      kind: 'xyz',
+      page: { kind: 'objectNumber', objectNumber: 12 },
+      left: 100,
+      top: 700,
+      zoom: null,
+    },
     scaled,
   ),
   c(
@@ -199,8 +213,8 @@ const destinationCases: FunctionCase[] = [
   ),
   c(
     'destinationToReveal',
-    'fitH-absent-cropped',
-    { kind: 'fitH', page: { kind: 'objectNumber', objectNumber: 12 } },
+    'fitH-null-cropped',
+    { kind: 'fitH', page: { kind: 'objectNumber', objectNumber: 12 }, top: null },
     cropped,
   ),
   c(
@@ -282,8 +296,8 @@ const destinationCases: FunctionCase[] = [
   ),
   c(
     'destinationToReveal',
-    'fitBH-absent-page',
-    { kind: 'fitBH', page: { kind: 'objectNumber', objectNumber: 12 } },
+    'fitBH-null-page',
+    { kind: 'fitBH', page: { kind: 'objectNumber', objectNumber: 12 }, top: null },
     letter,
   ),
   c(
@@ -302,8 +316,8 @@ const destinationCases: FunctionCase[] = [
   ),
   c(
     'destinationToReveal',
-    'fitBV-absent-page',
-    { kind: 'fitBV', page: { kind: 'objectNumber', objectNumber: 12 } },
+    'fitBV-null-page',
+    { kind: 'fitBV', page: { kind: 'objectNumber', objectNumber: 12 }, left: null },
     letter,
   ),
   c(
@@ -315,7 +329,7 @@ const destinationCases: FunctionCase[] = [
   c(
     'destinationToReveal',
     'absent-user-unit',
-    { kind: 'xyz', page: { kind: 'objectNumber', objectNumber: 12 }, left: 5, top: 6 },
+    { kind: 'xyz', page: { kind: 'objectNumber', objectNumber: 12 }, left: 5, top: 6, zoom: null },
     layout({ userUnit: { $undefined: true } }),
   ),
 ];

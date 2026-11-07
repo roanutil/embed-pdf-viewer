@@ -112,16 +112,24 @@ interface HandlerOpts {
   claims?: Answer;
 }
 
+const POINTER_MEMBER = {
+  onMove: 'onPointerMove',
+  onUp: 'onPointerUp',
+  onCancel: 'onPointerCancel',
+  onHover: 'onHover',
+} as const;
+
 /** A scripted handler. `members` picks which optional callbacks exist. */
 const handler = (id: string, priority: number, opts: HandlerOpts = {}): Record<string, unknown> => {
   const out: Record<string, unknown> = {
     id,
     priority,
     enabledFor: { $fn: `${id}.enabledFor`, ...(opts.enabled ?? { returns: true }) },
-    onDown: { $fn: `${id}.onDown`, ...(opts.down ?? { returns: true }) },
+    onPointerDown: { $fn: `${id}.onDown`, ...(opts.down ?? { returns: true }) },
   };
   for (const member of opts.members ?? ['onMove', 'onUp', 'onCancel', 'onHover']) {
-    out[member] = { $fn: `${id}.${member}` };
+    // The pointer members are onPointer* since 2ce3f7bc5; the callback names keep the short form.
+    out[POINTER_MEMBER[member]] = { $fn: `${id}.${member}` };
   }
   if (opts.claims) out.claimsTouch = { $fn: `${id}.claimsTouch`, ...opts.claims };
   return out;
