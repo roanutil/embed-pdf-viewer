@@ -2,12 +2,13 @@
 //! flat list of fully painted nodes; a renderer maps each to one element.
 
 use epdf_geometry::{quad_bounds, quad_ring};
+use epdf_text_core::{
+    Alignment, FieldText, FieldTextOptions, PaintFonts, PdfRect, default_paint_fonts, layout_field,
+};
 use serde_json::Value;
 
 use crate::appearance::draws_live;
-use crate::font_css::css_font_family_for_font;
 use crate::geometry::geom_scene;
-use crate::helvetica::{HELVETICA_ASCENT, HELVETICA_LINE_HEIGHT, helvetica_advance};
 use crate::icons::{file_attachment_icon_scene, note_icon_scene};
 use crate::js;
 use crate::json;
@@ -16,8 +17,8 @@ use crate::measurement::{MeasurementAppearance, distance_scene, measurement_capt
 use crate::measurement_shape::shape_measurement_layout;
 use crate::shapes::caret::CARET_STROKE_WIDTH;
 use crate::types::{
-    ItemSource, Paint, Point, Quad, Rect, RedactLabel, RenderItem, RenderNode, SceneNode, Shape,
-    Style, TextScene, TextStyle,
+    FontProgramRef, ItemSource, Paint, Point, Quad, Rect, RedactLabel, RenderItem, RenderNode,
+    SceneNode, Shape, Style, TextRunScene, TextStyle,
 };
 
 fn num(value: f64) -> f64 {
@@ -202,87 +203,120 @@ fn redact_regions(geometry: &Shape) -> Vec<RedactRegion> {
     }
 }
 
+/// The size a repeated label draws at when its `fontSize` is 0 (fit): fitting
+/// would only shrink the label as it repeats, so the engine sets this one.
 const REPEAT_FIT_FONT_SIZE: f64 = 12.0;
-const FIT_FONT_SIZES: [f64; 25] = [
-    4.0, 6.0, 8.0, 9.0, 10.0, 12.0, 14.0, 18.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0,
-    60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0, 144.0,
-];
 
-fn fit_font_size(region: Rect, advance: f64) -> f64 {
-    let mut fitted = FIT_FONT_SIZES[0];
-    for size in FIT_FONT_SIZES {
-        if size * HELVETICA_LINE_HEIGHT > region.height || size * advance > region.width {
-            break;
-        }
-        fitted = size;
+/// How many times a repeated label's text doubles at most, as in the engine:
+/// 1,024 labels.
+const MAX_REPEAT_DOUBLINGS: usize = 10;
+
+/// `QUADDING[textAlign ?? 'left']`: `/Q` by the label's alignment. An
+/// alignment the table lacks is `undefined`, which the layout places as left.
+fn quadding(align: Option<&str>) -> Alignment {
+    match align {
+        Some("center") => Alignment::Center,
+        Some("right") => Alignment::Right,
+        _ => Alignment::Left,
     }
-    fitted
 }
 
-/// `layoutRedactLabel(region, label, text)`.
+/// `redactLabelText(size, label, text, fonts)`: a redaction label laid out in
+/// a region `width` × `height`, as the engine lays it out when it writes the
+/// mark's overlay: a form field's text in the region (PDF points, y up from
+/// its bottom), top-aligned, placed across by `/Q`. A label shown once at
+/// size 0 fits the region on one line; one at a set size, or a repeated one,
+/// wraps to it. A repeated label's text is the label space-joined to itself,
+/// doubled until its lines reach the region's bottom. `None` for no text.
+pub fn redact_label_text(
+    width: f64,
+    height: f64,
+    label: &RedactLabel,
+    text: Option<&TextStyle>,
+    fonts: &PaintFonts,
+) -> Option<FieldText> {
+    if label.text.is_empty() {
+        return None;
+    }
+    let repeat = json::truthy(label.repeat.as_ref());
+    // `text?.fontSize ?? 0`.
+    let set_size = text
+        .and_then(|t| t.font_size.as_ref())
+        .filter(|size| !json::nullish(Some(size)))
+        .map_or(0.0, |size| json::number(size).unwrap_or(f64::NAN));
+    let fitted = set_size.abs() < 0.0001;
+    let options = FieldTextOptions {
+        plate: PdfRect { left: 0.0, bottom: 0.0, right: width, top: height },
+        font_size: if repeat && fitted { REPEAT_FIT_FONT_SIZE } else { set_size },
+        alignment: quadding(text.and_then(TextStyle::align)),
+        multiline: repeat || !fitted,
+        password: false,
+        limit: 0,
+        cells: 0,
+        centered: false,
+    };
+    let mut shown = label.text.clone();
+    let mut laid = layout_field(&shown, fonts, &options);
+    let mut doubling = 0;
+    while repeat && doubling < MAX_REPEAT_DOUBLINGS && laid.content_height < height {
+        shown = format!("{shown} {shown}");
+        laid = layout_field(&shown, fonts, &options);
+        doubling += 1;
+    }
+    Some(laid)
+}
+
+/// `layoutRedactLabel(region, label, text)`: a redaction label's preview in
+/// `region` (page space), the runs [`redact_label_text`] lays out in the
+/// fonts the label carries (its standard font, or Helvetica, without them),
+/// clipped to the region.
 pub fn layout_redact_label(
     region: Rect,
     label: &RedactLabel,
     text: Option<&TextStyle>,
 ) -> Vec<SceneNode> {
-    if label.text.is_empty() {
+    let fonts = label.fonts.0.clone().unwrap_or_else(|| {
+        default_paint_fonts(text.and_then(|t| t.font_family.as_ref()).and_then(Value::as_str))
+    });
+    let Some(laid) = redact_label_text(region.width, region.height, label, text, &fonts) else {
         return Vec::new();
-    }
-    let repeat = json::truthy(label.repeat.as_ref());
-    let advance = helvetica_advance(&label.text);
-    let fit = if repeat { REPEAT_FIT_FONT_SIZE } else { fit_font_size(region, advance) };
-    let size = text.map(TextStyle::size).filter(|s| *s > 0.0).unwrap_or(fit);
-    let font_size = js::max(4.0, size);
-    let text_w = advance * font_size;
-    let gap = helvetica_advance(" ") * font_size;
-    let line_h = font_size * HELVETICA_LINE_HEIGHT;
-    let fill =
-        text.and_then(|t| t.font_color.clone()).filter(|c| !c.is_null()).unwrap_or(s("#ffffff"));
+    };
+    let fill = text
+        .and_then(|t| t.font_color.clone())
+        .filter(|c| !json::nullish(Some(c)))
+        .unwrap_or(s("#ffffff"));
     let paint = Paint { fill: Some(fill), opacity: Some(json::num(1.0)), ..Paint::default() }
         .ordered(&["fill", "opacity"]);
-    let font_family =
-        text.and_then(TextStyle::family).filter(|f| !f.is_empty()).map(css_font_family_for_font);
-    let baseline = |row_top: f64| row_top + font_size * HELVETICA_ASCENT;
-    let align = text.and_then(TextStyle::align);
-    let line_start = |width: f64| match align {
-        Some("center") => region.x + js::max(0.0, (region.width - width) / 2.0),
-        Some("right") => region.x + js::max(0.0, region.width - width),
-        _ => region.x,
-    };
-    let node = |at: Point| {
-        SceneNode::Text(TextScene {
-            at,
-            text: label.text.clone(),
-            font_size,
-            font_family: font_family.clone(),
-            program: None,
-            rotation: None,
-            paint: paint.clone(),
-            clip: None,
-            order: Default::default(),
-        })
-    };
-    if !repeat {
-        if font_size > region.height {
-            return Vec::new();
-        }
-        return vec![node(Point { x: line_start(text_w), y: baseline(region.y) })];
-    }
-    let cols = js::max(1.0, ((region.width + gap) / (text_w + gap)).floor());
-    let rows = js::max(1.0, (region.height / line_h).floor());
-    let left = line_start(cols * text_w + (cols - 1.0) * gap);
     let mut nodes = Vec::new();
-    let mut row = 0.0;
-    while row < rows && nodes.len() < 400 {
-        let mut column = 0.0;
-        while column < cols && nodes.len() < 400 {
-            nodes.push(node(Point {
-                x: left + column * (text_w + gap),
-                y: baseline(region.y + row * line_h),
+    for line in &laid.lines {
+        for run in &line.runs {
+            nodes.push(SceneNode::TextRun(TextRunScene {
+                at: Point {
+                    x: num(region.x + run.x),
+                    y: num(region.y + region.height - line.baseline),
+                },
+                text: run.text.clone(),
+                rtl: run.rtl,
+                plain: run.plain,
+                joins_previous: run.joins_previous.then_some(true),
+                joins_next: run.joins_next.then_some(true),
+                font_size: laid.font_size,
+                font_family: run.font.font_family.clone(),
+                font_weight: Some(f64::from(run.font.font_weight)),
+                font_style: Some(
+                    match run.font.font_style {
+                        epdf_fonts::FontStyle::Normal => "normal",
+                        epdf_fonts::FontStyle::Italic => "italic",
+                    }
+                    .into(),
+                ),
+                rotation: None,
+                program: Some(FontProgramRef(run.font.program.clone())),
+                paint: paint.clone(),
+                clip: Some(region),
+                order: Default::default(),
             }));
-            column += 1.0;
         }
-        row += 1.0;
     }
     nodes
 }

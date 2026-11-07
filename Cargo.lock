@@ -439,6 +439,7 @@ dependencies = [
  "epdf-fonts",
  "epdf-geometry",
  "epdf-kernel",
+ "epdf-text-core",
  "indexmap",
  "plugin-conformance",
  "serde",
