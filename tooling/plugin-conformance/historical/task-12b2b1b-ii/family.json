@@ -65,12 +65,17 @@
   "task11": {
     "api": {
       "count": 2,
-      "names": ["measurement-distance-drafts", "dimension-drafts-continue-without-viewports"],
+      "names": [
+        "measurement-distance-drafts",
+        "dimension-drafts-continue-without-viewports"
+      ],
       "disposition": "Reviewed i current complete scales/viewport/draft coverage; see original49 manifest."
     },
     "tools": {
       "count": 1,
-      "names": ["touch-consent"],
+      "names": [
+        "touch-consent"
+      ],
       "oldInputDifference": [
         {
           "path": "steps[11].args[3]",
@@ -100,12 +105,11 @@
     "legacyFixture": "Byte-identical to BASE; no additional input drifts induced in deferred consumers. The three compiler diagnostics and all obsolete adapters remain owned by B2/B3/C then D removal."
   },
   "preserved": {
-    "src/scenario.ts": "3571a7f6654a010fca10b2f764394db557cc16042ee9b7787f4cde841057d354",
-    "src/suites/annotation-current-fixtures.ts": "1ed181373f993f80acfde740c3e0de3ca8fe2308b5d0827b77b63454887fd0ce",
-    "src/suites/annotation-live-fixtures.ts": "98a0973fbac20a4aacc3425757c98b2a7197d1b83e458c03ffd205d918f3a270",
-    "src/suites/annotation-reconciliation.ts": "73ce7e5ca034fad9f14057c1870893ff2b7ea30fe3ae315060c3d64349e72240",
-    "src/suites/annotation-fixtures.ts": "eb2d1b1d94a47b56716e2dd8c2184434a883a8d045c82ed95bbc276c97f19939",
-    "test/annotation-live.test.ts": "7e19c3972369b4d78c53a0b87c2ba0d2f32c29b3fe0acc8d8e65f9e5edbba2e1",
+    "src/scenario.ts": "6da51bc574bc6a4d178db19fe2f147a1a4b3a031a7a03c673b6f02dd290b3de3",
+    "src/suites/annotation-current-fixtures.ts": "b563a2d1f0964b2ed5e4233b8306cbd5007aefcc21660333425d3091db8c551d",
+    "src/suites/annotation-live-fixtures.ts": "01cdbff63619e5ed16b8a66e95be265fd54e78750ccd23e1c95c672279856fbd",
+    "src/suites/annotation-reconciliation.ts": "c3c4c80471e59c79e2508ed30fceb3461d995e7db3f8d3d55ab1b65a18c5244a",
+    "test/annotation-live.test.ts": "2fd472c6cd03ac041ce5b556848b0c548ca2d7dd5122dbe06a40269d6339fede",
     "test/annotation-live-refusals.ts": "8532b8b8e2885426fc3c66555f6fb11cc0008ae4f4b27596aeb20fb2e05ff3a5",
     "historical/task-12b2b1b-i/reconciliation.json": "51e72ed0a4723edf69341ab9240ca23803c25144ab5a1d06832d060ac619cdc5"
   },
@@ -113,7 +117,12 @@
     {
       "file": "src/suites/form-fixtures.ts",
       "owner": "B2",
-      "consumed": ["form-actions", "form-design", "form-fill", "form-scripting"]
+      "consumed": [
+        "form-actions",
+        "form-design",
+        "form-fill",
+        "form-scripting"
+      ]
     },
     {
       "file": "src/suites/measurement.ts",
@@ -134,7 +143,12 @@
     {
       "file": "src/suites/stamp-fixtures.ts",
       "owner": "B3",
-      "consumed": ["stamp-assets", "stamp-library", "stamp-placement", "stamp-api"]
+      "consumed": [
+        "stamp-assets",
+        "stamp-library",
+        "stamp-placement",
+        "stamp-api"
+      ]
     },
     {
       "file": "src/suites/signature-plugin.ts",

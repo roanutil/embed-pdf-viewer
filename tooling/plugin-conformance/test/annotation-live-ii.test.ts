@@ -321,7 +321,7 @@ test('successful replies, text, reviewer chains and marked states carry current 
     .trace.flatMap((entry) => entry.callbacks)
     .filter((entry) => entry.fn === 'threadChanged');
   assert.deepEqual(
-    callbacks.map((entry) => (entry.args[0] as { change: string }).change),
+    callbacks.map((entry) => (entry.args[0] as { type: string }).type),
     ['reply', 'text', 'status', 'marked', 'marked'],
   );
   assert.deepEqual(ops('status-without-a-previous-one')[0]![0]!.type, 'annotations.create');
@@ -420,11 +420,11 @@ test('hover diffs once and the real actions pump executes only eligible enter an
     const context = callback.args[1] as {
       origin: string;
       source: { kind: string };
-      event: { scope: string };
+      event: { type: string };
     };
     assert.equal(context.origin, 'hover');
     assert.equal(context.source.kind, 'annotation');
-    assert.equal(context.event.scope, 'annotation');
+    assert.equal(context.event.type, 'annotation');
   }
   const events = pump.trace
     .flatMap((entry) => entry.callbacks)

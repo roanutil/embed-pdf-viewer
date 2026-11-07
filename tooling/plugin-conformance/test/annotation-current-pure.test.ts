@@ -195,7 +195,8 @@ test('all843 current calls have exactly their named outcomes, immutable args and
   assert.deepEqual(observed, []);
   assert.equal(calls, 843);
   assert.equal(failures, expectedFailures.size);
-  assert.equal(failures, 24);
+  // 24 refusals, and the nine calls of the two CSS family helpers 595fa2bd5 removed.
+  assert.equal(failures, 33);
   assert.equal(nonfiniteResults, 7);
 });
 
