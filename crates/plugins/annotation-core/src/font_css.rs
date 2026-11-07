@@ -83,3 +83,18 @@ pub fn standard_paint_font_of(font: &str) -> StandardPaintFont {
         epdf_fonts::StandardFont::from_name(font).unwrap_or(epdf_fonts::StandardFont::Helvetica),
     )
 }
+
+/// `standardFontCss(standardFontOf(font))` as its object prints: the CSS
+/// family list, weight and style, and the programs (`load` a function).
+pub fn standard_font_css_value(font: &str) -> serde_json::Value {
+    let standard =
+        epdf_fonts::StandardFont::from_name(font).unwrap_or(epdf_fonts::StandardFont::Helvetica);
+    let css = epdf_fonts::standard_font_css(standard);
+    let program = StandardSceneProgram(epdf_fonts::standard_font_program(standard));
+    serde_json::json!({
+        "fontFamily": css.font_family,
+        "fontWeight": css.font_weight,
+        "fontStyle": css.font_style,
+        "programs": [crate::types::SceneFontProgram::members(&program)],
+    })
+}
