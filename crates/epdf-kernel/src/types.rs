@@ -59,7 +59,8 @@ pub struct DocumentMeta {
     /// Moves every time `pages` does: an edit shown, or the engine's pages
     /// changing other than shown. Anything caching a derivation of `pages`
     /// keys on it, so a change that keeps the page count (a rotation) still
-    /// invalidates.
+    /// invalidates. TypeScript names it `pagesSequence`.
+    #[serde(rename = "pagesSequence")]
     pub revision: u64,
     pub render_policy: Value,
     #[serde(default)]

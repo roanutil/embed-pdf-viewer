@@ -61,10 +61,10 @@ impl Serialize for PendingPage {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         let mut map = s.serialize_map(None)?;
         match self {
-            PendingPage::Blank => map.serialize_entry("look", "blank")?,
-            PendingPage::Own => map.serialize_entry("look", "own")?,
+            PendingPage::Blank => map.serialize_entry("kind", "blank")?,
+            PendingPage::Own => map.serialize_entry("kind", "own")?,
             PendingPage::Copy { of } => {
-                map.serialize_entry("look", "copy")?;
+                map.serialize_entry("kind", "copy")?;
                 map.serialize_entry("of", of)?;
             }
         }
