@@ -457,6 +457,13 @@ impl Annotation<'_> {
         unsafe { pdfium_sys::EPDFAnnot_ClearRectangleDifferences(self.as_raw()) != 0 }
     }
 
+    /// One colour entry written as `[]` (`EPDFAnnot_SetNoColor`): ISO
+    /// 32000's "no colour; transparent", which Acrobat draws as none.
+    pub fn set_no_color(&self, color_type: i32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFAnnot_SetNoColor(self.as_raw(), color_type as u32) != 0 }
+    }
+
     /// Remove one colour entry.
     pub fn clear_color(&self, color_type: i32) -> bool {
         // SAFETY: the handle is live.

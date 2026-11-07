@@ -691,6 +691,57 @@ fn a_color_sent_back_unchanged_stays_as_the_file_stores_it() {
     assert_eq!(after["color"], square["color"]);
 }
 
+// ── runNoStrokeConformance's writes ─────────────────────────────────────────
+
+#[test]
+fn color_null_writes_an_empty_c_and_keeps_the_width_and_a_color_brings_the_stroke_back() {
+    let mut replay = color_fixture();
+    let square = listed(&mut replay).pop().expect("the square");
+    let cleared = update(&mut replay, &square["ref"], &json!({ "color": null }), &BTreeMap::new())
+        .outcome
+        .expect("no stroke")["annotation"]
+        .clone();
+    assert_eq!(cleared["color"], Value::Null, "{cleared}");
+    assert_eq!(cleared["strokeWidth"], square["strokeWidth"]);
+    assert_eq!(last_array(&saved_text(&mut replay), "C"), Some(Vec::new()));
+
+    let restroked =
+        update(&mut replay, &square["ref"], &json!({ "color": "#00ff00" }), &BTreeMap::new())
+            .outcome
+            .expect("a stroke")["annotation"]
+            .clone();
+    assert_eq!(restroked["color"], "#00ff00");
+    assert_eq!(restroked["strokeWidth"], square["strokeWidth"]);
+}
+
+#[test]
+fn every_stroked_kind_is_created_without_a_stroke_from_color_null() {
+    let mut replay = open(&load());
+    let page = load().cases[0].page_object_number;
+    let box_ = json!({ "x": 40, "y": 40, "width": 60, "height": 60 });
+    let points = json!([{ "x": 40, "y": 100 }, { "x": 70, "y": 40 }, { "x": 100, "y": 100 }]);
+    let drafts = [
+        json!({ "subtype": "square", "box": box_, "color": null, "interiorColor": "#0000ff" }),
+        json!({ "subtype": "circle", "box": box_, "color": null, "interiorColor": "#0000ff" }),
+        json!({ "subtype": "polygon", "vertices": points, "color": null,
+            "interiorColor": "#0000ff" }),
+        json!({ "subtype": "polyline", "vertices": points, "color": null }),
+        json!({ "subtype": "line", "linePoints": { "start": points[0], "end": points[2] },
+            "lineEndings": { "start": "none", "end": "closed-arrow" }, "color": null,
+            "interiorColor": "#0000ff" }),
+        json!({ "subtype": "ink", "inkList": [points], "color": null }),
+    ];
+    for draft in drafts {
+        let annotation = create(&mut replay, &draft, page, &BTreeMap::new());
+        assert_eq!(annotation["color"], Value::Null, "{annotation}");
+        assert_eq!(annotation["strokeWidth"], 1.0, "{annotation}");
+    }
+    // A color left out is the kind's default, a red stroke.
+    let defaulted =
+        create(&mut replay, &json!({ "subtype": "square", "box": box_ }), page, &BTreeMap::new());
+    assert_eq!(defaulted["color"], "#ff0000");
+}
+
 #[test]
 fn a_new_color_is_written_as_given_and_reads_back_lowercase() {
     let mut replay = color_fixture();

@@ -172,7 +172,8 @@ pub struct BorderRecord {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GeometryStyleRecord {
-    pub color: HexColor,
+    /// The stroke; `None` for a `/C` left out or empty, no stroke.
+    pub color: Option<HexColor>,
     pub opacity: f64,
     #[serde(flatten)]
     pub border: BorderRecord,
@@ -484,10 +485,11 @@ fn border(annotation: &Annotation<'_>) -> Result<BorderRecord, EngineError> {
     })
 }
 
-/// `readGeometryStyleExtras`: red when there is no `/C`.
+/// `readGeometryStyleExtras`: a `/C` left out or empty is no stroke, as
+/// Acrobat draws it.
 fn geometry_style(annotation: &Annotation<'_>) -> Result<GeometryStyleRecord, EngineError> {
     Ok(GeometryStyleRecord {
-        color: color(annotation, AnnotationColorType::Color).unwrap_or_else(|| color_of(RED)),
+        color: color(annotation, AnnotationColorType::Color),
         opacity: opacity(annotation),
         border: border(annotation)?,
     })

@@ -456,6 +456,8 @@ pub struct DraftFields {
     pub group_id: Nullable<String>,
     // Style.
     pub color: Option<Rgb>,
+    /// A stroked kind's `color: null`: no stroke, `/C []`.
+    pub no_stroke: bool,
     pub opacity: Option<f64>,
     pub stroke_width: Option<f64>,
     pub border_style: Option<AnnotationBorderStyle>,
@@ -728,6 +730,16 @@ pub(crate) fn read_field(
         "groupId" => {
             fields.group_id =
                 Some(if value.is_null() { None } else { Some(non_empty(kind, name, value)?) });
+        }
+        // A stroked kind's `color: null` draws no stroke.
+        "color"
+            if value.is_null()
+                && matches!(
+                    subtype,
+                    S::Square | S::Circle | S::Polygon | S::Polyline | S::Line | S::Ink
+                ) =>
+        {
+            fields.no_stroke = true;
         }
         "color" => fields.color = Some(read_color(kind, name, value)?),
         "fontColor" => fields.font_color = Some(read_color(kind, name, value)?),

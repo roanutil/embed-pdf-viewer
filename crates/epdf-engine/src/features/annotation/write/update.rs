@@ -758,7 +758,9 @@ fn apply_geometry_style_patch(
     annotation: &Annotation<'_>,
     f: &DraftFields,
 ) -> Result<(), EngineError> {
-    if let Some(color) = f.color {
+    if f.no_stroke {
+        p::set_no_color(annotation, C::Color)?;
+    } else if let Some(color) = f.color {
         set_color(annotation, C::Color, color)?;
     }
     if let Some(opacity) = f.opacity {

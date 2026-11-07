@@ -774,9 +774,23 @@ fn apply_border(annotation: &Annotation<'_>, f: &DraftFields) -> Result<(), Engi
 
 /// `applyGeometryStyleDraft`: `/C`, `/CA` and the border.
 fn apply_geometry_style(annotation: &Annotation<'_>, f: &DraftFields) -> Result<(), EngineError> {
-    set_color(annotation, C::Color, f.color.unwrap_or(Rgb::RED))?;
+    write_stroke_color(annotation, f, Rgb::RED)?;
     set_opacity(annotation, f.opacity.unwrap_or(1.0))?;
     apply_border(annotation, f)
+}
+
+/// `writeStrokeColor`: `/C` of a stroked kind, the stroke's colour (`fallback`
+/// when left out), or `[]` for `null`, no stroke.
+pub(crate) fn write_stroke_color(
+    annotation: &Annotation<'_>,
+    f: &DraftFields,
+    fallback: Rgb,
+) -> Result<(), EngineError> {
+    if f.no_stroke {
+        p::set_no_color(annotation, C::Color)
+    } else {
+        set_color(annotation, C::Color, f.color.unwrap_or(fallback))
+    }
 }
 
 /// `applyFilledStyleDraft`: `/IC` set, or cleared when left out or `null`,
