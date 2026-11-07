@@ -302,7 +302,7 @@ impl InteractionHandler for TapHandler {
         tool.enables("link-nav")
     }
 
-    fn on_down(&self, sample: &PointerSample) -> bool {
+    fn on_pointer_down(&self, sample: &PointerSample) -> bool {
         let pressed = self.link_under(sample).map(|(page, link)| {
             let id = link.get("id").and_then(Value::as_str).unwrap_or_default().to_string();
             (page, id, (sample.viewport.x, sample.viewport.y))
@@ -312,7 +312,7 @@ impl InteractionHandler for TapHandler {
         captured
     }
 
-    fn on_up(&self, sample: &PointerSample) {
+    fn on_pointer_up(&self, sample: &PointerSample) {
         let Some((page, id, down)) = self.pressed.borrow_mut().take() else { return };
         let moved = (sample.viewport.x - down.0).hypot(sample.viewport.y - down.1);
         let Some((at, link)) = self.link_under(sample) else { return };
@@ -324,7 +324,7 @@ impl InteractionHandler for TapHandler {
         self.link.activate(&link, Some(&context));
     }
 
-    fn on_cancel(&self, _sample: &PointerSample) {
+    fn on_pointer_cancel(&self, _sample: &PointerSample) {
         self.pressed.borrow_mut().take();
     }
 }

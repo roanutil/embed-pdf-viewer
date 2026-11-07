@@ -305,11 +305,11 @@ fn the_zoom_handler_takes_its_own_lens_presses_under_the_zoom_box_tag() {
     let zoom = Tool::new("zoom", "zoom-in", ["zoom-box"]).with_gap_cursor("zoom-in");
     assert!(handler.enabled_for(&zoom));
     assert!(!handler.enabled_for(&Tool::new("pointer", "default", [])));
-    assert!(!handler.on_down(&sample(Some("elsewhere".into()), false)));
+    assert!(!handler.on_pointer_down(&sample(Some("elsewhere".into()), false)));
     assert_eq!(model(&kernel)["zoomDrag"], Value::Null);
-    assert!(handler.on_down(&sample(Some(stage.get_lens_id()), false)));
+    assert!(handler.on_pointer_down(&sample(Some(stage.get_lens_id()), false)));
     assert_ne!(model(&kernel)["zoomDrag"], Value::Null);
-    handler.on_up(&sample(Some(stage.get_lens_id()), true));
+    handler.on_pointer_up(&sample(Some(stage.get_lens_id()), true));
     assert!(close(stage.get_zoom_level(), 0.75), "Alt turns the click into a step out");
 }
 

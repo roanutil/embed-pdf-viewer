@@ -48,7 +48,7 @@ impl InteractionHandler for ScrollHandler {
         tool.enables("scroll") || (self.pan_fallback && tool.gap_cursor.is_none())
     }
 
-    fn on_down(&self, s: &PointerSample) -> bool {
+    fn on_pointer_down(&self, s: &PointerSample) -> bool {
         // A non-pan tool pans only over a gap.
         if !self.is_pan_tool() && s.page.is_some() {
             return false;
@@ -58,7 +58,7 @@ impl InteractionHandler for ScrollHandler {
         true
     }
 
-    fn on_move(&self, s: &PointerSample) {
+    fn on_pointer_move(&self, s: &PointerSample) {
         let last = self.last.get();
         // Handler members are infallible (see epdf-plugin-interaction). A
         // pan only fails in paged flow over a document with no pages, where
@@ -67,7 +67,7 @@ impl InteractionHandler for ScrollHandler {
         self.last.set(s.viewport);
     }
 
-    fn on_up(&self, _s: &PointerSample) {
+    fn on_pointer_up(&self, _s: &PointerSample) {
         self.interaction.claim_cursor("stage-grab", None, 0.0);
     }
 

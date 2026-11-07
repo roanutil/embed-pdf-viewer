@@ -442,16 +442,16 @@ impl InteractionHandler for ScriptedHandler {
     fn enabled_for(&self, tool: &Tool) -> bool {
         ask(&self.enabled_for, tool_json(tool))
     }
-    fn on_down(&self, sample: &PointerSample) -> bool {
+    fn on_pointer_down(&self, sample: &PointerSample) -> bool {
         ask(&self.on_down, self.sample(sample))
     }
-    fn on_move(&self, sample: &PointerSample) {
+    fn on_pointer_move(&self, sample: &PointerSample) {
         self.tell(&self.on_move, sample);
     }
-    fn on_up(&self, sample: &PointerSample) {
+    fn on_pointer_up(&self, sample: &PointerSample) {
         self.tell(&self.on_up, sample);
     }
-    fn on_cancel(&self, sample: &PointerSample) {
+    fn on_pointer_cancel(&self, sample: &PointerSample) {
         match &self.on_cancel {
             Some(_) => self.tell(&self.on_cancel, sample),
             None => self.tell(&self.on_up, sample),

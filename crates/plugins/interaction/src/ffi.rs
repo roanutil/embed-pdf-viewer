@@ -318,7 +318,7 @@ impl crate::InteractionHandler for ForeignHandler {
     fn enabled_for(&self, tool: &Tool) -> bool {
         self.inner.enabled_for(tool.into())
     }
-    fn on_down(&self, sample: &crate::PointerSample) -> bool {
+    fn on_pointer_down(&self, sample: &crate::PointerSample) -> bool {
         match self.inner.on_down(sample.into()) {
             Ok(captured) => captured,
             Err(error) => {
@@ -327,13 +327,13 @@ impl crate::InteractionHandler for ForeignHandler {
             }
         }
     }
-    fn on_move(&self, sample: &crate::PointerSample) {
+    fn on_pointer_move(&self, sample: &crate::PointerSample) {
         self.inner.on_move(sample.into());
     }
-    fn on_up(&self, sample: &crate::PointerSample) {
+    fn on_pointer_up(&self, sample: &crate::PointerSample) {
         self.inner.on_up(sample.into());
     }
-    fn on_cancel(&self, sample: &crate::PointerSample) {
+    fn on_pointer_cancel(&self, sample: &crate::PointerSample) {
         self.inner.on_cancel(sample.into());
     }
     fn on_hover(&self, sample: &crate::PointerSample) {

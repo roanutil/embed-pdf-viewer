@@ -334,12 +334,13 @@ impl fmt::Debug for PointerSample {
 
 /// A pointer handler contributed by a feature plugin, registered through the
 /// host lens. The hub routes each gesture to the first eligible handler, by
-/// priority, whose `on_down` captures it.
+/// priority, whose `on_pointer_down` captures it.
 ///
 /// The optional members of the TypeScript interface are default methods
 /// whose defaults are what the hub does when the member is absent: nothing
-/// for `on_move`, `on_up` and `on_hover`, `on_up` for `on_cancel` (the
-/// `onPointerCancel ?? onPointerUp` fallback), and no claim for `claims_touch`.
+/// for `on_pointer_move`, `on_pointer_up` and `on_hover`, `on_pointer_up` for
+/// `on_pointer_cancel` (the `onPointerCancel ?? onPointerUp` fallback), and
+/// no claim for `claims_touch`.
 pub trait InteractionHandler {
     fn id(&self) -> &str;
     /// Higher wins the gesture.
@@ -347,12 +348,12 @@ pub trait InteractionHandler {
     /// Usually `tool.enables("my-tag")`.
     fn enabled_for(&self, tool: &Tool) -> bool;
     /// Return true to capture: move and up route here until the up.
-    fn on_down(&self, sample: &PointerSample) -> bool;
-    fn on_move(&self, _sample: &PointerSample) {}
-    fn on_up(&self, _sample: &PointerSample) {}
+    fn on_pointer_down(&self, sample: &PointerSample) -> bool;
+    fn on_pointer_move(&self, _sample: &PointerSample) {}
+    fn on_pointer_up(&self, _sample: &PointerSample) {}
     /// The gesture was aborted, not completed: discard in-flight work.
-    fn on_cancel(&self, sample: &PointerSample) {
-        self.on_up(sample);
+    fn on_pointer_cancel(&self, sample: &PointerSample) {
+        self.on_pointer_up(sample);
     }
     /// Pointer moved with no active gesture: cursor feedback only.
     fn on_hover(&self, _sample: &PointerSample) {}
