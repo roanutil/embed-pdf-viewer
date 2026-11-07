@@ -3114,7 +3114,7 @@ fn encoded_json(
     payload: usize,
 ) -> serde_json::Value {
     serde_json::json!({
-        "contentType": encoded.content_type,
+        "mimeType": encoded.content_type,
         "width": encoded.width,
         "height": encoded.height,
         "bytes": { "payload": payload },

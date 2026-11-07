@@ -31,10 +31,25 @@ use serde::{Deserialize, Serialize};
 
 /// One anchor: from character `char` onward, until the next anchor, boundary
 /// `c` maps to text offset `text + (c - char)`.
+///
+/// On the wire a `[char, text]` pair, as `CharMapAnchor` is in TypeScript.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(from = "(u32, u32)", into = "(u32, u32)")]
 pub struct CharMapAnchor {
     pub char: u32,
     pub text: u32,
+}
+
+impl From<(u32, u32)> for CharMapAnchor {
+    fn from((char, text): (u32, u32)) -> Self {
+        Self { char, text }
+    }
+}
+
+impl From<CharMapAnchor> for (u32, u32) {
+    fn from(anchor: CharMapAnchor) -> Self {
+        (anchor.char, anchor.text)
+    }
 }
 
 impl CharMapAnchor {
@@ -366,6 +381,15 @@ mod page_text_tests {
         let read = to_page_text(snapshot("a\rb\u{FFFE}c", 5, Vec::new()));
         assert_eq!(read.text, "a\nbc");
         assert_eq!(read.char_map, vec![CharMapAnchor::new(4, 3)]);
+    }
+
+    #[test]
+    fn an_anchor_crosses_the_wire_as_a_pair() {
+        let read = to_page_text(snapshot("a\r\nb", 4, Vec::new()));
+        assert_eq!(
+            serde_json::to_value(&read).unwrap(),
+            serde_json::json!({ "text": "a\nb", "charCount": 4, "charMap": [[2, 1]] })
+        );
     }
 
     #[test]

@@ -366,7 +366,7 @@ fn options_that_do_not_fit_a_print_picture_are_refused_on_every_render_kind() {
         let image = &envelope["result"]["image"];
         assert_eq!(
             *image,
-            json!({ "contentType": "image/png", "width": 417, "height": 417, "bytes": { "payload": 0 } }),
+            json!({ "mimeType": "image/png", "width": 417, "height": 417, "bytes": { "payload": 0 } }),
             "{envelope}"
         );
         assert_eq!(response.payloads, vec![vec![1, 2, 3]]);
