@@ -233,9 +233,10 @@ impl std::fmt::Display for EngineErrorCode {
 /// later shape; matching that now would change the wire before anything reads
 /// it.
 ///
-/// Serializes as [`EngineError::to_wire`], `{name: "EngineError", code,
-/// message, details?}`, which is what `serializeError` puts in a TypeScript
-/// `reject` envelope. Deserializing ignores `name`.
+/// Serializes as [`EngineError::to_wire`], `{code, message, details?}`,
+/// which is what `serializeError` puts in a TypeScript `reject` envelope
+/// (`SerializedEngineError`, one error body since ff3030aaf). Deserializing
+/// ignores a `name` an older peer still sends.
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct EngineError {
     pub code: EngineErrorCode,
@@ -292,13 +293,10 @@ impl EngineError {
         self.code == code
     }
 
-    /// The `SerializedEngineError` envelope, which carries a literal
-    /// `name: "EngineError"` that TypeScript's `EngineError.is` sniffs for on
-    /// values that crossed a structured-clone boundary and lost their
-    /// prototype.
+    /// The `SerializedEngineError` envelope: `{code, message, details?}`,
+    /// the `error` of every error response and of a refused change.
     pub fn to_wire(&self) -> serde_json::Value {
         let mut map = serde_json::Map::new();
-        map.insert("name".into(), serde_json::Value::String("EngineError".into()));
         map.insert("code".into(), serde_json::Value::String(self.code.as_str().into()));
         map.insert("message".into(), serde_json::Value::String(self.message.clone()));
         if let Some(details) = &self.details {
@@ -312,7 +310,6 @@ impl Serialize for EngineError {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         use serde::ser::SerializeMap;
         let mut map = serializer.serialize_map(None)?;
-        map.serialize_entry("name", "EngineError")?;
         map.serialize_entry("code", &self.code)?;
         map.serialize_entry("message", &self.message)?;
         if let Some(details) = &self.details {
@@ -374,7 +371,6 @@ mod tests {
         assert_eq!(
             err.to_wire(),
             serde_json::json!({
-                "name": "EngineError",
                 "code": "DocNotOpen",
                 "message": "DocNotOpen",
             })
@@ -390,15 +386,15 @@ mod tests {
         assert_eq!(detailed.to_wire()["details"], serde_json::json!({ "pageIndex": 4 }));
     }
 
-    /// `serializeError` (`EngineError.ts`): `{name: "EngineError", code,
-    /// message, details?}`, with no `cause`. Serde writes the same object as
+    /// `serializeError` (`EngineError.ts`): `{code, message, details?}`,
+    /// with no `cause` and no `name` (ff3030aaf). Serde writes the same object as
     /// `to_wire`, so a response envelope's `error` has the TypeScript shape.
     #[test]
     fn serde_writes_the_serialized_engine_error_shape() {
         let plain = EngineError::with_message(EngineErrorCode::NotFound, "no such page");
         assert_eq!(
             serde_json::to_string(&plain).unwrap(),
-            r#"{"name":"EngineError","code":"NotFound","message":"no such page"}"#
+            r#"{"code":"NotFound","message":"no such page"}"#
         );
         let detailed = plain.with_details(serde_json::json!({ "pageIndex": 4 }));
         assert_eq!(serde_json::to_value(&detailed).unwrap(), detailed.to_wire());

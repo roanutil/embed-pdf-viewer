@@ -71,7 +71,7 @@ fn hand_off<T: serde::Serialize>(envelope: &Envelope<T>, out_len: *mut u32) -> *
     // An envelope that will not serialize is a bug in this crate, not a
     // document problem, so it reports as one rather than as a PDF error.
     let json = serde_json::to_vec(envelope).unwrap_or_else(|e| {
-        format!(r#"{{"error":{{"name":"EngineError","code":"Unknown","message":"envelope encode failed: {e}"}}}}"#)
+        format!(r#"{{"error":{{"code":"Unknown","message":"envelope encode failed: {e}"}}}}"#)
             .into_bytes()
     });
     let mut boxed = json.into_boxed_slice();
@@ -235,9 +235,8 @@ pub unsafe extern "C" fn epdf_host_call(
         epdf_engine::host::frame::pack(&host.call(request, payloads))
     }));
 
-    let bytes = outcome.unwrap_or_else(|_| {
-        refusal("the Rust engine panicked; the session may be poisoned")
-    });
+    let bytes = outcome
+        .unwrap_or_else(|_| refusal("the Rust engine panicked; the session may be poisoned"));
     hand_off_bytes(bytes, out_len)
 }
 
@@ -302,7 +301,6 @@ mod tests {
         let mut len = 0u32;
         let value = take(unsafe { epdf_page_geometry(std::ptr::null_mut(), &mut len) }, len);
         assert_eq!(value["error"]["code"], "InvalidArg");
-        assert_eq!(value["error"]["name"], "EngineError");
         assert!(value.get("result").is_none(), "an error envelope carries no result");
     }
 
@@ -357,7 +355,6 @@ pub mod spike {
         annotations: u32,
         page_count: u32,
     }
-
 
     fn respond(
         out_len: *mut u32,
@@ -441,11 +438,7 @@ pub mod spike {
         respond(out_len, |slot| {
             open_session(slot)?.return_lease(
                 LeaseToken::from_raw(token),
-                LeaseOutcome {
-                    wrote: wrote != 0,
-                    failed: failed != 0,
-                    panicked: panicked != 0,
-                },
+                LeaseOutcome { wrote: wrote != 0, failed: failed != 0, panicked: panicked != 0 },
             )?;
             Ok(SpikeResult { token, ..Default::default() })
         })
