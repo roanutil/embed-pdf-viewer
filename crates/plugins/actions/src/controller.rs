@@ -227,7 +227,7 @@ pub(crate) fn create_actions_controller(
     let this = ActionsCapability(inner);
     if let Some(host) = this.0.script_host.clone() {
         this.0.cx.defer(Box::new(move || {
-            host.dispose();
+            host.destroy();
             Ok(None)
         }));
     }

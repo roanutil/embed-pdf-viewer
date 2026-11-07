@@ -508,7 +508,7 @@ fn standalone_plugin(h: &Harness) -> AnyPlugin {
                     controller.dispose();
                 }
                 if let Some(realm) = &state.realm {
-                    realm.dispose();
+                    realm.destroy();
                 }
             });
             Ok(StandaloneDriver { ctx, state })
@@ -532,7 +532,7 @@ fn call_driver(driver: &StandaloneDriver, method: &str, args: &[Value]) -> Outco
         _ => {
             controller.dispose();
             if let Some(realm) = &driver.state.borrow().realm {
-                realm.dispose();
+                realm.destroy();
             }
             Outcome::undefined()
         }

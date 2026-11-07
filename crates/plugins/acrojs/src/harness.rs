@@ -114,7 +114,7 @@ fn budget_json(budget: Option<&ScriptBudget>) -> Value {
 }
 
 impl ScriptSandbox for ScriptedSandbox {
-    fn disposed(&self) -> bool {
+    fn destroyed(&self) -> bool {
         self.disposed.get()
     }
 
@@ -146,7 +146,7 @@ impl ScriptSandbox for ScriptedSandbox {
         self.respond("run", self.runs.get() - 1)
     }
 
-    fn dispose(&self) {
+    fn destroy(&self) {
         self.h.log("sandbox.dispose", vec![json!(self.id)]);
         self.disposed.set(true);
     }
@@ -286,7 +286,7 @@ impl HarnessPlugin for ScriptHostHarness {
         let budget = budget_of(&config)?;
         let h = h.clone();
         // `create: (ctx) => ...`: the probe owns its host, and the kernel's
-        // cleanup disposes it (`ctx.cleanup(() => host.dispose())`).
+        // cleanup disposes it (`ctx.cleanup(() => host.destroy())`).
         Ok(define::<Value, Value>("script-host")
             .create(&SCRIPT_HOST, move |cx| {
                 let boot_sources = boot_sources.clone();
@@ -307,7 +307,7 @@ impl HarnessPlugin for ScriptHostHarness {
                     budget: budget.clone(),
                 });
                 let owned = host.clone();
-                cx.cleanup_fn(move || owned.dispose());
+                cx.cleanup_fn(move || owned.destroy());
                 Ok((ScriptHostDriver { host, h: h.clone() }, None))
             })
             .build())
@@ -331,7 +331,7 @@ impl HarnessPlugin for ScriptHostHarness {
                 Outcome::Promise(driver.transaction(ops))
             }
             "dispose" => {
-                driver.host.dispose();
+                driver.host.destroy();
                 Outcome::undefined()
             }
             other => {

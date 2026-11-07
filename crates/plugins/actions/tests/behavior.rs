@@ -122,7 +122,7 @@ struct PrintingSandbox {
 }
 
 impl ScriptSandbox for PrintingSandbox {
-    fn disposed(&self) -> bool {
+    fn destroyed(&self) -> bool {
         false
     }
 
@@ -147,7 +147,7 @@ impl ScriptSandbox for PrintingSandbox {
         Ok(output)
     }
 
-    fn dispose(&self) {
+    fn destroy(&self) {
         self.log.borrow_mut().push("dispose".into());
     }
 }

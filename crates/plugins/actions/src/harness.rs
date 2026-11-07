@@ -149,7 +149,7 @@ impl LiveSandbox {
 }
 
 impl ScriptSandbox for LiveSandbox {
-    fn disposed(&self) -> bool {
+    fn destroyed(&self) -> bool {
         matches!(self.disposed.call(Vec::new()), Answer::Returns(Value::Bool(true)))
     }
 
@@ -171,7 +171,7 @@ impl ScriptSandbox for LiveSandbox {
         LiveSandbox::output("run", &self.run, vec![json!(source), to_json(input)], budget)
     }
 
-    fn dispose(&self) {
+    fn destroy(&self) {
         let _ = self.dispose.call(Vec::new());
     }
 }
@@ -714,7 +714,7 @@ fn realm_json(
         out.insert(
             "destroy".into(),
             h.register_fn(Rc::new(move |_| {
-                realm.dispose();
+                realm.destroy();
                 Outcome::undefined()
             })),
         );
@@ -779,7 +779,7 @@ impl DetachedRealmDriver {
             }),
             "dispose" => {
                 if let Some(realm) = detached() {
-                    realm.dispose();
+                    realm.destroy();
                 }
                 Outcome::undefined()
             }
@@ -801,7 +801,7 @@ impl DetachedRealmDriver {
             return Ok(Value::Null);
         };
         if let Some(previous) = self.realm.borrow_mut().take() {
-            previous.dispose();
+            previous.destroy();
         }
         let doc = self.cx.doc()?;
         let document: Rc<dyn Fn() -> Option<ScriptDocument>> = match &self.meta {
@@ -876,7 +876,7 @@ fn detached_realm_plugin(config: &Value, h: &Harness) -> Result<AnyPlugin, Error
             let realm = driver.realm.clone();
             cx.cleanup_fn(move || {
                 if let Some(realm) = realm.borrow().clone() {
-                    realm.dispose();
+                    realm.destroy();
                 }
             });
             Ok((driver, None))
