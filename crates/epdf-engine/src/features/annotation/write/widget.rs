@@ -241,26 +241,42 @@ fn write_mk_color(
 /// `applyWidgetFont`: `/DA` with what `style` changes. What it leaves out
 /// keeps what `/DA` says now, so a colour change keeps the font and its
 /// size. Naming the face `/DA` already has keeps that font.
+///
+/// The font a read gives is the widget's `/DA`, else the form's: `null`
+/// only when neither has one. So `null` is that read sent back, which
+/// changes nothing; a font can't be removed, and `null` beside one is
+/// refused.
 fn apply_widget_font(
     annotation: &Annotation<'_>,
     style: &WidgetStyle,
     context: &AnnotationWriteContext<'_>,
 ) -> Result<(), EngineError> {
     let current = annotation.default_appearance();
-    let font_size = match style.font_size {
-        None => current.map_or(12.0, |da| f64::from(da.font_size)),
-        Some(size) => size.unwrap_or(12.0),
-    };
-    let color = match style.font_color {
-        None => current.map_or(Rgb::BLACK, |da| Rgb(da.color.0, da.color.1, da.color.2)),
-        Some(color) => color.unwrap_or(Rgb::BLACK),
-    };
+    let given_null = matches!(style.font_family, Some(None))
+        || matches!(style.font_size, Some(None))
+        || matches!(style.font_color, Some(None));
+    if given_null && current.is_some() {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "a widget's font can't be removed: send a font, or leave the font fields out",
+        )
+        .with_details(serde_json::json!({ "field": "fontFamily" })));
+    }
+    // Without a font anywhere, a `null` is the read sent back: no change.
+    let font_family = style.font_family.clone().flatten();
+    let font_size = style.font_size.flatten();
+    let font_color = style.font_color.flatten();
+    if font_family.is_none() && font_size.is_none() && font_color.is_none() {
+        return Ok(());
+    }
+    let font_size = font_size.unwrap_or_else(|| current.map_or(12.0, |da| f64::from(da.font_size)));
+    let color = font_color.unwrap_or_else(|| {
+        current.map_or(Rgb::BLACK, |da| Rgb(da.color.0, da.color.1, da.color.2))
+    });
     let keeps = current.is_some()
-        && match &style.font_family {
-            None => true,
-            Some(None) => false,
-            Some(Some(family)) => names_current_face(annotation, family, context),
-        };
+        && font_family
+            .as_deref()
+            .is_none_or(|family| names_current_face(annotation, family, context));
     let Rgb(r, g, b) = color;
     if keeps {
         if !annotation.set_default_appearance(KEEP_FONT_CODE, font_size as f32, (r, g, b)) {
@@ -268,7 +284,7 @@ fn apply_widget_font(
         }
         return Ok(());
     }
-    let family = style.font_family.clone().flatten().unwrap_or_else(|| "helvetica".to_owned());
+    let family = font_family.unwrap_or_else(|| "helvetica".to_owned());
     let ok = match StandardFont::from_family(&family) {
         Some(standard) => {
             annotation.set_default_appearance(standard.code(), font_size as f32, (r, g, b))
