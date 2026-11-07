@@ -38,3 +38,8 @@ fn feeds_match_the_typescript() {
 fn change_hooks_match_the_typescript() {
     assert_suite("plugins/stage-events.json", &registry(), &Vec::new());
 }
+
+#[test]
+fn page_turns_match_the_typescript() {
+    assert_suite("plugins/stage-turns.json", &registry(), &Vec::new());
+}
