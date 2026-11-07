@@ -225,8 +225,8 @@ pub enum ZoomSpec {
 #[serde(rename_all = "camelCase")]
 pub struct Anchor {
     pub page_index: usize,
-    pub fx: f64,
-    pub fy: f64,
+    pub fraction_x: f64,
+    pub fraction_y: f64,
 }
 
 /// The widest zoom range a view can have: 5% to 6400%.
@@ -564,8 +564,8 @@ pub fn anchor_at_point(scene: &Scene, world_pt: Point) -> Result<Anchor, StageEr
     let page = page.ok_or(StageError::ReadOfUndefined("pageIndex"))?;
     Ok(Anchor {
         page_index: page.page_index,
-        fx: (world_pt.x - page.x) / page.width,
-        fy: (world_pt.y - page.y) / page.height,
+        fraction_x: (world_pt.x - page.x) / page.width,
+        fraction_y: (world_pt.y - page.y) / page.height,
     })
 }
 
@@ -587,7 +587,10 @@ pub fn camera_for_anchor_at_screen(
         }
     }
     let page = page.ok_or(StageError::ReadOfUndefined("x"))?;
-    let world = Point { x: page.x + anchor.fx * page.width, y: page.y + anchor.fy * page.height };
+    let world = Point {
+        x: page.x + anchor.fraction_x * page.width,
+        y: page.y + anchor.fraction_y * page.height,
+    };
     Ok(Camera { zoom, x: world.x - screen_pt.x / zoom, y: world.y - screen_pt.y / zoom })
 }
 

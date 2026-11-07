@@ -214,7 +214,8 @@ const MEMBERS: &[&str] = &[
     "getCurrentPage",
     "getPageCount",
     "listCurrentItemPages",
-    "getPageFrame",
+    "listCurrentPages",
+    "getPageBox",
     "getPageAt",
     "viewportToPage",
     "pageToWorld",
@@ -228,7 +229,6 @@ const MEMBERS: &[&str] = &[
     "getViewpoint",
     "getCurrentDestination",
     // camera/animation
-    "fling",
     "isMoving",
     "stopMotion",
     // camera/gestures
@@ -239,6 +239,7 @@ const MEMBERS: &[&str] = &[
     "zoomAround",
     "beginGesture",
     "endGesture",
+    "fling",
     // navigation/arrive
     "goToPage",
     "goToFirstPage",
@@ -378,9 +379,15 @@ fn call_stage(
                 .map(crate::services::scene::without_undefined)
                 .collect(),
         )),
-        "getPageFrame" => r(cap
-            .get_page_frame(page_arg(args, 0))
-            .map_or(Value::Null, |p| visible_page_json(h, &p))),
+        "listCurrentPages" => r(Value::Array(
+            cap.list_current_pages()
+                .iter()
+                .map(crate::services::scene::without_undefined)
+                .collect(),
+        )),
+        "getPageBox" => {
+            r(cap.get_page_box(page_arg(args, 0)).map_or(Value::Null, |p| visible_page_json(h, &p)))
+        }
         "getPageAt" => r(option_json(cap.get_page_at(arg(args, 0)?))),
         "viewportToPage" => r(option_json(cap.viewport_to_page(page_arg(args, 0), arg(args, 1)?))),
         "pageToWorld" => r(option_json(cap.page_to_world(page_arg(args, 0), arg(args, 1)?))),
@@ -701,14 +708,14 @@ fn observed(state: &Rc<StageState>, next: Rc<StageState>) -> Value {
     json!({ "state": to_value(&*next), "same": Rc::ptr_eq(state, &next) })
 }
 
-/// `revealOfDestination`'s object literal orders: `{rect, anchor, zoom}`
-/// for `xyz`, `{rect, zoom, anchor}` for the rest.
+/// `revealOfDestination`'s object literal orders: `{rect, align, zoom}`
+/// for `xyz`, `{rect, zoom, align}` for the rest.
 fn reveal_json(destination: &PageDestination, options: &RevealOptions) -> Value {
     let mut out = Map::new();
     let order: &[&str] = if matches!(destination, PageDestination::Xyz { .. }) {
-        &["rect", "anchor", "zoom"]
+        &["rect", "align", "zoom"]
     } else {
-        &["rect", "zoom", "anchor"]
+        &["rect", "zoom", "align"]
     };
     let full = to_value(options);
     for key in order {

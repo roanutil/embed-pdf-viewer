@@ -284,7 +284,7 @@ fn a_destination_before_placement_lands_with_the_initial_view() {
     stage.set_viewport_size(VIEWPORT).expect("viewport");
     assert!(!stage.is_moving(), "a pending navigation lands instantly with placement");
     assert_eq!(stage.get_current_page_index(), 2);
-    assert!(stage.get_page_frame(PageRef::new(3)).is_some());
+    assert!(stage.get_page_box(PageRef::new(3)).is_some());
     // A destination on a page the document doesn't have is a no-op.
     let camera = stage.get_camera();
     stage.go_to_destination(&PageDestination::Fit { page: PageRef::new(99) }, None);
@@ -305,7 +305,7 @@ fn a_viewport_report_announces_the_size_before_the_rules() {
     });
     let log = order.clone();
     let _b = stage.on_settings_changed(move |event| {
-        log.borrow_mut().push(format!("settings {:?}", event.changed));
+        log.borrow_mut().push(format!("settings {:?}", event.changed_keys));
         Ok(())
     });
     let log = order.clone();
@@ -363,7 +363,7 @@ fn paged_flow_over_no_pages_refuses_camera_writes_as_the_typescript_does() {
     stage.double_tap_zoom(Point { x: 5.0, y: 5.0 }).expect("double tap");
     stage.scroll_to(StageScrollToOptions { top: Some(5.0), ..Default::default() }).expect("scroll");
     assert!(stage.list_visible_pages().is_empty());
-    assert!(stage.get_page_frame(0usize).is_none());
+    assert!(stage.get_page_box(0usize).is_none());
 }
 
 fn grid(columns: GridColumns, pages: Vec<Value>) -> (Fixture, StageCapability) {
@@ -419,7 +419,7 @@ fn an_unreadable_page_row_keeps_the_others_at_their_indexes() {
     stage.fit_page().expect("fit");
     stage.zoom_by(2.0, None).expect("zoom");
     stage.get_viewpoint().expect("viewpoint");
-    assert!(stage.get_page_frame(PageRef::new(3)).is_none());
+    assert!(stage.get_page_box(PageRef::new(3)).is_none());
 }
 
 #[test]
@@ -427,9 +427,9 @@ fn a_page_argument_is_a_ref_or_a_whole_index() {
     let f = fixture(false, three_pages(), units());
     let stage = f.stage();
     stage.set_viewport_size(VIEWPORT).expect("viewport");
-    assert_eq!(stage.get_page_frame(1usize).map(|p| p.page_ref), Some(PageRef::new(2)));
-    assert!(stage.get_page_frame(PageTarget::Index(1.5)).is_none());
-    assert!(stage.get_page_frame(PageRef::new(9)).is_none());
+    assert_eq!(stage.get_page_box(1usize).map(|p| p.page_ref), Some(PageRef::new(2)));
+    assert!(stage.get_page_box(PageTarget::Index(1.5)).is_none());
+    assert!(stage.get_page_box(PageRef::new(9)).is_none());
     stage.go_to_page(PageTarget::Index(1.5), None);
     assert_eq!(stage.get_current_page_index(), 0, "a fractional index names no page");
     stage.go_to_page(PageTarget::Index(99.0), None);
@@ -573,6 +573,6 @@ fn a_non_invertible_page_transform_leaves_the_page_out() {
     );
     stage.set_device_pixel_ratio(1e160);
     assert!(stage.list_visible_pages().is_empty());
-    assert!(stage.get_page_frame(0usize).is_none());
+    assert!(stage.get_page_box(0usize).is_none());
     assert!(stage.get_page_at(Point { x: 1.0, y: 1.0 }).is_none());
 }

@@ -173,8 +173,8 @@ impl DocumentHandle for GuardedHandle {
         self.inner.subscribe(listener)
     }
 
-    fn last_server_id(&self) -> Option<String> {
-        self.inner.last_server_id()
+    fn last_server_sequence(&self) -> Option<String> {
+        self.inner.last_server_sequence()
     }
 
     /// A synchronous member: the TypeScript guard passes it through.

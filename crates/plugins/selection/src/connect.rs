@@ -29,7 +29,7 @@ pub(crate) fn connect_selection(
             interaction.clone(),
             feedback,
             TextSelectHandlerOptions {
-                drag_threshold: Some(Rc::new(move || threshold.drag_threshold())),
+                drag_threshold_px: Some(Rc::new(move || threshold.drag_threshold_px())),
             },
         )),
         RegisterHandlerOptions::default(),

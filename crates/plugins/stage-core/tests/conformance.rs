@@ -72,7 +72,7 @@ mod edge_inputs {
             assert_eq!(scene.item_of_page(0), None);
             let pages = StageError::ReadOfUndefined("pages");
             assert_eq!(anchor_from_camera(ORIGIN, scene, VP_ZERO, None), Err(pages));
-            let anchor = Anchor { page_index: 0, fx: 0.0, fy: 0.0 };
+            let anchor = Anchor { page_index: 0, fraction_x: 0.0, fraction_y: 0.0 };
             assert_eq!(camera_from_anchor(anchor, scene, VP_ZERO, 1.0, None), Err(pages));
         }
     }
@@ -137,7 +137,10 @@ mod edge_inputs {
         let at_zero_zoom = anchor_from_camera(Camera { zoom: 0.0, ..ORIGIN }, &scene, VP, None)
             .expect("an infinite point clamps to the last item");
         assert_eq!(at_zero_zoom.page_index, 2);
-        assert_eq!((at_zero_zoom.fx, at_zero_zoom.fy), (f64::INFINITY, f64::INFINITY));
+        assert_eq!(
+            (at_zero_zoom.fraction_x, at_zero_zoom.fraction_y),
+            (f64::INFINITY, f64::INFINITY)
+        );
     }
 
     #[test]
@@ -202,10 +205,15 @@ mod edge_inputs {
         let scene = linear_layout(&[PAGE, PAGE], &singles(2), LinearOptions::default()).unwrap();
         let anchor = anchor_from_camera(ORIGIN, &scene, VP_NAN, None).unwrap();
         assert_eq!(anchor.page_index, 0);
-        assert_nan(anchor.fx, "anchor fx");
-        let camera =
-            camera_from_anchor(Anchor { page_index: 1, fx: 0.5, fy: 0.5 }, &scene, VP, 0.0, None)
-                .unwrap();
+        assert_nan(anchor.fraction_x, "anchor fractionX");
+        let camera = camera_from_anchor(
+            Anchor { page_index: 1, fraction_x: 0.5, fraction_y: 0.5 },
+            &scene,
+            VP,
+            0.0,
+            None,
+        )
+        .unwrap();
         assert_eq!(camera, Camera { zoom: 0.0, x: f64::NEG_INFINITY, y: f64::NEG_INFINITY });
     }
 }

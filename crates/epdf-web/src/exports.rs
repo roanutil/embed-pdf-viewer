@@ -537,7 +537,7 @@ impl WasmKernel {
                 Some(name) => self.settings_of(&name)?.on_settings_changed(),
             };
             let off = source.on(move |event: &SettingsChanged| {
-                let text = json!({ "settings": &*event.settings, "changed": event.changed });
+                let text = json!({ "settings": &*event.settings, "changedKeys": event.changed });
                 listener
                     .call1(&JsValue::NULL, &JsValue::from_str(&text.to_string()))
                     .map(|_| ())

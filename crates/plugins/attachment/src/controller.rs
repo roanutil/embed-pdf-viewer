@@ -29,7 +29,7 @@ use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::{Error, Unsubscribe, undefined};
 use epdf_plugin_annotation::{ANNOTATION, AnnotationCapability};
 use epdf_plugin_stage::{
-    PageTarget, RevealAnchor, RevealAnchorValue, RevealOptions, RevealWord, STAGE,
+    PageTarget, RevealAlignment, RevealAnchorValue, RevealOptions, RevealWord, STAGE,
     ScrollBehaviorKind,
 };
 use serde_json::{Map, Value, json};
@@ -526,7 +526,7 @@ impl AttachmentCapability {
             PageTarget::Ref(page),
             Some(RevealOptions {
                 rect,
-                anchor: Some(RevealAnchor {
+                align: Some(RevealAlignment {
                     x: Some(RevealAnchorValue::Word(RevealWord::Center)),
                     y: Some(RevealAnchorValue::Fraction(0.35)),
                 }),

@@ -32,7 +32,7 @@ use epdf_kernel::rt::{self, Promise};
 use epdf_kernel::settings::InstanceSettings;
 use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::{Controller, Error, Unsubscribe, is_undefined};
-use epdf_plugin_stage::{RevealAnchor, RevealOptions, STAGE, ScrollBehaviorKind};
+use epdf_plugin_stage::{RevealAlignment, RevealOptions, STAGE, ScrollBehaviorKind};
 use serde_json::{Value, json};
 
 use crate::contract::*;
@@ -281,8 +281,9 @@ struct Scan<'a> {
     signal: Option<AbortSignal>,
 }
 
-/// One cursor loop over budgeted slices: permission fallback (snippets to
-/// none when they are denied, unless pinned), restart-once on a stale
+/// One cursor loop over budgeted slices: snippets when the session may copy
+/// text (unless pinned), falling back to none if the engine still denies
+/// them, restart-once on a stale
 /// cursor, projection per slice. `Ok(true)` on exhaustion, `Ok(false)` when
 /// the signal aborted; `Err` on a real error (already a `PluginError`: the
 /// handle is guarded).
@@ -291,7 +292,10 @@ async fn collect(core: &Core, scan: Scan<'_>, sink: &dyn CollectSink) -> Result<
     let aborted = || signal.is_some_and(AbortSignal::aborted);
     sink.on_start();
 
-    let mut snippets = scan.snippets.unwrap_or(true);
+    // A snippet reproduces document text, so ask for one only where copying
+    // is allowed: the engine would refuse it, and the request would cost a
+    // round trip for nothing.
+    let mut snippets = scan.snippets.unwrap_or_else(|| core.cx.allows("doc.text.copy"));
     let snippets_pinned = scan.snippets.is_some();
     let mut cursor: Option<String> = None;
     let mut restarted = false;
@@ -402,27 +406,27 @@ impl CollectSink for FindAllSink {
 /// `{...settings.reveal, ...options}` as the Stage's reveal reads it.
 fn arrival(reveal: Option<&Value>, options: Option<SearchRevealOptions>) -> RevealArrival {
     // The setting's members: absent and `undefined` read as unset, a `null`
-    // anchor as a positioned reveal with no axis.
+    // align as a positioned reveal with no axis.
     let member = |key: &str| reveal.and_then(|r| r.get(key)).filter(|v| !is_undefined(v));
-    let mut anchor = member("anchor").and_then(|a| match a {
-        Value::Null => Some(RevealAnchor::default()),
-        a => serde_json::from_value::<RevealAnchor>(a.clone()).ok(),
+    let mut align = member("align").and_then(|a| match a {
+        Value::Null => Some(RevealAlignment::default()),
+        a => serde_json::from_value::<RevealAlignment>(a.clone()).ok(),
     });
     let mut behavior = member("behavior")
         .and_then(|b| serde_json::from_value::<ScrollBehaviorKind>(b.clone()).ok());
     if let Some(options) = options {
-        if let Some(over) = options.anchor {
-            anchor = over;
+        if let Some(over) = options.align {
+            align = over;
         }
         if let Some(over) = options.behavior {
             behavior = over;
         }
     }
-    RevealArrival { anchor, behavior }
+    RevealArrival { align, behavior }
 }
 
 struct RevealArrival {
-    anchor: Option<RevealAnchor>,
+    align: Option<RevealAlignment>,
     behavior: Option<ScrollBehaviorKind>,
 }
 
@@ -496,7 +500,7 @@ impl SearchCapability {
             let Some(core) = weak.upgrade() else { return Ok(()) };
             listener(&SearchSettingsChanged {
                 settings: core.typed_settings(),
-                changed: event.changed.clone(),
+                changed_keys: event.changed.clone(),
             })
         })
     }
@@ -631,17 +635,15 @@ impl SearchCapability {
     }
 
     /// Re-run the current query from scratch (the plugin does this itself
-    /// after document mutations). Resolves and rejects as `search` does.
-    pub fn refresh(&self, options: OperationOptions) -> Promise<SearchResult> {
+    /// after document mutations). Rejects as `search` does; the result is
+    /// in the state and the events.
+    pub fn refresh(&self, options: OperationOptions) -> Promise<()> {
         let state = self.state();
         match &state.query {
-            Some(query) if state.status != SearchStatus::Idle => {
-                self.search(query.clone(), SearchOptions { from: None, signal: options.signal })
-            }
-            _ => Promise::resolved(SearchResult {
-                status: SearchResultStatus::Complete,
-                hit_count: 0,
-            }),
+            Some(query) if state.status != SearchStatus::Idle => self
+                .search(query.clone(), SearchOptions { from: None, signal: options.signal })
+                .map(|_| Ok(())),
+            _ => Promise::resolved(()),
         }
     }
 
@@ -708,7 +710,7 @@ impl SearchCapability {
         }
     }
 
-    /// Positioned reveal: the hit (not just its page) arrives at the anchor,
+    /// Positioned reveal: the hit (not just its page) arrives at the alignment,
     /// the call's options over the `reveal` setting. Zoom never changes.
     fn reveal(&self, hit: &SearchHit, options: Option<SearchRevealOptions>) -> Result<(), Error> {
         let settings = self.0.settings.get();
@@ -718,7 +720,7 @@ impl SearchCapability {
                 hit.page,
                 Some(RevealOptions {
                     rect: hit.bounds,
-                    anchor: arrival.anchor,
+                    align: arrival.align,
                     behavior: arrival.behavior,
                     zoom: None,
                 }),
@@ -802,7 +804,8 @@ impl SearchCapability {
     /// Run a query to completion and return every hit, touching no session
     /// state. Scans in natural page order; concurrent calls are
     /// independent. Rejects `operation-cancelled` when `options.signal`
-    /// aborts, and `permission-denied` without `doc.text.search`.
+    /// aborts, and `permission-denied` without `doc.text.search`, or without
+    /// `doc.text.copy` when `options.snippets` is `Some(true)`.
     pub fn find_all(
         &self,
         query: SearchQuery,
@@ -811,6 +814,11 @@ impl SearchCapability {
         let core = self.core().clone();
         Promise::spawn(async move {
             core.cx.assert_allowed("doc.text.search", "findAll")?;
+            // Snippets pinned on are a requirement: refuse here rather than
+            // ask the engine.
+            if options.snippets == Some(true) {
+                core.cx.assert_allowed("doc.text.copy", "findAll")?;
+            }
             let sink = FindAllSink { all: RefCell::new(Vec::new()) };
             let scan = Scan {
                 query: &query,

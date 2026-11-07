@@ -34,7 +34,7 @@ pub(crate) fn connect_stage(
     let revision_ctx = ctx.clone();
     let refit = stage.clone();
     ctx.watch(
-        move || Ok(revision_ctx.document().map_or(0, |d| d.revision)),
+        move || Ok(revision_ctx.document().map_or(0, |d| d.pages_sequence)),
         move |_, _| refit.refit(),
         |a, b| a == b,
     )?;

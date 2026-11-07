@@ -53,6 +53,7 @@ pub fn default_settings() -> StageSettings {
         interaction: true,
         pan_fallback: true,
         zoom_gestures: true,
+        turn_gestures: true,
         zoom_box: ZoomBoxLook { fill: None, stroke: None },
         // Web: 1 PDF point is 96/72 CSS px.
         view_units_per_point: 96.0 / 72.0,
@@ -114,6 +115,7 @@ macro_rules! for_each_setting {
         $m!(Interaction, interaction, None);
         $m!(PanFallback, pan_fallback, None);
         $m!(ZoomGestures, zoom_gestures, None);
+        $m!(TurnGestures, turn_gestures, None);
         // Paint only.
         $m!(ZoomBox, zoom_box, None);
         $m!(ViewUnitsPerPoint, view_units_per_point, Scene);
@@ -146,12 +148,13 @@ pub enum SettingKey {
     Interaction,
     PanFallback,
     ZoomGestures,
+    TurnGestures,
     ZoomBox,
     ViewUnitsPerPoint,
 }
 
 /// `SETTING_KEYS`.
-pub const SETTING_KEYS: [SettingKey; 24] = [
+pub const SETTING_KEYS: [SettingKey; 25] = [
     SettingKey::Flow,
     SettingKey::Layout,
     SettingKey::Spread,
@@ -174,6 +177,7 @@ pub const SETTING_KEYS: [SettingKey; 24] = [
     SettingKey::Interaction,
     SettingKey::PanFallback,
     SettingKey::ZoomGestures,
+    SettingKey::TurnGestures,
     SettingKey::ZoomBox,
     SettingKey::ViewUnitsPerPoint,
 ];

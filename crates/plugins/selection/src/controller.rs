@@ -248,7 +248,7 @@ fn settings_of(value: &Value) -> (SelectionSettings, Option<Error>) {
         let config = SelectionConfig::from_json(value);
         let handles = config.handles.unwrap_or_default();
         let lenient = SelectionSettings {
-            drag_threshold: config.drag_threshold.unwrap_or(defaults.drag_threshold),
+            drag_threshold_px: config.drag_threshold_px.unwrap_or(defaults.drag_threshold_px),
             color: config.color.unwrap_or(defaults.color),
             handles: SelectionHandleSettings {
                 color: handles.color.unwrap_or(defaults.handles.color),
@@ -392,8 +392,8 @@ impl SelectionCapability {
     fn meta_of<R>(&self, read: impl FnOnce(u64, &Rc<Value>) -> R) -> Option<R> {
         let core = self.cx().core();
         match self.cx().document_id().and_then(|id| core.documents.get(id)) {
-            Some(meta) => Some(read(meta.revision, &meta.pages)),
-            None => self.cx().document().map(|meta| read(meta.revision, &meta.pages)),
+            Some(meta) => Some(read(meta.pages_sequence, &meta.pages)),
+            None => self.cx().document().map(|meta| read(meta.pages_sequence, &meta.pages)),
         }
     }
 
@@ -844,7 +844,7 @@ impl SelectionCapability {
     ) -> Unsubscribe {
         self.0.settings.events.on(move |event| {
             let (settings, malformed) = settings_of(&event.settings);
-            listener(&SelectionSettingsChanged { settings, changed: event.changed.clone() })?;
+            listener(&SelectionSettingsChanged { settings, changed_keys: event.changed.clone() })?;
             // After the listener, so a malformed member is reported without
             // keeping the change from it.
             malformed.map_or(Ok(()), Err)
@@ -852,8 +852,8 @@ impl SelectionCapability {
     }
 
     /// The drag threshold, read when a press would become a drag.
-    pub(crate) fn drag_threshold(&self) -> f64 {
-        self.0.settings.get().get("dragThreshold").and_then(Value::as_f64).unwrap_or(4.0)
+    pub(crate) fn drag_threshold_px(&self) -> f64 {
+        self.0.settings.get().get("dragThresholdPx").and_then(Value::as_f64).unwrap_or(4.0)
     }
 
     // ── public lens: authorization ──

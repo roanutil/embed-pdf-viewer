@@ -7,7 +7,7 @@ use std::{cell::RefCell, rc::Rc};
 fn confirmed_events_precede_settlement_and_stay_with_the_opened_handle() {
     rt::reset();
     let fake = FakeEngine::new(json!({"documents":{"a":{"pages":[],"responses":[
-        {"path":"apply","defer":"apply","events":[{"type":"changed","origin":{"tx":"op","serverId":1}}]}
+        {"path":"apply","defer":"apply","events":[{"type":"changed","origin":{"transaction":"op","serverSequence":1}}]}
     ]}}}));
     let open = AsEngine(fake.clone()).open(json!({"id":"a"}), None);
     let first = open.peek().unwrap().unwrap();
@@ -188,14 +188,15 @@ fn fake_layout_and_cursor_follow_events_for_the_same_open() {
     rt::reset();
     let fake = FakeEngine::new(json!({"documents":{"a":{"pages":[]}}}));
     let doc = AsEngine(fake.clone()).open(json!({"id":"a"}), None).peek().unwrap().unwrap();
-    fake.emit("a", &json!({"type":"pages.inserted","layout":{"pages":[{"index":0,"ref":{"kind":"objectNumber","objectNumber":9}}],"namedPages":["cover"]},"origin":{"serverId":5,"tx":null}})).unwrap();
+    fake.emit("a", &json!({"type":"pages.inserted","layout":{"pages":[{"index":0,"ref":{"kind":"objectNumber","objectNumber":9}}],"namedPages":["cover"]},"origin":{"serverSequence":5,"transaction":null}})).unwrap();
     let layout = doc.call("pages.list", None, vec![]).peek().unwrap().unwrap();
     assert_eq!(layout["pageCount"], 1);
     assert_eq!(layout["namedPages"], json!(["cover"]));
     assert_eq!(doc.page_index(9).unwrap(), 0);
-    assert_eq!(doc.last_server_id().as_deref(), Some("5"));
-    fake.emit("a", &json!({"type":"changed","origin":{"serverId":3,"tx":null}})).unwrap();
-    assert_eq!(doc.last_server_id().as_deref(), Some("5"));
+    assert_eq!(doc.last_server_sequence().as_deref(), Some("5"));
+    fake.emit("a", &json!({"type":"changed","origin":{"serverSequence":3,"transaction":null}}))
+        .unwrap();
+    assert_eq!(doc.last_server_sequence().as_deref(), Some("5"));
 }
 
 #[test]

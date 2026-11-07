@@ -398,7 +398,7 @@ fn navigation_reveals_the_hits_page() {
     settled(rig.search.search(q("the"), SearchOptions::default())).unwrap();
     assert_eq!(stage.get_current_page(), Some(pr(11)));
     let instant = SearchRevealOptions {
-        anchor: None,
+        align: None,
         behavior: Some(Some(epdf_plugin_stage::ScrollBehaviorKind::Instant)),
     };
     let hit = rig.search.next_hit(Some(instant)).unwrap().unwrap();

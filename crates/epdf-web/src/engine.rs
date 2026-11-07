@@ -427,7 +427,7 @@ impl DocumentHandle for JsDocumentHandle {
         }
     }
 
-    fn last_server_id(&self) -> Option<String> {
+    fn last_server_sequence(&self) -> Option<String> {
         self.bridge.last_server_id(&self.id).ok().flatten()
     }
 

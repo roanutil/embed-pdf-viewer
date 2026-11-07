@@ -1,8 +1,8 @@
 //! `navigation/reveal.ts`: reveals and destinations. A bare reveal is not
 //! navigation: minimal visibility, cursor untouched (in paged flow
-//! revealing a page is navigating to it). A positioned reveal (rect, anchor
+//! revealing a page is navigating to it). A positioned reveal (rect, align
 //! or zoom: a search hit) is an arrival: the cursor is set up front, the
-//! camera lands per the anchor policy, and a resolved zoom becomes the zoom
+//! camera lands per the alignment policy, and a resolved zoom becomes the zoom
 //! intent. A destination is a positioned reveal of the spot it names.
 
 use crate::destination::reveal_of_destination;
@@ -76,7 +76,7 @@ impl StageCapability {
         // `rect: null` means "no rect", the same as absent.
         let positioned = options.is_some_and(|o| {
             o.rect.is_some()
-                || o.anchor.is_some()
+                || o.align.is_some()
                 || o.zoom.is_some_and(|z| z != RevealZoom::Word(RevealZoomWord::Keep))
         });
         let behavior_of = |o: Option<RevealOptions>| {
@@ -163,13 +163,13 @@ impl StageCapability {
             // A tiny rect fits at the zoom limit, centered, like any other zoom.
             zoom = sc::clamp_zoom(zoom, self.zoom_limits());
             let zoom_changed = directive != RevealZoom::Word(RevealZoomWord::Keep);
-            let anchor = options.anchor.unwrap_or_default();
+            let align = options.align.unwrap_or_default();
             let camera = self.camera();
             let size = self.viewport();
             Some(RevealPlacement {
                 camera: CameraObject::xy_zoom(Camera {
                     x: self.reveal_axis(
-                        anchor.x,
+                        align.x,
                         camera.x,
                         world.x,
                         world.width,
@@ -178,7 +178,7 @@ impl StageCapability {
                         zoom_changed,
                     ),
                     y: self.reveal_axis(
-                        anchor.y,
+                        align.y,
                         camera.y,
                         world.y,
                         world.height,
@@ -235,7 +235,7 @@ impl StageCapability {
 impl StageCapability {
     /// Bring a page (its ref or its display index), or a spot on it, into
     /// view. Bare, it scrolls only when the page is off screen and leaves
-    /// the current page alone; with `rect`, `zoom` or `anchor` it lands on
+    /// the current page alone; with `rect`, `zoom` or `align` it lands on
     /// that spot and the current page follows.
     pub fn reveal(&self, page: impl Into<PageTarget>, options: Option<RevealOptions>) {
         if let Some(index) = self.index_of_target(page.into()) {

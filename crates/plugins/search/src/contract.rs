@@ -8,7 +8,7 @@ use std::rc::Rc;
 use epdf_geometry::{Quad, Rect};
 use epdf_kernel::geometry::PageRef;
 use epdf_kernel::signal::AbortSignal;
-use epdf_plugin_stage::{RevealAnchor, ScrollBehaviorKind};
+use epdf_plugin_stage::{RevealAlignment, ScrollBehaviorKind};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 
@@ -171,7 +171,7 @@ pub struct SearchProgress {
 pub struct SearchReveal {
     /// Where the match lands; `None` is a stored `null`, a positioned reveal
     /// with neither axis set.
-    pub anchor: Option<RevealAnchor>,
+    pub align: Option<RevealAlignment>,
     pub behavior: ScrollBehaviorKind,
 }
 
@@ -220,7 +220,7 @@ pub struct SearchSettings {
 pub fn search_defaults() -> SearchSettings {
     SearchSettings {
         reveal: SearchReveal {
-            anchor: Some(RevealAnchor {
+            align: Some(RevealAlignment {
                 x: None,
                 y: Some(epdf_plugin_stage::RevealAnchorValue::Fraction(0.35)),
             }),
@@ -237,8 +237,8 @@ pub fn search_defaults() -> SearchSettings {
 /// A `DeepPartial<SearchSettings['reveal']>`.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct SearchRevealConfig {
-    /// `Some(None)` is a `null` anchor: a positioned reveal with no axis.
-    pub anchor: Option<Option<RevealAnchor>>,
+    /// `Some(None)` is a `null` align: a positioned reveal with no axis.
+    pub align: Option<Option<RevealAlignment>>,
     pub behavior: Option<ScrollBehaviorKind>,
 }
 
@@ -263,8 +263,8 @@ impl SearchConfig {
         let mut out = Map::new();
         if let Some(reveal) = &self.reveal {
             let mut r = Map::new();
-            if let Some(anchor) = &reveal.anchor {
-                r.insert("anchor".into(), serde_json::to_value(anchor).unwrap_or(Value::Null));
+            if let Some(align) = &reveal.align {
+                r.insert("align".into(), serde_json::to_value(align).unwrap_or(Value::Null));
             }
             if let Some(behavior) = reveal.behavior {
                 r.insert("behavior".into(), json!(behavior));
@@ -291,7 +291,7 @@ impl SearchConfig {
     /// ignored.
     pub fn from_json(value: &Value) -> Self {
         let reveal = value.get("reveal").filter(|r| r.is_object()).map(|r| SearchRevealConfig {
-            anchor: match r.get("anchor") {
+            align: match r.get("align") {
                 None => None,
                 Some(Value::Null) => Some(None),
                 Some(v) => serde_json::from_value(v.clone()).ok().map(Some),
@@ -313,7 +313,8 @@ impl SearchConfig {
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct SearchSettingsChanged {
     pub settings: SearchSettings,
-    pub changed: Vec<String>,
+    #[serde(rename = "changedKeys")]
+    pub changed_keys: Vec<String>,
 }
 
 /// `SearchRevealOptions` (`Partial<SearchReveal>`): the `reveal` setting for
@@ -323,11 +324,11 @@ pub struct SearchSettingsChanged {
 /// present with the value `undefined`: the outer `None` is an absent key
 /// (the setting shows through), `Some(None)` a key present as `undefined`
 /// (or, for `behavior`, `null`, which the Stage reads the same way), which
-/// overrides the setting away. A `null` anchor is present and positions the
-/// reveal with no axis set, which is `Some(Some(RevealAnchor::default()))`.
+/// overrides the setting away. A `null` align is present and positions the
+/// reveal with no axis set, which is `Some(Some(RevealAlignment::default()))`.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct SearchRevealOptions {
-    pub anchor: Option<Option<RevealAnchor>>,
+    pub align: Option<Option<RevealAlignment>>,
     pub behavior: Option<Option<ScrollBehaviorKind>>,
 }
 

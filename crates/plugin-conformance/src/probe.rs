@@ -513,8 +513,8 @@ impl ProbeController {
                     "security.allowsAnnotationGroupAssignment" => {
                         json!(doc.security().allows_annotation_group_assignment(&str_arg(args, 1)))
                     }
-                    "events.lastServerId" => doc
-                        .last_server_id()
+                    "events.lastServerSequence" => doc
+                        .last_server_sequence()
                         .map_or(Value::Null, |n| n.parse::<i64>().map_or(json!(n), |n| json!(n))),
                     _ => epdf_kernel::undefined(),
                 }),
