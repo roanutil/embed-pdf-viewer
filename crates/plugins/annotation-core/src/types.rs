@@ -1203,6 +1203,29 @@ js_object! {
     }
 }
 
+js_object! {
+    /// A run of text one font draws in one direction, shaped by whatever
+    /// draws it (`SceneNode` of kind `textRun`): a form widget's text, as
+    /// core-text lays it out. `joinsPrevious` and `joinsNext` are present
+    /// only when true.
+    pub struct TextRunScene {
+        "at" => pub at: Point,
+        "text" => pub text: String,
+        "rtl" => pub rtl: bool,
+        "plain" => pub plain: bool,
+        "joinsPrevious" => pub joins_previous: Option<bool>,
+        "joinsNext" => pub joins_next: Option<bool>,
+        "fontSize" => pub font_size: f64,
+        "fontFamily" => pub font_family: String,
+        "fontWeight" => pub font_weight: Option<f64>,
+        "fontStyle" => pub font_style: Option<String>,
+        "rotation" => pub rotation: Option<f64>,
+        "program" => pub program: Option<FontProgramRef>,
+        "paint" => pub paint: Paint,
+        "clip" => pub clip: Option<Rect>,
+    }
+}
+
 js_union! {
     /// A fully painted draw node (`SceneNode`): a renderer maps each to one element.
     pub enum SceneNode ("kind") {
@@ -1213,6 +1236,7 @@ js_union! {
         "path" => Path(ShapeScene),
         "text" => Text(TextScene),
         "glyphs" => Glyphs(GlyphsScene),
+        "textRun" => TextRun(TextRunScene),
     }
 }
 
@@ -1274,6 +1298,7 @@ impl SceneNode {
             | SceneNode::Path(s) => &s.paint,
             SceneNode::Text(t) => &t.paint,
             SceneNode::Glyphs(g) => &g.paint,
+            SceneNode::TextRun(t) => &t.paint,
         }
     }
 
@@ -1286,6 +1311,7 @@ impl SceneNode {
             | SceneNode::Path(s) => s.clip,
             SceneNode::Text(t) => t.clip,
             SceneNode::Glyphs(g) => g.clip,
+            SceneNode::TextRun(t) => t.clip,
         }
     }
 }
