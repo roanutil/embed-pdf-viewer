@@ -251,16 +251,19 @@ Expose files/selection/status/availability/pending/error as read-only state.
 
 **Files:** Modify `platforms/apple/README.md`, `multiplatform-port-status.md`, `platforms/apple/swift-api-coverage.json`, relevant host/Swift integration tests and Apple fixture copy list. Update `platforms/apple/EmbedPDF/Package.swift` engine pin only after a matching artifact exists. Keep existing publish machinery as the owner of hashes and checksums.
 
-- [ ] Add a full-config real-host/Swift integration test opening a document with all plugins, editing outline/attachments/annotations, undoing/redoing, saving/reopening, observing three controls simultaneously, closing and destroying. Include restricted scopes, locked documents, absent plugins, and cancellation. Source-mode fixture changes must be copied to every relevant generated test bundle by the existing build script.
-- [ ] Run the parity checker with **zero pending plugin/member entries** and justified exclusions; run `cargo test -p epdf-viewer-host -p epdf-plugin-history -p epdf-plugin-outline -p epdf-plugin-attachment` and clippy for changed crates with `--all-targets -- -D warnings`. Rebuild bindings and run the full source-mode Apple package test command above, plus a macOS package test destination.
-- [ ] Run `bash platforms/apple/package-engine-framework.sh` and the same Apple package suite with `EMBEDPDF_PREBUILT_ENGINE=local` (unset `EMBEDPDF_LOCAL_ENGINE`), proving the packaged module contains the new APIs. Record test counts and artifact size. Do not treat a source build alone as distribution verification.
-- [ ] Update plugin tables and examples with the new capabilities, controls, feature switches, lifecycle/cancellation, history submission semantics and supported exclusions. Correct the README's obsolete statement that the facade/UI targets are empty. Include a minimal reader using all three controls and independent revision streams.
-- [ ] Commit verified source/docs. A public engine release is a separate publishing action: prepare it with the existing `scripts/publish-engine-payload.mjs --dry-run --only apple` workflow; publish only when authorized, then pin its actual checksum. Until then mark the new API as requiring the local source/packaged engine, and do not claim the default downloaded binary contains it.
+- [x] Add a full-config real-host/Swift integration test opening a document with all plugins, editing outline/attachments/annotations, undoing/redoing, saving/reopening, observing three controls simultaneously, closing and destroying. Include restricted scopes, locked documents, absent plugins, and cancellation. Source-mode fixture changes must be copied to every relevant generated test bundle by the existing build script.
+- [x] Run the parity checker with **zero pending plugin/member entries** and justified exclusions; run `cargo test -p epdf-viewer-host -p epdf-plugin-history -p epdf-plugin-outline -p epdf-plugin-attachment` and clippy for changed crates with `--all-targets -- -D warnings`. Rebuild bindings and run the full source-mode Apple package test command above, plus a macOS package test destination.
+- [x] Run `bash platforms/apple/package-engine-framework.sh` and the same Apple package suite with `EMBEDPDF_PREBUILT_ENGINE=local` (unset `EMBEDPDF_LOCAL_ENGINE`), proving the packaged module contains the new APIs. Record test counts and artifact size. Do not treat a source build alone as distribution verification.
+- [x] Update plugin tables and examples with the new capabilities, controls, feature switches, lifecycle/cancellation, history submission semantics and supported exclusions. Correct the README's obsolete statement that the facade/UI targets are empty. Include a minimal reader using all three controls and independent revision streams.
+- [x] Commit verified source/docs. A public engine release is a separate publishing action: prepare it with the existing `scripts/publish-engine-payload.mjs --dry-run --only apple` workflow; publish only when authorized, then pin its actual checksum. Until then mark the new API as requiring the local source/packaged engine, and do not claim the default downloaded binary contains it.
 
 ## Review handoff
 
-Review the linked design's approach, three new capability surfaces, and control
-scope before implementation. Estimated effort is 7–12 engineer-days including
-Rust/Swift tests, UI integration and packaged-engine validation; this is a
-planning estimate, not measured execution time. No implementation, publishing,
-dependency changes or baseline product test run is part of this planning task.
+Implementation, verification, distribution status, exclusions and chronological
+rulings are recorded in
+[`../reports/2026-11-06-swift-api-plugin-parity.md`](../reports/2026-11-06-swift-api-plugin-parity.md).
+The branch receives one fresh whole-branch code review before handoff. The
+unresolved iOS 27.2 picker/automation result remains visible for merge review.
+No merge or publication has occurred. The default engine pin remains on the
+previous public release; new APIs currently require a local source/packaged
+engine until publishing and pin updates are separately authorized.
