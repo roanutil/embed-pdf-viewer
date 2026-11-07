@@ -1141,6 +1141,9 @@ importers:
       '@embedpdf/plugin-commands':
         specifier: workspace:*
         version: link:../plugin/commands
+      '@embedpdf/plugin-fonts':
+        specifier: workspace:*
+        version: link:../plugin/fonts
       '@embedpdf/plugin-form':
         specifier: workspace:*
         version: link:../plugin/form

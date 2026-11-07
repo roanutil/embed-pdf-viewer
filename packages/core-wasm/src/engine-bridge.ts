@@ -61,8 +61,8 @@ export interface EngineBridge {
   security(docId: string, member: string, argsJson: string): string;
   /** `doc.page(toPageRef(pon)).pageIndex`. Throws what `page()` throws. */
   pageIndex(docId: string, pon: number): number;
-  /** `doc.events.lastServerId()`, as a string. */
-  lastServerId(docId: string): string | null;
+  /** `doc.events.lastServerSequence()`, as a string. */
+  lastServerSequence(docId: string): string | null;
   /** `doc.events.subscribe`, each event as canonical JSON text. */
   subscribe(docId: string, listener: (eventJson: string) => void): () => void;
   /** `isLocalEngine(engine)`: whether the engine carries the local brand
@@ -98,9 +98,9 @@ export interface EngineBridge {
   hostBytes(n: number): Uint8Array;
   /** Keep a live value in the host table; answers its `n`. */
   hold(value: unknown): number;
-  /** Let go of host value `n`, and of its `$hostBytes` entry when it is a
-   *  rendered image: marked now, deleted on the next macrotask (see the
-   *  release site for why). Throws for an id this bridge does not hold, and
+  /** Let go of host value `n`, and of every entry its encoding held for its
+   *  own members (a rendered image's `$hostBytes` and `transform`): marked
+   *  now, deleted on the next macrotask (see the release site for why). Throws for an id this bridge does not hold, and
    *  for one already released. */
   release(n: number): void;
   /** The kernel over this bridge is freed: delete every entry this bridge
@@ -175,8 +175,11 @@ export function errorSpec(error: unknown, encode: (value: unknown) => unknown): 
 export interface EncodeHooks {
   /** Register a live value; answers its host id. */
   hold(value: unknown): number;
-  /** A rendered image held as `host`, whose raw bytes were held as `bytes`. */
-  image?(host: number, bytes: number): void;
+  /** A live value held as `host`, whose own members were held as `nested`:
+   *  a rendered image's raw bytes, and a live member such as a render's
+   *  `transform` (data plus `pageToPixels`/`pixelsToPage`). Releasing the
+   *  value releases these with it. */
+  held?(host: number, nested: number[]): void;
   /** Encode a function, member functions included. Without it a function is
    *  held, and a member function is dropped and marks its object live. */
   fn?(value: (...args: unknown[]) => unknown): unknown;
@@ -247,7 +250,6 @@ export function canonical(
     const live =
       !isPlain(object) || (dropsFns && members.some(([, member]) => typeof member === 'function'));
     const out: Record<string, unknown> = {};
-    let bytesId: number | undefined;
     for (const [key, member] of members) {
       if (member === undefined || (dropsFns && typeof member === 'function')) continue;
       if (h.signal && typeof AbortSignal !== 'undefined' && member instanceof AbortSignal) {
@@ -261,7 +263,7 @@ export function canonical(
       // raw `Uint8Array`, which only a caller that actually needs pixels
       // resolves, through `hostBytes(n)`.
       if (live && key === 'source' && isByteImageSource(member)) {
-        bytesId = h.hold(member.bytes);
+        const bytesId = h.hold(member.bytes);
         out[key] = {
           kind: 'bytes',
           bytes: { $hostBytes: bytesId, $byteLength: member.bytes.byteLength },
@@ -271,13 +273,29 @@ export function canonical(
       out[key] = recur(member);
     }
     if (live) {
+      const nested = h.held ? heldWithin(out) : [];
       out.$host = h.hold(object);
-      if (bytesId !== undefined) h.image?.(out.$host as number, bytesId);
+      if (nested.length > 0) h.held?.(out.$host as number, nested);
     }
     return out;
   } finally {
     seen.delete(object);
   }
+}
+
+/** The host ids an encoded value holds directly: every `$host` and
+ *  `$hostBytes` in it, but not those inside a `$host` value, which that
+ *  value holds itself. */
+function heldWithin(value: unknown, out: number[] = []): number[] {
+  if (Array.isArray(value)) {
+    for (const item of value) heldWithin(item, out);
+  } else if (value !== null && typeof value === 'object') {
+    const object = value as Record<string, unknown>;
+    if (typeof object.$host === 'number') out.push(object.$host);
+    else if (typeof object.$hostBytes === 'number') out.push(object.$hostBytes);
+    else for (const member of Object.values(object)) heldWithin(member, out);
+  }
+  return out;
 }
 
 /** Deep enough for any engine answer; deeper (or cyclic) takes `canonical`. */
@@ -492,9 +510,10 @@ export function createEngineBridge(engine: Engine): EngineBridge {
    *  membership here only answers "does this bridge own `n`", which a
    *  foreign id fails, the same as a genuinely unknown one. */
   const ownHosts = new Set<number>();
-  /** A rendered image's host id to its `$hostBytes` id, so releasing the
-   *  image releases its bytes too. */
-  const imageBytes = new Map<number, number>();
+  /** A live value's host id to the ids its encoding held for its own
+   *  members (a rendered image's `$hostBytes`, its `transform`), so
+   *  releasing the value releases those too. */
+  const nestedHosts = new Map<number, number[]>();
   let disposed = false;
 
   const hold = (value: unknown): number => {
@@ -527,11 +546,15 @@ export function createEngineBridge(engine: Engine): EngineBridge {
       throw releasedError(`[engine-bridge] host value ${n} was already released`);
     }
     if (!ownHosts.has(n)) throw new Error(`[engine-bridge] no host value ${n}`);
-    pendingRelease.set(n, ownHosts);
-    const bytes = imageBytes.get(n);
-    if (bytes !== undefined) {
-      imageBytes.delete(n);
-      pendingRelease.set(bytes, ownHosts);
+    const marking = [n];
+    while (marking.length > 0) {
+      const id = marking.pop()!;
+      pendingRelease.set(id, ownHosts);
+      const nested = nestedHosts.get(id);
+      if (nested) {
+        nestedHosts.delete(id);
+        marking.push(...nested);
+      }
     }
     // Deleted on the next macrotask, not now. The real invariant is not
     // that the decode is queued before this call: `render_pages` and an
@@ -557,7 +580,7 @@ export function createEngineBridge(engine: Engine): EngineBridge {
   };
   const registered = { owns: (n: number) => ownHosts.has(n), release };
   liveBridges.add(registered);
-  const hooks: EncodeHooks = { hold, image: (n, bytes) => imageBytes.set(n, bytes) };
+  const hooks: EncodeHooks = { hold, held: (n, nested) => nestedHosts.set(n, nested) };
   const encode = (value: unknown) => canonicalText(value, hooks);
   const decodeArgs = (json: string) => decode(JSON.parse(json), host) as unknown[];
   const reason = (error: unknown) => errorSpec(error, (v) => canonical(v, hold));
@@ -710,11 +733,12 @@ export function createEngineBridge(engine: Engine): EngineBridge {
       }
     },
 
-    // The engine dropped `capabilities` (its one field said whether
-    // annotation edits need weak sessions) and `PageHandle.pageIndex`; the
-    // Rust engine core still reads both, so answer what they now always are.
+    // The engine dropped `capabilities` (whether annotation edits need weak
+    // sessions, and whether page edit sessions exist: both engines have
+    // them) and `PageHandle.pageIndex`; the Rust engine core still reads
+    // both, so answer what they now always are.
     capabilities() {
-      return encode({ weakAnnotationEditSessions: 'not-needed' });
+      return encode({ weakAnnotationEditSessions: 'not-needed', pageEditSessions: 'supported' });
     },
 
     security(docId, member, argsJson) {
@@ -731,9 +755,9 @@ export function createEngineBridge(engine: Engine): EngineBridge {
       return -1;
     },
 
-    lastServerId(docId) {
-      const id = document(docId).events.lastServerId();
-      return id === null || id === undefined ? null : String(id);
+    lastServerSequence(docId) {
+      const sequence = document(docId).events.lastServerSequence();
+      return sequence === null || sequence === undefined ? null : String(sequence);
     },
 
     subscribe(docId, listener) {
@@ -762,7 +786,7 @@ export function createEngineBridge(engine: Engine): EngineBridge {
         pendingRelease.delete(n);
       }
       ownHosts.clear();
-      imageBytes.clear();
+      nestedHosts.clear();
       documents.clear();
     },
     counts() {

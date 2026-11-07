@@ -20,6 +20,7 @@ import type {
   DocumentsCapability,
   Engine,
   GlobalState,
+  HostClock,
   Kernel,
   KernelStatus,
   PluginScope,
@@ -27,7 +28,7 @@ import type {
   Unsubscribe,
 } from '@embedpdf/core';
 import { createEngineBridge, type EngineBridge } from './engine-bridge';
-import { isRustPlugin, type RustPluginDef } from './plugins';
+import { hostsNextFrame, isRustPlugin, type RustPluginDef } from './plugins';
 import { rusty, toError, Wire, type RustKernelClass } from './proxy';
 
 /** One frame at 60 Hz: the most often store listeners hear of changes. */
@@ -100,11 +101,19 @@ export function kernelCounts(kernel?: Kernel): Record<string, number> {
   return { ...harness, ...entry.bridge.counts(), ...wireRest, wireRefs, wasmBytes };
 }
 
-const UNSUPPORTED = ['initialState', 'reduce', 'capability', 'create', 'effects'] as const;
+/** A TypeScript plugin the shim runs: an `id`, a `scope`, and an `init`
+ *  that runs once its owner exists. A `PluginDefinition`'s `create` (an API
+ *  the Rust kernel would have to serve) and its `state`, `settings` and
+ *  `inScope` are refused by [`checkJsPlugin`]. */
+type JsPlugin = Pick<AnyPlugin, 'id' | 'scope'> & {
+  init?: (ctx: never) => void | Promise<void>;
+};
 
-function checkJsPlugin(plugin: AnyPlugin): void {
+const UNSUPPORTED = ['state', 'settings', 'create', 'inScope'] as const;
+
+function checkJsPlugin(plugin: JsPlugin): void {
   for (const member of UNSUPPORTED) {
-    if (plugin[member] !== undefined) {
+    if ((plugin as Record<string, unknown>)[member] !== undefined) {
       throw new Error(
         `[core-wasm] JS plugin "${plugin.id}" has ${member}; only init-only JS plugins run in the eval build`,
       );
@@ -130,16 +139,18 @@ export function createKernel(opts: {
   report?: (error: unknown) => void;
   /** The viewer settings the app registered (`kernel.getSettings()`). */
   settings?: unknown;
-  /** Kept for the signature: the Rust kernel keeps its own timers, and
-   *  prints nothing. */
-  clock?: unknown;
+  /** The host's time. Only its `nextFrame` crosses, as the frames plugins
+   *  animate on (else the hosts' `scheduler`, `setHosts`): the Rust kernel
+   *  keeps its own timers. */
+  clock?: HostClock;
+  /** Kept for the signature: the Rust kernel prints nothing. */
   printer?: unknown;
 }): Kernel {
   const { engine } = opts;
   const report = opts.report ?? ((error: unknown) => console.error('[kernel]', error));
   const rustPlugins: RustPluginDef[] = [];
-  const jsPlugins: AnyPlugin[] = [];
-  for (const plugin of opts.plugins as (AnyPlugin | RustPluginDef)[]) {
+  const jsPlugins: JsPlugin[] = [];
+  for (const plugin of opts.plugins as (JsPlugin | RustPluginDef)[]) {
     if (isRustPlugin(plugin)) {
       rustPlugins.push(plugin);
     } else {
@@ -160,7 +171,18 @@ export function createKernel(opts: {
     try {
       const settings =
         opts.settings === undefined ? undefined : JSON.stringify(wire.encode(opts.settings));
-      return new Rust(JSON.stringify(specs), bridge, wire.callJs, wire.releaseJs, settings);
+      const clock = opts.clock;
+      const nextFrame = clock?.nextFrame
+        ? (run: (timeMs: number) => void) => clock.nextFrame!(run)
+        : hostsNextFrame();
+      return new Rust(
+        JSON.stringify(specs),
+        bridge,
+        wire.callJs,
+        wire.releaseJs,
+        settings,
+        nextFrame,
+      );
     } catch (error) {
       throw toError(error);
     }
@@ -250,12 +272,12 @@ export function createKernel(opts: {
       report(error);
     }
   };
-  const unsupported = (plugin: AnyPlugin, member: string) => () => {
+  const unsupported = (plugin: JsPlugin, member: string) => () => {
     throw new Error(
       `[core-wasm] JS plugin "${plugin.id}": ctx.${member} is not supported; only init-only JS plugins run in the eval build`,
     );
   };
-  const makeContext = (plugin: AnyPlugin, doc: string | null) => {
+  const makeContext = (plugin: JsPlugin, doc: string | null) => {
     const list: Cleanup[] = cleanups.get(doc) ?? [];
     cleanups.set(doc, list);
     const core = () => (kernel.getState() as GlobalState).core;
@@ -348,7 +370,7 @@ export function createKernel(opts: {
     documents,
     capability: <T>(token: CapabilityToken<T>, documentId?: string) => {
       if (finalState || jsPhase === 'failed') {
-        throw new Error(`[kernel] capability("${name(token)}") on a ${kernel.status()} kernel`);
+        throw new Error(`[kernel] capability("${name(token)}") on a ${kernel.getStatus()} kernel`);
       }
       return wire.capability(name(token), documentId) as T;
     },
@@ -375,7 +397,7 @@ export function createKernel(opts: {
       return () => void listeners.delete(listener);
     },
     getState: () => finalState ?? (wire.getState() as GlobalState),
-    status: () => {
+    getStatus: () => {
       if (finalState) return 'destroyed';
       const now = rusty(() => wire.rust.status()) as KernelStatus;
       if (now === 'destroying' || now === 'destroyed') return now;
@@ -387,7 +409,7 @@ export function createKernel(opts: {
     start: () => {
       // Before the memo, as the TS kernel checks: a failed kernel's second
       // `start()` rejects with this, not with the first one's error.
-      const now = kernel.status();
+      const now = kernel.getStatus();
       if (now === 'destroying' || now === 'destroyed' || now === 'failed') {
         return Promise.reject(new Error(`[kernel] start() on a ${now} kernel`));
       }
@@ -396,7 +418,7 @@ export function createKernel(opts: {
       }));
     },
     // Frees the Rust side once its destroy settles. After that, as on the
-    // TS kernel, `status()` answers 'destroyed', `tryCapability` null,
+    // TS kernel, `getStatus()` answers 'destroyed', `tryCapability` null,
     // `getState()` the destroyed store's state, and `start()` rejects;
     // `capability` throws, and the rest throws `[core-wasm] kernel
     // destroyed` (`Wire.rust`).

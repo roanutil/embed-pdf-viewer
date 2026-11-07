@@ -117,8 +117,8 @@ describe('releasing JavaScript functions Rust has dropped', () => {
       const off = interaction.registerHandler({
         id: `probe-${i}`,
         priority: 1,
-        onDown: () => {},
-        onMove: () => {},
+        onPointerDown: () => false,
+        onPointerMove: () => {},
       });
       if (i === 0) expect(kernelCounts(k).fns).toBe(start + 2);
       off();
@@ -130,9 +130,9 @@ describe('releasing JavaScript functions Rust has dropped', () => {
     const k = await openFixture();
     const interaction = k.capability(InteractionToken);
     const start = kernelCounts(k).fns;
-    const onDown = () => {};
-    const first = interaction.registerHandler({ id: 'a', priority: 1, onDown });
-    const second = interaction.registerHandler({ id: 'b', priority: 1, onDown });
+    const onPointerDown = () => false;
+    const first = interaction.registerHandler({ id: 'a', priority: 1, onPointerDown });
+    const second = interaction.registerHandler({ id: 'b', priority: 1, onPointerDown });
     expect(kernelCounts(k).fns).toBe(start + 1);
     first();
     expect(kernelCounts(k).fns).toBe(start + 1);

@@ -9,7 +9,8 @@
  */
 import type { ScriptSandbox, ScriptSandboxFactory } from '@embedpdf/core-js-sandbox';
 
-/** A `ScriptSandbox` with `disposed` as a function, so it crosses as a `$fn`. */
+/** A `ScriptSandbox` as the actions adapter takes it: `destroyed` as the
+ *  function `disposed`, so it crosses as a `$fn`, and `destroy` as `dispose`. */
 export interface WireSandbox {
   disposed(): boolean;
   boot: ScriptSandbox['boot'];
@@ -29,10 +30,10 @@ export function createSandboxBridge(
   return async () => {
     const sandbox = await factory();
     return {
-      disposed: () => sandbox.disposed,
+      disposed: () => sandbox.destroyed,
       boot: (sources, input, budget) => sandbox.boot(sources, input, budget),
       run: (source, input, budget) => sandbox.run(source, input, budget),
-      dispose: () => sandbox.dispose(),
+      dispose: () => sandbox.destroy(),
     };
   };
 }

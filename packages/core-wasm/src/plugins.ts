@@ -13,6 +13,7 @@ import type { actionsPlugin as ActionsPlugin } from '@embedpdf/plugin-actions';
 import type { annotationPlugin as AnnotationPlugin } from '@embedpdf/plugin-annotation';
 import type { attachmentPlugin as AttachmentPlugin } from '@embedpdf/plugin-attachment';
 import type { commandsPlugin as CommandsPlugin } from '@embedpdf/plugin-commands';
+import type { fontsPlugin as FontsPlugin } from '@embedpdf/plugin-fonts';
 import type { formPlugin as FormPlugin } from '@embedpdf/plugin-form';
 import type { historyPlugin as HistoryPlugin } from '@embedpdf/plugin-history';
 import type { i18nPlugin as I18nPlugin } from '@embedpdf/plugin-i18n';
@@ -31,7 +32,7 @@ import type { searchPlugin as SearchPlugin } from '@embedpdf/plugin-search';
 import type { selectionPlugin as SelectionPlugin } from '@embedpdf/plugin-selection';
 import type { shellPlugin as ShellPlugin } from '@embedpdf/plugin-shell';
 import type { signaturePlugin as SignaturePlugin } from '@embedpdf/plugin-signature';
-import type { Scheduler, stagePlugin as StagePlugin } from '@embedpdf/plugin-stage';
+import type { stagePlugin as StagePlugin } from '@embedpdf/plugin-stage';
 import type { stampPlugin as StampPlugin } from '@embedpdf/plugin-stamp';
 import type { viewManagerPlugin as ViewManagerPlugin } from '@embedpdf/plugin-view-manager';
 import { createSandboxBridge } from './sandbox';
@@ -43,7 +44,7 @@ export interface RustPluginDef {
   readonly config?: unknown;
 }
 
-export const isRustPlugin = (plugin: AnyPlugin | RustPluginDef): plugin is RustPluginDef =>
+export const isRustPlugin = (plugin: object): plugin is RustPluginDef =>
   typeof (plugin as RustPluginDef).$rust === 'string';
 
 /** A descriptor, typed as the TypeScript factory's `PluginDef`. */
@@ -52,14 +53,24 @@ const rust = <T>(factory: string, config?: unknown): T =>
 
 type Def<F extends (...args: never[]) => unknown> = ReturnType<F>;
 
+/** Frames over `requestAnimationFrame` and `cancelAnimationFrame`. */
+export interface Scheduler {
+  raf(frame: (timeMs: number) => void): number;
+  caf(handle: number): void;
+}
+
 /**
  * The browser globals the TypeScript plugins reach for, which the Rust ones
- * take as host inputs through their adapters' live config: stage's frame
- * `scheduler`, render's `requestFrame` and console lines, and annotation's
- * `randomUuid` and `consoleError`. Set once, before the factories run; each
- * factory adds its part to the config it returns. Unset, stage is
- * frameless, render schedules on the kernel's clock, and annotation ids
- * count up from the same first id every session.
+ * take as host inputs through their adapters' live config: render's
+ * `requestFrame` and console lines, and annotation's `randomUuid` and
+ * `consoleError`. Set once, before the factories run; each factory adds its
+ * part to the config it returns. Unset, render schedules on the kernel's
+ * clock, and annotation ids count up from the same first id every session.
+ *
+ * `scheduler` is the kernel's frames when `createKernel` is given no
+ * `clock.nextFrame` (`browserClock()` gives one): every plugin animates on
+ * the kernel's clock, as in the TypeScript. Unset as well, plugins skip
+ * animation.
  */
 export interface Hosts {
   scheduler?: Scheduler;
@@ -80,27 +91,33 @@ export function setHosts(next: Hosts): void {
   hosts = next;
 }
 
+/** The hosts' frames as a `HostClock.nextFrame`, for `createKernel`. */
+export function hostsNextFrame(): ((run: (timeMs: number) => void) => () => void) | undefined {
+  const scheduler = hosts.scheduler;
+  if (!scheduler) return undefined;
+  return (run) => {
+    const handle = scheduler.raf(run);
+    return () => scheduler.caf(handle);
+  };
+}
+
 /**
  * `id` and `token` name one lens: the stage adapter takes a single `lens`
  * name for both (`crates/plugins/stage/src/harness.rs`, `stage_options`), so
- * a lens whose id and token name differ is refused. `scheduler`, or the
- * hosts' one, is the adapter's live `scheduler: {raf, caf}`.
+ * a lens whose id and token name differ is refused. Its frames are the
+ * kernel's clock's.
  */
 export const stagePlugin: typeof StagePlugin = (options = {}) => {
-  const { id = 'stage', token, scheduler = hosts.scheduler, ...settings } = options;
+  const { id = 'stage', token, ...settings } = options;
   const tokenName = token?.name ?? 'stage';
   if (id !== tokenName) {
     throw new Error(
       `[core-wasm] stagePlugin: id "${id}" and token "${tokenName}" differ; the Rust stage names both from one lens`,
     );
   }
-  const frames = scheduler
-    ? { raf: scheduler.raf.bind(scheduler), caf: scheduler.caf.bind(scheduler) }
-    : undefined;
   return rust<Def<typeof StagePlugin>>('stage', {
     ...settings,
     ...(id === 'stage' ? {} : { lens: id }),
-    ...(frames ? { scheduler: frames } : {}),
   });
 };
 
@@ -152,3 +169,13 @@ export const viewManagerPlugin: typeof ViewManagerPlugin = () => rust('view-mana
 export const historyPlugin: typeof HistoryPlugin = (config) => rust('history', config);
 export const outlinePlugin: typeof OutlinePlugin = () => rust('outline');
 export const attachmentPlugin: typeof AttachmentPlugin = () => rust('attachment');
+
+/**
+ * No Rust plugin serves fonts yet, so the fonts capability never resolves:
+ * every reader the viewer has asks for it as optional (`useOptionalSelector`,
+ * `useOptionalCapability`), and typed text draws in the browser's fallback
+ * fonts. An init-only JS plugin with nothing to run, so the plugin list the
+ * viewer builds still type-checks and starts.
+ */
+export const fontsPlugin: typeof FontsPlugin = () =>
+  ({ id: 'fonts', scope: 'document' }) as unknown as ReturnType<typeof FontsPlugin>;

@@ -134,7 +134,8 @@ describe('stamp asset previews over the real engine', () => {
     const before = kernelCounts(k).allHosts;
 
     const file = new File([await readFile(library)], 'stamps.pdf', { type: 'application/pdf' });
-    const id = await stamp.importLibrary(file, { name: 'stamps' });
+    const imported = await stamp.importLibrary(file, { name: 'stamps' });
+    const id = imported.library.id;
     await macrotask();
 
     expect(kernelCounts(k).allHosts).toBe(before);
