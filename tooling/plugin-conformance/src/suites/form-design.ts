@@ -319,7 +319,7 @@ const cases: ScenarioCase[] = [
       tool('form-edit'),
       call('create', [draft()]),
       anno('get', [objRef(10002)]),
-      anno('selection.set', [[objRef(10002)]]),
+      anno('selection.select', [[objRef(10002)]]),
       anno('selection.list'),
       call('getSelectedField'),
     ],

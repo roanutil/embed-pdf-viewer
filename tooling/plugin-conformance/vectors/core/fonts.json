@@ -7127,7 +7127,18 @@
         "returned": {
           "fontFamily": "\"epdf-955500bf0048e07e\", \"Courier New\", Courier, monospace",
           "fontWeight": 400,
-          "fontStyle": "normal"
+          "fontStyle": "normal",
+          "programs": [
+            {
+              "hash": "955500bf0048e07e3046477b3874ef9e7653010a2bc780bbf27f837d7ca34d19",
+              "family": "epdf-955500bf0048e07e",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            }
+          ]
         }
       }
     },
@@ -7141,7 +7152,18 @@
         "returned": {
           "fontFamily": "\"epdf-386d8684b075c7ff\", \"Courier New\", Courier, monospace",
           "fontWeight": 700,
-          "fontStyle": "normal"
+          "fontStyle": "normal",
+          "programs": [
+            {
+              "hash": "386d8684b075c7ff4911235ae9691d5e9e924fff13fa1f17841c6d4d4f3762e6",
+              "family": "epdf-386d8684b075c7ff",
+              "weight": 700,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            }
+          ]
         }
       }
     },
@@ -7155,7 +7177,18 @@
         "returned": {
           "fontFamily": "\"epdf-d1dae62980ea92bf\", \"Courier New\", Courier, monospace",
           "fontWeight": 700,
-          "fontStyle": "italic"
+          "fontStyle": "italic",
+          "programs": [
+            {
+              "hash": "d1dae62980ea92bfa86f9e3961a3064e164e41a5064211f2a3a8833643a322a5",
+              "family": "epdf-d1dae62980ea92bf",
+              "weight": 700,
+              "style": "italic",
+              "load": {
+                "$function": true
+              }
+            }
+          ]
         }
       }
     },
@@ -7169,7 +7202,18 @@
         "returned": {
           "fontFamily": "\"epdf-d790f273acf84a1a\", \"Courier New\", Courier, monospace",
           "fontWeight": 400,
-          "fontStyle": "italic"
+          "fontStyle": "italic",
+          "programs": [
+            {
+              "hash": "d790f273acf84a1afada2cf96a6eb646728a1a6e7afe961a2cc846bb3a501b0b",
+              "family": "epdf-d790f273acf84a1a",
+              "weight": 400,
+              "style": "italic",
+              "load": {
+                "$function": true
+              }
+            }
+          ]
         }
       }
     },
@@ -7183,7 +7227,18 @@
         "returned": {
           "fontFamily": "\"epdf-93fe419ed14bac24\", Helvetica, Arial, sans-serif",
           "fontWeight": 400,
-          "fontStyle": "normal"
+          "fontStyle": "normal",
+          "programs": [
+            {
+              "hash": "93fe419ed14bac240018cf4506dbb64643eeeee379c0b51d3c52d239f4adbc58",
+              "family": "epdf-93fe419ed14bac24",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            }
+          ]
         }
       }
     },
@@ -7197,7 +7252,18 @@
         "returned": {
           "fontFamily": "\"epdf-f11bf41cf5d11596\", Helvetica, Arial, sans-serif",
           "fontWeight": 700,
-          "fontStyle": "normal"
+          "fontStyle": "normal",
+          "programs": [
+            {
+              "hash": "f11bf41cf5d115966ee4d954d9d3eab4a7d1b63d371e5d655fc82d15350bc929",
+              "family": "epdf-f11bf41cf5d11596",
+              "weight": 700,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            }
+          ]
         }
       }
     },
@@ -7211,7 +7277,18 @@
         "returned": {
           "fontFamily": "\"epdf-9cd559e9d134dd6b\", Helvetica, Arial, sans-serif",
           "fontWeight": 700,
-          "fontStyle": "italic"
+          "fontStyle": "italic",
+          "programs": [
+            {
+              "hash": "9cd559e9d134dd6bb8bb75186d4302079e78ebee53a7c9b38dea1fba52a534d8",
+              "family": "epdf-9cd559e9d134dd6b",
+              "weight": 700,
+              "style": "italic",
+              "load": {
+                "$function": true
+              }
+            }
+          ]
         }
       }
     },
@@ -7225,7 +7302,18 @@
         "returned": {
           "fontFamily": "\"epdf-872e4efa9cc73daf\", Helvetica, Arial, sans-serif",
           "fontWeight": 400,
-          "fontStyle": "italic"
+          "fontStyle": "italic",
+          "programs": [
+            {
+              "hash": "872e4efa9cc73daff4a3fffa952663f32144db19ec91a8407afc359486eae30b",
+              "family": "epdf-872e4efa9cc73daf",
+              "weight": 400,
+              "style": "italic",
+              "load": {
+                "$function": true
+              }
+            }
+          ]
         }
       }
     },
@@ -7239,7 +7327,18 @@
         "returned": {
           "fontFamily": "\"epdf-7be927a55309ca34\", \"Times New Roman\", Times, serif",
           "fontWeight": 400,
-          "fontStyle": "normal"
+          "fontStyle": "normal",
+          "programs": [
+            {
+              "hash": "7be927a55309ca34d67972ccf041ff3d156d774017022b18131fa365e6dd922e",
+              "family": "epdf-7be927a55309ca34",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            }
+          ]
         }
       }
     },
@@ -7253,7 +7352,18 @@
         "returned": {
           "fontFamily": "\"epdf-f23f2efbfa079f90\", \"Times New Roman\", Times, serif",
           "fontWeight": 700,
-          "fontStyle": "normal"
+          "fontStyle": "normal",
+          "programs": [
+            {
+              "hash": "f23f2efbfa079f9083d967acf695b10db7c78e39862dbeb4788a4fd0533ff29c",
+              "family": "epdf-f23f2efbfa079f90",
+              "weight": 700,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            }
+          ]
         }
       }
     },
@@ -7267,7 +7377,18 @@
         "returned": {
           "fontFamily": "\"epdf-cf51fab68d7d965f\", \"Times New Roman\", Times, serif",
           "fontWeight": 700,
-          "fontStyle": "italic"
+          "fontStyle": "italic",
+          "programs": [
+            {
+              "hash": "cf51fab68d7d965f5755218a7f99b0376bc440e1bb4e90498aef0964aac94490",
+              "family": "epdf-cf51fab68d7d965f",
+              "weight": 700,
+              "style": "italic",
+              "load": {
+                "$function": true
+              }
+            }
+          ]
         }
       }
     },
@@ -7281,7 +7402,18 @@
         "returned": {
           "fontFamily": "\"epdf-f405670768d71ff8\", \"Times New Roman\", Times, serif",
           "fontWeight": 400,
-          "fontStyle": "italic"
+          "fontStyle": "italic",
+          "programs": [
+            {
+              "hash": "f405670768d71ff8d8a4e493cbcb9c6deff9565419bf63a38abb544789aa87b4",
+              "family": "epdf-f405670768d71ff8",
+              "weight": 400,
+              "style": "italic",
+              "load": {
+                "$function": true
+              }
+            }
+          ]
         }
       }
     },
@@ -7295,7 +7427,18 @@
         "returned": {
           "fontFamily": "\"epdf-1f027bd5b336f563\", Symbol, serif",
           "fontWeight": 400,
-          "fontStyle": "normal"
+          "fontStyle": "normal",
+          "programs": [
+            {
+              "hash": "1f027bd5b336f563724a2cba62295329edbb3df7ca9efbe8f296d7a1e86849a1",
+              "family": "epdf-1f027bd5b336f563",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            }
+          ]
         }
       }
     },
@@ -7309,7 +7452,18 @@
         "returned": {
           "fontFamily": "\"epdf-0439c04b1c3ba23c\", \"Zapf Dingbats\", ZapfDingbats, serif",
           "fontWeight": 400,
-          "fontStyle": "normal"
+          "fontStyle": "normal",
+          "programs": [
+            {
+              "hash": "0439c04b1c3ba23c2fd8c2f4a5f2c65b2b0f817588c45afd5c06a41eab70bfbd",
+              "family": "epdf-0439c04b1c3ba23c",
+              "weight": 400,
+              "style": "normal",
+              "load": {
+                "$function": true
+              }
+            }
+          ]
         }
       }
     },

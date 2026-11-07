@@ -19,7 +19,7 @@ import {
   open,
 } from './annotation-live-fixtures';
 const group = (parent: number) => ({ to: objRef(parent), type: 'group' as const });
-const select = (...numbers: number[]) => call('selection.set', [numbers.map((n) => objRef(n))]);
+const select = (...numbers: number[]) => call('selection.select', [numbers.map((n) => objRef(n))]);
 const quad = {
   upperLeft: { x: 10, y: 40 },
   upperRight: { x: 90, y: 40 },
@@ -124,7 +124,7 @@ export const suites: Suite[] = [
           call('selection.ungroup'),
           call('selection.list'),
           open('b'),
-          call('selection.set', [[objRef(1), objRef(3)]], 'b'),
+          call('selection.select', [[objRef(1), objRef(3)]], 'b'),
           call('selection.canGroup', [], 'b'),
           call('selection.group', [], 'b'),
           call('selection.list', [], 'b'),

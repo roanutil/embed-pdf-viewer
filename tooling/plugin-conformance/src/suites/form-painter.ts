@@ -27,14 +27,11 @@ import type { FormField, WidgetAnnotation } from '@embedpdf/engine-core/runtime'
 import { STANDARD_FONTS } from '@embedpdf/engine-core/runtime';
 
 import {
-  layoutFontOf,
-  layoutVariableText,
   paints,
   textEditorLayout,
   widgetDrawing,
   widgetScene,
   type ShownValue,
-  type VariableTextOptions,
   type WidgetScenePlacement,
 } from '../../../../packages/core/form/src/index';
 import { needsBreak } from '../../../../packages/core/text/src/breaks';
@@ -42,19 +39,6 @@ import { needsBreak } from '../../../../packages/core/text/src/breaks';
 import type { FunctionCase, Suite } from '../vectors';
 
 const functions = {
-  layoutFontOf: (fontFamily: string | null | undefined, codes: readonly number[]) => {
-    const font = layoutFontOf(fontFamily);
-    return (
-      font && {
-        font: font.font,
-        ascent: font.ascent,
-        descent: font.descent,
-        widths: codes.map((code) => font.width(code)),
-      }
-    );
-  },
-  layoutVariableText: (text: string, fontFamily: string, options: VariableTextOptions) =>
-    layoutVariableText(text, layoutFontOf(fontFamily)!, options),
   widgetDrawing: (widget: WidgetAnnotation, field: FormField, shown?: ShownValue) =>
     widgetDrawing(widget, field, shown),
   widgetScene: (
@@ -84,6 +68,8 @@ const rect = (width: number, height: number) => ({ x: 20, y: 20, width, height }
 /** A widget row, as the engine reads it, with the parity gate's colours. */
 const widget = (patch: Record<string, unknown> = {}, width = 160, height = 24) => ({
   subtype: 'widget',
+  fieldKind: 'text',
+  hasMark: false,
   rect: rect(width, height),
   box: rect(width, height),
   rotation: null,
@@ -101,7 +87,7 @@ const widget = (patch: Record<string, unknown> = {}, width = 160, height = 24) =
 });
 
 const text = (value: string, patch: Record<string, unknown> = {}) => ({
-  family: 'text',
+  kind: 'text',
   value,
   defaultValue: '',
   maxLength: null,
@@ -114,7 +100,7 @@ const text = (value: string, patch: Record<string, unknown> = {}) => ({
 const option = (label: string, value: string, selected = false) => ({ label, value, selected });
 
 const combo = (value: string) => ({
-  family: 'combobox',
+  kind: 'combobox',
   value,
   defaultValue: '',
   edit: false,
@@ -123,7 +109,7 @@ const combo = (value: string) => ({
 
 const LETTERS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const list = (selected: readonly string[], topIndex = 0) => ({
-  family: 'listbox',
+  kind: 'listbox',
   selectedValues: [...selected],
   defaultValue: [],
   multiSelect: true,
@@ -133,7 +119,7 @@ const list = (selected: readonly string[], topIndex = 0) => ({
   topIndex,
 });
 
-const toggle = (family: 'checkbox' | 'radio') => ({ family, widgets: [] });
+const toggle = (kind: "checkbox" | "radio") => ({ kind, widgets: [] });
 
 const ALIGNS = ['left', 'center', 'right'] as const;
 const BORDERS = [
@@ -153,83 +139,126 @@ const SAMPLE = 'Hég, quick €12.50 “fox”';
 const PARAGRAPHS =
   'The quick brown fox jumps over the lazy dog, again and again.\nSecond paragraph here\n\nAfter a blank line';
 
-// ── layoutFontOf ──
+const editorRow = (patch: Record<string, unknown> = {}, width = 120, height = 24) =>
+  widget({ ...NO_LOOK, color: '#000000', ...patch }, width, height);
 
-const PROBES = [0x41, 0x6e, 0x20, 0xe9, 0x20ac, 0x201c, 0x416, 0xd83d, 0, 0x2a, 0x3b1, 0x2701];
-for (const font of STANDARD_FONTS) add('layoutFontOf', font, font, PROBES);
-add('layoutFontOf', 'null', null, PROBES);
-add('layoutFontOf', 'undefined', undefined, PROBES);
+// ── textEditorLayout: the font of a text field (former layoutFontOf) ──
+
+for (const font of STANDARD_FONTS) {
+  add('textEditorLayout', `font ${font}`, editorRow({ fontFamily: font, fontSize: 12 }), text('Ada'), 'Ada');
+}
+add('textEditorLayout', 'font null', editorRow({ fontFamily: null, fontSize: null }), text('Ada'), 'Ada');
+add('textEditorLayout', 'font undefined', editorRow({ fontFamily: undefined, fontSize: null }), text('Ada'), 'Ada');
 for (const name of ['', 'Helvetica', 'Roboto', 'arial', 'helvetica ']) {
-  add('layoutFontOf', `not-standard:${name}`, name, PROBES);
+  add('textEditorLayout', `font not-standard:${name}`, editorRow({ fontFamily: name, fontSize: 12 }), text('Ada'), 'Ada');
 }
 
-// ── layoutVariableText ──
+// ── textEditorLayout: text laid out in a box (former layoutVariableText) ──
 
 const plate = (right: number, top: number, left = 0, bottom = 0) => ({ left, bottom, right, top });
-const options = (patch: Record<string, unknown> = {}) => ({
-  plate: plate(200, 20),
-  fontSize: 10,
-  alignment: 0,
-  multiline: false,
-  limit: 0,
-  cells: 0,
-  ...patch,
-});
-
-add('layoutVariableText', 'plain', 'Hello', 'helvetica', options());
-add('layoutVariableText', 'offset-plate', 'Hello', 'times-roman', options({ plate: plate(130, 47, 12, 9) }));
-for (const [index, alignment] of [0, 1, 2].entries()) {
-  add('layoutVariableText', `align-${ALIGNS[index]}`, 'Wide WWW text', 'helvetica', options({ alignment }));
+// Each former option maps onto the text field that the box and the value describe.
+//   plate       -> the widget's box (its width and height; the offset is not part of the layout)
+//   alignment   -> textAlign left | center | right
+//   multiline   -> the field's multiline flag
+//   limit       -> maxLength
+//   cells       -> comb with maxLength
+//   substitute  -> password (the value is shown masked)
+const laid = (
+  label: string,
+  value: string,
+  fontFamily: string,
+  box: { left: number; bottom: number; right: number; top: number },
+  opts: {
+    fontSize?: number;
+    alignment?: number;
+    multiline?: boolean;
+    limit?: number;
+    cells?: number;
+    substitute?: string;
+  } = {},
+) => {
+  const width = box.right - box.left;
+  const height = box.top - box.bottom;
+  const comb = (opts.cells ?? 0) > 0;
+  const maxLength = comb ? opts.cells : opts.limit && opts.limit > 0 ? opts.limit : undefined;
   add(
-    'layoutVariableText',
-    `multiline-align-${ALIGNS[index]}`,
-    PARAGRAPHS,
-    'helvetica',
-    options({ plate: plate(146, 86), fontSize: 9, alignment, multiline: true }),
+    'textEditorLayout',
+    label,
+    editorRow(
+      {
+        fontFamily,
+        fontSize: opts.fontSize ?? 10,
+        textAlign: ALIGNS[opts.alignment ?? 0],
+      },
+      width,
+      height,
+    ),
+    text(value, {
+      multiline: opts.multiline ?? false,
+      comb,
+      ...(maxLength === undefined ? {} : { maxLength }),
+      ...(opts.substitute === undefined ? {} : { password: true }),
+    }),
+    value,
   );
+};
+
+laid('plain', 'Hello', 'helvetica', plate(200, 20), { fontSize: 10 });
+laid('offset-plate', 'Hello', 'times-roman', plate(130, 47, 12, 9));
+for (const [index, alignment] of [0, 1, 2].entries()) {
+  laid(`align-${ALIGNS[index]}`, 'Wide WWW text', 'helvetica', plate(200, 20), { alignment, fontSize: 10 });
+  laid(`multiline-align-${ALIGNS[index]}`, PARAGRAPHS, 'helvetica', plate(146, 86), {
+    fontSize: 9,
+    alignment,
+    multiline: true,
+  });
 }
 for (const height of [10, 20, 40, 1000, 0, 3]) {
-  add('layoutVariableText', `fitted-height-${height}`, 'Hello', 'helvetica', options({ plate: plate(200, height), fontSize: 0 }));
+  laid(`fitted-height-${height}`, 'Hello', 'helvetica', plate(200, height), { fontSize: 0 });
 }
-add('layoutVariableText', 'fitted-wide-text', 'A long value that will not fit in this box at all', 'helvetica', options({ plate: plate(150, 20), fontSize: 0 }));
-add('layoutVariableText', 'fitted-multiline', PARAGRAPHS, 'helvetica', options({ plate: plate(146, 86), fontSize: 0, multiline: true }));
-add('layoutVariableText', 'fitted-multiline-tiny', PARAGRAPHS, 'courier', options({ plate: plate(40, 10), fontSize: 0, multiline: true }));
-add('layoutVariableText', 'fitted-zero-width', 'Hello', 'helvetica', options({ plate: plate(0, 20), fontSize: 0 }));
-add('layoutVariableText', 'fitted-empty', '', 'helvetica', options({ fontSize: 0 }));
-add('layoutVariableText', 'near-zero-size-fits', 'Hello', 'helvetica', options({ fontSize: 0.00005 }));
-add('layoutVariableText', 'long-word', 'Supercalifragilisticexpialidocious word', 'times-roman', options({ plate: plate(76, 56), fontSize: 12, multiline: true }));
-add('layoutVariableText', 'one-char-per-line', 'WWW', 'helvetica', options({ plate: plate(5, 56), multiline: true }));
-add('layoutVariableText', 'cjk', '日本語のテキストを折り返す。次の文です', 'helvetica', options({ plate: plate(40, 80), multiline: true }));
-add('layoutVariableText', 'punctuation', 'one, two; (three) [four] {five} a-b a/b "q" it\'s', 'helvetica', options({ plate: plate(60, 120), multiline: true }));
-add('layoutVariableText', 'open-punctuation', 'a ((((b c', 'helvetica', options({ plate: plate(20, 120), multiline: true }));
-add('layoutVariableText', 'currency', '$100 €5 £3 ¥7 №9', 'helvetica', options({ plate: plate(24, 120), multiline: true }));
-add('layoutVariableText', 'latin-digits', 'abc123def456 ghi789', 'courier', options({ plate: plate(40, 80), multiline: true }));
-add('layoutVariableText', 'line-breaks', 'a\r\nb\rc\nd\n\re', 'helvetica', options({ plate: plate(100, 100), multiline: true }));
-add('layoutVariableText', 'line-breaks-single-line', 'a\r\nb\rc\nd', 'helvetica', options());
-add('layoutVariableText', 'empty-lines', '\n\n', 'helvetica', options({ plate: plate(100, 100), multiline: true }));
-add('layoutVariableText', 'tabs', 'a\tb\t\tc', 'helvetica', options());
-add('layoutVariableText', 'empty', '', 'helvetica', options());
-add('layoutVariableText', 'empty-multiline', '', 'helvetica', options({ multiline: true }));
-add('layoutVariableText', 'limit', 'truncate me please', 'helvetica', options({ limit: 8 }));
-add('layoutVariableText', 'limit-counts-breaks', 'ab\ncd\nef', 'helvetica', options({ limit: 5, multiline: true }));
-add('layoutVariableText', 'substitute', 'secret', 'helvetica', options({ substitute: '*' }));
-add('layoutVariableText', 'substitute-empty', 'secret', 'helvetica', options({ substitute: '' }));
+laid('fitted-wide-text', 'A long value that will not fit in this box at all', 'helvetica', plate(150, 20), { fontSize: 0 });
+laid('fitted-multiline', PARAGRAPHS, 'helvetica', plate(146, 86), { fontSize: 0, multiline: true });
+laid('fitted-multiline-tiny', PARAGRAPHS, 'courier', plate(40, 10), { fontSize: 0, multiline: true });
+laid('fitted-zero-width', 'Hello', 'helvetica', plate(0, 20), { fontSize: 0 });
+laid('fitted-empty', '', 'helvetica', plate(200, 20), { fontSize: 0 });
+laid('near-zero-size-fits', 'Hello', 'helvetica', plate(200, 20), { fontSize: 0.00005 });
+laid('long-word', 'Supercalifragilisticexpialidocious word', 'times-roman', plate(76, 56), {
+  fontSize: 12,
+  multiline: true,
+});
+laid('one-char-per-line', 'WWW', 'helvetica', plate(5, 56), { fontSize: 10, multiline: true });
+laid('cjk', '日本語のテキストを折り返す。次の文です', 'helvetica', plate(40, 80), { fontSize: 10, multiline: true });
+laid('punctuation', 'one, two; (three) [four] {five} a-b a/b "q" it\'s', 'helvetica', plate(60, 120), {
+  fontSize: 10,
+  multiline: true,
+});
+laid('open-punctuation', 'a ((((b c', 'helvetica', plate(20, 120), { fontSize: 10, multiline: true });
+laid('currency', '$100 €5 £3 ¥7 №9', 'helvetica', plate(24, 120), { fontSize: 10, multiline: true });
+laid('latin-digits', 'abc123def456 ghi789', 'courier', plate(40, 80), { fontSize: 10, multiline: true });
+laid('line-breaks', 'a\r\nb\rc\nd\n\re', 'helvetica', plate(100, 100), { fontSize: 10, multiline: true });
+laid('line-breaks-single-line', 'a\r\nb\rc\nd', 'helvetica', plate(200, 20), { fontSize: 10 });
+laid('empty-lines', '\n\n', 'helvetica', plate(100, 100), { fontSize: 10, multiline: true });
+laid('tabs', 'a\tb\t\tc', 'helvetica', plate(200, 20), { fontSize: 10 });
+laid('empty', '', 'helvetica', plate(200, 20), { fontSize: 10 });
+laid('empty-multiline', '', 'helvetica', plate(200, 20), { fontSize: 10, multiline: true });
+laid('limit', 'truncate me please', 'helvetica', plate(200, 20), { fontSize: 10, limit: 8 });
+laid('limit-counts-breaks', 'ab\ncd\nef', 'helvetica', plate(200, 20), { fontSize: 10, limit: 5, multiline: true });
+laid('substitute', 'secret', 'helvetica', plate(200, 20), { fontSize: 10, substitute: '*' });
 for (const [index, alignment] of [0, 1, 2].entries()) {
-  for (const cells of [6, 10]) {
-    add('layoutVariableText', `comb-${cells}-${ALIGNS[index]}`, 'AiW1é', 'courier', options({ fontSize: 12, alignment, cells }));
+  for (const cells of [3, 5]) {
+    laid(`comb-${cells}-${ALIGNS[index]}`, 'AiW1é', 'courier', plate(200, 20), { fontSize: 12, alignment, cells });
   }
 }
-add('layoutVariableText', 'comb-proportional', 'AiWm.', 'helvetica', options({ fontSize: 12, cells: 7 }));
-add('layoutVariableText', 'comb-overflow', '123456789', 'courier', options({ cells: 4 }));
-add('layoutVariableText', 'comb-empty', '', 'courier', options({ cells: 4, alignment: 2 }));
-add('layoutVariableText', 'comb-fitted', '1234', 'helvetica', options({ fontSize: 0, cells: 4 }));
-add('layoutVariableText', 'comb-multiline', '12\n34', 'courier', options({ cells: 6, multiline: true, plate: plate(120, 60) }));
-add('layoutVariableText', 'missing-glyphs', 'Привет, мир', 'helvetica', options());
-add('layoutVariableText', 'missing-glyph-comb', 'Ж1', 'courier', options({ cells: 3 }));
-add('layoutVariableText', 'astral', 'ok 😀 fine', 'helvetica', options());
-add('layoutVariableText', 'symbol-font', 'abc αβγ', 'symbol', options());
-add('layoutVariableText', 'zero-width-plate', 'Hello there', 'helvetica', options({ plate: plate(0, 20), multiline: true }));
-add('layoutVariableText', 'inverted-plate', 'Hello there', 'helvetica', options({ plate: plate(-20, -10), multiline: true, alignment: 1 }));
+laid('comb-proportional', 'AiWm.', 'helvetica', plate(200, 20), { fontSize: 12, cells: 7 });
+laid('comb-overflow', '123456789', 'courier', plate(200, 20), { cells: 4, fontSize: 10 });
+laid('comb-empty', '', 'courier', plate(200, 20), { cells: 4, alignment: 2, fontSize: 10 });
+laid('comb-fitted', '1234', 'helvetica', plate(200, 20), { fontSize: 0, cells: 4 });
+laid('comb-multiline', '12\n34', 'courier', plate(120, 60), { cells: 6, multiline: true, fontSize: 10 });
+laid('missing-glyphs', 'Привет, мир', 'helvetica', plate(200, 20), { fontSize: 10 });
+laid('missing-glyph-comb', 'Ж1', 'courier', plate(200, 20), { cells: 3, fontSize: 10 });
+laid('astral', 'ok 😀 fine', 'helvetica', plate(200, 20), { fontSize: 10 });
+laid('symbol-font', 'abc αβγ', 'symbol', plate(200, 20), { fontSize: 10 });
+laid('zero-width-plate', 'Hello there', 'helvetica', plate(0, 20), { fontSize: 10, multiline: true });
 
 // ── widgetDrawing ──
 
@@ -322,15 +351,15 @@ add('widgetDrawing', 'list/dashed', widget({ fontSize: 9, borderStyle: 'dashed',
 
 for (const fontSize of [0, 10, 16]) {
   for (const caption of ['Submit', 'A much longer caption']) {
-    add('widgetDrawing', `button/${fontSize} ${caption}`, widget({ fontFamily: 'helvetica-bold', fontSize, caption }, 110, 28), { family: 'pushbutton' });
+    add('widgetDrawing', `button/${fontSize} ${caption}`, widget({ fontFamily: 'helvetica-bold', fontSize, caption }, 110, 28), { kind: 'pushbutton' });
   }
 }
-add('widgetDrawing', 'button/no caption', widget({ caption: null }, 110, 28), { family: 'pushbutton' });
-add('widgetDrawing', 'button/empty caption', widget({ caption: '' }, 110, 28), { family: 'pushbutton' });
-add('widgetDrawing', 'button/no colours', widget({ ...NO_LOOK, caption: 'Go' }, 110, 28), { family: 'pushbutton' });
-add('widgetDrawing', 'button/no border', widget({ strokeWidth: 0, caption: 'Go' }, 110, 28), { family: 'pushbutton' });
-add('widgetDrawing', 'button/beveled', widget({ borderStyle: 'beveled', caption: 'Go' }, 110, 28), { family: 'pushbutton' });
-add('widgetDrawing', 'button/missing glyphs', widget({ caption: 'Вперёд' }, 110, 28), { family: 'pushbutton' });
+add('widgetDrawing', 'button/no caption', widget({ caption: null }, 110, 28), { kind: 'pushbutton' });
+add('widgetDrawing', 'button/empty caption', widget({ caption: '' }, 110, 28), { kind: 'pushbutton' });
+add('widgetDrawing', 'button/no colours', widget({ ...NO_LOOK, caption: 'Go' }, 110, 28), { kind: 'pushbutton' });
+add('widgetDrawing', 'button/no border', widget({ strokeWidth: 0, caption: 'Go' }, 110, 28), { kind: 'pushbutton' });
+add('widgetDrawing', 'button/beveled', widget({ borderStyle: 'beveled', caption: 'Go' }, 110, 28), { kind: 'pushbutton' });
+add('widgetDrawing', 'button/missing glyphs', widget({ caption: 'Вперёд' }, 110, 28), { kind: 'pushbutton' });
 
 for (const checkStyle of ['check', 'cross', 'star', 'circle', 'square', 'diamond', null] as const) {
   for (const checked of [true, false]) {
@@ -361,8 +390,8 @@ add('widgetDrawing', 'radio/no border', widget({ strokeWidth: 0 }, 16, 16), togg
 add('widgetDrawing', 'radio/no colours', widget({ ...NO_LOOK }, 16, 16), toggle('radio'), { checked: true });
 add('widgetDrawing', 'radio/oval', widget({ strokeWidth: 2 }, 30, 14), toggle('radio'), { checked: true });
 
-add('widgetDrawing', 'signature', widget(), { family: 'signature' });
-add('widgetDrawing', 'unknown family', widget(), { family: 'unknown', rawValue: '' });
+add('widgetDrawing', 'signature', widget(), { kind: 'signature' });
+add('widgetDrawing', 'unknown family', widget(), { kind: 'unknown', rawValue: '' });
 
 // ── widgetScene ──
 
@@ -395,13 +424,10 @@ add('widgetScene', 'combo/turned 270', comboRow, combo('a'), {}, placementOf(com
 const listRow = widget({ fontSize: 9 }, 120, 60);
 add('widgetScene', 'list/selected', listRow, list(['b']), {}, placementOf(listRow));
 const buttonRow = widget({ caption: 'Go', rotation: 90 }, 90, 26);
-add('widgetScene', 'button/turned 90', buttonRow, { family: 'pushbutton' }, {}, placementOf(buttonRow, 90));
+add('widgetScene', 'button/turned 90', buttonRow, { kind: 'pushbutton' }, {}, placementOf(buttonRow, 90));
 add('widgetScene', 'colours clamp and round', widget({ color: '#808080', interiorColor: '#010203', fontColor: '#fefdfc' }), text('Hue'), {}, placementOf(widget()));
 
 // ── textEditorLayout ──
-
-const editorRow = (patch: Record<string, unknown> = {}, width = 120, height = 24) =>
-  widget({ ...NO_LOOK, color: '#000000', ...patch }, width, height);
 
 for (const [fontFamily, fontSize, borderStyle] of [
   ['helvetica', 10, 'solid'],

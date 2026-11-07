@@ -205,7 +205,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -214,7 +213,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -622,7 +621,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -631,7 +629,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -1064,7 +1062,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -1073,7 +1070,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -1111,7 +1108,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -1120,7 +1116,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -1306,12 +1302,7 @@
               "args": [
                 {
                   "url": "https://home.test/submit",
-                  "fields": null,
-                  "exclude": false,
-                  "includeNoValueFields": false,
-                  "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "fields": null
                 },
                 {
                   "origin": "user",
@@ -1319,7 +1310,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -1386,12 +1377,7 @@
               "args": [
                 {
                   "url": "https://home.test/submit",
-                  "fields": null,
-                  "exclude": false,
-                  "includeNoValueFields": false,
-                  "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "fields": null
                 },
                 {
                   "origin": "user",
@@ -1399,7 +1385,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -1646,7 +1632,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -1695,7 +1681,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -1704,7 +1689,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -1900,11 +1885,6 @@
                       "objectNumber": 9
                     }
                   ],
-                  "exclude": false,
-                  "includeNoValueFields": false,
-                  "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0,
                   "charSet": "utf-8"
                 },
                 {
@@ -1913,7 +1893,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -2181,7 +2161,7 @@
                     ],
                     "origin": "user",
                     "event": {
-                      "scope": "activate"
+                      "type": "activate"
                     }
                   }
                 },
@@ -2245,7 +2225,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -2254,7 +2233,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -2292,7 +2271,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -2301,7 +2279,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -2506,8 +2484,7 @@
                   "intent": {
                     "url": "https://home.test/submit",
                     "format": "fdf",
-                    "method": "post",
-                    "flagsRaw": 0
+                    "method": "post"
                   },
                   "origin": "user",
                   "sentAt": "1970-01-01T00:00:01.500Z"
@@ -2521,12 +2498,7 @@
               "args": [
                 {
                   "url": "https://home.test/submit",
-                  "fields": null,
-                  "exclude": false,
-                  "includeNoValueFields": false,
-                  "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "fields": null
                 },
                 {
                   "origin": "user",
@@ -2534,7 +2506,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -2598,7 +2570,6 @@
                     "url": "https://home.test/submit",
                     "format": "fdf",
                     "method": "post",
-                    "flagsRaw": 0,
                     "charSet": "latin1"
                   },
                   "origin": "user",
@@ -2613,12 +2584,7 @@
               "args": [
                 {
                   "url": "https://home.test/submit",
-                  "fields": null,
-                  "exclude": false,
-                  "includeNoValueFields": false,
-                  "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "fields": null
                 },
                 {
                   "origin": "user",
@@ -2626,7 +2592,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -2877,7 +2843,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -2916,7 +2882,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -2925,7 +2890,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3091,8 +3056,7 @@
                   "intent": {
                     "url": "https://home.test/submit",
                     "format": "fdf",
-                    "method": "post",
-                    "flagsRaw": 0
+                    "method": "post"
                   },
                   "origin": "user",
                   "sentAt": "1970-01-01T00:00:01.234Z"
@@ -3106,12 +3070,7 @@
               "args": [
                 {
                   "url": "https://home.test/submit",
-                  "fields": null,
-                  "exclude": false,
-                  "includeNoValueFields": false,
-                  "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "fields": null
                 },
                 {
                   "origin": "user",
@@ -3119,7 +3078,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -3496,7 +3455,7 @@
                 "entries": [],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 },
                 "charSet": "utf-8"
               }
@@ -3552,7 +3511,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3561,7 +3519,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3589,7 +3547,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -3641,7 +3599,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3650,7 +3607,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3900,12 +3857,7 @@
               "args": [
                 {
                   "url": "https://home.test/submit",
-                  "fields": null,
-                  "exclude": false,
-                  "includeNoValueFields": false,
-                  "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "fields": null
                 },
                 {
                   "origin": "user",
@@ -3913,7 +3865,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -3932,7 +3884,7 @@
                   "entries": [],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   },
                   "charSet": "utf-8"
                 },
@@ -4028,12 +3980,7 @@
               "args": [
                 {
                   "url": "https://home.test/submit",
-                  "fields": null,
-                  "exclude": false,
-                  "includeNoValueFields": false,
-                  "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "fields": null
                 },
                 {
                   "origin": "user",
@@ -4041,7 +3988,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -4065,7 +4012,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -4300,7 +4247,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -4365,7 +4312,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4374,7 +4320,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -4412,7 +4358,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4421,7 +4366,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -4459,7 +4404,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4468,7 +4412,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -4683,12 +4627,7 @@
               "args": [
                 {
                   "url": "https://home.test/submit",
-                  "fields": null,
-                  "exclude": false,
-                  "includeNoValueFields": false,
-                  "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "fields": null
                 },
                 {
                   "origin": "user",
@@ -4696,7 +4635,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -4720,7 +4659,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -4781,12 +4720,7 @@
               "args": [
                 {
                   "url": "https://home.test/submit",
-                  "fields": null,
-                  "exclude": false,
-                  "includeNoValueFields": false,
-                  "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "fields": null
                 },
                 {
                   "origin": "user",
@@ -4794,7 +4728,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -4818,7 +4752,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -4867,12 +4801,7 @@
               "args": [
                 {
                   "url": "https://home.test/submit",
-                  "fields": null,
-                  "exclude": false,
-                  "includeNoValueFields": false,
-                  "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "fields": null
                 },
                 {
                   "origin": "user",
@@ -4880,7 +4809,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -4904,7 +4833,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -5176,7 +5105,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -5228,7 +5157,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5237,7 +5165,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -5275,7 +5203,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5284,8 +5211,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -5323,7 +5250,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5332,8 +5258,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -5588,12 +5514,7 @@
               "args": [
                 {
                   "url": "https://home.test/submit",
-                  "fields": null,
-                  "exclude": false,
-                  "includeNoValueFields": false,
-                  "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "fields": null
                 },
                 {
                   "origin": "hover",
@@ -5601,8 +5522,8 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "cursorEnter"
+                    "type": "annotation",
+                    "event": "cursorEnter"
                   }
                 },
                 {
@@ -5626,7 +5547,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -5675,12 +5596,7 @@
               "args": [
                 {
                   "url": "https://home.test/submit",
-                  "fields": null,
-                  "exclude": false,
-                  "includeNoValueFields": false,
-                  "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "fields": null
                 },
                 {
                   "origin": "lifecycle",
@@ -5688,8 +5604,8 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "open"
+                    "type": "document",
+                    "event": "open"
                   }
                 },
                 {
@@ -5713,7 +5629,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -5935,7 +5851,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -6012,7 +5928,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -6021,7 +5936,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -6246,7 +6161,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]

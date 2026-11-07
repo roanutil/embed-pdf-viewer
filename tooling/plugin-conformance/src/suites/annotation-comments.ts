@@ -70,7 +70,7 @@ const page2 = () =>
     rect: { x: 10, y: 450, width: 40, height: 40 },
     box: { x: 10, y: 450, width: 40, height: 40 },
   });
-const select = (n: number) => call('selection.set', [[objRef(n)]]);
+const select = (n: number) => call('selection.select', [[objRef(n)]]);
 const uri = (suffix: string) => ({ kind: 'uri' as const, uri: `https://${suffix}` });
 const actions = [...PLUGINS, { factory: 'annotation-live-actions' }];
 const noSnapshot = {

@@ -282,7 +282,7 @@ export const list = (
         widget.page && widget.objectNumber > 0
           ? [
               completeRow(widget.objectNumber, field.ref, widget.page.objectNumber, undefined, {
-                fieldKind: field.family,
+                fieldKind: field.kind,
               }),
             ]
           : [],

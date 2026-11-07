@@ -195,3 +195,22 @@ Approved: export the symbols the plugin-conformance tooling imports. Applied as 
 ## Replacements for moved symbols (2026-11-06)
 
 Repointed without changing the packages: `PageGeom` to `PageGeometry` (core/stage), `CommandDef` to `CommandDefinition` (plugin/commands contract), and the break rule `needsBreak` to its current module `core/text/src/breaks`. Still unresolved: `layoutFontOf`, `layoutVariableText` and `VariableTextOptions`. The closest current function is `textEditorLayout` in `core/form/src/editor.ts`, which takes a widget and field and returns a different layout. Those cases need rewriting, not repointing.
+
+## Plugin conformance generator: where it stops (2026-11-06)
+
+Typecheck: 85 errors. The generator now gets through the core and early plugin suites, and stops at the first scenario that depends on a changed contract.
+
+Changes in this step, each traced to a current source name:
+
+- Field discriminant `family` to `kind` in fixtures, including the form-field reads that were stale.
+- Kernel `status()` to `getStatus()`.
+- Selection `set` to `select`.
+- `obbFromGeom` to `obbFromGeometry` (exported from `core/annotation`).
+- Form painter: the three `layoutFontOf` / `layoutVariableText` wrappers were removed and their cases rewritten against `textEditorLayout` (the approved rewrite). Each former option maps to the box, `textAlign`, `multiline`, `maxLength`, comb, or `password`. The offset of a plate and the width probes of a font have no counterpart and are not carried over. Expected values change and need the vector review.
+
+Stops at, in order of the scenario that fails:
+
+1. `annotation-crud` `restyle-writes-and-rolls-back`: passes after the `select` rename.
+2. `form-scripting` `the-time-budget` and `the-time-budget-shrinks` (also `a-fault-rebuilds-the-realm`): expect a realm rebuild behind a slow factory, through `sandbox.builds` and `settle('rebuild')`. The sandbox factory contract used by those fixtures must be checked against the current actions realm (`packages/plugin/actions/src/scripting/realm.ts`). Not yet investigated.
+
+Vectors are not regenerated in this step. Each regenerated group needs the same semantic review as before.

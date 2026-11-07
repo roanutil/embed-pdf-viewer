@@ -139,7 +139,7 @@ test('the runner invokes a real current annotation noun', async () => {
     scenario(
       'real-noun',
       'Current shipping nested annotation selection',
-      [call('selection.set', [[objRef(1)]]), call('selection.list')],
+      [call('selection.select', [[objRef(1)]]), call('selection.list')],
       [hydrate([square(1)])],
     ),
   );

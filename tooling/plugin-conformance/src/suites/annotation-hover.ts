@@ -218,7 +218,7 @@ const cases: ScenarioCase[] = [
         call('canUpdate', [objRef(99)], d),
         call('canDelete', [objRef(99)], d),
       ]),
-      call('selection.set', [[objRef(1)]], 'b'),
+      call('selection.select', [[objRef(1)]], 'b'),
       call('getHitKind', [pr(1), { x: 150, y: 150 }], 'b'),
       call('listChromeNodes', [pr(1)], 'b'),
       call('get', [objRef(3)]),

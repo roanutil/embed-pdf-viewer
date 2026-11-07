@@ -75,7 +75,7 @@ export const text = (
   widgets = [placed(n + 100)],
 ): TextField => ({
   ...base(n, name, widgets),
-  family: 'text',
+  kind: 'text',
   value,
   defaultValue: '',
   maxLength: null,
@@ -92,7 +92,7 @@ export const checkbox = (
   over: Partial<CheckboxField> = {},
 ): CheckboxField => ({
   ...base(n, name, []),
-  family: 'checkbox',
+  kind: 'checkbox',
   checked,
   exportValue: 'Yes',
   widgets: [{ ...placed(n + 100), onState: 'Yes', exportValue: 'Yes', checked }],
@@ -106,7 +106,7 @@ export const radio = (
   over: Partial<RadioField> = {},
 ): RadioField => ({
   ...base(n, name, widgets),
-  family: 'radio',
+  kind: 'radio',
   widgets,
   value: 'Off',
   radiosInUnison: false,
@@ -124,7 +124,7 @@ export const combobox = (
   over: Partial<ComboBoxField> = {},
 ): ComboBoxField => ({
   ...base(n, name, [placed(n + 100)]),
-  family: 'combobox',
+  kind: 'combobox',
   value,
   defaultValue: '',
   edit: false,
@@ -139,7 +139,7 @@ export const listbox = (
   over: Partial<ListBoxField> = {},
 ): ListBoxField => ({
   ...base(n, name, [placed(n + 100)]),
-  family: 'listbox',
+  kind: 'listbox',
   selectedValues,
   defaultValue: [],
   multiSelect: true,
@@ -157,7 +157,7 @@ export const pushbutton = (
   over: Partial<PushButtonField> = {},
 ): PushButtonField => ({
   ...base(n, name, [placed(n + 100)]),
-  family: 'pushbutton',
+  kind: 'pushbutton',
   ...over,
 });
 export const signature = (
@@ -166,7 +166,7 @@ export const signature = (
   over: Partial<SignatureField> = {},
 ): SignatureField => ({
   ...base(n, name, [placed(n + 100)]),
-  family: 'signature',
+  kind: 'signature',
   ...over,
 });
 export const unknown = (
@@ -175,7 +175,7 @@ export const unknown = (
   over: Partial<UnknownField> = {},
 ): UnknownField => ({
   ...base(n, name, [placed(n + 100)]),
-  family: 'unknown',
+  kind: 'unknown',
   rawValue: '',
   ...over,
 });

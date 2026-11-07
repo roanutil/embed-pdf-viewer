@@ -367,7 +367,7 @@ test('logged sandbox inputs pin environment sequence, boot event, budgets and op
           {
             ref: { kind: 'fqn', name: 't' },
             name: 't',
-            family: 'text',
+            kind: 'text',
             value: 'v',
             defaultValue: null,
             display: 'visible',
@@ -448,7 +448,7 @@ test('all pure occurrences preserve outcomes or explicitly migrate current field
     {
       ref: { kind: 'objectNumber', objectNumber: 5 },
       name: 'text',
-      family: 'text',
+      kind: 'text',
       value: 'hi',
       defaultValue: null,
       display: 'visible',
@@ -458,7 +458,7 @@ test('all pure occurrences preserve outcomes or explicitly migrate current field
     {
       ref: { kind: 'objectNumber', objectNumber: 6 },
       name: 'list',
-      family: 'listbox',
+      kind: 'listbox',
       value: ['a', 'b'],
       defaultValue: null,
       display: 'visible',
@@ -472,7 +472,7 @@ test('all pure occurrences preserve outcomes or explicitly migrate current field
     {
       ref: { kind: 'objectNumber', objectNumber: 7 },
       name: 'box',
-      family: 'checkbox',
+      kind: 'checkbox',
       value: 'Off',
       defaultValue: 'Yes',
       display: 'visible',
@@ -483,7 +483,7 @@ test('all pure occurrences preserve outcomes or explicitly migrate current field
     {
       ref: { kind: 'fqn', name: 'radio' },
       name: 'radio',
-      family: 'radio',
+      kind: 'radio',
       value: 'One',
       defaultValue: 'Off',
       display: 'visible',
@@ -494,7 +494,7 @@ test('all pure occurrences preserve outcomes or explicitly migrate current field
     {
       ref: { kind: 'objectNumber', objectNumber: 9 },
       name: 'toggle-unsupported',
-      family: 'checkbox',
+      kind: 'checkbox',
       value: 'Off',
       defaultValue: 'Off',
       display: 'visible',
@@ -505,7 +505,7 @@ test('all pure occurrences preserve outcomes or explicitly migrate current field
     {
       ref: { kind: 'objectNumber', objectNumber: 10 },
       name: 'unsupported',
-      family: 'text',
+      kind: 'text',
       value: null,
       defaultValue: null,
       display: 'visible',

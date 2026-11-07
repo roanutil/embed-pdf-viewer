@@ -41,7 +41,7 @@ const seed = [
 ];
 const after = (n: number, patch: Parameters<typeof annotationAfter>[1]) =>
   annotationAfter(seed[n - 1]!, patch);
-const select = (...refs: ReturnType<typeof objRef>[]) => call('selection.set', [refs]);
+const select = (...refs: ReturnType<typeof objRef>[]) => call('selection.select', [refs]);
 const draw = (tool: string, phase: string, x: number, y: number) =>
   call('createPointer', [tool, phase, pr(1), { x, y }]);
 const cases: ScenarioCase[] = [

@@ -72,26 +72,6 @@
       }
     },
     {
-      "name": "isRotatableGeom/rect",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "box",
-          "box": {
-            "x": 100,
-            "y": 100,
-            "width": 80,
-            "height": 60
-          },
-          "ellipse": false,
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
-      }
-    },
-    {
       "name": "geomHandles/rect",
       "fn": "geomHandles",
       "args": [
@@ -621,8 +601,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -796,8 +776,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -965,8 +945,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -1140,8 +1120,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -1309,8 +1289,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -1484,8 +1464,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -1661,8 +1641,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -1838,8 +1818,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -2010,8 +1990,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -2187,8 +2167,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -2325,26 +2305,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/rect-rot0",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "box",
-          "box": {
-            "x": 100,
-            "y": 100,
-            "width": 80,
-            "height": 60
-          },
-          "ellipse": false,
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -2877,8 +2837,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot0-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot0-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -3052,8 +3012,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot0-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot0-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -3221,8 +3181,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot0-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot0-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -3396,8 +3356,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot0-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot0-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -3565,8 +3525,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot0-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot0-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -3740,8 +3700,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot0-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot0-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -3917,8 +3877,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot0-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot0-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -4094,8 +4054,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot0-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot0-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -4266,8 +4226,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot0-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot0-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -4443,8 +4403,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot0-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot0-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -4581,26 +4541,6 @@
       ],
       "outcome": {
         "returned": 30
-      }
-    },
-    {
-      "name": "isRotatableGeom/rect-rot30",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "box",
-          "box": {
-            "x": 100,
-            "y": 100,
-            "width": 80,
-            "height": 60
-          },
-          "ellipse": false,
-          "rotation": 30
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -5133,8 +5073,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot30-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot30-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -5308,8 +5248,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot30-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot30-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -5477,8 +5417,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot30-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot30-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -5652,8 +5592,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot30-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot30-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -5821,8 +5761,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot30-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot30-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -5996,8 +5936,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot30-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot30-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -6173,8 +6113,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot30-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot30-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -6350,8 +6290,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot30-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot30-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -6522,8 +6462,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot30-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot30-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -6699,8 +6639,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot30-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot30-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -6837,26 +6777,6 @@
       ],
       "outcome": {
         "returned": 90
-      }
-    },
-    {
-      "name": "isRotatableGeom/rect-rot90",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "box",
-          "box": {
-            "x": 100,
-            "y": 100,
-            "width": 80,
-            "height": 60
-          },
-          "ellipse": false,
-          "rotation": 90
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -7389,8 +7309,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot90-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot90-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -7564,8 +7484,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot90-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot90-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -7733,8 +7653,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot90-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot90-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -7908,8 +7828,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot90-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot90-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -8077,8 +7997,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot90-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot90-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -8252,8 +8172,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot90-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot90-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -8429,8 +8349,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot90-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot90-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -8606,8 +8526,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot90-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot90-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -8778,8 +8698,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot90-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot90-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -8955,8 +8875,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot90-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot90-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -9093,26 +9013,6 @@
       ],
       "outcome": {
         "returned": 180
-      }
-    },
-    {
-      "name": "isRotatableGeom/rect-rot180",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "box",
-          "box": {
-            "x": 100,
-            "y": 100,
-            "width": 80,
-            "height": 60
-          },
-          "ellipse": false,
-          "rotation": 180
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -9645,8 +9545,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot180-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot180-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -9820,8 +9720,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot180-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot180-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -9989,8 +9889,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot180-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot180-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -10164,8 +10064,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot180-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot180-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -10333,8 +10233,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot180-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot180-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -10508,8 +10408,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot180-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot180-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -10685,8 +10585,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot180-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot180-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -10862,8 +10762,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot180-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot180-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -11034,8 +10934,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot180-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot180-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -11211,8 +11111,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot180-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot180-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -11349,26 +11249,6 @@
       ],
       "outcome": {
         "returned": 270
-      }
-    },
-    {
-      "name": "isRotatableGeom/rect-rot270",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "box",
-          "box": {
-            "x": 100,
-            "y": 100,
-            "width": 80,
-            "height": 60
-          },
-          "ellipse": false,
-          "rotation": 270
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -11901,8 +11781,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot270-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot270-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -12076,8 +11956,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot270-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot270-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -12245,8 +12125,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot270-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot270-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -12420,8 +12300,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot270-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot270-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -12589,8 +12469,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot270-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot270-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -12764,8 +12644,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot270-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot270-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -12941,8 +12821,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot270-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot270-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -13118,8 +12998,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot270-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot270-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -13290,8 +13170,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot270-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot270-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -13467,8 +13347,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-rot270-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-rot270-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -13605,26 +13485,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/rect-zero",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "box",
-          "box": {
-            "x": 50,
-            "y": 50,
-            "width": 0,
-            "height": 0
-          },
-          "ellipse": false,
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -14157,8 +14017,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-zero-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-zero-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -14332,8 +14192,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-zero-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-zero-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -14506,8 +14366,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-zero-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-zero-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -14681,8 +14541,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-zero-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-zero-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -14855,8 +14715,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-zero-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-zero-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -15030,8 +14890,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-zero-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-zero-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -15207,8 +15067,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-zero-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-zero-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -15384,8 +15244,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-zero-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-zero-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -15561,8 +15421,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-zero-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-zero-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -15738,8 +15598,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-zero-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-zero-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -15881,26 +15741,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/rect-inverted",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "box",
-          "box": {
-            "x": 50,
-            "y": 50,
-            "width": -20,
-            "height": -10
-          },
-          "ellipse": false,
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -16433,8 +16273,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-inverted-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-inverted-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -16608,8 +16448,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-inverted-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-inverted-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -16782,8 +16622,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-inverted-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-inverted-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -16957,8 +16797,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-inverted-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-inverted-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -17131,8 +16971,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-inverted-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-inverted-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -17306,8 +17146,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-inverted-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-inverted-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -17483,8 +17323,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-inverted-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-inverted-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -17660,8 +17500,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-inverted-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-inverted-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -17837,8 +17677,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-inverted-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-inverted-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -18014,8 +17854,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-inverted-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-inverted-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -18157,26 +17997,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/rect-thin",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "box",
-          "box": {
-            "x": 0,
-            "y": 0,
-            "width": 200,
-            "height": 3
-          },
-          "ellipse": false,
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -18709,8 +18529,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-thin-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-thin-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -18884,8 +18704,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-thin-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-thin-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -19053,8 +18873,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-thin-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-thin-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -19228,8 +19048,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-thin-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-thin-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -19397,8 +19217,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-thin-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-thin-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -19572,8 +19392,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-thin-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-thin-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -19749,8 +19569,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-thin-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-thin-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -19926,8 +19746,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-thin-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-thin-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -20098,8 +19918,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-thin-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-thin-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -20275,8 +20095,8 @@
       }
     },
     {
-      "name": "obbFromGeom/rect-thin-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/rect-thin-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -20413,26 +20233,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/ellipse",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "box",
-          "box": {
-            "x": 10,
-            "y": 20,
-            "width": 100,
-            "height": 50
-          },
-          "ellipse": true,
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -20965,8 +20765,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -21137,8 +20937,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -21312,8 +21112,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -21481,8 +21281,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -21656,8 +21456,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -21833,8 +21633,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -22010,8 +21810,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -22182,8 +21982,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -22359,8 +22159,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -22497,26 +22297,6 @@
       ],
       "outcome": {
         "returned": 45
-      }
-    },
-    {
-      "name": "isRotatableGeom/ellipse-rot45",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "box",
-          "box": {
-            "x": 10,
-            "y": 20,
-            "width": 100,
-            "height": 50
-          },
-          "ellipse": true,
-          "rotation": 45
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -23049,8 +22829,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-rot45-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-rot45-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -23221,8 +23001,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-rot45-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-rot45-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -23396,8 +23176,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-rot45-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-rot45-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -23565,8 +23345,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-rot45-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-rot45-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -23740,8 +23520,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-rot45-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-rot45-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -23917,8 +23697,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-rot45-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-rot45-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -24094,8 +23874,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-rot45-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-rot45-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -24266,8 +24046,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-rot45-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-rot45-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -24443,8 +24223,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-rot45-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-rot45-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -24581,26 +24361,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/ellipse-zero",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "box",
-          "box": {
-            "x": 10,
-            "y": 20,
-            "width": 0,
-            "height": 50
-          },
-          "ellipse": true,
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -25133,8 +24893,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-zero-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-zero-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -25305,8 +25065,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-zero-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-zero-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -25480,8 +25240,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-zero-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-zero-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -25654,8 +25414,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-zero-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-zero-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -25829,8 +25589,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-zero-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-zero-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -26006,8 +25766,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-zero-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-zero-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -26183,8 +25943,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-zero-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-zero-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -26360,8 +26120,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-zero-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-zero-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -26537,8 +26297,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ellipse-zero-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ellipse-zero-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "box",
@@ -26689,29 +26449,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/line",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "line",
-          "linePoints": {
-            "start": {
-              "x": 10,
-              "y": 10
-            },
-            "end": {
-              "x": 90,
-              "y": 40
-            }
-          },
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -27268,8 +27005,8 @@
       }
     },
     {
-      "name": "obbFromGeom/line-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -27457,8 +27194,8 @@
       }
     },
     {
-      "name": "obbFromGeom/line-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -27646,8 +27383,8 @@
       }
     },
     {
-      "name": "obbFromGeom/line-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -27816,33 +27553,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/line-arrows",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "line",
-          "linePoints": {
-            "start": {
-              "x": 10,
-              "y": 10
-            },
-            "end": {
-              "x": 90,
-              "y": 40
-            }
-          },
-          "lineEndings": {
-            "start": "open-arrow",
-            "end": "closed-arrow"
-          },
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -28406,9 +28116,9 @@
       "outcome": {
         "returned": {
           "x": 10,
-          "y": 10,
+          "y": 8.523255083457219,
           "width": 80,
-          "height": 30
+          "height": 32.95348983308557
         }
       }
     },
@@ -28441,9 +28151,9 @@
       "outcome": {
         "returned": {
           "x": 10,
-          "y": 10,
+          "y": 8.523255083457219,
           "width": 80,
-          "height": 30
+          "height": 32.95348983308557
         }
       }
     },
@@ -28477,26 +28187,26 @@
         "returned": [
           {
             "x": 10,
-            "y": 10
+            "y": 8.523255083457219
           },
           {
             "x": 90,
-            "y": 10
+            "y": 8.523255083457219
           },
           {
             "x": 90,
-            "y": 40
+            "y": 41.476744916542785
           },
           {
             "x": 10,
-            "y": 40
+            "y": 41.476744916542785
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/line-arrows-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-arrows-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -28525,19 +28235,19 @@
           "corners": [
             {
               "x": 10,
-              "y": 10
+              "y": 8.523255083457219
             },
             {
               "x": 90,
-              "y": 10
+              "y": 8.523255083457219
             },
             {
               "x": 90,
-              "y": 40
+              "y": 41.476744916542785
             },
             {
               "x": 10,
-              "y": 40
+              "y": 41.476744916542785
             }
           ],
           "angle": 0
@@ -28587,16 +28297,16 @@
             "kind": "poly",
             "points": [
               {
-                "x": 10,
-                "y": 10
+                "x": 18.87801917386221,
+                "y": 8.523255083457219
               },
               {
                 "x": 10,
                 "y": 10
               },
               {
-                "x": 10,
-                "y": 10
+                "x": 15.717908199566685,
+                "y": 16.950217681578618
               }
             ],
             "closed": false
@@ -28609,12 +28319,12 @@
                 "y": 40
               },
               {
-                "x": 90,
-                "y": 40
+                "x": 81.12198082613779,
+                "y": 41.476744916542785
               },
               {
-                "x": 90,
-                "y": 40
+                "x": 84.2820918004333,
+                "y": 33.04978231842138
               }
             ],
             "closed": true
@@ -28740,8 +28450,8 @@
       }
     },
     {
-      "name": "obbFromGeom/line-arrows-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-arrows-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -28985,8 +28695,8 @@
       }
     },
     {
-      "name": "obbFromGeom/line-arrows-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-arrows-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -29199,33 +28909,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/line-circle-square",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "line",
-          "linePoints": {
-            "start": {
-              "x": 0,
-              "y": 0
-            },
-            "end": {
-              "x": 0,
-              "y": 100
-            }
-          },
-          "lineEndings": {
-            "start": "circle",
-            "end": "square"
-          },
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -29788,10 +29471,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 0,
-          "y": 0,
-          "width": 0,
-          "height": 100
+          "x": -3,
+          "y": -2.5,
+          "width": 6,
+          "height": 105.5
         }
       }
     },
@@ -29823,10 +29506,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 0,
-          "y": 0,
-          "width": 0,
-          "height": 100
+          "x": -3,
+          "y": -2.5,
+          "width": 6,
+          "height": 105.5
         }
       }
     },
@@ -29859,27 +29542,27 @@
       "outcome": {
         "returned": [
           {
-            "x": 0,
-            "y": 0
+            "x": -3,
+            "y": -2.5
           },
           {
-            "x": 0,
-            "y": 0
+            "x": 3,
+            "y": -2.5
           },
           {
-            "x": 0,
-            "y": 100
+            "x": 3,
+            "y": 103
           },
           {
-            "x": 0,
-            "y": 100
+            "x": -3,
+            "y": 103
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/line-circle-square-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-circle-square-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -29907,20 +29590,20 @@
         "returned": {
           "corners": [
             {
-              "x": 0,
-              "y": 0
+              "x": -3,
+              "y": -2.5
             },
             {
-              "x": 0,
-              "y": 0
+              "x": 3,
+              "y": -2.5
             },
             {
-              "x": 0,
-              "y": 100
+              "x": 3,
+              "y": 103
             },
             {
-              "x": 0,
-              "y": 100
+              "x": -3,
+              "y": 103
             }
           ],
           "angle": 0
@@ -29969,30 +29652,30 @@
           {
             "kind": "ellipse",
             "rect": {
-              "x": 0,
-              "y": 0,
-              "width": 0,
-              "height": 0
+              "x": -2.5,
+              "y": -2.5,
+              "width": 5,
+              "height": 5
             }
           },
           {
             "kind": "poly",
             "points": [
               {
-                "x": 0,
-                "y": 100
+                "x": 3,
+                "y": 97
               },
               {
-                "x": 0,
-                "y": 100
+                "x": 3,
+                "y": 103
               },
               {
-                "x": 0,
-                "y": 100
+                "x": -3,
+                "y": 103
               },
               {
-                "x": 0,
-                "y": 100
+                "x": -3,
+                "y": 97
               }
             ],
             "closed": true
@@ -30118,8 +29801,8 @@
       }
     },
     {
-      "name": "obbFromGeom/line-circle-square-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-circle-square-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -30358,8 +30041,8 @@
       }
     },
     {
-      "name": "obbFromGeom/line-circle-square-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-circle-square-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -30567,33 +30250,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/line-diamond-slash",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "line",
-          "linePoints": {
-            "start": {
-              "x": 100,
-              "y": 0
-            },
-            "end": {
-              "x": 0,
-              "y": 0
-            }
-          },
-          "lineEndings": {
-            "start": "diamond",
-            "end": "slash"
-          },
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -31156,10 +30812,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 0,
-          "y": 0,
-          "width": 100,
-          "height": 0
+          "x": -4.499999999999994,
+          "y": -7.794228634059952,
+          "width": 107.5,
+          "height": 15.588457268119903
         }
       }
     },
@@ -31191,10 +30847,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 0,
-          "y": 0,
-          "width": 100,
-          "height": 0
+          "x": -4.499999999999994,
+          "y": -7.794228634059952,
+          "width": 107.5,
+          "height": 15.588457268119903
         }
       }
     },
@@ -31227,27 +30883,27 @@
       "outcome": {
         "returned": [
           {
-            "x": 0,
-            "y": 0
+            "x": -4.499999999999994,
+            "y": -7.794228634059952
           },
           {
-            "x": 100,
-            "y": 0
+            "x": 103,
+            "y": -7.794228634059952
           },
           {
-            "x": 100,
-            "y": 0
+            "x": 103,
+            "y": 7.794228634059952
           },
           {
-            "x": 0,
-            "y": 0
+            "x": -4.499999999999994,
+            "y": 7.794228634059952
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/line-diamond-slash-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-diamond-slash-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -31275,20 +30931,20 @@
         "returned": {
           "corners": [
             {
-              "x": 0,
-              "y": 0
+              "x": -4.499999999999994,
+              "y": -7.794228634059952
             },
             {
-              "x": 100,
-              "y": 0
+              "x": 103,
+              "y": -7.794228634059952
             },
             {
-              "x": 100,
-              "y": 0
+              "x": 103,
+              "y": 7.794228634059952
             },
             {
-              "x": 0,
-              "y": 0
+              "x": -4.499999999999994,
+              "y": 7.794228634059952
             }
           ],
           "angle": 0
@@ -31338,20 +30994,20 @@
             "kind": "poly",
             "points": [
               {
-                "x": 100,
+                "x": 103,
                 "y": 0
               },
               {
                 "x": 100,
+                "y": 3
+              },
+              {
+                "x": 97,
                 "y": 0
               },
               {
                 "x": 100,
-                "y": 0
-              },
-              {
-                "x": 100,
-                "y": 0
+                "y": -3
               }
             ],
             "closed": true
@@ -31360,12 +31016,12 @@
             "kind": "poly",
             "points": [
               {
-                "x": 0,
-                "y": 0
+                "x": -4.499999999999994,
+                "y": 7.794228634059952
               },
               {
-                "x": 0,
-                "y": 0
+                "x": 4.499999999999994,
+                "y": -7.794228634059952
               }
             ],
             "closed": false
@@ -31491,8 +31147,8 @@
       }
     },
     {
-      "name": "obbFromGeom/line-diamond-slash-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-diamond-slash-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -31736,8 +31392,8 @@
       }
     },
     {
-      "name": "obbFromGeom/line-diamond-slash-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-diamond-slash-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -31950,33 +31606,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/line-butt-rarrows",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "line",
-          "linePoints": {
-            "start": {
-              "x": 5,
-              "y": 5
-            },
-            "end": {
-              "x": 60,
-              "y": 80
-            }
-          },
-          "lineEndings": {
-            "start": "butt",
-            "end": "r-open-arrow"
-          },
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -32539,10 +32168,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 5,
-          "y": 5,
-          "width": 55,
-          "height": 75
+          "x": 2.5807850124328837,
+          "y": 3.225909009117448,
+          "width": 65.65726106910597,
+          "height": 85.72053238655391
         }
       }
     },
@@ -32574,10 +32203,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 5,
-          "y": 5,
-          "width": 55,
-          "height": 75
+          "x": 2.5807850124328837,
+          "y": 3.225909009117448,
+          "width": 65.65726106910597,
+          "height": 85.72053238655391
         }
       }
     },
@@ -32610,27 +32239,27 @@
       "outcome": {
         "returned": [
           {
-            "x": 5,
-            "y": 5
+            "x": 2.5807850124328837,
+            "y": 3.225909009117448
           },
           {
-            "x": 60,
-            "y": 5
+            "x": 68.23804608153885,
+            "y": 3.225909009117448
           },
           {
-            "x": 60,
-            "y": 80
+            "x": 68.23804608153885,
+            "y": 88.94644139567136
           },
           {
-            "x": 5,
-            "y": 80
+            "x": 2.5807850124328837,
+            "y": 88.94644139567136
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/line-butt-rarrows-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-butt-rarrows-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -32658,20 +32287,20 @@
         "returned": {
           "corners": [
             {
-              "x": 5,
-              "y": 5
+              "x": 2.5807850124328837,
+              "y": 3.225909009117448
             },
             {
-              "x": 60,
-              "y": 5
+              "x": 68.23804608153885,
+              "y": 3.225909009117448
             },
             {
-              "x": 60,
-              "y": 80
+              "x": 68.23804608153885,
+              "y": 88.94644139567136
             },
             {
-              "x": 5,
-              "y": 80
+              "x": 2.5807850124328837,
+              "y": 88.94644139567136
             }
           ],
           "angle": 0
@@ -32721,12 +32350,12 @@
             "kind": "poly",
             "points": [
               {
-                "x": 5,
-                "y": 5
+                "x": 2.5807850124328837,
+                "y": 6.774090990882552
               },
               {
-                "x": 5,
-                "y": 5
+                "x": 7.419214987567116,
+                "y": 3.225909009117448
               }
             ],
             "closed": false
@@ -32735,16 +32364,16 @@
             "kind": "poly",
             "points": [
               {
-                "x": 60,
-                "y": 80
+                "x": 68.23804608153885,
+                "y": 83.6241684230237
               },
               {
                 "x": 60,
                 "y": 80
               },
               {
-                "x": 60,
-                "y": 80
+                "x": 60.98040111883751,
+                "y": 88.94644139567136
               }
             ],
             "closed": false
@@ -32870,8 +32499,8 @@
       }
     },
     {
-      "name": "obbFromGeom/line-butt-rarrows-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-butt-rarrows-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -33111,8 +32740,8 @@
       }
     },
     {
-      "name": "obbFromGeom/line-butt-rarrows-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-butt-rarrows-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -33321,33 +32950,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/line-rclosed-none",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "line",
-          "linePoints": {
-            "start": {
-              "x": 5,
-              "y": 5
-            },
-            "end": {
-              "x": 60,
-              "y": 80
-            }
-          },
-          "lineEndings": {
-            "start": "r-closed-arrow",
-            "end": "none"
-          },
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -33910,10 +33512,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 5,
-          "y": 5,
-          "width": 55,
-          "height": 75
+          "x": -3.2380460815388665,
+          "y": -3.946441395671362,
+          "width": 63.23804608153887,
+          "height": 83.94644139567136
         }
       }
     },
@@ -33945,10 +33547,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 5,
-          "y": 5,
-          "width": 55,
-          "height": 75
+          "x": -3.2380460815388665,
+          "y": -3.946441395671362,
+          "width": 63.23804608153887,
+          "height": 83.94644139567136
         }
       }
     },
@@ -33981,27 +33583,27 @@
       "outcome": {
         "returned": [
           {
-            "x": 5,
-            "y": 5
+            "x": -3.2380460815388665,
+            "y": -3.946441395671362
           },
           {
             "x": 60,
-            "y": 5
+            "y": -3.946441395671362
           },
           {
             "x": 60,
             "y": 80
           },
           {
-            "x": 5,
+            "x": -3.2380460815388665,
             "y": 80
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/line-rclosed-none-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-rclosed-none-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -34029,19 +33631,19 @@
         "returned": {
           "corners": [
             {
-              "x": 5,
-              "y": 5
+              "x": -3.2380460815388665,
+              "y": -3.946441395671362
             },
             {
               "x": 60,
-              "y": 5
+              "y": -3.946441395671362
             },
             {
               "x": 60,
               "y": 80
             },
             {
-              "x": 5,
+              "x": -3.2380460815388665,
               "y": 80
             }
           ],
@@ -34096,12 +33698,12 @@
                 "y": 5
               },
               {
-                "x": 5,
-                "y": 5
+                "x": -3.2380460815388665,
+                "y": 1.3758315769762954
               },
               {
-                "x": 5,
-                "y": 5
+                "x": 4.019598881162482,
+                "y": -3.946441395671362
               }
             ],
             "closed": true
@@ -34227,8 +33829,8 @@
       }
     },
     {
-      "name": "obbFromGeom/line-rclosed-none-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-rclosed-none-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -34454,8 +34056,8 @@
       }
     },
     {
-      "name": "obbFromGeom/line-rclosed-none-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-rclosed-none-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -34650,33 +34252,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/line-zero",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "line",
-          "linePoints": {
-            "start": {
-              "x": 30,
-              "y": 30
-            },
-            "end": {
-              "x": 30,
-              "y": 30
-            }
-          },
-          "lineEndings": {
-            "start": "closed-arrow",
-            "end": "circle"
-          },
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -35239,10 +34814,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 30,
-          "y": 30,
-          "width": 0,
-          "height": 0
+          "x": 22.205771365940052,
+          "y": 25.5,
+          "width": 10.294228634059948,
+          "height": 9
         }
       }
     },
@@ -35274,10 +34849,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 30,
-          "y": 30,
-          "width": 0,
-          "height": 0
+          "x": 22.205771365940052,
+          "y": 25.5,
+          "width": 10.294228634059948,
+          "height": 9
         }
       }
     },
@@ -35310,27 +34885,27 @@
       "outcome": {
         "returned": [
           {
-            "x": 30,
-            "y": 30
+            "x": 22.205771365940052,
+            "y": 25.5
           },
           {
-            "x": 30,
-            "y": 30
+            "x": 32.5,
+            "y": 25.5
           },
           {
-            "x": 30,
-            "y": 30
+            "x": 32.5,
+            "y": 34.5
           },
           {
-            "x": 30,
-            "y": 30
+            "x": 22.205771365940052,
+            "y": 34.5
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/line-zero-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-zero-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -35358,20 +34933,20 @@
         "returned": {
           "corners": [
             {
-              "x": 30,
-              "y": 30
+              "x": 22.205771365940052,
+              "y": 25.5
             },
             {
-              "x": 30,
-              "y": 30
+              "x": 32.5,
+              "y": 25.5
             },
             {
-              "x": 30,
-              "y": 30
+              "x": 32.5,
+              "y": 34.5
             },
             {
-              "x": 30,
-              "y": 30
+              "x": 22.205771365940052,
+              "y": 34.5
             }
           ],
           "angle": 0
@@ -35425,12 +35000,12 @@
                 "y": 30
               },
               {
-                "x": 30,
-                "y": 30
+                "x": 22.205771365940052,
+                "y": 34.5
               },
               {
-                "x": 30,
-                "y": 30
+                "x": 22.205771365940052,
+                "y": 25.5
               }
             ],
             "closed": true
@@ -35438,10 +35013,10 @@
           {
             "kind": "ellipse",
             "rect": {
-              "x": 30,
-              "y": 30,
-              "width": 0,
-              "height": 0
+              "x": 27.5,
+              "y": 27.5,
+              "width": 5,
+              "height": 5
             }
           }
         ]
@@ -35565,8 +35140,8 @@
       }
     },
     {
-      "name": "obbFromGeom/line-zero-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-zero-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -35801,8 +35376,8 @@
       }
     },
     {
-      "name": "obbFromGeom/line-zero-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-zero-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -36006,33 +35581,6 @@
       ],
       "outcome": {
         "returned": 25
-      }
-    },
-    {
-      "name": "isRotatableGeom/line-rot25",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "line",
-          "linePoints": {
-            "start": {
-              "x": 10,
-              "y": 10
-            },
-            "end": {
-              "x": 90,
-              "y": 40
-            }
-          },
-          "lineEndings": {
-            "start": "none",
-            "end": "open-arrow"
-          },
-          "rotation": 25
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -36674,19 +36222,19 @@
             "y": 28.31011366407823
           },
           {
-            "x": 79.9130375553555,
-            "y": 55.499347275177726
+            "x": 79.28893818569178,
+            "y": 56.837732692507245
           },
           {
-            "x": 7.408414592423512,
-            "y": 21.68988633592177
+            "x": 6.784315222759787,
+            "y": 23.02827175325129
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/line-rot25-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-rot25-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -36722,12 +36270,12 @@
               "y": 28.31011366407823
             },
             {
-              "x": 79.9130375553555,
-              "y": 55.499347275177726
+              "x": 79.28893818569178,
+              "y": 56.837732692507245
             },
             {
-              "x": 7.408414592423512,
-              "y": 21.68988633592177
+              "x": 6.784315222759787,
+              "y": 23.02827175325129
             }
           ],
           "angle": 25
@@ -36777,16 +36325,16 @@
             "kind": "poly",
             "points": [
               {
-                "x": 79.9130375553555,
-                "y": 55.499347275177726
+                "x": 71.24272027495978,
+                "y": 53.08571966154899
               },
               {
                 "x": 79.9130375553555,
                 "y": 55.499347275177726
               },
               {
-                "x": 79.9130375553555,
-                "y": 55.499347275177726
+                "x": 77.66814174383573,
+                "y": 46.78381844466945
               }
             ],
             "closed": false
@@ -36912,8 +36460,8 @@
       }
     },
     {
-      "name": "obbFromGeom/line-rot25-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-rot25-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -37139,8 +36687,8 @@
       }
     },
     {
-      "name": "obbFromGeom/line-rot25-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-rot25-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",
@@ -37338,34 +36886,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/poly-closed",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "poly",
-          "vertices": [
-            {
-              "x": 10,
-              "y": 10
-            },
-            {
-              "x": 90,
-              "y": 20
-            },
-            {
-              "x": 40,
-              "y": 80
-            }
-          ],
-          "closed": true,
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -38050,8 +37570,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -38274,8 +37794,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -38483,8 +38003,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -38707,8 +38227,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -38916,8 +38436,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -39140,8 +38660,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -39366,8 +38886,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -39592,8 +39112,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -39804,8 +39324,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -40030,8 +39550,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -40208,34 +39728,6 @@
       ],
       "outcome": {
         "returned": 60
-      }
-    },
-    {
-      "name": "isRotatableGeom/poly-closed-rot60",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "poly",
-          "vertices": [
-            {
-              "x": 10,
-              "y": 10
-            },
-            {
-              "x": 90,
-              "y": 20
-            },
-            {
-              "x": 40,
-              "y": 80
-            }
-          ],
-          "closed": true,
-          "rotation": 60
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -40920,8 +40412,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-rot60-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-rot60-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -41144,8 +40636,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-rot60-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-rot60-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -41353,8 +40845,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-rot60-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-rot60-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -41577,8 +41069,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-rot60-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-rot60-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -41786,8 +41278,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-rot60-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-rot60-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -42010,8 +41502,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-rot60-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-rot60-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -42236,8 +41728,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-rot60-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-rot60-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -42462,8 +41954,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-rot60-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-rot60-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -42674,8 +42166,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-rot60-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-rot60-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -42900,8 +42392,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-closed-rot60-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-closed-rot60-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -43102,42 +42594,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/poly-open",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "poly",
-          "vertices": [
-            {
-              "x": 0,
-              "y": 0
-            },
-            {
-              "x": 40,
-              "y": 30
-            },
-            {
-              "x": 80,
-              "y": 0
-            },
-            {
-              "x": 120,
-              "y": 30
-            }
-          ],
-          "closed": false,
-          "lineEndings": {
-            "start": "open-arrow",
-            "end": "closed-arrow"
-          },
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -44022,8 +43478,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -44143,16 +43599,16 @@
             "kind": "poly",
             "points": [
               {
-                "x": 0,
-                "y": 0
+                "x": 8.93538290724796,
+                "y": 1.0765371804359694
               },
               {
                 "x": 0,
                 "y": 0
               },
               {
-                "x": 0,
-                "y": 0
+                "x": 3.5353829072479597,
+                "y": 8.27653718043597
               }
             ],
             "closed": false
@@ -44165,12 +43621,12 @@
                 "y": 30
               },
               {
-                "x": 120,
-                "y": 30
+                "x": 111.06461709275204,
+                "y": 28.92346281956403
               },
               {
-                "x": 120,
-                "y": 30
+                "x": 116.46461709275205,
+                "y": 21.723462819564034
               }
             ],
             "closed": true
@@ -44326,8 +43782,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -44449,16 +43905,16 @@
             "kind": "poly",
             "points": [
               {
-                "x": 0,
-                "y": 0
+                "x": 8.93538290724796,
+                "y": 1.0765371804359694
               },
               {
                 "x": 0,
                 "y": 0
               },
               {
-                "x": 0,
-                "y": 0
+                "x": 3.5353829072479597,
+                "y": 8.27653718043597
               }
             ],
             "closed": false
@@ -44471,12 +43927,12 @@
                 "y": 30
               },
               {
-                "x": 120,
-                "y": 30
+                "x": 111.06461709275204,
+                "y": 28.92346281956403
               },
               {
-                "x": 120,
-                "y": 30
+                "x": 116.46461709275205,
+                "y": 21.723462819564034
               }
             ],
             "closed": true
@@ -44629,8 +44085,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -44933,8 +44389,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -45236,8 +44692,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -45540,8 +44996,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -45846,8 +45302,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -46152,8 +45608,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -46458,8 +45914,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -46764,8 +46220,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -47024,38 +46480,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/poly-open-noends",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "poly",
-          "vertices": [
-            {
-              "x": 0,
-              "y": 0
-            },
-            {
-              "x": 40,
-              "y": 30
-            },
-            {
-              "x": 80,
-              "y": 0
-            },
-            {
-              "x": 120,
-              "y": 30
-            }
-          ],
-          "closed": false,
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -47844,8 +47268,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-noends-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-noends-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -48092,8 +47516,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-noends-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-noends-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -48339,8 +47763,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-noends-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-noends-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -48587,8 +48011,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-noends-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-noends-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -48834,8 +48258,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-noends-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-noends-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -49082,8 +48506,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-noends-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-noends-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -49332,8 +48756,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-noends-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-noends-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -49582,8 +49006,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-noends-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-noends-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -49832,8 +49256,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-noends-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-noends-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -50082,8 +49506,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-noends-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-noends-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -50310,42 +49734,6 @@
       ],
       "outcome": {
         "returned": 15
-      }
-    },
-    {
-      "name": "isRotatableGeom/poly-open-rot15",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "poly",
-          "vertices": [
-            {
-              "x": 0,
-              "y": 0
-            },
-            {
-              "x": 40,
-              "y": 30
-            },
-            {
-              "x": 80,
-              "y": 0
-            },
-            {
-              "x": 120,
-              "y": 30
-            }
-          ],
-          "closed": false,
-          "lineEndings": {
-            "start": "square",
-            "end": "diamond"
-          },
-          "rotation": 15
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -51122,10 +50510,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 5.92673609919371,
-          "y": -15.01803010048727,
-          "width": 108.14652780161259,
-          "height": 60.03606020097453
+          "x": 1.7145562017181115,
+          "y": -19.23020999796287,
+          "width": 114.71853989465455,
+          "height": 66.60807229401651
         }
       }
     },
@@ -51166,10 +50554,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 5.92673609919371,
-          "y": -15.01803010048727,
-          "width": 108.14652780161259,
-          "height": 60.03606020097453
+          "x": 1.7145562017181115,
+          "y": -19.23020999796287,
+          "width": 114.71853989465455,
+          "height": 66.60807229401651
         }
       }
     },
@@ -51211,27 +50599,27 @@
       "outcome": {
         "returned": [
           {
-            "x": 5.926736099193711,
-            "y": -15.01803010048727
+            "x": 2.956887618210211,
+            "y": -20.161958560331943
           },
           {
-            "x": 121.8378352538819,
-            "y": 16.04025531181522
+            "x": 125.24309722640626,
+            "y": 12.604532549647182
           },
           {
-            "x": 114.0732639008063,
-            "y": 45.018030100487266
+            "x": 115.770320175654,
+            "y": 47.95741779182708
           },
           {
-            "x": -1.8378352538819112,
-            "y": 13.95974468818478
+            "x": -6.515889432542048,
+            "y": 15.190926681847955
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/poly-open-rot15-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-rot15-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -51268,20 +50656,20 @@
         "returned": {
           "corners": [
             {
-              "x": 5.926736099193711,
-              "y": -15.01803010048727
+              "x": 2.956887618210211,
+              "y": -20.161958560331943
             },
             {
-              "x": 121.8378352538819,
-              "y": 16.04025531181522
+              "x": 125.24309722640626,
+              "y": 12.604532549647182
             },
             {
-              "x": 114.0732639008063,
-              "y": 45.018030100487266
+              "x": 115.770320175654,
+              "y": 47.95741779182708
             },
             {
-              "x": -1.8378352538819112,
-              "y": 13.95974468818478
+              "x": -6.515889432542048,
+              "y": 15.190926681847955
             }
           ],
           "angle": 15
@@ -51351,20 +50739,20 @@
             "kind": "poly",
             "points": [
               {
-                "x": 5.92673609919371,
-                "y": -15.01803010048727
+                "x": 5.419251605536565,
+                "y": -10.80585020301167
               },
               {
-                "x": 5.92673609919371,
-                "y": -15.01803010048727
+                "x": 1.7145562017181115,
+                "y": -15.525514594144415
               },
               {
-                "x": 5.92673609919371,
-                "y": -15.01803010048727
+                "x": 6.434220592850855,
+                "y": -19.23020999796287
               },
               {
-                "x": 5.92673609919371,
-                "y": -15.01803010048727
+                "x": 10.138915996669308,
+                "y": -14.510545606830124
               }
             ],
             "closed": true
@@ -51373,20 +50761,20 @@
             "kind": "poly",
             "points": [
               {
-                "x": 114.0732639008063,
-                "y": 45.018030100487266
+                "x": 115.92561160271552,
+                "y": 47.377862296053635
               },
               {
-                "x": 114.0732639008063,
-                "y": 45.018030100487266
+                "x": 111.71343170523993,
+                "y": 46.87037780239649
               },
               {
-                "x": 114.0732639008063,
-                "y": 45.018030100487266
+                "x": 112.22091619889707,
+                "y": 42.6581979049209
               },
               {
-                "x": 114.0732639008063,
-                "y": 45.018030100487266
+                "x": 116.43309609637267,
+                "y": 43.16568239857804
               }
             ],
             "closed": true
@@ -51432,10 +50820,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 5.92673609919371,
-          "y": -15.01803010048727,
-          "width": 108.14652780161259,
-          "height": 60.03606020097453
+          "x": 1.7145562017181115,
+          "y": -19.23020999796287,
+          "width": 114.71853989465455,
+          "height": 66.60807229401651
         }
       }
     },
@@ -51477,10 +50865,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 5.92673609919371,
-          "y": -15.01803010048727,
-          "width": 108.14652780161259,
-          "height": 60.03606020097453
+          "x": 1.7145562017181115,
+          "y": -19.23020999796287,
+          "width": 114.71853989465455,
+          "height": 66.60807229401651
         }
       }
     },
@@ -51523,27 +50911,27 @@
       "outcome": {
         "returned": [
           {
-            "x": 5.926736099193711,
-            "y": -15.01803010048727
+            "x": 2.956887618210211,
+            "y": -20.161958560331943
           },
           {
-            "x": 121.8378352538819,
-            "y": 16.04025531181522
+            "x": 125.24309722640626,
+            "y": 12.604532549647182
           },
           {
-            "x": 114.0732639008063,
-            "y": 45.018030100487266
+            "x": 115.770320175654,
+            "y": 47.95741779182708
           },
           {
-            "x": -1.8378352538819112,
-            "y": 13.95974468818478
+            "x": -6.515889432542048,
+            "y": 15.190926681847955
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/poly-open-rot15-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-rot15-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -51581,20 +50969,20 @@
         "returned": {
           "corners": [
             {
-              "x": 5.926736099193711,
-              "y": -15.01803010048727
+              "x": 2.956887618210211,
+              "y": -20.161958560331943
             },
             {
-              "x": 121.8378352538819,
-              "y": 16.04025531181522
+              "x": 125.24309722640626,
+              "y": 12.604532549647182
             },
             {
-              "x": 114.0732639008063,
-              "y": 45.018030100487266
+              "x": 115.770320175654,
+              "y": 47.95741779182708
             },
             {
-              "x": -1.8378352538819112,
-              "y": 13.95974468818478
+              "x": -6.515889432542048,
+              "y": 15.190926681847955
             }
           ],
           "angle": 15
@@ -51665,20 +51053,20 @@
             "kind": "poly",
             "points": [
               {
-                "x": 5.92673609919371,
-                "y": -15.01803010048727
+                "x": 5.419251605536565,
+                "y": -10.80585020301167
               },
               {
-                "x": 5.92673609919371,
-                "y": -15.01803010048727
+                "x": 1.7145562017181115,
+                "y": -15.525514594144415
               },
               {
-                "x": 5.92673609919371,
-                "y": -15.01803010048727
+                "x": 6.434220592850855,
+                "y": -19.23020999796287
               },
               {
-                "x": 5.92673609919371,
-                "y": -15.01803010048727
+                "x": 10.138915996669308,
+                "y": -14.510545606830124
               }
             ],
             "closed": true
@@ -51687,20 +51075,20 @@
             "kind": "poly",
             "points": [
               {
-                "x": 114.0732639008063,
-                "y": 45.018030100487266
+                "x": 115.92561160271552,
+                "y": 47.377862296053635
               },
               {
-                "x": 114.0732639008063,
-                "y": 45.018030100487266
+                "x": 111.71343170523993,
+                "y": 46.87037780239649
               },
               {
-                "x": 114.0732639008063,
-                "y": 45.018030100487266
+                "x": 112.22091619889707,
+                "y": 42.6581979049209
               },
               {
-                "x": 114.0732639008063,
-                "y": 45.018030100487266
+                "x": 116.43309609637267,
+                "y": 43.16568239857804
               }
             ],
             "closed": true
@@ -51853,8 +51241,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-rot15-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-rot15-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -52165,8 +51553,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-rot15-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-rot15-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -52476,8 +51864,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-rot15-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-rot15-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -52788,8 +52176,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-rot15-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-rot15-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -53102,8 +52490,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-rot15-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-rot15-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -53416,8 +52804,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-rot15-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-rot15-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -53730,8 +53118,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-rot15-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-rot15-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -54044,8 +53432,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-open-rot15-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-open-rot15-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -54288,30 +53676,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/poly-single",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "poly",
-          "vertices": [
-            {
-              "x": 5,
-              "y": 5
-            }
-          ],
-          "closed": false,
-          "lineEndings": {
-            "start": "circle",
-            "end": "circle"
-          },
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -54884,8 +54248,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-single-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-single-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -55080,8 +54444,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-single-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-single-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -55275,8 +54639,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-single-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-single-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -55471,8 +54835,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-single-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-single-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -55666,8 +55030,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-single-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-single-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -55862,8 +55226,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-single-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-single-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -56060,8 +55424,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-single-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-single-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -56258,8 +55622,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-single-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-single-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -56456,8 +55820,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-single-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-single-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -56654,8 +56018,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-single-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-single-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -56803,21 +56167,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/poly-empty",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "poly",
-          "vertices": [],
-          "closed": true,
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -57201,8 +56550,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-empty-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-empty-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -57395,8 +56744,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-empty-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-empty-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -57588,8 +56937,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-empty-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-empty-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -57782,8 +57131,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-empty-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-empty-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -57975,8 +57324,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-empty-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-empty-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -58169,8 +57518,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-empty-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-empty-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -58365,8 +57714,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-empty-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-empty-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -58561,8 +57910,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-empty-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-empty-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -58757,8 +58106,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-empty-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-empty-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -58953,8 +58302,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-empty-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-empty-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -59110,30 +58459,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/poly-two-closed",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "poly",
-          "vertices": [
-            {
-              "x": 0,
-              "y": 0
-            },
-            {
-              "x": 10,
-              "y": 10
-            }
-          ],
-          "closed": true,
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -59714,8 +59039,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-two-closed-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-two-closed-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -59914,8 +59239,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-two-closed-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-two-closed-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -60113,8 +59438,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-two-closed-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-two-closed-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -60313,8 +59638,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-two-closed-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-two-closed-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -60512,8 +59837,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-two-closed-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-two-closed-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -60712,8 +60037,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-two-closed-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-two-closed-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -60914,8 +60239,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-two-closed-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-two-closed-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -61116,8 +60441,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-two-closed-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-two-closed-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -61318,8 +60643,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-two-closed-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-two-closed-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -61520,8 +60845,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-two-closed-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-two-closed-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -61712,38 +61037,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/poly-collinear",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "poly",
-          "vertices": [
-            {
-              "x": 0,
-              "y": 0
-            },
-            {
-              "x": 50,
-              "y": 0
-            },
-            {
-              "x": 100,
-              "y": 0
-            }
-          ],
-          "closed": false,
-          "lineEndings": {
-            "start": "butt",
-            "end": "butt"
-          },
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -62424,10 +61717,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 0,
-          "y": 0,
+          "x": -5.51091059616309e-16,
+          "y": -3,
           "width": 100,
-          "height": 0
+          "height": 6
         }
       }
     },
@@ -62464,10 +61757,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 0,
-          "y": 0,
+          "x": -5.51091059616309e-16,
+          "y": -3,
           "width": 100,
-          "height": 0
+          "height": 6
         }
       }
     },
@@ -62505,27 +61798,27 @@
       "outcome": {
         "returned": [
           {
-            "x": 0,
-            "y": 0
+            "x": -5.51091059616309e-16,
+            "y": -3
           },
           {
             "x": 100,
-            "y": 0
+            "y": -3
           },
           {
             "x": 100,
-            "y": 0
+            "y": 3
           },
           {
-            "x": 0,
-            "y": 0
+            "x": -5.51091059616309e-16,
+            "y": 3
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/poly-collinear-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-collinear-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -62558,20 +61851,20 @@
         "returned": {
           "corners": [
             {
-              "x": 0,
-              "y": 0
+              "x": -5.51091059616309e-16,
+              "y": -3
             },
             {
               "x": 100,
-              "y": 0
+              "y": -3
             },
             {
               "x": 100,
-              "y": 0
+              "y": 3
             },
             {
-              "x": 0,
-              "y": 0
+              "x": -5.51091059616309e-16,
+              "y": 3
             }
           ],
           "angle": 0
@@ -62633,12 +61926,12 @@
             "kind": "poly",
             "points": [
               {
-                "x": 0,
-                "y": 0
+                "x": 5.51091059616309e-16,
+                "y": 3
               },
               {
-                "x": 0,
-                "y": 0
+                "x": -5.51091059616309e-16,
+                "y": -3
               }
             ],
             "closed": false
@@ -62648,11 +61941,11 @@
             "points": [
               {
                 "x": 100,
-                "y": 0
+                "y": -3
               },
               {
                 "x": 100,
-                "y": 0
+                "y": 3
               }
             ],
             "closed": false
@@ -62694,10 +61987,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 0,
-          "y": 0,
+          "x": -5.51091059616309e-16,
+          "y": -3,
           "width": 100,
-          "height": 0
+          "height": 6
         }
       }
     },
@@ -62735,10 +62028,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 0,
-          "y": 0,
+          "x": -5.51091059616309e-16,
+          "y": -3,
           "width": 100,
-          "height": 0
+          "height": 6
         }
       }
     },
@@ -62777,27 +62070,27 @@
       "outcome": {
         "returned": [
           {
-            "x": 0,
-            "y": 0
+            "x": -5.51091059616309e-16,
+            "y": -3
           },
           {
             "x": 100,
-            "y": 0
+            "y": -3
           },
           {
             "x": 100,
-            "y": 0
+            "y": 3
           },
           {
-            "x": 0,
-            "y": 0
+            "x": -5.51091059616309e-16,
+            "y": 3
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/poly-collinear-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-collinear-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -62831,20 +62124,20 @@
         "returned": {
           "corners": [
             {
-              "x": 0,
-              "y": 0
+              "x": -5.51091059616309e-16,
+              "y": -3
             },
             {
               "x": 100,
-              "y": 0
+              "y": -3
             },
             {
               "x": 100,
-              "y": 0
+              "y": 3
             },
             {
-              "x": 0,
-              "y": 0
+              "x": -5.51091059616309e-16,
+              "y": 3
             }
           ],
           "angle": 0
@@ -62907,12 +62200,12 @@
             "kind": "poly",
             "points": [
               {
-                "x": 0,
-                "y": 0
+                "x": 5.51091059616309e-16,
+                "y": 3
               },
               {
-                "x": 0,
-                "y": 0
+                "x": -5.51091059616309e-16,
+                "y": -3
               }
             ],
             "closed": false
@@ -62922,11 +62215,11 @@
             "points": [
               {
                 "x": 100,
-                "y": 0
+                "y": -3
               },
               {
                 "x": 100,
-                "y": 0
+                "y": 3
               }
             ],
             "closed": false
@@ -63067,8 +62360,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-collinear-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-collinear-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -63339,8 +62632,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-collinear-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-collinear-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -63610,8 +62903,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-collinear-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-collinear-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -63882,8 +63175,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-collinear-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-collinear-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -64156,8 +63449,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-collinear-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-collinear-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -64430,8 +63723,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-collinear-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-collinear-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -64704,8 +63997,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-collinear-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-collinear-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -64978,8 +64271,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-collinear-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-collinear-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -65206,34 +64499,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/poly-hairpin",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "poly",
-          "vertices": [
-            {
-              "x": 0,
-              "y": 0
-            },
-            {
-              "x": 100,
-              "y": 0
-            },
-            {
-              "x": 0,
-              "y": 1e-10
-            }
-          ],
-          "closed": false,
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -65918,8 +65183,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-hairpin-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-hairpin-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -66142,8 +65407,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-hairpin-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-hairpin-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -66365,8 +65630,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-hairpin-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-hairpin-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -66589,8 +65854,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-hairpin-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-hairpin-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -66812,8 +66077,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-hairpin-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-hairpin-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -67036,8 +66301,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-hairpin-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-hairpin-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -67262,8 +66527,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-hairpin-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-hairpin-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -67488,8 +66753,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-hairpin-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-hairpin-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -67714,8 +66979,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-hairpin-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-hairpin-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -67940,8 +67205,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-hairpin-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-hairpin-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -68132,34 +67397,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/poly-spike",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "poly",
-          "vertices": [
-            {
-              "x": 0,
-              "y": 0
-            },
-            {
-              "x": 100,
-              "y": 2
-            },
-            {
-              "x": 0,
-              "y": 4
-            }
-          ],
-          "closed": false,
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -68844,8 +68081,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-spike-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-spike-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -69068,8 +68305,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-spike-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-spike-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -69291,8 +68528,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-spike-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-spike-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -69515,8 +68752,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-spike-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-spike-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -69738,8 +68975,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-spike-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-spike-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -69962,8 +69199,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-spike-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-spike-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -70188,8 +69425,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-spike-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-spike-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -70414,8 +69651,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-spike-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-spike-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -70640,8 +69877,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-spike-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-spike-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -70866,8 +70103,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-spike-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-spike-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -71070,38 +70307,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/poly-repeat",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "poly",
-          "vertices": [
-            {
-              "x": 0,
-              "y": 0
-            },
-            {
-              "x": 0,
-              "y": 0
-            },
-            {
-              "x": 50,
-              "y": 50
-            }
-          ],
-          "closed": false,
-          "lineEndings": {
-            "start": "closed-arrow",
-            "end": "none"
-          },
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -71782,10 +70987,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 0,
-          "y": 0,
-          "width": 50,
-          "height": 50
+          "x": -7.794228634059948,
+          "y": -4.499999999999999,
+          "width": 57.79422863405995,
+          "height": 54.5
         }
       }
     },
@@ -71822,10 +71027,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 0,
-          "y": 0,
-          "width": 50,
-          "height": 50
+          "x": -7.794228634059948,
+          "y": -4.499999999999999,
+          "width": 57.79422863405995,
+          "height": 54.5
         }
       }
     },
@@ -71863,27 +71068,27 @@
       "outcome": {
         "returned": [
           {
-            "x": 0,
-            "y": 0
+            "x": -7.794228634059948,
+            "y": -4.499999999999999
           },
           {
             "x": 50,
-            "y": 0
+            "y": -4.499999999999999
           },
           {
             "x": 50,
             "y": 50
           },
           {
-            "x": 0,
+            "x": -7.794228634059948,
             "y": 50
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/poly-repeat-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-repeat-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -71916,19 +71121,19 @@
         "returned": {
           "corners": [
             {
-              "x": 0,
-              "y": 0
+              "x": -7.794228634059948,
+              "y": -4.499999999999999
             },
             {
               "x": 50,
-              "y": 0
+              "y": -4.499999999999999
             },
             {
               "x": 50,
               "y": 50
             },
             {
-              "x": 0,
+              "x": -7.794228634059948,
               "y": 50
             }
           ],
@@ -71995,12 +71200,12 @@
                 "y": 0
               },
               {
-                "x": 0,
-                "y": 0
+                "x": -7.794228634059948,
+                "y": 4.499999999999999
               },
               {
-                "x": 0,
-                "y": 0
+                "x": -7.794228634059948,
+                "y": -4.499999999999999
               }
             ],
             "closed": true
@@ -72042,10 +71247,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 0,
-          "y": 0,
-          "width": 50,
-          "height": 50
+          "x": -7.794228634059948,
+          "y": -4.499999999999999,
+          "width": 57.79422863405995,
+          "height": 54.5
         }
       }
     },
@@ -72083,10 +71288,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 0,
-          "y": 0,
-          "width": 50,
-          "height": 50
+          "x": -7.794228634059948,
+          "y": -4.499999999999999,
+          "width": 57.79422863405995,
+          "height": 54.5
         }
       }
     },
@@ -72125,27 +71330,27 @@
       "outcome": {
         "returned": [
           {
-            "x": 0,
-            "y": 0
+            "x": -7.794228634059948,
+            "y": -4.499999999999999
           },
           {
             "x": 50,
-            "y": 0
+            "y": -4.499999999999999
           },
           {
             "x": 50,
             "y": 50
           },
           {
-            "x": 0,
+            "x": -7.794228634059948,
             "y": 50
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/poly-repeat-sw0-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-repeat-sw0-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -72179,19 +71384,19 @@
         "returned": {
           "corners": [
             {
-              "x": 0,
-              "y": 0
+              "x": -7.794228634059948,
+              "y": -4.499999999999999
             },
             {
               "x": 50,
-              "y": 0
+              "y": -4.499999999999999
             },
             {
               "x": 50,
               "y": 50
             },
             {
-              "x": 0,
+              "x": -7.794228634059948,
               "y": 50
             }
           ],
@@ -72259,12 +71464,12 @@
                 "y": 0
               },
               {
-                "x": 0,
-                "y": 0
+                "x": -7.794228634059948,
+                "y": 4.499999999999999
               },
               {
-                "x": 0,
-                "y": 0
+                "x": -7.794228634059948,
+                "y": -4.499999999999999
               }
             ],
             "closed": true
@@ -72405,8 +71610,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-repeat-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-repeat-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -72667,8 +71872,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-repeat-sw1-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-repeat-sw1-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -72928,8 +72133,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-repeat-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-repeat-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -73190,8 +72395,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-repeat-sw4-solid",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-repeat-sw4-solid",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -73454,8 +72659,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-repeat-sw4-dashed",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-repeat-sw4-dashed",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -73718,8 +72923,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-repeat-sw4-cloudy1",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-repeat-sw4-cloudy1",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -73982,8 +73187,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-repeat-sw4-cloudy0",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-repeat-sw4-cloudy0",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -74246,8 +73451,8 @@
       }
     },
     {
-      "name": "obbFromGeom/poly-repeat-sw4-cloudy2.5",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/poly-repeat-sw4-cloudy2.5",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "poly",
@@ -74476,38 +73681,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/quads",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "quads",
-          "quadPoints": [
-            {
-              "upperLeft": {
-                "x": 10,
-                "y": 10
-              },
-              "upperRight": {
-                "x": 110,
-                "y": 10
-              },
-              "lowerLeft": {
-                "x": 10,
-                "y": 22
-              },
-              "lowerRight": {
-                "x": 110,
-                "y": 22
-              }
-            }
-          ]
-        }
-      ],
-      "outcome": {
-        "returned": false
       }
     },
     {
@@ -75263,8 +74436,8 @@
       }
     },
     {
-      "name": "obbFromGeom/quads-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/quads-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "quads",
@@ -75488,8 +74661,8 @@
       }
     },
     {
-      "name": "obbFromGeom/quads-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/quads-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "quads",
@@ -75713,8 +74886,8 @@
       }
     },
     {
-      "name": "obbFromGeom/quads-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/quads-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "quads",
@@ -75961,56 +75134,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/quads-two",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "quads",
-          "quadPoints": [
-            {
-              "upperLeft": {
-                "x": 10,
-                "y": 10
-              },
-              "upperRight": {
-                "x": 110,
-                "y": 10
-              },
-              "lowerLeft": {
-                "x": 10,
-                "y": 22
-              },
-              "lowerRight": {
-                "x": 110,
-                "y": 22
-              }
-            },
-            {
-              "upperLeft": {
-                "x": 10,
-                "y": 30
-              },
-              "upperRight": {
-                "x": 70,
-                "y": 30
-              },
-              "lowerLeft": {
-                "x": 10,
-                "y": 42
-              },
-              "lowerRight": {
-                "x": 70,
-                "y": 42
-              }
-            }
-          ]
-        }
-      ],
-      "outcome": {
-        "returned": false
       }
     },
     {
@@ -77198,8 +76321,8 @@
       }
     },
     {
-      "name": "obbFromGeom/quads-two-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/quads-two-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "quads",
@@ -77535,8 +76658,8 @@
       }
     },
     {
-      "name": "obbFromGeom/quads-two-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/quads-two-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "quads",
@@ -77872,8 +76995,8 @@
       }
     },
     {
-      "name": "obbFromGeom/quads-two-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/quads-two-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "quads",
@@ -78124,38 +77247,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/quads-rot30",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "quads",
-          "quadPoints": [
-            {
-              "upperLeft": {
-                "x": 40,
-                "y": 40
-              },
-              "upperRight": {
-                "x": 109.2820323027551,
-                "y": 80
-              },
-              "lowerLeft": {
-                "x": 35,
-                "y": 48.66025403784439
-              },
-              "lowerRight": {
-                "x": 104.2820323027551,
-                "y": 88.66025403784438
-              }
-            }
-          ]
-        }
-      ],
-      "outcome": {
-        "returned": false
       }
     },
     {
@@ -78911,8 +78002,8 @@
       }
     },
     {
-      "name": "obbFromGeom/quads-rot30-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/quads-rot30-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "quads",
@@ -79136,8 +78227,8 @@
       }
     },
     {
-      "name": "obbFromGeom/quads-rot30-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/quads-rot30-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "quads",
@@ -79361,8 +78452,8 @@
       }
     },
     {
-      "name": "obbFromGeom/quads-rot30-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/quads-rot30-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "quads",
@@ -79506,19 +78597,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/quads-empty",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "quads",
-          "quadPoints": []
-        }
-      ],
-      "outcome": {
-        "returned": false
       }
     },
     {
@@ -79850,8 +78928,8 @@
       }
     },
     {
-      "name": "obbFromGeom/quads-empty-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/quads-empty-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "quads",
@@ -79989,8 +79067,8 @@
       }
     },
     {
-      "name": "obbFromGeom/quads-empty-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/quads-empty-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "quads",
@@ -80128,8 +79206,8 @@
       }
     },
     {
-      "name": "obbFromGeom/quads-empty-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/quads-empty-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "quads",
@@ -80222,25 +79300,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/caret",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "caret",
-          "box": {
-            "x": 20,
-            "y": 20,
-            "width": 6,
-            "height": 6
-          },
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -80684,8 +79743,8 @@
       }
     },
     {
-      "name": "obbFromGeom/caret-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/caret-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "caret",
@@ -80846,8 +79905,8 @@
       }
     },
     {
-      "name": "obbFromGeom/caret-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/caret-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "caret",
@@ -81008,8 +80067,8 @@
       }
     },
     {
-      "name": "obbFromGeom/caret-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/caret-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "caret",
@@ -81139,25 +80198,6 @@
       ],
       "outcome": {
         "returned": 45
-      }
-    },
-    {
-      "name": "isRotatableGeom/caret-rot45",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "caret",
-          "box": {
-            "x": 20,
-            "y": 20,
-            "width": 6,
-            "height": 6
-          },
-          "rotation": 45
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -81601,8 +80641,8 @@
       }
     },
     {
-      "name": "obbFromGeom/caret-rot45-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/caret-rot45-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "caret",
@@ -81763,8 +80803,8 @@
       }
     },
     {
-      "name": "obbFromGeom/caret-rot45-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/caret-rot45-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "caret",
@@ -81925,8 +80965,8 @@
       }
     },
     {
-      "name": "obbFromGeom/caret-rot45-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/caret-rot45-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "caret",
@@ -82086,35 +81126,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/ink",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "ink",
-          "inkList": [
-            [
-              {
-                "x": 0,
-                "y": 0
-              },
-              {
-                "x": 10,
-                "y": 5
-              },
-              {
-                "x": 20,
-                "y": 0
-              }
-            ]
-          ],
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -82707,7 +81718,7 @@
           "x": 0,
           "y": 0,
           "width": 20,
-          "height": 5
+          "height": 5.000000000000001
         }
       }
     },
@@ -82744,7 +81755,7 @@
           "x": 0,
           "y": 0,
           "width": 20,
-          "height": 5
+          "height": 5.000000000000001
         }
       }
     },
@@ -82788,18 +81799,18 @@
           },
           {
             "x": 20,
-            "y": 5
+            "y": 5.000000000000001
           },
           {
             "x": 0,
-            "y": 5
+            "y": 5.000000000000001
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/ink-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ink-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "ink",
@@ -82838,11 +81849,11 @@
             },
             {
               "x": 20,
-              "y": 5
+              "y": 5.000000000000001
             },
             {
               "x": 0,
-              "y": 5
+              "y": 5.000000000000001
             }
           ],
           "angle": 0
@@ -82880,22 +81891,8 @@
       "outcome": {
         "returned": [
           {
-            "kind": "poly",
-            "points": [
-              {
-                "x": 0,
-                "y": 0
-              },
-              {
-                "x": 10,
-                "y": 5
-              },
-              {
-                "x": 20,
-                "y": 0
-              }
-            ],
-            "closed": false
+            "kind": "path",
+            "d": "M 0 0 C 13.3333 6.6667 6.6667 6.6667 20 0"
           }
         ]
       }
@@ -82933,7 +81930,7 @@
           "x": -0.5,
           "y": -0.5,
           "width": 21,
-          "height": 6
+          "height": 6.000000000000001
         }
       }
     },
@@ -82970,7 +81967,7 @@
           "x": -0.5,
           "y": -0.5,
           "width": 21,
-          "height": 6
+          "height": 6.000000000000001
         }
       }
     },
@@ -83014,18 +82011,18 @@
           },
           {
             "x": 20.5,
-            "y": 5.5
+            "y": 5.500000000000001
           },
           {
             "x": -0.5,
-            "y": 5.5
+            "y": 5.500000000000001
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/ink-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ink-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "ink",
@@ -83064,11 +82061,11 @@
             },
             {
               "x": 20.5,
-              "y": 5.5
+              "y": 5.500000000000001
             },
             {
               "x": -0.5,
-              "y": 5.5
+              "y": 5.500000000000001
             }
           ],
           "angle": 0
@@ -83106,22 +82103,8 @@
       "outcome": {
         "returned": [
           {
-            "kind": "poly",
-            "points": [
-              {
-                "x": 0,
-                "y": 0
-              },
-              {
-                "x": 10,
-                "y": 5
-              },
-              {
-                "x": 20,
-                "y": 0
-              }
-            ],
-            "closed": false
+            "kind": "path",
+            "d": "M 0 0 C 13.3333 6.6667 6.6667 6.6667 20 0"
           }
         ]
       }
@@ -83250,8 +82233,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ink-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ink-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "ink",
@@ -83332,22 +82315,8 @@
       "outcome": {
         "returned": [
           {
-            "kind": "poly",
-            "points": [
-              {
-                "x": 0,
-                "y": 0
-              },
-              {
-                "x": 10,
-                "y": 5
-              },
-              {
-                "x": 20,
-                "y": 0
-              }
-            ],
-            "closed": false
+            "kind": "path",
+            "d": "M 0 0 C 13.3333 6.6667 6.6667 6.6667 20 0"
           }
         ]
       }
@@ -83475,45 +82444,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/ink-two",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "ink",
-          "inkList": [
-            [
-              {
-                "x": 0,
-                "y": 0
-              },
-              {
-                "x": 10,
-                "y": 5
-              }
-            ],
-            [
-              {
-                "x": 30,
-                "y": 30
-              },
-              {
-                "x": 40,
-                "y": 50
-              },
-              {
-                "x": 45,
-                "y": 20
-              }
-            ]
-          ],
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -84326,7 +83256,7 @@
           "x": 0,
           "y": 0,
           "width": 45,
-          "height": 50
+          "height": 50.10157002155976
         }
       }
     },
@@ -84373,7 +83303,7 @@
           "x": 0,
           "y": 0,
           "width": 45,
-          "height": 50
+          "height": 50.10157002155976
         }
       }
     },
@@ -84427,18 +83357,18 @@
           },
           {
             "x": 45,
-            "y": 50
+            "y": 50.10157002155976
           },
           {
             "x": 0,
-            "y": 50
+            "y": 50.10157002155976
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/ink-two-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ink-two-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "ink",
@@ -84487,11 +83417,11 @@
             },
             {
               "x": 45,
-              "y": 50
+              "y": 50.10157002155976
             },
             {
               "x": 0,
-              "y": 50
+              "y": 50.10157002155976
             }
           ],
           "angle": 0
@@ -84539,36 +83469,12 @@
       "outcome": {
         "returned": [
           {
-            "kind": "poly",
-            "points": [
-              {
-                "x": 0,
-                "y": 0
-              },
-              {
-                "x": 10,
-                "y": 5
-              }
-            ],
-            "closed": false
+            "kind": "path",
+            "d": "M 0 0 C 3.3333 1.6667 6.6667 3.3333 10 5"
           },
           {
-            "kind": "poly",
-            "points": [
-              {
-                "x": 30,
-                "y": 30
-              },
-              {
-                "x": 40,
-                "y": 50
-              },
-              {
-                "x": 45,
-                "y": 20
-              }
-            ],
-            "closed": false
+            "kind": "path",
+            "d": "M 30 30 C 44.5338 59.0676 38.7746 57.3521 45 20"
           }
         ]
       }
@@ -84616,7 +83522,7 @@
           "x": -0.5,
           "y": -0.5,
           "width": 46,
-          "height": 51
+          "height": 51.10157002155976
         }
       }
     },
@@ -84663,7 +83569,7 @@
           "x": -0.5,
           "y": -0.5,
           "width": 46,
-          "height": 51
+          "height": 51.10157002155976
         }
       }
     },
@@ -84717,18 +83623,18 @@
           },
           {
             "x": 45.5,
-            "y": 50.5
+            "y": 50.60157002155976
           },
           {
             "x": -0.5,
-            "y": 50.5
+            "y": 50.60157002155976
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/ink-two-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ink-two-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "ink",
@@ -84777,11 +83683,11 @@
             },
             {
               "x": 45.5,
-              "y": 50.5
+              "y": 50.60157002155976
             },
             {
               "x": -0.5,
-              "y": 50.5
+              "y": 50.60157002155976
             }
           ],
           "angle": 0
@@ -84829,36 +83735,12 @@
       "outcome": {
         "returned": [
           {
-            "kind": "poly",
-            "points": [
-              {
-                "x": 0,
-                "y": 0
-              },
-              {
-                "x": 10,
-                "y": 5
-              }
-            ],
-            "closed": false
+            "kind": "path",
+            "d": "M 0 0 C 3.3333 1.6667 6.6667 3.3333 10 5"
           },
           {
-            "kind": "poly",
-            "points": [
-              {
-                "x": 30,
-                "y": 30
-              },
-              {
-                "x": 40,
-                "y": 50
-              },
-              {
-                "x": 45,
-                "y": 20
-              }
-            ],
-            "closed": false
+            "kind": "path",
+            "d": "M 30 30 C 44.5338 59.0676 38.7746 57.3521 45 20"
           }
         ]
       }
@@ -84906,7 +83788,7 @@
           "x": -2,
           "y": -2,
           "width": 49,
-          "height": 54
+          "height": 54.10157002155976
         }
       }
     },
@@ -84953,7 +83835,7 @@
           "x": -2,
           "y": -2,
           "width": 49,
-          "height": 54
+          "height": 54.10157002155976
         }
       }
     },
@@ -85007,18 +83889,18 @@
           },
           {
             "x": 47,
-            "y": 52
+            "y": 52.10157002155976
           },
           {
             "x": -2,
-            "y": 52
+            "y": 52.10157002155976
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/ink-two-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ink-two-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "ink",
@@ -85067,11 +83949,11 @@
             },
             {
               "x": 47,
-              "y": 52
+              "y": 52.10157002155976
             },
             {
               "x": -2,
-              "y": 52
+              "y": 52.10157002155976
             }
           ],
           "angle": 0
@@ -85119,36 +84001,12 @@
       "outcome": {
         "returned": [
           {
-            "kind": "poly",
-            "points": [
-              {
-                "x": 0,
-                "y": 0
-              },
-              {
-                "x": 10,
-                "y": 5
-              }
-            ],
-            "closed": false
+            "kind": "path",
+            "d": "M 0 0 C 3.3333 1.6667 6.6667 3.3333 10 5"
           },
           {
-            "kind": "poly",
-            "points": [
-              {
-                "x": 30,
-                "y": 30
-              },
-              {
-                "x": 40,
-                "y": 50
-              },
-              {
-                "x": 45,
-                "y": 20
-              }
-            ],
-            "closed": false
+            "kind": "path",
+            "d": "M 30 30 C 44.5338 59.0676 38.7746 57.3521 45 20"
           }
         ]
       }
@@ -85246,35 +84104,6 @@
       ],
       "outcome": {
         "returned": 20
-      }
-    },
-    {
-      "name": "isRotatableGeom/ink-rot20",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "ink",
-          "inkList": [
-            [
-              {
-                "x": 0,
-                "y": 0
-              },
-              {
-                "x": 10,
-                "y": 5
-              },
-              {
-                "x": 20,
-                "y": 0
-              }
-            ]
-          ],
-          "rotation": 20
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -85867,7 +84696,7 @@
           "x": 1.4581241504550866,
           "y": -3.2694329852214583,
           "width": 18.79385241571817,
-          "height": 8.11866453718623
+          "height": 8.286515034197011
         }
       }
     },
@@ -85904,7 +84733,7 @@
           "x": 1.4581241504550866,
           "y": -3.2694329852214583,
           "width": 18.79385241571817,
-          "height": 8.11866453718623
+          "height": 8.286515034197011
         }
       }
     },
@@ -85951,15 +84780,15 @@
             "y": 8.269432985221458
           },
           {
-            "x": -0.25197656617325714,
+            "x": -0.2519765661732576,
             "y": 1.4290301187080843
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/ink-rot20-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ink-rot20-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "ink",
@@ -86001,7 +84830,7 @@
               "y": 8.269432985221458
             },
             {
-              "x": -0.25197656617325714,
+              "x": -0.2519765661732576,
               "y": 1.4290301187080843
             }
           ],
@@ -86040,22 +84869,8 @@
       "outcome": {
         "returned": [
           {
-            "kind": "poly",
-            "points": [
-              {
-                "x": 1.4581241504550866,
-                "y": -3.2694329852214583
-              },
-              {
-                "x": 9.144949641685828,
-                "y": 4.849231551964771
-              },
-              {
-                "x": 20.25197656617326,
-                "y": 3.5709698812919157
-              }
-            ],
-            "closed": false
+            "kind": "path",
+            "d": "M 1.4581 -3.2694 C 11.7072 7.5555 5.4426 5.2753 20.252 3.571"
           }
         ]
       }
@@ -86093,7 +84908,7 @@
           "x": 0.9581241504550866,
           "y": -3.7694329852214583,
           "width": 19.79385241571817,
-          "height": 9.11866453718623
+          "height": 9.286515034197011
         }
       }
     },
@@ -86130,7 +84945,7 @@
           "x": 0.9581241504550866,
           "y": -3.7694329852214583,
           "width": 19.79385241571817,
-          "height": 9.11866453718623
+          "height": 9.286515034197011
         }
       }
     },
@@ -86174,18 +84989,18 @@
           },
           {
             "x": 18.840712088275033,
-            "y": 8.910289367277246
+            "y": 8.910289367277247
           },
           {
             "x": -0.8928329482290458,
-            "y": 1.7278663574382032
+            "y": 1.727866357438204
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/ink-rot20-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ink-rot20-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "ink",
@@ -86224,11 +85039,11 @@
             },
             {
               "x": 18.840712088275033,
-              "y": 8.910289367277246
+              "y": 8.910289367277247
             },
             {
               "x": -0.8928329482290458,
-              "y": 1.7278663574382032
+              "y": 1.727866357438204
             }
           ],
           "angle": 20
@@ -86266,22 +85081,8 @@
       "outcome": {
         "returned": [
           {
-            "kind": "poly",
-            "points": [
-              {
-                "x": 1.4581241504550866,
-                "y": -3.2694329852214583
-              },
-              {
-                "x": 9.144949641685828,
-                "y": 4.849231551964771
-              },
-              {
-                "x": 20.25197656617326,
-                "y": 3.5709698812919157
-              }
-            ],
-            "closed": false
+            "kind": "path",
+            "d": "M 1.4581 -3.2694 C 11.7072 7.5555 5.4426 5.2753 20.252 3.571"
           }
         ]
       }
@@ -86319,7 +85120,7 @@
           "x": -0.5418758495449134,
           "y": -5.269432985221458,
           "width": 22.79385241571817,
-          "height": 12.11866453718623
+          "height": 12.286515034197011
         }
       }
     },
@@ -86356,7 +85157,7 @@
           "x": -0.5418758495449134,
           "y": -5.269432985221458,
           "width": 22.79385241571817,
-          "height": 12.11866453718623
+          "height": 12.286515034197011
         }
       }
     },
@@ -86410,8 +85211,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ink-rot20-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ink-rot20-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "ink",
@@ -86492,22 +85293,8 @@
       "outcome": {
         "returned": [
           {
-            "kind": "poly",
-            "points": [
-              {
-                "x": 1.4581241504550866,
-                "y": -3.2694329852214583
-              },
-              {
-                "x": 9.144949641685828,
-                "y": 4.849231551964771
-              },
-              {
-                "x": 20.25197656617326,
-                "y": 3.5709698812919157
-              }
-            ],
-            "closed": false
+            "kind": "path",
+            "d": "M 1.4581 -3.2694 C 11.7072 7.5555 5.4426 5.2753 20.252 3.571"
           }
         ]
       }
@@ -86572,20 +85359,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/ink-empty",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "ink",
-          "inkList": [],
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -86945,8 +85718,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ink-empty-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ink-empty-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "ink",
@@ -87125,8 +85898,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ink-empty-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ink-empty-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "ink",
@@ -87305,8 +86078,8 @@
       }
     },
     {
-      "name": "obbFromGeom/ink-empty-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ink-empty-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "ink",
@@ -87443,27 +86216,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/ink-dot",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "ink",
-          "inkList": [
-            [
-              {
-                "x": 7,
-                "y": 7
-              }
-            ]
-          ],
-          "rotation": 0
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -87877,10 +86629,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 7,
-          "y": 7,
-          "width": 0,
-          "height": 0
+          "x": 6.5,
+          "y": 6.5,
+          "width": 1,
+          "height": 1
         }
       }
     },
@@ -87906,10 +86658,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 7,
-          "y": 7,
-          "width": 0,
-          "height": 0
+          "x": 6.5,
+          "y": 6.5,
+          "width": 1,
+          "height": 1
         }
       }
     },
@@ -87936,27 +86688,27 @@
       "outcome": {
         "returned": [
           {
-            "x": 7,
-            "y": 7
+            "x": 6.5,
+            "y": 6.5
           },
           {
-            "x": 7,
-            "y": 7
+            "x": 7.5,
+            "y": 6.5
           },
           {
-            "x": 7,
-            "y": 7
+            "x": 7.5,
+            "y": 7.5
           },
           {
-            "x": 7,
-            "y": 7
+            "x": 6.5,
+            "y": 7.5
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/ink-dot-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ink-dot-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "ink",
@@ -87978,20 +86730,20 @@
         "returned": {
           "corners": [
             {
-              "x": 7,
-              "y": 7
+              "x": 6.5,
+              "y": 6.5
             },
             {
-              "x": 7,
-              "y": 7
+              "x": 7.5,
+              "y": 6.5
             },
             {
-              "x": 7,
-              "y": 7
+              "x": 7.5,
+              "y": 7.5
             },
             {
-              "x": 7,
-              "y": 7
+              "x": 6.5,
+              "y": 7.5
             }
           ],
           "angle": 0
@@ -88021,14 +86773,13 @@
       "outcome": {
         "returned": [
           {
-            "kind": "poly",
-            "points": [
-              {
-                "x": 7,
-                "y": 7
-              }
-            ],
-            "closed": false
+            "kind": "ellipse",
+            "rect": {
+              "x": 6.5,
+              "y": 6.5,
+              "width": 1,
+              "height": 1
+            }
           }
         ]
       }
@@ -88055,10 +86806,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 6.5,
-          "y": 6.5,
-          "width": 1,
-          "height": 1
+          "x": 6,
+          "y": 6,
+          "width": 2,
+          "height": 2
         }
       }
     },
@@ -88084,10 +86835,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 6.5,
-          "y": 6.5,
-          "width": 1,
-          "height": 1
+          "x": 6,
+          "y": 6,
+          "width": 2,
+          "height": 2
         }
       }
     },
@@ -88114,27 +86865,27 @@
       "outcome": {
         "returned": [
           {
-            "x": 6.5,
-            "y": 6.5
+            "x": 6,
+            "y": 6
           },
           {
-            "x": 7.5,
-            "y": 6.5
+            "x": 8,
+            "y": 6
           },
           {
-            "x": 7.5,
-            "y": 7.5
+            "x": 8,
+            "y": 8
           },
           {
-            "x": 6.5,
-            "y": 7.5
+            "x": 6,
+            "y": 8
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/ink-dot-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ink-dot-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "ink",
@@ -88156,20 +86907,20 @@
         "returned": {
           "corners": [
             {
-              "x": 6.5,
-              "y": 6.5
+              "x": 6,
+              "y": 6
             },
             {
-              "x": 7.5,
-              "y": 6.5
+              "x": 8,
+              "y": 6
             },
             {
-              "x": 7.5,
-              "y": 7.5
+              "x": 8,
+              "y": 8
             },
             {
-              "x": 6.5,
-              "y": 7.5
+              "x": 6,
+              "y": 8
             }
           ],
           "angle": 0
@@ -88199,14 +86950,13 @@
       "outcome": {
         "returned": [
           {
-            "kind": "poly",
-            "points": [
-              {
-                "x": 7,
-                "y": 7
-              }
-            ],
-            "closed": false
+            "kind": "ellipse",
+            "rect": {
+              "x": 6.5,
+              "y": 6.5,
+              "width": 1,
+              "height": 1
+            }
           }
         ]
       }
@@ -88233,10 +86983,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 5,
-          "y": 5,
-          "width": 4,
-          "height": 4
+          "x": 4.5,
+          "y": 4.5,
+          "width": 5,
+          "height": 5
         }
       }
     },
@@ -88262,10 +87012,10 @@
       ],
       "outcome": {
         "returned": {
-          "x": 5,
-          "y": 5,
-          "width": 4,
-          "height": 4
+          "x": 4.5,
+          "y": 4.5,
+          "width": 5,
+          "height": 5
         }
       }
     },
@@ -88292,27 +87042,27 @@
       "outcome": {
         "returned": [
           {
-            "x": 5,
-            "y": 5
+            "x": 4.5,
+            "y": 4.5
           },
           {
-            "x": 9,
-            "y": 5
+            "x": 9.5,
+            "y": 4.5
           },
           {
-            "x": 9,
-            "y": 9
+            "x": 9.5,
+            "y": 9.5
           },
           {
-            "x": 5,
-            "y": 9
+            "x": 4.5,
+            "y": 9.5
           }
         ]
       }
     },
     {
-      "name": "obbFromGeom/ink-dot-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/ink-dot-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "ink",
@@ -88334,20 +87084,20 @@
         "returned": {
           "corners": [
             {
-              "x": 5,
-              "y": 5
+              "x": 4.5,
+              "y": 4.5
             },
             {
-              "x": 9,
-              "y": 5
+              "x": 9.5,
+              "y": 4.5
             },
             {
-              "x": 9,
-              "y": 9
+              "x": 9.5,
+              "y": 9.5
             },
             {
-              "x": 5,
-              "y": 9
+              "x": 4.5,
+              "y": 9.5
             }
           ],
           "angle": 0
@@ -88377,14 +87127,13 @@
       "outcome": {
         "returned": [
           {
-            "kind": "poly",
-            "points": [
-              {
-                "x": 7,
-                "y": 7
-              }
-            ],
-            "closed": false
+            "kind": "ellipse",
+            "rect": {
+              "x": 6.5,
+              "y": 6.5,
+              "width": 1,
+              "height": 1
+            }
           }
         ]
       }
@@ -88458,27 +87207,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/text",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "text-box",
-          "box": {
-            "x": 50,
-            "y": 50,
-            "width": 120,
-            "height": 40
-          },
-          "rotation": 0,
-          "calloutLine": null,
-          "lineEnding": null
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -89035,8 +87763,8 @@
       }
     },
     {
-      "name": "obbFromGeom/text-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/text-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -89212,8 +87940,8 @@
       }
     },
     {
-      "name": "obbFromGeom/text-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/text-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -89389,8 +88117,8 @@
       }
     },
     {
-      "name": "obbFromGeom/text-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/text-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -89535,27 +88263,6 @@
       ],
       "outcome": {
         "returned": 90
-      }
-    },
-    {
-      "name": "isRotatableGeom/text-rot90",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "text-box",
-          "box": {
-            "x": 50,
-            "y": 50,
-            "width": 120,
-            "height": 40
-          },
-          "rotation": 90,
-          "calloutLine": null,
-          "lineEnding": null
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -90112,8 +88819,8 @@
       }
     },
     {
-      "name": "obbFromGeom/text-rot90-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/text-rot90-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -90289,8 +88996,8 @@
       }
     },
     {
-      "name": "obbFromGeom/text-rot90-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/text-rot90-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -90466,8 +89173,8 @@
       }
     },
     {
-      "name": "obbFromGeom/text-rot90-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/text-rot90-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -90612,27 +89319,6 @@
       ],
       "outcome": {
         "returned": 33
-      }
-    },
-    {
-      "name": "isRotatableGeom/text-rot33",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "text-box",
-          "box": {
-            "x": 50,
-            "y": 50,
-            "width": 120,
-            "height": 40
-          },
-          "rotation": 33,
-          "calloutLine": null,
-          "lineEnding": null
-        }
-      ],
-      "outcome": {
-        "returned": true
       }
     },
     {
@@ -91189,8 +89875,8 @@
       }
     },
     {
-      "name": "obbFromGeom/text-rot33-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/text-rot33-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -91366,8 +90052,8 @@
       }
     },
     {
-      "name": "obbFromGeom/text-rot33-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/text-rot33-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -91543,8 +90229,8 @@
       }
     },
     {
-      "name": "obbFromGeom/text-rot33-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/text-rot33-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -91716,36 +90402,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/callout",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "text-box",
-          "box": {
-            "x": 100,
-            "y": 100,
-            "width": 120,
-            "height": 40
-          },
-          "rotation": 0,
-          "calloutLine": [
-            {
-              "x": 20,
-              "y": 20
-            },
-            {
-              "x": 100,
-              "y": 120
-            }
-          ],
-          "lineEnding": "open-arrow"
-        }
-      ],
-      "outcome": {
-        "returned": false
       }
     },
     {
@@ -92526,8 +91182,8 @@
       }
     },
     {
-      "name": "obbFromGeom/callout-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/callout-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -92760,8 +91416,8 @@
       }
     },
     {
-      "name": "obbFromGeom/callout-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/callout-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -92994,8 +91650,8 @@
       }
     },
     {
-      "name": "obbFromGeom/callout-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/callout-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -93209,40 +91865,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/callout-knee",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "text-box",
-          "box": {
-            "x": 100,
-            "y": 100,
-            "width": 120,
-            "height": 40
-          },
-          "rotation": 0,
-          "calloutLine": [
-            {
-              "x": 20,
-              "y": 20
-            },
-            {
-              "x": 60,
-              "y": 30
-            },
-            {
-              "x": 100,
-              "y": 120
-            }
-          ],
-          "lineEnding": "closed-arrow"
-        }
-      ],
-      "outcome": {
-        "returned": false
       }
     },
     {
@@ -94127,8 +92749,8 @@
       }
     },
     {
-      "name": "obbFromGeom/callout-knee-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/callout-knee-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -94385,8 +93007,8 @@
       }
     },
     {
-      "name": "obbFromGeom/callout-knee-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/callout-knee-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -94643,8 +93265,8 @@
       }
     },
     {
-      "name": "obbFromGeom/callout-knee-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/callout-knee-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -94870,40 +93492,6 @@
       ],
       "outcome": {
         "returned": 90
-      }
-    },
-    {
-      "name": "isRotatableGeom/callout-rot90",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "text-box",
-          "box": {
-            "x": 100,
-            "y": 100,
-            "width": 120,
-            "height": 40
-          },
-          "rotation": 90,
-          "calloutLine": [
-            {
-              "x": 20,
-              "y": 200
-            },
-            {
-              "x": 60,
-              "y": 180
-            },
-            {
-              "x": 140,
-              "y": 120
-            }
-          ],
-          "lineEnding": "circle"
-        }
-      ],
-      "outcome": {
-        "returned": false
       }
     },
     {
@@ -95788,8 +94376,8 @@
       }
     },
     {
-      "name": "obbFromGeom/callout-rot90-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/callout-rot90-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -96050,8 +94638,8 @@
       }
     },
     {
-      "name": "obbFromGeom/callout-rot90-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/callout-rot90-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -96312,8 +94900,8 @@
       }
     },
     {
-      "name": "obbFromGeom/callout-rot90-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/callout-rot90-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -96531,36 +95119,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/callout-below",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "text-box",
-          "box": {
-            "x": 100,
-            "y": 100,
-            "width": 120,
-            "height": 40
-          },
-          "rotation": 0,
-          "calloutLine": [
-            {
-              "x": 160,
-              "y": 300
-            },
-            {
-              "x": 160,
-              "y": 140
-            }
-          ],
-          "lineEnding": "square"
-        }
-      ],
-      "outcome": {
-        "returned": false
       }
     },
     {
@@ -97341,8 +95899,8 @@
       }
     },
     {
-      "name": "obbFromGeom/callout-below-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/callout-below-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -97579,8 +96137,8 @@
       }
     },
     {
-      "name": "obbFromGeom/callout-below-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/callout-below-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -97817,8 +96375,8 @@
       }
     },
     {
-      "name": "obbFromGeom/callout-below-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/callout-below-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -98024,36 +96582,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/callout-none",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "text-box",
-          "box": {
-            "x": 100,
-            "y": 100,
-            "width": 120,
-            "height": 40
-          },
-          "rotation": 0,
-          "calloutLine": [
-            {
-              "x": 300,
-              "y": 110
-            },
-            {
-              "x": 220,
-              "y": 120
-            }
-          ],
-          "lineEnding": "none"
-        }
-      ],
-      "outcome": {
-        "returned": false
       }
     },
     {
@@ -98834,8 +97362,8 @@
       }
     },
     {
-      "name": "obbFromGeom/callout-none-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/callout-none-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -99050,8 +97578,8 @@
       }
     },
     {
-      "name": "obbFromGeom/callout-none-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/callout-none-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -99266,8 +97794,8 @@
       }
     },
     {
-      "name": "obbFromGeom/callout-none-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/callout-none-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -99451,36 +97979,6 @@
       ],
       "outcome": {
         "returned": 0
-      }
-    },
-    {
-      "name": "isRotatableGeom/callout-inside",
-      "fn": "isRotatableGeom",
-      "args": [
-        {
-          "kind": "text-box",
-          "box": {
-            "x": 100,
-            "y": 100,
-            "width": 120,
-            "height": 40
-          },
-          "rotation": 0,
-          "calloutLine": [
-            {
-              "x": 160,
-              "y": 120
-            },
-            {
-              "x": 220,
-              "y": 120
-            }
-          ],
-          "lineEnding": "open-arrow"
-        }
-      ],
-      "outcome": {
-        "returned": false
       }
     },
     {
@@ -100261,8 +98759,8 @@
       }
     },
     {
-      "name": "obbFromGeom/callout-inside-sw0-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/callout-inside-sw0-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -100495,8 +98993,8 @@
       }
     },
     {
-      "name": "obbFromGeom/callout-inside-sw1-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/callout-inside-sw1-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -100729,8 +99227,8 @@
       }
     },
     {
-      "name": "obbFromGeom/callout-inside-sw4-none",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/callout-inside-sw4-none",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "text-box",
@@ -101590,8 +100088,8 @@
       }
     },
     {
-      "name": "obbFromGeom/line-rot-nan",
-      "fn": "obbFromGeom",
+      "name": "obbFromGeometry/line-rot-nan",
+      "fn": "obbFromGeometry",
       "args": [
         {
           "kind": "line",

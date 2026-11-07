@@ -50,7 +50,7 @@ const BUTTON = pushbutton(4, 'button'),
   AGREE = checkbox(6, 'agree', true);
 const FIELDS = [C1, C2, OTHER, BUTTON, SIG, AGREE];
 const ROWS = FIELDS.map((field) =>
-  row(field.widgets[0]!.objectNumber, field.ref, 1, undefined, { fieldKind: field.family }),
+  row(field.widgets[0]!.objectNumber, field.ref, 1, undefined, { fieldKind: field.kind }),
 );
 const FORM = snapshot(FIELDS, ROWS);
 const cleared = [

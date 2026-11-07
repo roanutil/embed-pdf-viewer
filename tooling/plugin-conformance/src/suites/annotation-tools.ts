@@ -174,7 +174,7 @@ const cases: ScenarioCase[] = [
       ix('onGestureStarted', [{ $fn: 'gesture' }]),
       hover(150, 150),
       ix('getCursor'),
-      call('selection.set', [[objRef(1)]]),
+      call('selection.select', [[objRef(1)]]),
       hover(150, 150),
       ix('getCursor'),
       pointer('down', 150, 150),
@@ -215,7 +215,7 @@ const cases: ScenarioCase[] = [
     snapshot: SNAP,
     steps: [
       ...boot,
-      call('selection.set', [[objRef(1)]]),
+      call('selection.select', [[objRef(1)]]),
       pointer('down', 150, 150),
       pointer('move', 190, 190),
       pointer('cancel', 190, 190),
@@ -246,11 +246,11 @@ const cases: ScenarioCase[] = [
     steps: [
       ...boot,
       ix('wouldClaimTouch', [sample('down', 150, 150, { pointerType: 'touch' })]),
-      call('selection.set', [[objRef(1)]]),
+      call('selection.select', [[objRef(1)]]),
       ix('wouldClaimTouch', [sample('down', 150, 150, { pointerType: 'touch' })]),
       ix('wouldClaimTouch', [sample('down', 99, 99, { pointerType: 'touch' })]),
       ix('wouldClaimTouch', [sample('down', 500, 500, { pointerType: 'touch' })]),
-      call('selection.set', [[objRef(3)]]),
+      call('selection.select', [[objRef(3)]]),
       ix('wouldClaimTouch', [sample('down', 100, 60, { pointerType: 'touch' })]),
       ix('wouldClaimTouch', [
         {
@@ -461,7 +461,7 @@ const cases: ScenarioCase[] = [
     ...SESSION_SNAPSHOT,
     steps: [
       ...boot,
-      call('selection.set', [[objRef(1)]]),
+      call('selection.select', [[objRef(1)]]),
       call('getHitKind', [pr(1), { x: 107, y: 100 }, 2, U, U, false]),
       call('getHitKind', [pr(1), { x: 107, y: 100 }, 2, U, U, true]),
       call('getHitKind', [pr(1), { x: 150, y: 77 }, 2, U, U, false]),
@@ -503,11 +503,11 @@ const cases: ScenarioCase[] = [
     ...SESSION_SNAPSHOT,
     steps: [
       ...boot,
-      call('selection.set', [[objRef(21, 2)]]),
+      call('selection.select', [[objRef(21, 2)]]),
       call('listChromeNodes', [pr(2)]),
-      call('selection.set', [[objRef(22, 2)]]),
+      call('selection.select', [[objRef(22, 2)]]),
       call('listChromeNodes', [pr(2)]),
-      call('selection.set', [[objRef(23, 2)]]),
+      call('selection.select', [[objRef(23, 2)]]),
       call('listChromeNodes', [pr(2)]),
       tool('note'),
       call('placeAt', [pr(2), { x: 395, y: 495 }]),
@@ -535,9 +535,9 @@ const cases: ScenarioCase[] = [
     ...SESSION_SNAPSHOT,
     steps: [
       ...boot,
-      call('selection.set', [[objRef(9)]]),
+      call('selection.select', [[objRef(9)]]),
       call('listChromeNodes', [pr(1), U, 90]),
-      call('selection.set', [[objRef(1)]]),
+      call('selection.select', [[objRef(1)]]),
       call('listChromeNodes', [pr(1), 1]),
       call('listChromeNodes', [pr(1), 2]),
       pointer('down', 150, 68),
@@ -621,7 +621,7 @@ const cases: ScenarioCase[] = [
     snapshot: SNAP,
     steps: [
       ...boot,
-      call('selection.set', [[objRef(1)]]),
+      call('selection.select', [[objRef(1)]]),
       call('listChromeNodes', [pr(1)]),
       pointer('down', 82, 82),
       pointer('up', 82, 82),
@@ -1195,7 +1195,7 @@ const cases: ScenarioCase[] = [
     snapshot: SNAP,
     steps: [
       ...boot,
-      call('selection.set', [[objRef(1)]]),
+      call('selection.select', [[objRef(1)]]),
       call('selection.add', [[objRef(2)]]),
       call('registerBehavior', [
         {

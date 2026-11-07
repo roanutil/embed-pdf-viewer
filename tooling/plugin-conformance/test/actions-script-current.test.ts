@@ -347,7 +347,7 @@ test('script world preserves current form values, page-space annotation conversi
       {
         ref: { kind: 'objectNumber', objectNumber: 100 },
         name: 'name',
-        family: 'text',
+        kind: 'text',
         value: 'name-value',
         defaultValue: null,
         display: 'visible',
@@ -357,7 +357,7 @@ test('script world preserves current form values, page-space annotation conversi
       {
         ref: { kind: 'objectNumber', objectNumber: 101 },
         name: 'choice',
-        family: 'combobox',
+        kind: 'combobox',
         value: ['1'],
         defaultValue: null,
         display: 'visible',
@@ -368,7 +368,7 @@ test('script world preserves current form values, page-space annotation conversi
       {
         ref: { kind: 'objectNumber', objectNumber: 102 },
         name: 'empty',
-        family: 'text',
+        kind: 'text',
         value: null,
         defaultValue: null,
         display: 'visible',

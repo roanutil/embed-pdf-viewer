@@ -8,7 +8,7 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "activate",
+          "type": "activate",
           "ref": {
             "kind": "objectNumber",
             "page": {
@@ -25,7 +25,7 @@
       ],
       "outcome": {
         "returned": {
-          "scope": "activate"
+          "type": "activate"
         }
       }
     },
@@ -34,7 +34,7 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "cursorEnter",
           "ref": {
             "kind": "objectNumber",
@@ -52,8 +52,8 @@
       ],
       "outcome": {
         "returned": {
-          "scope": "annotation",
-          "name": "cursorEnter"
+          "type": "annotation",
+          "event": "cursorEnter"
         }
       }
     },
@@ -62,7 +62,7 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "cursorExit",
           "ref": {
             "kind": "objectNumber",
@@ -80,8 +80,8 @@
       ],
       "outcome": {
         "returned": {
-          "scope": "annotation",
-          "name": "cursorExit"
+          "type": "annotation",
+          "event": "cursorExit"
         }
       }
     },
@@ -90,7 +90,7 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "mouseDown",
           "ref": {
             "kind": "objectNumber",
@@ -108,8 +108,8 @@
       ],
       "outcome": {
         "returned": {
-          "scope": "annotation",
-          "name": "mouseDown"
+          "type": "annotation",
+          "event": "mouseDown"
         }
       }
     },
@@ -118,7 +118,7 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "mouseUp",
           "ref": {
             "kind": "objectNumber",
@@ -136,8 +136,8 @@
       ],
       "outcome": {
         "returned": {
-          "scope": "annotation",
-          "name": "mouseUp"
+          "type": "annotation",
+          "event": "mouseUp"
         }
       }
     },
@@ -146,7 +146,7 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "focus",
           "ref": {
             "kind": "objectNumber",
@@ -164,8 +164,8 @@
       ],
       "outcome": {
         "returned": {
-          "scope": "annotation",
-          "name": "focus"
+          "type": "annotation",
+          "event": "focus"
         }
       }
     },
@@ -174,7 +174,7 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "blur",
           "ref": {
             "kind": "objectNumber",
@@ -192,8 +192,8 @@
       ],
       "outcome": {
         "returned": {
-          "scope": "annotation",
-          "name": "blur"
+          "type": "annotation",
+          "event": "blur"
         }
       }
     },
@@ -202,7 +202,7 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "page",
+          "type": "page",
           "event": "open",
           "page": {
             "kind": "objectNumber",
@@ -212,8 +212,8 @@
       ],
       "outcome": {
         "returned": {
-          "scope": "page",
-          "name": "open"
+          "type": "page",
+          "event": "open"
         }
       }
     },
@@ -222,7 +222,7 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "page",
+          "type": "page",
           "event": "close",
           "page": {
             "kind": "objectNumber",
@@ -232,8 +232,8 @@
       ],
       "outcome": {
         "returned": {
-          "scope": "page",
-          "name": "close"
+          "type": "page",
+          "event": "close"
         }
       }
     },
@@ -242,7 +242,7 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "page",
+          "type": "page",
           "event": "visible",
           "page": {
             "kind": "objectNumber",
@@ -252,8 +252,8 @@
       ],
       "outcome": {
         "returned": {
-          "scope": "page",
-          "name": "visible"
+          "type": "page",
+          "event": "visible"
         }
       }
     },
@@ -262,7 +262,7 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "page",
+          "type": "page",
           "event": "invisible",
           "page": {
             "kind": "objectNumber",
@@ -272,8 +272,8 @@
       ],
       "outcome": {
         "returned": {
-          "scope": "page",
-          "name": "invisible"
+          "type": "page",
+          "event": "invisible"
         }
       }
     },
@@ -282,14 +282,14 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "open"
         }
       ],
       "outcome": {
         "returned": {
-          "scope": "document",
-          "name": "open"
+          "type": "document",
+          "event": "open"
         }
       }
     },
@@ -298,14 +298,14 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "will-save"
         }
       ],
       "outcome": {
         "returned": {
-          "scope": "document",
-          "name": "will-save"
+          "type": "document",
+          "event": "will-save"
         }
       }
     },
@@ -314,14 +314,14 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "did-save"
         }
       ],
       "outcome": {
         "returned": {
-          "scope": "document",
-          "name": "did-save"
+          "type": "document",
+          "event": "did-save"
         }
       }
     },
@@ -330,14 +330,14 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "will-print"
         }
       ],
       "outcome": {
         "returned": {
-          "scope": "document",
-          "name": "will-print"
+          "type": "document",
+          "event": "will-print"
         }
       }
     },
@@ -346,14 +346,14 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "did-print"
         }
       ],
       "outcome": {
         "returned": {
-          "scope": "document",
-          "name": "did-print"
+          "type": "document",
+          "event": "did-print"
         }
       }
     },
@@ -362,14 +362,14 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "will-close"
         }
       ],
       "outcome": {
         "returned": {
-          "scope": "document",
-          "name": "will-close"
+          "type": "document",
+          "event": "will-close"
         }
       }
     },
@@ -378,7 +378,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "activate",
+          "type": "activate",
           "ref": {
             "kind": "objectNumber",
             "page": {
@@ -402,7 +402,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "cursorEnter",
           "ref": {
             "kind": "objectNumber",
@@ -427,7 +427,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "cursorExit",
           "ref": {
             "kind": "objectNumber",
@@ -452,7 +452,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "mouseDown",
           "ref": {
             "kind": "objectNumber",
@@ -477,7 +477,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "mouseUp",
           "ref": {
             "kind": "objectNumber",
@@ -502,7 +502,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "focus",
           "ref": {
             "kind": "objectNumber",
@@ -527,7 +527,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "blur",
           "ref": {
             "kind": "objectNumber",
@@ -552,7 +552,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "page",
+          "type": "page",
           "event": "open",
           "page": {
             "kind": "objectNumber",
@@ -569,7 +569,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "page",
+          "type": "page",
           "event": "close",
           "page": {
             "kind": "objectNumber",
@@ -586,7 +586,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "page",
+          "type": "page",
           "event": "visible",
           "page": {
             "kind": "objectNumber",
@@ -603,7 +603,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "page",
+          "type": "page",
           "event": "invisible",
           "page": {
             "kind": "objectNumber",
@@ -620,7 +620,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "open"
         }
       ],
@@ -633,7 +633,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "will-save"
         }
       ],
@@ -646,7 +646,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "did-save"
         }
       ],
@@ -659,7 +659,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "will-print"
         }
       ],
@@ -672,7 +672,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "did-print"
         }
       ],
@@ -685,7 +685,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "will-close"
         }
       ],

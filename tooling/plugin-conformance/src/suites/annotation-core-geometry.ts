@@ -456,7 +456,7 @@ const shapeFns: Record<string, Fn> = {
   selectionBounds: g.selectionBounds,
   selectionQuad: g.selectionQuad,
   selectionCenter: historicalTarget('selectionCenter', '6153c181e'),
-  obbFromGeom: g.obbFromGeom,
+  obbFromGeometry: g.obbFromGeometry,
   turnPivotOf: g.turnPivotOf,
   geomRotation: g.geomRotation,
   isRotatableGeometry: g.isRotatableGeometry,
@@ -526,7 +526,7 @@ for (const [name, gm] of GEOMS) {
           strokeWidth: sw,
           cloudyIntensity: b?.cloudyIntensity,
         }),
-        c('obbFromGeom', `${name}-sw${sw}-${bn}`, gm, {
+        c('obbFromGeometry', `${name}-sw${sw}-${bn}`, gm, {
           strokeWidth: sw,
           cloudyIntensity: b?.cloudyIntensity,
         }),
@@ -624,7 +624,7 @@ shapes.push(
     -2,
   ),
 );
-shapes.push(c('obbFromGeom', 'line-rot-nan', gLine(v(0, 0), v(50, 20), undefined, NaN), 2));
+shapes.push(c('obbFromGeometry', 'line-rot-nan', gLine(v(0, 0), v(50, 20), undefined, NaN), 2));
 // An infinite `rot` is truthy, so a box resets to 0; spinning it back by
 // `-rot` instead would leave NaN.
 shapes.push(

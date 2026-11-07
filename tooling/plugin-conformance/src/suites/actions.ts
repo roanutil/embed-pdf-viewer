@@ -314,7 +314,7 @@ const formField = (name: string, fieldObjectNumber: number, widgets: number[] = 
   ref: { kind: 'objectNumber', fieldObjectNumber },
   fieldObjectNumber,
   name,
-  family: 'text',
+  kind: 'text',
   valueEntry: { kind: 'scalar', value: `${name}-value` },
   defaultValueEntry: { kind: 'none' },
   flags: { readOnly: false, required: false },

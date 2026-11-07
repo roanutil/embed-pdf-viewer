@@ -42,7 +42,7 @@ import {
   boot,
 } from './annotation-live-fixtures';
 const box = { x: 10, y: 20, width: 100, height: 40 };
-const select = (...refs: ReturnType<typeof objRef>[]) => call('selection.set', [refs]);
+const select = (...refs: ReturnType<typeof objRef>[]) => call('selection.select', [refs]);
 const ptr = (tool: string, phase: string, x: number, y: number, page = 1, finish = false) =>
   call('createPointer', [tool, phase, pr(page), { x, y }, finish]);
 const text = freeText(1);

@@ -64,7 +64,7 @@ function checkRows(form: FormSnapshot) {
     if (w.field) {
       const f = form.fields.find((f) => JSON.stringify(f.ref) === JSON.stringify(w.field));
       assert.ok(f, 'row field exists');
-      assert.equal(w.fieldFamily, f.family, 'row family matches its field');
+      assert.equal(w.fieldKind, f.kind, 'row family matches its field');
     }
   }
 }
@@ -899,13 +899,13 @@ test('whole-form reset refusals preserve all selected values and success confirm
   const colour = snapshots[1]!.fields.find(
     (field) => field.ref.kind === 'objectNumber' && field.ref.objectNumber === 3,
   );
-  assert.ok(colour?.family === 'combobox');
+  assert.ok(colour?.kind === 'combobox');
   assert.equal(colour.value, '');
   assert.ok(colour.options.every((option) => !option.selected));
   const colours = snapshots[1]!.fields.find(
     (field) => field.ref.kind === 'objectNumber' && field.ref.objectNumber === 4,
   );
-  assert.ok(colours?.family === 'listbox');
+  assert.ok(colours?.kind === 'listbox');
   assert.deepEqual(colours.selectedValues, []);
   assert.ok(colours.options.every((option) => !option.selected));
   assert.deepEqual(

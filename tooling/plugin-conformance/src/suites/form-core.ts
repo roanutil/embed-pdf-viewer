@@ -171,7 +171,7 @@ const ROWS = [104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 1
   (n, i) => {
     const field = ALL_FIELDS.find((f) => f.widgets.some((w) => w.objectNumber === n));
     return row(n, field?.ref ?? null, 3, box(i * 10, i * 5), {
-      fieldKind: field?.family ?? 'unknown',
+      fieldKind: field?.kind ?? 'unknown',
     });
   },
 );

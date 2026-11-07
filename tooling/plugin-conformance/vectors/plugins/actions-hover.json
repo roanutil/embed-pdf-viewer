@@ -373,9 +373,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -428,9 +428,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorExit",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -449,9 +449,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -928,9 +928,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -988,9 +988,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorExit",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -1009,9 +1009,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -1078,9 +1078,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorExit",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -1099,9 +1099,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -1584,9 +1584,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -1701,9 +1701,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorExit",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -1722,9 +1722,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -2158,9 +2158,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -2232,9 +2232,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorExit",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -2720,9 +2720,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorExit",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -2741,9 +2741,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -3207,9 +3207,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -3281,9 +3281,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -3881,9 +3881,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "baseIndex",
                     "page": {
                       "kind": "objectNumber",
@@ -3941,9 +3941,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorExit",
-                  "ref": {
+                  "annotation": {
                     "kind": "baseIndex",
                     "page": {
                       "kind": "objectNumber",
@@ -3962,9 +3962,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "baseIndex",
                     "page": {
                       "kind": "objectNumber",
@@ -4003,9 +4003,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorExit",
-                  "ref": {
+                  "annotation": {
                     "kind": "baseIndex",
                     "page": {
                       "kind": "objectNumber",
@@ -4024,9 +4024,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "baseIndex",
                     "page": {
                       "kind": "objectNumber",
@@ -4103,9 +4103,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorExit",
-                  "ref": {
+                  "annotation": {
                     "kind": "baseIndex",
                     "page": {
                       "kind": "objectNumber",
@@ -4124,9 +4124,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "baseIndex",
                     "page": {
                       "kind": "objectNumber",
@@ -4165,9 +4165,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorExit",
-                  "ref": {
+                  "annotation": {
                     "kind": "baseIndex",
                     "page": {
                       "kind": "objectNumber",
@@ -4186,9 +4186,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -4227,9 +4227,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorExit",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -4248,9 +4248,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -4308,9 +4308,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorExit",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -4329,9 +4329,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -4708,9 +4708,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -4749,9 +4749,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorExit",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -4770,9 +4770,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "objectNumber",
                     "page": {
                       "kind": "objectNumber",
@@ -5130,9 +5130,9 @@
               "fn": "dispatch",
               "args": [
                 {
-                  "scope": "annotation",
+                  "type": "annotation",
                   "event": "cursorEnter",
-                  "ref": {
+                  "annotation": {
                     "kind": "mystery"
                   },
                   "page": {
@@ -5370,7 +5370,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "cursorExit": {
@@ -5381,10 +5380,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -5456,10 +5455,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -5824,8 +5823,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "cursorEnter"
+                    "type": "annotation",
+                    "event": "cursorEnter"
                   }
                 }
               ]
@@ -5842,7 +5841,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -5947,8 +5945,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "cursorExit"
+                    "type": "annotation",
+                    "event": "cursorExit"
                   }
                 }
               ]
@@ -5965,7 +5963,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -6024,8 +6021,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "cursorEnter"
+                    "type": "annotation",
+                    "event": "cursorEnter"
                   }
                 }
               ]
@@ -6042,7 +6039,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {

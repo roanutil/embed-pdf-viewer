@@ -358,7 +358,7 @@ const FIELDS = [
   sigField(4, 'Sig4', { valueEntry: { kind: 'scalar', value: 'x' } }),
 ];
 const WIDGETS = FIELDS.map((field, index) =>
-  widget(101 + index, field.family, {
+  widget(101 + index, field.kind, {
     field: field.ref,
     rect: { x: 100, y: 168 + index * 100, width: 160, height: 24 },
   }),

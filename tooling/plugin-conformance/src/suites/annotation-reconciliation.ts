@@ -38,7 +38,7 @@ const draft: AnnotationDraft = {
   print: true,
 };
 const ref = objRef(10001);
-const select = (...refs: ReturnType<typeof objRef>[]) => call('selection.set', [refs]);
+const select = (...refs: ReturnType<typeof objRef>[]) => call('selection.select', [refs]);
 const edit = (phase: string, x: number, y: number): Step =>
   call('editPointer', [phase, pr(1), { x, y }, false]);
 const point = { move: { x: 100, y: 125 }, handle: { x: 200, y: 200 }, rotate: { x: 150, y: 76 } };

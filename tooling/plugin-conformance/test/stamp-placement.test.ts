@@ -395,7 +395,7 @@ test('detached materialization uses target identity, environment and native form
         {
           ref: { kind: 'objectNumber', objectNumber: 1 },
           name: 'date',
-          family: 'text',
+          kind: 'text',
           value: null,
           defaultValue: null,
           display: 'visible',

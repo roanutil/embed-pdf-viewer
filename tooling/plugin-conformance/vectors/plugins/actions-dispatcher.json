@@ -223,7 +223,6 @@
                 "next": []
               },
               "incomplete": true,
-              "warningFlags": 0,
               "warnings": [
                 "incomplete"
               ]
@@ -234,7 +233,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -255,7 +254,6 @@
                 "next": []
               },
               "incomplete": true,
-              "warningFlags": 0,
               "warnings": [
                 "incomplete"
               ]
@@ -266,7 +264,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -674,7 +672,6 @@
             {
               "root": null,
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -683,7 +680,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -699,7 +696,6 @@
             {
               "root": null,
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -708,7 +704,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -1096,7 +1092,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -1105,7 +1100,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -1315,7 +1310,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -1342,7 +1337,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -1362,7 +1357,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -1382,7 +1377,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -1628,7 +1623,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -1637,7 +1631,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -1825,7 +1819,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -1845,7 +1839,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -2130,7 +2124,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -2139,7 +2132,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -2374,7 +2367,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -2415,7 +2408,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -2775,7 +2768,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -2784,7 +2776,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3118,7 +3110,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -3374,7 +3366,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3383,8 +3374,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -3406,7 +3397,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3415,8 +3405,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -3438,7 +3428,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3447,7 +3436,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3485,7 +3474,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3494,8 +3482,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -3516,7 +3504,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3525,8 +3512,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -3547,7 +3534,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3556,7 +3542,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3635,7 +3621,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3644,7 +3629,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3665,7 +3650,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3674,7 +3658,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3694,7 +3678,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3703,7 +3686,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3723,7 +3706,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3732,7 +3714,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3759,7 +3741,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3768,8 +3749,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -4615,7 +4596,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4624,7 +4604,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -4644,7 +4624,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4653,7 +4632,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -5111,7 +5090,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5120,7 +5098,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -5142,7 +5120,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5151,8 +5128,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -5174,7 +5151,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5183,8 +5159,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -5211,7 +5187,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5220,7 +5195,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -5242,7 +5217,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5251,8 +5225,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -5890,7 +5864,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5899,8 +5872,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -5951,7 +5924,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5960,7 +5932,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -5987,7 +5959,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5996,8 +5967,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -6024,7 +5995,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -6033,8 +6003,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -7140,7 +7110,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -7157,7 +7127,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7246,7 +7215,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7332,7 +7300,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7438,7 +7405,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7506,7 +7472,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7619,7 +7584,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "close": {
@@ -7630,7 +7594,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -7754,7 +7717,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "mouseUp": {
@@ -7765,7 +7727,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "cursorEnter": {
@@ -7776,10 +7737,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -7831,7 +7792,7 @@
                       "filledAt": null,
                       "importedBy": null,
                       "widgets": [],
-                      "family": "text",
+                      "kind": "text",
                       "value": "f-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -7847,7 +7808,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       }
@@ -7879,7 +7839,7 @@
                       "filledAt": null,
                       "importedBy": null,
                       "widgets": [],
-                      "family": "text",
+                      "kind": "text",
                       "value": "g-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -7904,7 +7864,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "openDestination": null,
@@ -7916,7 +7875,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -8639,412 +8597,7 @@
           }
         },
         {
-          "settled": [
-            {
-              "promise": 3,
-              "resolved": {
-                "root": {
-                  "type": "named",
-                  "subtype": "Named",
-                  "name": "A-5",
-                  "next": []
-                },
-                "incomplete": false,
-                "warningFlags": 0,
-                "warnings": []
-              }
-            }
-          ],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "forms.list",
-              "args": []
-            },
-            {
-              "doc": "a",
-              "path": "page.annotations.list",
-              "pon": 1,
-              "args": []
-            }
-          ],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 3
-            },
-            "b": {
-              "subscribers": 3
-            }
-          },
-          "outcome": {
-            "promise": 3
-          }
-        },
-        {
-          "settled": [
-            {
-              "promise": 4,
-              "resolved": {
-                "root": {
-                  "type": "named",
-                  "subtype": "Named",
-                  "name": "E-5",
-                  "next": []
-                },
-                "incomplete": false,
-                "warningFlags": 0,
-                "warnings": []
-              }
-            }
-          ],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "forms.list",
-              "args": []
-            },
-            {
-              "doc": "a",
-              "path": "page.annotations.list",
-              "pon": 1,
-              "args": []
-            }
-          ],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 3
-            },
-            "b": {
-              "subscribers": 3
-            }
-          },
-          "outcome": {
-            "promise": 4
-          }
-        },
-        {
-          "settled": [
-            {
-              "promise": 5,
-              "resolved": {
-                "root": {
-                  "type": "named",
-                  "subtype": "Named",
-                  "name": "U-5",
-                  "next": []
-                },
-                "incomplete": false,
-                "warningFlags": 0,
-                "warnings": []
-              }
-            }
-          ],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "forms.list",
-              "args": []
-            },
-            {
-              "doc": "a",
-              "path": "page.annotations.list",
-              "pon": 1,
-              "args": []
-            }
-          ],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 3
-            },
-            "b": {
-              "subscribers": 3
-            }
-          },
-          "outcome": {
-            "promise": 5
-          }
-        },
-        {
-          "settled": [
-            {
-              "promise": 6,
-              "resolved": null
-            }
-          ],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "forms.list",
-              "args": []
-            },
-            {
-              "doc": "a",
-              "path": "page.annotations.list",
-              "pon": 1,
-              "args": []
-            }
-          ],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 3
-            },
-            "b": {
-              "subscribers": 3
-            }
-          },
-          "outcome": {
-            "promise": 6
-          }
-        },
-        {
-          "settled": [
-            {
-              "promise": 7,
-              "resolved": null
-            }
-          ],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "forms.list",
-              "args": []
-            },
-            {
-              "doc": "a",
-              "path": "page.annotations.list",
-              "pon": 1,
-              "args": []
-            }
-          ],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 3
-            },
-            "b": {
-              "subscribers": 3
-            }
-          },
-          "outcome": {
-            "promise": 7
-          }
-        },
-        {
-          "settled": [
-            {
-              "promise": 8,
-              "resolved": {
-                "root": {
-                  "type": "javascript",
-                  "subtype": "JavaScript",
-                  "script": "k()",
-                  "next": []
-                },
-                "incomplete": false,
-                "warningFlags": 0,
-                "warnings": []
-              }
-            }
-          ],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "forms.list",
-              "args": []
-            }
-          ],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 3
-            },
-            "b": {
-              "subscribers": 3
-            }
-          },
-          "outcome": {
-            "promise": 8
-          }
-        },
-        {
-          "settled": [
-            {
-              "promise": 9,
-              "resolved": {
-                "root": {
-                  "type": "javascript",
-                  "subtype": "JavaScript",
-                  "script": "k()",
-                  "next": []
-                },
-                "incomplete": false,
-                "warningFlags": 0,
-                "warnings": []
-              }
-            }
-          ],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "forms.list",
-              "args": []
-            }
-          ],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 3
-            },
-            "b": {
-              "subscribers": 3
-            }
-          },
-          "outcome": {
-            "promise": 9
-          }
-        },
-        {
-          "settled": [
-            {
-              "promise": 10,
-              "resolved": null
-            }
-          ],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "forms.list",
-              "args": []
-            }
-          ],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 3
-            },
-            "b": {
-              "subscribers": 3
-            }
-          },
-          "outcome": {
-            "promise": 10
-          }
-        },
-        {
-          "settled": [
-            {
-              "promise": 11,
-              "resolved": null
-            }
-          ],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "forms.list",
-              "args": []
-            }
-          ],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 3
-            },
-            "b": {
-              "subscribers": 3
-            }
-          },
-          "outcome": {
-            "promise": 11
-          }
-        },
-        {
-          "settled": [
-            {
-              "promise": 12,
-              "resolved": null
-            }
-          ],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "forms.list",
-              "args": []
-            }
-          ],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 3
-            },
-            "b": {
-              "subscribers": 3
-            }
-          },
-          "outcome": {
-            "promise": 12
-          }
-        },
-        {
-          "settled": [
-            {
-              "promise": 13,
-              "resolved": {
-                "root": {
-                  "type": "named",
-                  "subtype": "Named",
-                  "name": "O-1",
-                  "next": []
-                },
-                "incomplete": false,
-                "warningFlags": 0,
-                "warnings": []
-              }
-            }
-          ],
+          "settled": [],
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
@@ -9060,26 +8613,16 @@
             }
           },
           "outcome": {
-            "promise": 13
-          }
-        },
-        {
-          "settled": [
-            {
-              "promise": 14,
-              "resolved": {
-                "root": {
-                  "type": "named",
-                  "subtype": "Named",
-                  "name": "C-1",
-                  "next": []
-                },
-                "incomplete": false,
-                "warningFlags": 0,
-                "warnings": []
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] \"getActionTree\" is not a function"
               }
             }
-          ],
+          }
+        },
+        {
+          "settled": [],
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
@@ -9095,85 +8638,19 @@
             }
           },
           "outcome": {
-            "promise": 14
-          }
-        },
-        {
-          "settled": [
-            {
-              "promise": 15,
-              "resolved": null
-            }
-          ],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 3
-            },
-            "b": {
-              "subscribers": 3
-            }
-          },
-          "outcome": {
-            "promise": 15
-          }
-        },
-        {
-          "settled": [
-            {
-              "promise": 16,
-              "resolved": null
-            }
-          ],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 3
-            },
-            "b": {
-              "subscribers": 3
-            }
-          },
-          "outcome": {
-            "promise": 16
-          }
-        },
-        {
-          "settled": [
-            {
-              "promise": 17,
-              "resolved": {
-                "root": {
-                  "type": "named",
-                  "subtype": "Named",
-                  "name": "OpenAction",
-                  "next": []
-                },
-                "incomplete": false,
-                "warningFlags": 0,
-                "warnings": []
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] \"getActionTree\" is not a function"
               }
             }
-          ],
+          }
+        },
+        {
+          "settled": [],
           "stateChanges": [],
           "documentEvents": [],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "actions.get",
-              "args": []
-            }
-          ],
+          "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
@@ -9186,26 +8663,16 @@
             }
           },
           "outcome": {
-            "promise": 17
-          }
-        },
-        {
-          "settled": [
-            {
-              "promise": 18,
-              "resolved": {
-                "root": {
-                  "type": "named",
-                  "subtype": "Named",
-                  "name": "WS",
-                  "next": []
-                },
-                "incomplete": false,
-                "warningFlags": 0,
-                "warnings": []
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] \"getActionTree\" is not a function"
               }
             }
-          ],
+          }
+        },
+        {
+          "settled": [],
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
@@ -9221,16 +8688,16 @@
             }
           },
           "outcome": {
-            "promise": 18
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] \"getActionTree\" is not a function"
+              }
+            }
           }
         },
         {
-          "settled": [
-            {
-              "promise": 19,
-              "resolved": null
-            }
-          ],
+          "settled": [],
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
@@ -9246,25 +8713,19 @@
             }
           },
           "outcome": {
-            "promise": 19
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] \"getActionTree\" is not a function"
+              }
+            }
           }
         },
         {
-          "settled": [
-            {
-              "promise": 20,
-              "resolved": null
-            }
-          ],
+          "settled": [],
           "stateChanges": [],
           "documentEvents": [],
-          "engine": [
-            {
-              "doc": "b",
-              "path": "actions.get",
-              "args": []
-            }
-          ],
+          "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
@@ -9277,7 +8738,312 @@
             }
           },
           "outcome": {
-            "promise": 20
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] \"getActionTree\" is not a function"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "b": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] \"getActionTree\" is not a function"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "b": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] \"getActionTree\" is not a function"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "b": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] \"getActionTree\" is not a function"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "b": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] \"getActionTree\" is not a function"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "b": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] \"getActionTree\" is not a function"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "b": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] \"getActionTree\" is not a function"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "b": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] \"getActionTree\" is not a function"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "b": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] \"getActionTree\" is not a function"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "b": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] \"getActionTree\" is not a function"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "b": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] \"getActionTree\" is not a function"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "b": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] \"getActionTree\" is not a function"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            },
+            "b": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] \"getActionTree\" is not a function"
+              }
+            }
           }
         }
       ]
@@ -9486,7 +9252,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -9495,7 +9260,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -9914,7 +9679,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -9923,7 +9687,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -10130,7 +9894,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -10523,7 +10287,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -10532,7 +10295,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -10571,7 +10334,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -10580,7 +10342,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -11126,7 +10888,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "note1-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -11177,7 +10939,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "other-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -11318,7 +11080,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -11327,7 +11088,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -11354,7 +11115,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -11363,7 +11123,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -11935,7 +11695,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -11944,7 +11703,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -11979,7 +11738,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -11988,7 +11746,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -12207,7 +11965,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -12490,7 +12248,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -12499,7 +12256,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -12821,7 +12578,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "note1-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -12917,7 +12674,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -12926,7 +12682,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -12953,7 +12709,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -12962,7 +12717,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -12989,7 +12744,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -12998,7 +12752,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -13086,7 +12840,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -13095,7 +12848,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -13126,7 +12879,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -13135,7 +12887,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -13166,7 +12918,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -13175,7 +12926,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -13202,7 +12953,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -13211,7 +12961,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -14015,7 +13765,7 @@
                       "filledAt": null,
                       "importedBy": null,
                       "widgets": [],
-                      "family": "text",
+                      "kind": "text",
                       "value": "note1-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -14167,7 +13917,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -14176,7 +13925,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -14207,7 +13956,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -14216,7 +13964,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -14243,7 +13991,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -14252,7 +13999,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -14849,7 +14596,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -14858,7 +14604,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -14880,7 +14626,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -14889,7 +14634,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15314,7 +15059,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15323,7 +15067,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15685,7 +15429,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15694,7 +15437,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15715,7 +15458,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15724,7 +15466,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15797,7 +15539,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15806,7 +15547,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15828,7 +15569,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15837,7 +15577,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15859,7 +15599,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15868,7 +15607,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15890,7 +15629,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15899,7 +15637,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15921,7 +15659,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15930,7 +15667,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15959,7 +15696,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15968,7 +15704,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -16276,7 +16012,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -16351,7 +16087,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -16426,7 +16162,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -16501,7 +16237,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -16555,7 +16291,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -16644,7 +16380,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -16882,7 +16618,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -16891,7 +16626,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -16955,7 +16690,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -16964,7 +16698,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -16991,7 +16725,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -17000,7 +16733,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -17027,7 +16760,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -17036,7 +16768,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -17063,7 +16795,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -17072,7 +16803,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -17350,7 +17081,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -17430,7 +17161,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -17510,7 +17241,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -17584,7 +17315,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -17850,7 +17581,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -17859,7 +17589,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -17887,7 +17617,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -17896,7 +17625,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -18141,7 +17870,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -18472,7 +18201,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -18481,7 +18209,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -18510,7 +18238,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -18519,7 +18246,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -18570,7 +18297,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -18579,7 +18305,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -19275,7 +19001,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -19284,7 +19009,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -19318,7 +19043,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -19327,7 +19051,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -19401,7 +19125,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -19430,7 +19154,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -19509,7 +19233,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -19518,7 +19241,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -19563,7 +19286,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -19572,7 +19294,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -19617,7 +19339,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -19626,7 +19347,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -20150,12 +19871,7 @@
               "args": [
                 {
                   "url": "https://home.test/submit",
-                  "fields": null,
-                  "exclude": false,
-                  "includeNoValueFields": false,
-                  "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "fields": null
                 },
                 {
                   "origin": "user",
@@ -20163,7 +19879,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -20187,7 +19903,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -20262,8 +19978,7 @@
                   "intent": {
                     "url": "https://home.test/submit",
                     "format": "fdf",
-                    "method": "post",
-                    "flagsRaw": 0
+                    "method": "post"
                   },
                   "origin": "user",
                   "sentAt": "1970-01-01T00:00:00.000Z"
@@ -20277,12 +19992,7 @@
               "args": [
                 {
                   "url": "https://home.test/submit",
-                  "fields": null,
-                  "exclude": false,
-                  "includeNoValueFields": false,
-                  "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "fields": null
                 },
                 {
                   "origin": "user",
@@ -20290,7 +20000,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -20596,7 +20306,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -20605,7 +20314,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -20626,7 +20335,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -20635,7 +20343,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -20795,7 +20503,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -20885,7 +20593,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -21152,7 +20860,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -21161,7 +20868,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -21196,7 +20903,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -21205,7 +20911,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -21465,7 +21171,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -21502,7 +21207,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -21649,7 +21353,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -21839,7 +21542,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "openDestination": null
@@ -21926,7 +21628,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -21935,8 +21636,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -21957,7 +21658,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -21966,7 +21666,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -21987,7 +21687,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -21996,7 +21695,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -22164,8 +21863,8 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "cursorEnter"
+                    "type": "annotation",
+                    "event": "cursorEnter"
                   }
                 }
               ]
@@ -22227,8 +21926,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "open"
+                    "type": "document",
+                    "event": "open"
                   }
                 }
               ]
@@ -22248,7 +21947,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -22304,7 +22003,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]

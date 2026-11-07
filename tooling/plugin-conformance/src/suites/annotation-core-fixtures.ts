@@ -160,7 +160,7 @@ export const c = (fn: string, label: string, ...args: unknown[]): FunctionCase =
     );
   if (fn === 'geomHitProbe') args[3] = { strokeWidth: args[3] };
   if (
-    ['geomVisualBounds', 'selectionBounds', 'selectionQuad', 'obbFromGeom', 'geomScene'].includes(
+    ['geomVisualBounds', 'selectionBounds', 'selectionQuad', 'obbFromGeometry', 'geomScene'].includes(
       fn,
     ) &&
     typeof args[1] === 'number'

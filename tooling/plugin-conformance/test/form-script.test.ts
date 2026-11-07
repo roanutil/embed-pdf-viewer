@@ -462,7 +462,7 @@ test('all 24 native integration cases send independently specified atomic ops an
   const fields = array(complete.fields).map(object);
   assert.deepEqual(
     fields
-      .filter((field) => ['text', 'checkbox'].includes(String(field.family)))
+      .filter((field) => ['text', 'checkbox'].includes(String(field.kind)))
       .map((field) => [field.ref, field.valueEntry]),
     [
       [ref(1), { kind: 'none' }],
@@ -471,9 +471,9 @@ test('all 24 native integration cases send independently specified atomic ops an
       [ref(6), { kind: 'scalar', value: 'Off' }],
     ],
   );
-  assert.equal(fields.find((field) => field.family === 'checkbox')!.checked, false);
+  assert.equal(fields.find((field) => field.kind === 'checkbox')!.checked, false);
   assert.equal(
-    object(array(fields.find((field) => field.family === 'checkbox')!.widgets)[0]).checked,
+    object(array(fields.find((field) => field.kind === 'checkbox')!.widgets)[0]).checked,
     false,
   );
 });
@@ -492,7 +492,7 @@ test('sandbox inputs carry current fields, configured environment and exact K/V/
         {
           ref: ref(1),
           name: 'name',
-          family: 'text',
+          kind: 'text',
           value: 'Ada',
           defaultValue: null,
           display: 'visible',

@@ -226,7 +226,7 @@ const cases: ScenarioCase[] = [
     'Current reads can name a base annotation by immutable baseIndex; get/update identity no longer depends on an index revision or absent ref.',
     [
       call('get', [baseRef(0)]),
-      call('selection.set', [[baseRef(0)]]),
+      call('selection.select', [[baseRef(0)]]),
       call('selection.list'),
       emit(updatedFact(square(1, { ref: baseRef(0), contents: 'base changed' }))),
       call('get', [baseRef(0)]),
