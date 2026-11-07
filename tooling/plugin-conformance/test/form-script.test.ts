@@ -521,7 +521,8 @@ test('sandbox inputs carry current fields, configured environment and exact K/V/
   });
   assert.deepEqual(object(defaultRun[0]!.args[2]).environment, {
     nowMs: 1500,
-    utcOffsetMinutes: -new Date(1500).getTimezoneOffset(),
+    // The trace is JSON, where -0 (the offset in UTC) reads back as 0.
+    utcOffsetMinutes: 0 - new Date(1500).getTimezoneOffset(),
     randomSeed: 3669834966,
   });
   const identity = callbacks((await run('standalone-identity-callback')).trace, 'sandbox.boot');

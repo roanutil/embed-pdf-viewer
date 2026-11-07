@@ -413,6 +413,10 @@ test('all pure occurrences preserve outcomes or explicitly migrate current field
   const changed = new Set([
     'fields-from-snapshot',
     'fields-empty',
+    // The prelude's text moved upstream: field.setFocus() requests the
+    // cursor (2998c9004), a field view is tagged kind (c4b286a69) and a UI
+    // effect type, goToPage({ pageIndex }) (2ce3f7bc5, fbbb417a6).
+    'prelude-source',
     ...pure.cases.filter((c) => c.fn === 'resolveScriptIdentity').map((c) => c.name),
   ]);
   const negatives: string[] = [];
@@ -553,7 +557,12 @@ test('shared scripted exports remain unchanged', async () => {
       source.indexOf('export interface AnswerSpec'),
       source.indexOf('// ── the script-host driver'),
     );
-  assert.equal(block(current), block(original));
+  // The one drift allowed: the sandbox's `disposed`/`dispose()` are
+  // `destroyed`/`destroy()` upstream (2ce3f7bc5).
+  const renamed = block(original)
+    .replace('      get disposed() {', '      get destroyed() {')
+    .replace('      dispose() {', '      destroy() {');
+  assert.equal(block(current), renamed);
 
 });
 

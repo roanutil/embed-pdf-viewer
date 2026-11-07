@@ -103,7 +103,7 @@ fn js_string(value: &Value) -> String {
 ///
 /// `input` is `SignInput` without its `key`, as the TypeScript spreads it:
 /// the `SignaturePrepareInput` members (`field`, `kind`, `subFilter`,
-/// `digest`, `contentsSize`, `signer`, `certify`, `lock`, `appearance`),
+/// `digest`, `contentsSizeBytes`, `signer`, `certify`, `lock`, `appearance`),
 /// passed to `signatures.prepare` in the caller's order. For a document
 /// timestamp (`kind: 'timestamp'`) the key is a timestamp authority: a CMS
 /// key that returns an RFC 3161 token.
@@ -163,8 +163,8 @@ pub async fn sign(
             &Prepared {
                 digest,
                 algorithm,
-                contents_size: prepared
-                    .get("contentsSize")
+                contents_size_bytes: prepared
+                    .get("contentsSizeBytes")
                     .and_then(Value::as_f64)
                     .unwrap_or(f64::NAN),
             },
@@ -220,7 +220,8 @@ async fn cms_for(
                 hash,
                 profile,
                 signer: raw.clone(),
-                signing_time: (profile == Profile::Pkcs7).then(epdf_kernel::rt::now),
+                signing_time: (profile == Profile::Pkcs7)
+                    .then(|| crate::der::iso_string(epdf_kernel::rt::now()).unwrap_or_default()),
             })
             .await
         }

@@ -13,7 +13,7 @@ impl crate::controller::Core {
     /// Whether settings and the sessions fill/sign permission allow input by hand.
     pub(crate) fn may_fill_by_hand(&self, field: &Value) -> bool {
         let settings = self.settings_now();
-        let family = &field["family"];
+        let family = &field["kind"];
         let fillable = match settings.get("fillable") {
             Some(Value::Bool(all)) => *all,
             Some(Value::Array(families)) => families.contains(family),

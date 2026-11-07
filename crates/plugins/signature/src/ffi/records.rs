@@ -202,14 +202,20 @@ pub struct SignatureSignerClaims {
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, uniffi::Record)]
 #[serde(rename_all = "camelCase")]
 pub struct SignatureSeedValue {
-    pub required_flags: u32,
-    pub present_flags: u32,
-    pub version: Option<u32>,
+    /// `/V`: the seed-value parser the signer needs (1 = PDF 1.5, 2 = PDF
+    /// 1.7).
+    pub parser_version: Option<u32>,
+    pub parser_version_required: bool,
+    /// `/MDP /P` when present: 0 = approval signature only.
     pub mdp: Option<u8>,
     pub filter: Option<String>,
+    pub filter_required: bool,
     pub sub_filters: Vec<String>,
+    pub sub_filters_required: bool,
     pub digest_methods: Vec<String>,
+    pub digest_methods_required: bool,
     pub reasons: Vec<String>,
+    pub reasons_required: bool,
     /// A required entry the engine does not implement: signing refuses.
     pub unsupported_required: bool,
 }
@@ -250,7 +256,7 @@ pub struct SignatureInfo {
     pub sub_filter: Option<String>,
     /// Four offsets, `[a, b, c, d]`.
     pub byte_range: Option<Vec<u64>>,
-    pub contents_size: u64,
+    pub contents_size_bytes: u64,
     pub coverage: Option<SignatureCoverage>,
     pub revision_index: Option<u32>,
     pub signer: SignatureSignerClaims,
@@ -274,7 +280,7 @@ struct SignatureInfoJson {
     filter: Option<String>,
     sub_filter: Option<String>,
     byte_range: Option<Vec<u64>>,
-    contents_size: u64,
+    contents_size_bytes: u64,
     coverage: Option<SignatureCoverage>,
     revision_index: Option<u32>,
     signer: SignatureSignerClaims,
@@ -306,7 +312,7 @@ impl SignatureInfo {
             filter: j.filter,
             sub_filter: j.sub_filter,
             byte_range: j.byte_range,
-            contents_size: j.contents_size,
+            contents_size_bytes: j.contents_size_bytes,
             coverage: j.coverage,
             revision_index: j.revision_index,
             signer: j.signer,
@@ -443,12 +449,12 @@ pub enum SignatureTrustStatus {
 }
 
 /// When the chain was judged.
-#[derive(Clone, Copy, Debug, PartialEq, uniffi::Enum)]
+#[derive(Clone, Debug, PartialEq, uniffi::Enum)]
 pub enum SignatureValidationTime {
     Now,
-    /// A verified RFC 3161 token's time, epoch milliseconds.
+    /// A verified RFC 3161 token's time, as an ISO 8601 string.
     Timestamp {
-        gen_time_ms: f64,
+        gen_time: String,
     },
 }
 
@@ -457,11 +463,11 @@ impl SignatureValidationTime {
         match value.get("kind").and_then(Value::as_str) {
             Some("now") => Ok(SignatureValidationTime::Now),
             Some("timestamp") => {
-                let time = value.get("genTime").and_then(|t| t.get("$date").or(Some(t)));
-                let gen_time_ms = time
-                    .and_then(Value::as_f64)
+                let gen_time = value
+                    .get("genTime")
+                    .and_then(Value::as_str)
                     .ok_or_else(|| invalid_state("a validation time", value))?;
-                Ok(SignatureValidationTime::Timestamp { gen_time_ms })
+                Ok(SignatureValidationTime::Timestamp { gen_time: gen_time.into() })
             }
             _ => Err(invalid_state("a validation time", value)),
         }
@@ -472,8 +478,8 @@ impl From<SignatureValidationTime> for epdf_signature_core::ValidationTime {
     fn from(t: SignatureValidationTime) -> Self {
         match t {
             SignatureValidationTime::Now => epdf_signature_core::ValidationTime::Now,
-            SignatureValidationTime::Timestamp { gen_time_ms } => {
-                epdf_signature_core::ValidationTime::Timestamp { gen_time: gen_time_ms }
+            SignatureValidationTime::Timestamp { gen_time } => {
+                epdf_signature_core::ValidationTime::Timestamp { gen_time }
             }
         }
     }
@@ -538,7 +544,7 @@ pub struct SignatureVerdict {
     pub cryptography: SignatureCryptography,
     pub trust: SignatureTrustStatus,
     pub trust_reason: Option<String>,
-    pub validated_at: SignatureValidationTime,
+    pub validation_time: SignatureValidationTime,
     pub modifications: SignatureModifications,
     pub summary: SignatureSummary,
 }
@@ -552,7 +558,7 @@ struct SignatureVerdictJson {
     trust: SignatureTrustStatus,
     #[serde(default)]
     trust_reason: Option<String>,
-    validated_at: Value,
+    validation_time: Value,
     modifications: SignatureModifications,
     summary: SignatureSummary,
 }
@@ -566,7 +572,7 @@ impl SignatureVerdict {
             cryptography: j.cryptography,
             trust: j.trust,
             trust_reason: j.trust_reason,
-            validated_at: SignatureValidationTime::from_json(&j.validated_at)?,
+            validation_time: SignatureValidationTime::from_json(&j.validation_time)?,
             modifications: j.modifications,
             summary: j.summary,
         })
@@ -583,11 +589,11 @@ impl SignatureVerdict {
 }
 
 /// `validate`'s options. Every member optional.
-#[derive(Clone, Copy, Debug, Default, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, Default, PartialEq, uniffi::Record)]
 pub struct SignatureValidateRequest {
     /// `None` is now.
     #[uniffi(default = None)]
-    pub at: Option<SignatureValidationTime>,
+    pub validation_time: Option<SignatureValidationTime>,
     /// `None` is the working copy, the plugin's default.
     #[uniffi(default = None)]
     pub until: Option<SignatureModificationsBasis>,
@@ -600,7 +606,7 @@ impl SignatureValidateRequest {
         signal: Option<epdf_kernel::signal::AbortSignal>,
     ) -> crate::SignatureValidateOptions {
         crate::SignatureValidateOptions {
-            at: self.at.map(Into::into),
+            validation_time: self.validation_time.map(Into::into),
             until: self.until.map(|u| u.as_str().to_string()),
             signal,
         }
@@ -726,7 +732,7 @@ pub enum SignatureCompletionStatus {
 #[serde(rename_all = "camelCase")]
 pub struct SignatureBaseVersion {
     pub sha256: String,
-    pub byte_length: u64,
+    pub size_bytes: u64,
 }
 
 /// What a signing candidate was built on.
@@ -956,11 +962,11 @@ pub struct SignatureSignInput {
 
 impl SignatureSignInput {
     /// `SignFieldInput`, with a per-call key.
-    pub(crate) fn into_core(self, key: Option<crate::SignatureKey>) -> crate::SignFieldInput {
+    pub(crate) fn into_core(self, key: Option<crate::SigningKey>) -> crate::SignFieldInput {
         crate::SignFieldInput {
             field: field_json(&self.field),
             mark: self.mark.map(Into::into),
-            key,
+            signing_key: key,
             signer: self.signer.map(|s| s.to_json()),
             appearance: None,
             certify: self.certify.map(|p| json!({ "permission": p })),
@@ -1012,7 +1018,7 @@ pub struct SignaturePrepared {
     /// `sha256`, `sha384` or `sha512`.
     pub algorithm: String,
     pub byte_range: Vec<u64>,
-    pub contents_size: u64,
+    pub contents_size_bytes: u64,
     pub sub_filter: String,
     /// What `complete_signature` must present.
     pub expected_version: SignatureVersionRef,
@@ -1028,7 +1034,7 @@ impl SignaturePrepared {
             digest: Value,
             algorithm: String,
             byte_range: Vec<u64>,
-            contents_size: u64,
+            contents_size_bytes: u64,
             sub_filter: String,
             expected_version: SignatureVersionRef,
             #[serde(default)]
@@ -1042,7 +1048,7 @@ impl SignaturePrepared {
                 .ok_or_else(|| invalid_state("a digest", &j.digest))?,
             algorithm: j.algorithm,
             byte_range: j.byte_range,
-            contents_size: j.contents_size,
+            contents_size_bytes: j.contents_size_bytes,
             sub_filter: j.sub_filter,
             expected_version: j.expected_version,
             expires_at: j.expires_at,

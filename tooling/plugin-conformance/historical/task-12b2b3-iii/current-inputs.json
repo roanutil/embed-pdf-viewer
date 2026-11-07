@@ -240,6 +240,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -406,6 +407,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -554,6 +556,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -766,7 +769,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -782,7 +785,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -920,7 +923,7 @@
           "target": {
             "token": "stamp"
           },
-          "method": "readAssetBytes",
+          "method": "getAssetBytes",
           "args": ["stamp-lib-0-1:Stamp2"]
         },
         {
@@ -928,7 +931,7 @@
           "target": {
             "token": "stamp"
           },
-          "method": "readAssetBytes",
+          "method": "getAssetBytes",
           "args": ["nope"]
         },
         {
@@ -965,7 +968,7 @@
         }
       ]
     },
-    "inputSha256": "ae9d1adaa2dd44cbc16e5f1a26ea929cb8f2293dfad13d143895acaa5f2932e0"
+    "inputSha256": "e86418f59e9af2c284629f91436d037b95a089bf2e7c3924bddec9e322789d2d"
   },
   {
     "source": "stamp-library",
@@ -1420,6 +1423,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -1692,6 +1696,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Approved=Approval signature",
@@ -1946,6 +1951,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Approved=Approval signature",
@@ -2210,6 +2216,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Approved=Approval signature",
@@ -2484,6 +2491,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Approved=Approval signature",
@@ -2944,7 +2952,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -2960,7 +2968,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -2976,7 +2984,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -2992,7 +3000,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -3056,7 +3064,7 @@
         }
       ]
     },
-    "inputSha256": "11f8c86fa16815c7bbba0f7fe43be32a9688abaa352a4127c1810390a6ea4378"
+    "inputSha256": "ee6a91cae989100220704c4828c96ba5f7aa6afd3ac2fe5de11eb0c7b103f922"
   },
   {
     "source": "stamp-library",
@@ -3299,6 +3307,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -3465,6 +3474,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -3613,6 +3623,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -3849,7 +3860,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -3865,7 +3876,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -3929,7 +3940,7 @@
         }
       ]
     },
-    "inputSha256": "26ff4dc1896b0d4aa52f8babc133169d2036759f05418b9edd588e18ca960922"
+    "inputSha256": "586dd65af18ea6f1a9e3bf27222493ca4e62d3f23f8daf4dd71f53f3dbc42e1a"
   },
   {
     "source": "stamp-library",
@@ -4278,6 +4289,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -4497,6 +4509,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=First",
@@ -4698,6 +4711,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "From PDF=From PDF",
@@ -4909,6 +4923,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "From PDF=From PDF",
@@ -5221,7 +5236,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -5237,7 +5252,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -5253,7 +5268,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -5300,7 +5315,7 @@
             {
               "name": "",
               "categories": [],
-              "kind": "initials",
+              "assetKind": "initials",
               "assetName": {
                 "$fn": "assetName",
                 "seq": [
@@ -5332,7 +5347,7 @@
         }
       ]
     },
-    "inputSha256": "949675b5a3dcd597d6fb94c0064fbb72bc299431dfc97ef99717f4c907e9c9e8"
+    "inputSha256": "06edf764c699042cde9b6acd37d75a6b4b2e5c2df7d63f8ea10a2f493781e78a"
   },
   {
     "source": "stamp-library",
@@ -5469,6 +5484,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -5582,6 +5598,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -5722,7 +5739,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -5838,7 +5855,7 @@
         }
       ]
     },
-    "inputSha256": "7201338ece2d6619f0d8eb6ccd102f24e5d72d3dbd4040a1386f3ada0f7a1ea5"
+    "inputSha256": "0a87a1864463e6b28cd8b37a0d027ae48fb8ff2670e03e6c02996cebc2e537ad"
   },
   {
     "source": "stamp-library",
@@ -6119,6 +6136,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -6232,6 +6250,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -6372,7 +6391,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -6514,6 +6533,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -6627,6 +6647,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -6767,7 +6788,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -6793,6 +6814,7 @@
                 "value": {
                   "pageCount": 0,
                   "pages": [],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -7007,6 +7029,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -7120,6 +7143,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -7260,7 +7284,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -7373,7 +7397,7 @@
         }
       ]
     },
-    "inputSha256": "202343e7b072343c77cda3a95852a88a541c4603924cc0c90b3158bfd909cbff"
+    "inputSha256": "cfb0acda742c1a1cabdfdd153fcacf176e95019e1f2fcc4874bdab41bfae555d"
   },
   {
     "source": "stamp-library",
@@ -7518,6 +7542,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -7631,6 +7656,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -7771,7 +7797,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -7913,6 +7939,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -8026,6 +8053,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -8166,7 +8194,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -8308,6 +8336,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -8421,6 +8450,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -8561,7 +8591,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -8703,6 +8733,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -8816,6 +8847,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -8956,7 +8988,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -9097,6 +9129,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -9210,6 +9243,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -9350,7 +9384,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -9492,6 +9526,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -9605,6 +9640,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -9745,7 +9781,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -9904,7 +9940,7 @@
         }
       ]
     },
-    "inputSha256": "7b6a1b75b65f513f7889336f64ec6758a010c498426c3a3fd0028f96f1415568"
+    "inputSha256": "7556a5cddfc4ef68a7513619b96b37a3b01127dd48e80e61f4f4b6811a46bc23"
   },
   {
     "source": "stamp-library",
@@ -10049,6 +10085,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -10162,6 +10199,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -10302,7 +10340,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -10358,7 +10396,7 @@
         }
       ]
     },
-    "inputSha256": "c56e81e09eee72c7b363c4fd0c2c085000ef8526d07da87713f477d3b7ac0ded"
+    "inputSha256": "0af4da03dbbbf39edfbc5440d67c5330b0018c3546fb69f2726a575735a8fa1e"
   },
   {
     "source": "stamp-library",
@@ -10367,7 +10405,7 @@
     "name": "previews-must-be-inline-bytes",
     "input": {
       "name": "previews-must-be-inline-bytes",
-      "covers": "A valid URL-sourced image is unsupported on the local asset port. An explicitly malformed image missing contentType still caches its byte source with absent MIME. previewWidth sets the actual render request width.",
+      "covers": "A valid URL-sourced image is unsupported on the local asset port. An explicitly malformed image missing mimeType still caches its byte source with absent MIME. previewWidth sets the actual render request width.",
       "plugins": [
         {
           "factory": "stamp-current",
@@ -10443,7 +10481,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "url",
                     "url": "https://x/p.png"
@@ -10509,6 +10547,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -10622,6 +10661,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -10762,7 +10802,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -10910,6 +10950,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -11023,6 +11064,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -11163,7 +11205,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -11238,7 +11280,7 @@
         }
       ]
     },
-    "inputSha256": "bb7f7ef8d022221df49b1b38796576520f9bef92cffdd3147765c36ab725d3bd"
+    "inputSha256": "6832f6179a63018a5aa0521c704faf135bcdc1cacd68a53814c2d3eacea207d1"
   },
   {
     "source": "stamp-library",
@@ -11379,6 +11421,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -11492,6 +11535,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -11632,7 +11676,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -11710,7 +11754,7 @@
               {
                 "path": "page.render.image",
                 "value": {
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": null
                 }
               },
@@ -11773,6 +11817,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -11886,6 +11931,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -12026,7 +12072,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -12101,7 +12147,7 @@
         }
       ]
     },
-    "inputSha256": "189c0218a66020e5ffcfadd8b53503aefe02c64157dd898a250e2ef947e4ae37"
+    "inputSha256": "8a0e8bd9a504078e5a9928e2926e10f85e966d41f236bb3e3704ee312183f1f2"
   },
   {
     "source": "stamp-library",
@@ -12238,6 +12284,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -12351,6 +12398,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -12593,7 +12641,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -12727,6 +12775,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -12840,6 +12889,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -13000,7 +13050,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -13121,7 +13171,7 @@
         }
       ]
     },
-    "inputSha256": "a715ef7491f52f57122973add178d314c326b2d462dc3c2a38181f8a283d773f"
+    "inputSha256": "62858516bd3e856acc770d828fa93c65f198bc439b52c8396a03646094afa317"
   },
   {
     "source": "stamp-library",
@@ -13258,6 +13308,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -13371,6 +13422,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -13511,7 +13563,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -13564,7 +13616,7 @@
         }
       ]
     },
-    "inputSha256": "9f9b2a85d8c4f981ef90a113e51822e4241b2785fe6a904a3701a9a8ec97d5bb"
+    "inputSha256": "866fa387c38b78fdde73443efe70fb83d3cc15deb88ecf6daaf8bd30d76239d2"
   },
   {
     "source": "stamp-library",
@@ -13705,6 +13757,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -13818,6 +13871,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -13978,7 +14032,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -14112,6 +14166,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -14225,6 +14280,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -14385,7 +14441,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -14523,6 +14579,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -14636,6 +14693,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -14796,7 +14854,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -14930,6 +14988,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -15043,6 +15102,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -15203,7 +15263,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -15414,7 +15474,7 @@
         }
       ]
     },
-    "inputSha256": "40ed658046001c9668e6bf3c16f498ebe120f7e12c993527c47c97ba5cf38a0f"
+    "inputSha256": "b29a8a14d8ac40ea575b063e9961b43bfd5bb2cb774af22852d3d686d0bd6408"
   },
   {
     "source": "stamp-library",
@@ -15551,6 +15611,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -15664,6 +15725,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -15845,7 +15907,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -15918,7 +15980,7 @@
         }
       ]
     },
-    "inputSha256": "486e197db9fb33f3e0499f6e29a1fdac71b35386b11b75f1f4769dab481e6020"
+    "inputSha256": "09eb481f46659c558ffb269dd2684da07c3951f4e46333b589199d75ba865311"
   },
   {
     "source": "stamp-library",
@@ -16055,6 +16117,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -16168,6 +16231,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -16308,7 +16372,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -16362,7 +16426,7 @@
         }
       ]
     },
-    "inputSha256": "ff605ca62009c1bad631b616a10e960d6524359bd096af32537ef5b47342fa3a"
+    "inputSha256": "b2cec688d56791986fa737bd20ee58f3aaafd9b25f0c5e1592df3322b1a7fbd4"
   },
   {
     "source": "stamp-library",
@@ -16621,6 +16685,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -16734,6 +16799,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -16874,7 +16940,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -16928,7 +16994,7 @@
         }
       ]
     },
-    "inputSha256": "55fb507a810fb3c65cc3c72c581c412d952a2d6bc5144d3f7a4cd4965e5b8d85"
+    "inputSha256": "a3a49d5ef701c1d9f1d93056a2abc330c6ccbb4f6e2ec1ba702b046a35f30523"
   },
   {
     "source": "stamp-library",
@@ -17062,6 +17128,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -17175,6 +17242,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -17315,7 +17383,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -17371,7 +17439,7 @@
         }
       ]
     },
-    "inputSha256": "0da946222c49c9da43d814ffbed46efb31f1395ddc9f85e7d727708b0499721e"
+    "inputSha256": "b55ab5280467399a784b067ca85c149f2cfb200587fd2633540b7e53da730761"
   },
   {
     "source": "stamp-library",
@@ -17614,6 +17682,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": [
                     {
                       "name": "First=Approved",
@@ -17808,6 +17877,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "First=Approved",
@@ -17983,6 +18053,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "First=Approved",
@@ -18266,7 +18337,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -18282,7 +18353,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -18416,6 +18487,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -18529,6 +18601,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -18669,7 +18742,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -18811,6 +18884,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -18924,6 +18998,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -19064,7 +19139,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -19212,7 +19287,7 @@
           "target": {
             "token": "stamp"
           },
-          "method": "readAssetBytes",
+          "method": "getAssetBytes",
           "args": ["registered:First"]
         },
         {
@@ -19225,7 +19300,7 @@
         }
       ]
     },
-    "inputSha256": "998acbe282eae5f2ae42b4b5c18582daca1274df004aa7938d19d9a107bf0339"
+    "inputSha256": "ee56e7440f0060a5208002c761b9ffdab3c16e88e7198b5dc2a94e8b38a522a2"
   },
   {
     "source": "stamp-library",
@@ -19365,6 +19440,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -19505,6 +19581,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -19653,7 +19730,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -19787,6 +19864,7 @@
                       }
                     }
                   ],
+                  "labels": [],
                   "namedPages": []
                 }
               },
@@ -19900,6 +19978,7 @@
                         }
                       }
                     ],
+                    "labels": [],
                     "namedPages": [
                       {
                         "name": "Stamp1=Stamp1",
@@ -20048,7 +20127,7 @@
                   "width": 256,
                   "height": 128,
                   "format": "png",
-                  "contentType": "image/png",
+                  "mimeType": "image/png",
                   "source": {
                     "kind": "bytes",
                     "bytes": {
@@ -20190,7 +20269,7 @@
         }
       ]
     },
-    "inputSha256": "63e2bfdd778d838b1aa16440e04d7386b30ab8683ef072a35549b67ace56d5fa"
+    "inputSha256": "98d5270a8aeb0057b85807d1bd57b0877428d6900f5166c6387df422e9616e75"
   },
   {
     "source": "stamp-functions",

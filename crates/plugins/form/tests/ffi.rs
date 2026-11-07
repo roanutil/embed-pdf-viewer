@@ -33,7 +33,7 @@ fn text(name: &str) -> Value {
         "filledByName": null, "filledAt": null, "importedBy": null,
         "widgets": [{ "ref": { "kind": "objectNumber", "page": page(), "objectNumber": 101 },
             "objectNumber": 101, "page": page() }],
-        "family": "text", "value": name, "defaultValue": "", "maxLength": 40,
+        "kind": "text", "value": name, "defaultValue": "", "maxLength": 40,
         "multiline": false, "password": false, "comb": false
     })
 }
@@ -44,7 +44,7 @@ fn row() -> Value {
         "page": page(), "rect": { "x": 10, "y": 20, "width": 100, "height": 24 },
         "hidden": false, "noView": false, "strokeWidth": 1, "borderStyle": "solid",
         "textAlign": "left", "field": { "kind": "objectNumber", "objectNumber": 1 },
-        "fieldFamily": "text",
+        "fieldKind": "text",
     })
 }
 

@@ -61,7 +61,7 @@ pub struct Prepared {
     pub digest: Vec<u8>,
     /// As the engine spelled it; compared as text.
     pub algorithm: String,
-    pub contents_size: f64,
+    pub contents_size_bytes: f64,
 }
 
 /// `verifyForCompletion`.
@@ -72,13 +72,13 @@ pub fn verify_for_completion(
 ) -> Gate {
     let profile = profile.into();
     let refuse = |reason, detail: String| Gate::Refused { reason, detail };
-    if cms.len() as f64 > prepared.contents_size {
+    if cms.len() as f64 > prepared.contents_size_bytes {
         return refuse(
             "too-large",
             format!(
                 "the CMS is {} bytes; {} were reserved",
                 cms.len(),
-                crate::number_text(prepared.contents_size)
+                crate::number_text(prepared.contents_size_bytes)
             ),
         );
     }

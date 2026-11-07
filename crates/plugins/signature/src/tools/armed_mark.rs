@@ -68,7 +68,7 @@ impl InteractionHandler for ArmedMarkHandler {
             return false;
         };
         let field = &hit.field;
-        if field.get("family").and_then(Value::as_str) != Some("signature") {
+        if field.get("kind").and_then(Value::as_str) != Some("signature") {
             return false;
         }
         // A signed field is final: consume the click (no stamp lands on it)

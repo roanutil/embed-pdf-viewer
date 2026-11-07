@@ -207,7 +207,7 @@ impl crate::controller::Core {
                     continue;
                 }
                 let Some(value) = write_of_plain_value(field, &plain) else {
-                    let family = crate::value::string_of(get(field, "family"));
+                    let family = crate::value::string_of(get(field, "kind"));
                     skipped.push(json!({ "ref": name, "reason": format!("a {family} field can't take this value") }));
                     continue;
                 };

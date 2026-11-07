@@ -53,7 +53,7 @@ fn snapshot() -> Value {
             "filter": if signed { json!("Adobe.PPKLite") } else { Value::Null },
             "subFilter": if signed { json!("ETSI.CAdES.detached") } else { Value::Null },
             "byteRange": if signed { json!([0, 100, 200, 50]) } else { Value::Null },
-            "contentsSize": if signed { 8192 } else { 0 },
+            "contentsSizeBytes": if signed { 8192 } else { 0 },
             "coverage": if signed { json!("whole-revision") } else { Value::Null },
             "revisionIndex": if signed { json!(0) } else { Value::Null },
             "signer": signer, "docMdp": null, "catalogCertification": false,
@@ -74,7 +74,7 @@ fn snapshot() -> Value {
 
 fn analysis() -> Value {
     json!({ "mode": "authoritative", "policyVersion": 4,
-            "basis": { "version": { "sha256": "x", "byteLength": 400 }, "editsVersion": 0, "source": "persisted" },
+            "basis": { "version": { "sha256": "x", "sizeBytes": 400 }, "editsVersion": 0, "source": "persisted" },
             "since": { "revisionIndex": 0, "signatureIndex": 0 }, "until": { "revisionIndex": 1 },
             "restrictions": [],
             "current": { "verdict": "permitted", "complete": true, "findings": [], "method": "net-state",
@@ -382,7 +382,7 @@ fn signing_spec(cms: Arc<Mutex<Option<Value>>>) -> TestSpec {
             PREPARE_INPUT.with(|p| *p.borrow_mut() = args.first().cloned().unwrap_or(Value::Null));
             let prepared = json!({
                 "signingId": "s1", "digest": { "$bytes": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=" },
-                "algorithm": "sha256", "byteRange": [0, 100, 200, 50], "contentsSize": 8192,
+                "algorithm": "sha256", "byteRange": [0, 100, 200, 50], "contentsSizeBytes": 8192,
                 "subFilter": "ETSI.CAdES.detached",
                 "expectedVersion": { "baseSha256": "x", "editsVersion": 0 }, "expiresAt": null
             });
@@ -398,7 +398,7 @@ fn signing_spec(cms: Arc<Mutex<Option<Value>>>) -> TestSpec {
             *cms.lock().unwrap() = args.first().and_then(|a| a.get("cms")).cloned();
             let completed = json!({
                 "status": "completed", "signature": signed_14(),
-                "version": { "sha256": "y", "byteLength": 500 },
+                "version": { "sha256": "y", "sizeBytes": 500 },
                 "previous": { "baseSha256": "x", "editsVersion": 0 },
                 "protection": snapshot()["protection"].clone(),
                 "meta": { "affectedPages": [], "cacheDelta": null, "opId": "s1", "undoable": false }

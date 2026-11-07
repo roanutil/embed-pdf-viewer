@@ -56,7 +56,7 @@ pub fn value_of(field: &Value) -> Option<Value> {
         return None;
     }
     let member = |key: &str| get(field, key).cloned().unwrap_or(Value::Null);
-    match str_of(field, "family") {
+    match str_of(field, "kind") {
         Some("text") => Some(json!({ "value": member("value") })),
         Some("checkbox") => Some(json!({ "checked": member("checked") })),
         Some("radio") => {
@@ -88,7 +88,7 @@ pub fn plain_value_of(field: &Value) -> Option<Value> {
 /// `writeOfPlainValue(field, value)`: the write a plain value makes for a
 /// field of this family, or none when the family can't take it.
 pub fn write_of_plain_value(field: &Value, value: &Value) -> Option<Value> {
-    match str_of(field, "family") {
+    match str_of(field, "kind") {
         Some("checkbox") => match value {
             Value::Bool(b) => Some(json!({ "checked": b })),
             Value::String(_) | Value::Null => Some(json!({ "value": value })),
@@ -111,7 +111,7 @@ pub fn write_of_plain_value(field: &Value, value: &Value) -> Option<Value> {
 /// `isEmpty(field)`: whether a field holds nothing a required check would accept.
 pub(crate) fn is_empty(field: &Value) -> bool {
     let member = |key: &str| get(field, key);
-    match str_of(field, "family") {
+    match str_of(field, "kind") {
         Some("text" | "combobox") => member("value") == Some(&json!("")),
         Some("checkbox") => !truthy(member("checked")),
         Some("radio") => {
@@ -206,11 +206,11 @@ impl crate::controller::Core {
         if page_arg.is_some() && page.is_none() {
             return Vec::new();
         }
-        let family = get(filter, "family").filter(|f| truthy(Some(f)));
+        let family = get(filter, "kind").filter(|f| truthy(Some(f)));
         let name = get(filter, "name");
         all.iter()
             .filter(|field| {
-                family.is_none_or(|f| crate::value::strict_eq(get(field, "family"), Some(f)))
+                family.is_none_or(|f| crate::value::strict_eq(get(field, "kind"), Some(f)))
                     && name.is_none_or(|n| crate::value::strict_eq(get(field, "name"), Some(n)))
                     && page.as_ref().is_none_or(|page| {
                         items(field, "widgets").iter().any(|w| {

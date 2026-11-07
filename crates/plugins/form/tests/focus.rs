@@ -6,7 +6,7 @@ use plugin_conformance::test_kernel::{Reply, TestKernel, TestSpec, settle};
 use serde_json::{Value, json};
 use std::{cell::RefCell, rc::Rc};
 fn field(n: u32, value: &str) -> Value {
-    json!({"ref":{"kind":"objectNumber","objectNumber":n},"name":format!("field{n}"),"family":"text","readOnly":n==3,"value":value,"valueEntry":{"kind":"scalar","value":value},"widgets":[{"objectNumber":n+10,"page":{"kind":"objectNumber","objectNumber":1}}]})
+    json!({"ref":{"kind":"objectNumber","objectNumber":n},"name":format!("field{n}"),"kind":"text","readOnly":n==3,"value":value,"valueEntry":{"kind":"scalar","value":value},"widgets":[{"objectNumber":n+10,"page":{"kind":"objectNumber","objectNumber":1}}]})
 }
 fn widget(n: u32) -> Value {
     json!({"kind":"objectNumber","objectNumber":n,"page":{"kind":"objectNumber","objectNumber":1}})
@@ -162,7 +162,7 @@ fn a_users_focus_cancels_an_offscreen_request_and_settings_gate_input() {
 #[test]
 fn radios_are_one_stop_at_the_checked_button_and_arrows_wrap_and_pick() {
     rt::reset();
-    let plan = json!({"ref":{"kind":"objectNumber","objectNumber":5},"name":"plan","family":"radio","readOnly":false,"value":"yearly","valueEntry":{"kind":"scalar","value":"yearly"},"widgets":[{"objectNumber":15,"page":{"objectNumber":1},"checked":false,"exportValue":"monthly"},{"objectNumber":16,"page":{"objectNumber":1},"checked":true,"exportValue":"yearly"}]});
+    let plan = json!({"ref":{"kind":"objectNumber","objectNumber":5},"name":"plan","kind":"radio","readOnly":false,"value":"yearly","valueEntry":{"kind":"scalar","value":"yearly"},"widgets":[{"objectNumber":15,"page":{"objectNumber":1},"checked":false,"exportValue":"monthly"},{"objectNumber":16,"page":{"objectNumber":1},"checked":true,"exportValue":"yearly"}]});
     let snapshot = json!({"formKind":"acroform","needsAppearances":false,"calculationOrder":[],"fields":[plan],"widgets":[{"ref":widget(15),"page":{"objectNumber":1},"subtype":"widget","rect":{"x":10,"y":100,"width":20,"height":20}},{"ref":widget(16),"page":{"objectNumber":1},"subtype":"widget","rect":{"x":10,"y":200,"width":20,"height":20}}]});
     let applied = Rc::new(RefCell::new(Vec::new()));
     let log = applied.clone();

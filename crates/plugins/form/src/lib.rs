@@ -64,7 +64,7 @@ pub use scripting::controller::{
     FormScriptResult, FormScriptingController, FormScriptingControllerOptions, FormScripts,
     ScriptStatus, TransactionBody, TransactionPort, create_form_scripting_controller,
 };
-pub use tools::definitions::{FORM_TOOLS, FormToolDef, PLACE_TAGS, form_tool_by_id};
+pub use tools::definitions::{FORM_TOOLS, FormToolDefinition, PLACE_TAGS, form_tool_by_id};
 
 /// `FormToken`: the public lens and the host lens are one capability.
 pub static FORM: LazyLock<Token<FormCapability>> = LazyLock::new(|| {

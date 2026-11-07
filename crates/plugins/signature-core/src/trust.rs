@@ -31,9 +31,9 @@ pub trait TrustPort {
 #[derive(Clone, Debug, PartialEq)]
 pub enum ValidationTime {
     Now,
-    /// A verified RFC 3161 token's `genTime`, in epoch milliseconds.
+    /// A verified RFC 3161 token's `genTime`, as an ISO 8601 string.
     Timestamp {
-        gen_time: f64,
+        gen_time: String,
     },
 }
 
@@ -42,7 +42,7 @@ impl ValidationTime {
         match self {
             ValidationTime::Now => json!({ "kind": "now" }),
             ValidationTime::Timestamp { gen_time } => {
-                json!({ "kind": "timestamp", "genTime": { "$date": gen_time }, "tokenVerified": true })
+                json!({ "kind": "timestamp", "genTime": gen_time, "tokenVerified": true })
             }
         }
     }
@@ -126,7 +126,7 @@ pub async fn validate_chain(
         anchors.iter().map(|der| Certificate::from_ber(der)).collect::<Result<Vec<_>, _>>()?;
     let check_date = match at {
         ValidationTime::Now => epdf_kernel::rt::now(),
-        ValidationTime::Timestamp { gen_time } => gen_time,
+        ValidationTime::Timestamp { gen_time } => crate::der::date_from_iso(&gen_time),
     };
     let result = ChainEngine::new(trusted, internal.certificates.clone(), check_date).verify();
     Ok(match result {

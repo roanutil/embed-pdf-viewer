@@ -25,7 +25,7 @@ use crate::model::{
     FieldIndex, ShownWidget, field_for_widget, picture_version_of, shown_widgets_of, widget_number,
     widget_row_of,
 };
-use crate::value::{get, items, json_stringify, str_of};
+use crate::value::{get, items, json_stringify, str_of, truthy};
 
 /// `WidgetPainting`: a widget as the painter draws it, its scene on the page.
 #[derive(Clone, Debug)]
@@ -79,7 +79,7 @@ impl crate::controller::Core {
         let formatted = |field: &Value| {
             self.formatted.text_of(field).map(Value::String).unwrap_or_else(|| member("value"))
         };
-        let content = match field.and_then(|f| str_of(f, "family")) {
+        let content = match field.and_then(|f| str_of(f, "kind")) {
             Some("text") => json!([
                 formatted(field.unwrap()),
                 member("multiline"),
@@ -97,7 +97,7 @@ impl crate::controller::Core {
                     .collect();
                 json!([member("topIndex"), options])
             }
-            _ => json!([field.and_then(|f| get(f, "family")).cloned().unwrap_or(Value::Null)]),
+            _ => json!([field.and_then(|f| get(f, "kind")).cloned().unwrap_or(Value::Null)]),
         };
         let size = |key: &str| bx.and_then(|b| get(b, key)).cloned().unwrap_or(Value::Null);
         let rotation = match get(row, "rotation") {
@@ -182,12 +182,13 @@ impl crate::controller::Core {
     }
 
     /// `looks.painterOf(row)`: how the painter draws a widget row live,
-    /// upright in a box; `None` for one whose field it doesn't draw.
+    /// upright in a box; `None` for one whose field it doesn't draw, or with
+    /// a mark in it, which only its picture shows.
     pub(crate) fn painter_of(&self, row: &Value) -> Painter {
         let view = self.view();
         let Some(field) = field_for_widget(&view, widget_number(row)) else { return Painter(None) };
         let Some(facts) = decoded::<FieldFacts>(field) else { return Painter(None) };
-        if !paints(facts.family()) {
+        if !paints(facts.family()) || truthy(get(row, "hasMark")) {
             return Painter(None);
         }
         let me = self.weak();

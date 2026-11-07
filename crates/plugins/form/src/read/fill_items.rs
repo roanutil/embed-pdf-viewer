@@ -47,7 +47,7 @@ pub fn project_widget(
             .unwrap_or(Value::Null),
     );
     let member = |key: &str| get(field, key).cloned().unwrap_or(Value::Null);
-    match str_of(field, "family") {
+    match str_of(field, "kind") {
         Some("text") => {
             put("control", json!("text"));
             put("value", member("value"));

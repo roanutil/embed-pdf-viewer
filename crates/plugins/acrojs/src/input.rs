@@ -20,14 +20,14 @@ fn value_from_entry(entry: &Value) -> Option<ScriptValue> {
     }
 }
 
-fn is_toggle(family: &str) -> bool {
-    family == "checkbox" || family == "radio"
+fn is_toggle(kind: &str) -> bool {
+    kind == "checkbox" || kind == "radio"
 }
 
 /// `fieldValueFromEntry`: a checkbox or radio group shows the export value of
 /// its checked widget, as Acrobat's `field.value` does, or `'Off'`.
-fn field_value_from_entry(family: &str, widgets: &[Value], entry: &Value) -> Option<ScriptValue> {
-    if !is_toggle(family) {
+fn field_value_from_entry(kind: &str, widgets: &[Value], entry: &Value) -> Option<ScriptValue> {
+    if !is_toggle(kind) {
         return value_from_entry(entry);
     }
     if entry.get("kind").and_then(Value::as_str) != Some("scalar") {
@@ -101,7 +101,7 @@ pub fn script_fields_from_snapshot(
             };
             let flag =
                 |key: &str| field.get(key).and_then(Value::as_bool).ok_or_else(|| malformed(key));
-            let family = text("family")?;
+            let kind = text("kind")?;
             let options = match field.get("options") {
                 None => None,
                 Some(options) => Some(
@@ -128,8 +128,8 @@ pub fn script_fields_from_snapshot(
             };
             let widgets = field.get("widgets").and_then(Value::as_array);
             // Toggles read `field.widgets` unguarded, so a toggle without
-            // them is refused; any other family only reads the first one.
-            let toggle_widgets = if is_toggle(&family) {
+            // them is refused; any other kind only reads the first one.
+            let toggle_widgets = if is_toggle(&kind) {
                 Some(widgets.ok_or_else(|| malformed("widgets"))?)
             } else {
                 None
@@ -159,16 +159,16 @@ pub fn script_fields_from_snapshot(
                 field_ref: field.get("ref").cloned().ok_or_else(|| malformed("ref"))?,
                 name: text("name")?,
                 value: field_value_from_entry(
-                    &family,
+                    &kind,
                     widget_list,
                     field.get("valueEntry").unwrap_or(&Value::Null),
                 ),
                 default_value: field_value_from_entry(
-                    &family,
+                    &kind,
                     widget_list,
                     field.get("defaultValueEntry").unwrap_or(&Value::Null),
                 ),
-                family,
+                kind,
                 display: display_of(by_number.get(&row_key(first_number)).copied()).into(),
                 read_only: flag("readOnly")?,
                 required: flag("required")?,
@@ -191,10 +191,10 @@ mod tests {
         widget
     }
 
-    fn field(n: u32, name: &str, family: &str, widgets: Vec<Value>, over: Value) -> Value {
+    fn field(n: u32, name: &str, kind: &str, widgets: Vec<Value>, over: Value) -> Value {
         let mut field = json!({
             "ref": { "kind": "objectNumber", "objectNumber": n },
-            "name": name, "family": family, "readOnly": false, "required": false,
+            "name": name, "kind": kind, "readOnly": false, "required": false,
             "valueEntry": { "kind": "none" }, "defaultValueEntry": { "kind": "none" },
             "widgets": widgets,
         });
@@ -319,7 +319,7 @@ mod tests {
             "[acrojs] malformed form field: widgets"
         );
         let toggle = json!({
-            "fields": [{ "ref": {}, "name": "b", "family": "checkbox", "readOnly": false,
+            "fields": [{ "ref": {}, "name": "b", "kind": "checkbox", "readOnly": false,
                 "required": false, "valueEntry": { "kind": "none" } }],
             "widgets": [],
         });

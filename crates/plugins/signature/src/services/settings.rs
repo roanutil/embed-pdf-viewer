@@ -16,7 +16,7 @@ use epdf_kernel::settings::Settings;
 use epdf_signature_core::TrustPort;
 use serde_json::{Map, Value, json};
 
-use crate::contract::{SignatureConfig, SignatureKey, SignatureMode, SignatureSettings};
+use crate::contract::{SignatureConfig, SignatureMode, SignatureSettings, SigningKey};
 
 const KEY_HANDLE: &str = "$signatureKey";
 const TRUST_HANDLE: &str = "$signatureTrust";
@@ -24,7 +24,7 @@ const TRUST_HANDLE: &str = "$signatureTrust";
 /// The registration's ports, by handle.
 #[derive(Default)]
 pub struct PortTable {
-    keys: RefCell<Vec<(u64, SignatureKey)>>,
+    keys: RefCell<Vec<(u64, SigningKey)>>,
     trusts: RefCell<Vec<(u64, Rc<dyn TrustPort>)>>,
     next: Cell<u64>,
 }
@@ -36,7 +36,7 @@ impl PortTable {
         n
     }
 
-    fn key_json(&self, key: &Option<SignatureKey>) -> Value {
+    fn key_json(&self, key: &Option<SigningKey>) -> Value {
         let Some(key) = key else { return Value::Null };
         let found = self.keys.borrow().iter().find(|(_, k)| k.same(key)).map(|(n, _)| *n);
         let n = found.unwrap_or_else(|| {
@@ -81,7 +81,7 @@ impl PortTable {
         self.keys.borrow().len() + self.trusts.borrow().len()
     }
 
-    fn key_of(&self, value: &Value) -> Option<SignatureKey> {
+    fn key_of(&self, value: &Value) -> Option<SigningKey> {
         let n = value.get(KEY_HANDLE).and_then(Value::as_u64)?;
         self.keys.borrow().iter().find(|(m, _)| *m == n).map(|(_, k)| k.clone())
     }
@@ -95,8 +95,8 @@ impl PortTable {
     /// the members it names.
     pub fn encode(&self, config: &SignatureConfig) -> Value {
         let mut out = Map::new();
-        if let Some(key) = &config.key {
-            out.insert("key".into(), self.key_json(key));
+        if let Some(key) = &config.signing_key {
+            out.insert("signingKey".into(), self.key_json(key));
         }
         if let Some(mode) = &config.mode {
             out.insert("mode".into(), mode.map_or(Value::Null, |m| json!(m.as_str())));
@@ -113,7 +113,7 @@ impl PortTable {
     /// The settings a stored JSON value holds.
     pub fn decode(&self, value: &Value) -> SignatureSettings {
         SignatureSettings {
-            key: value.get("key").and_then(|v| self.key_of(v)),
+            signing_key: value.get("signingKey").and_then(|v| self.key_of(v)),
             mode: value.get("mode").and_then(Value::as_str).and_then(SignatureMode::from_name),
             trust: value.get("trust").and_then(|v| self.trust_of(v)),
             allow_certify: value.get("allowCertify").is_some_and(crate::js::truthy),
@@ -123,7 +123,7 @@ impl PortTable {
 
 /// `SIGNATURE_DEFAULTS` in the store.
 pub fn defaults_json() -> Value {
-    json!({ "key": null, "mode": null, "trust": null, "allowCertify": false })
+    json!({ "signingKey": null, "mode": null, "trust": null, "allowCertify": false })
 }
 
 /// The registration's table and its registered settings.

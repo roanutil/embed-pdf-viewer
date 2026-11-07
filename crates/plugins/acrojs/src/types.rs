@@ -45,7 +45,7 @@ pub struct ScriptFieldInput {
     #[serde(rename = "ref")]
     pub field_ref: FormFieldRef,
     pub name: String,
-    pub family: String,
+    pub kind: String,
     /// `None` where the TypeScript's value is `undefined` (an entry kind it
     /// does not know): the member is then absent.
     #[serde(default, deserialize_with = "present", skip_serializing_if = "Option::is_none")]
@@ -315,7 +315,7 @@ pub struct ScriptInput {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase")]
 pub enum ScriptUiEffect {
     /// Ask the form plugin to put the cursor in the named field.
     FocusField {
@@ -328,8 +328,9 @@ pub enum ScriptUiEffect {
         title: Option<String>,
     },
     Print,
-    GotoPage {
-        page: f64,
+    #[serde(rename_all = "camelCase")]
+    GoToPage {
+        page_index: f64,
     },
     /// `doc.submitForm(...)`: a submit intent, resolved and sink-routed
     /// outside the VM. `field_names` are include-mode; `None` is the whole
@@ -347,13 +348,13 @@ pub enum ScriptUiEffect {
 }
 
 impl ScriptUiEffect {
-    /// `effect.kind`.
-    pub fn kind(&self) -> &'static str {
+    /// `effect.type`.
+    pub fn effect_type(&self) -> &'static str {
         match self {
             ScriptUiEffect::Alert { .. } => "alert",
             ScriptUiEffect::Print => "print",
             ScriptUiEffect::FocusField { .. } => "focusField",
-            ScriptUiEffect::GotoPage { .. } => "gotoPage",
+            ScriptUiEffect::GoToPage { .. } => "goToPage",
             ScriptUiEffect::SubmitForm { .. } => "submitForm",
         }
     }
@@ -512,7 +513,7 @@ mod tests {
     }
 
     #[test]
-    fn names_each_ui_effect_kind() {
+    fn names_each_ui_effect_type() {
         let submit = ScriptUiEffect::SubmitForm {
             url: None,
             field_names: None,
@@ -523,10 +524,10 @@ mod tests {
         for effect in [
             ScriptUiEffect::Alert { message: String::new(), icon: 0.0, title: None },
             ScriptUiEffect::Print,
-            ScriptUiEffect::GotoPage { page: 0.0 },
+            ScriptUiEffect::GoToPage { page_index: 0.0 },
             submit,
         ] {
-            assert_eq!(serde_json::to_value(&effect).unwrap()["kind"], effect.kind());
+            assert_eq!(serde_json::to_value(&effect).unwrap()["type"], effect.effect_type());
         }
     }
 }

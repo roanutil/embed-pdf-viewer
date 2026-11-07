@@ -131,7 +131,7 @@ fn token_at(gen_time: f64) -> Vec<u8> {
 }
 
 fn prepared(digest: &[u8], algorithm: &str) -> Prepared {
-    Prepared { digest: digest.to_vec(), algorithm: algorithm.into(), contents_size: 8192.0 }
+    Prepared { digest: digest.to_vec(), algorithm: algorithm.into(), contents_size_bytes: 8192.0 }
 }
 
 fn refusal(gate: Gate) -> (&'static str, String) {
@@ -188,7 +188,7 @@ fn the_timestamp_gate_refuses_what_the_typescript_refuses() {
         ("digest-mismatch", "the token's message imprint is not the prepared digest".into())
     );
     let mut small = prepared(&DIGEST, "sha256");
-    small.contents_size = 16.0;
+    small.contents_size_bytes = 16.0;
     assert_eq!(refusal(verify_for_completion(&token, &small, timestamp)).0, "too-large");
 
     // A changed genTime no longer matches the signed message digest.
@@ -279,7 +279,7 @@ impl DocumentHandle for ScriptedDoc {
                 "signingId": "signing-1",
                 "digest": Bytes(DIGEST.to_vec()).to_json(),
                 "algorithm": "sha256",
-                "contentsSize": 8192,
+                "contentsSizeBytes": 8192,
                 "subFilter": "ETSI.RFC3161",
                 "expectedVersion": { "baseSha256": "base", "editsVersion": 0 },
             })),

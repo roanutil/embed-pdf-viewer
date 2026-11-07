@@ -296,7 +296,7 @@ fn a_lost_object_number_leaves_the_held_pool() {
     rt::run_until_stalled();
     let form = kernel.capability(&FORM, Some("a")).expect("the form capability");
     let draft = json!({
-        "family": "text", "name": "name",
+        "kind": "text", "name": "name",
         "widgets": [{ "page": object_ref(1), "rect": { "x": 10, "y": 20, "width": 100, "height": 24 } }],
     });
     // The field and its widget take two numbers; the pool holds one.
@@ -363,7 +363,7 @@ fn the_painter_draws_a_text_field_a_checkbox_and_a_listbox() {
     let form = kernel.capability(&FORM, Some("a")).expect("the form capability");
     let mut painted = Vec::new();
     for field in snapshot["fields"].as_array().unwrap() {
-        let family = field["family"].as_str().unwrap();
+        let family = field["kind"].as_str().unwrap();
         if !["text", "checkbox", "listbox"].contains(&family) {
             continue;
         }

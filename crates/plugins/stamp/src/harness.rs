@@ -62,7 +62,7 @@ pub const MEMBERS: &[&str] = &[
     "getAsset",
     "getAssetPreview",
     "renderAssetPreview",
-    "readAssetBytes",
+    "getAssetBytes",
     "exportLibrary",
     "canPlace",
     "canCreateFromAnnotations",
@@ -507,10 +507,10 @@ fn mark_source(value: &Value) -> Result<MarkSource, Error> {
     })
 }
 
-fn add_asset_input(value: Option<&Value>) -> Result<AddAssetInput, Error> {
+fn add_asset_input(value: Option<&Value>) -> Result<CreateAssetInput, Error> {
     let input = value.cloned().unwrap_or(Value::Null);
     let m = |k: &str| member(Some(&input), k);
-    Ok(AddAssetInput {
+    Ok(CreateAssetInput {
         library_id: m("libraryId").and_then(Value::as_str).map(str::to_string),
         name: m("name").and_then(Value::as_str).map(str::to_string),
         label: m("label").and_then(Value::as_str).map(str::to_string),
@@ -536,7 +536,7 @@ fn import_options(value: Option<&Value>, h: &Harness) -> Result<ImportLibraryOpt
     Ok(ImportLibraryOptions {
         name: string(member(value, "name")),
         categories: decoded(member(value, "categories"))?,
-        kind: decoded(member(value, "kind"))?,
+        asset_kind: decoded(member(value, "assetKind"))?,
         library_kind: string(member(value, "libraryKind")),
         asset_name,
         signal: signal_of(value),
@@ -672,8 +672,8 @@ fn call_stamp(
                 preview_json(p.as_ref())
             })
         }
-        "readAssetBytes" => {
-            Outcome::Returned(cap.read_asset_bytes(&key(args, 0)).map_or(Value::Null, bytes_json))
+        "getAssetBytes" => {
+            Outcome::Returned(cap.get_asset_bytes(&key(args, 0)).map_or(Value::Null, bytes_json))
         }
         "exportLibrary" => {
             json_promise(cap.export_library(&key(args, 0), operation(arg(1))), |b| {

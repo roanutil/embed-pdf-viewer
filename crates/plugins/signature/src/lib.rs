@@ -105,7 +105,7 @@ pub fn signature_plugin_creating(
         .settings(SettingsDeclaration {
             defaults: defaults_json(),
             registered,
-            whole: vec!["key".to_string(), "trust".to_string()],
+            whole: vec!["signingKey".to_string(), "trust".to_string()],
         })
         .create(&SIGNATURE, move |cx| {
             let (api, connect) = create(cx, table.clone())?;

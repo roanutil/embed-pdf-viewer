@@ -16,9 +16,14 @@ use crate::model::{pending_of, same_field_ref, snapshot_of, verdict_index};
 pub(crate) struct Lists {
     record: Rc<Value>,
     verdicts: Option<Rc<Value>>,
+    all: Rc<Vec<Value>>,
     signed: Rc<Vec<Value>>,
     unsigned: Rc<Vec<Value>>,
 }
+
+/// `lists()`: every signature field with its verdict, the signed ones
+/// among them, and the unsigned fields' refs.
+type ListSet = (Rc<Vec<Value>>, Rc<Vec<Value>>, Rc<Vec<Value>>);
 
 fn has(value: &Value, key: &str) -> bool {
     value.get(key).is_some()
@@ -67,7 +72,7 @@ impl SignatureCapability {
             .cloned()
     }
 
-    fn lists(&self) -> (Rc<Vec<Value>>, Rc<Vec<Value>>) {
+    fn lists(&self) -> ListSet {
         let record = self.mirror().get();
         let verdicts = self.state().verdicts.clone();
         if let Some(kept) = &*self.0.lists.borrow() {
@@ -77,16 +82,15 @@ impl SignatureCapability {
                 _ => false,
             };
             if Rc::ptr_eq(&kept.record, &record) && same_verdicts {
-                return (kept.signed.clone(), kept.unsigned.clone());
+                return (kept.all.clone(), kept.signed.clone(), kept.unsigned.clone());
             }
         }
-        let (signed, unsigned) = match snapshot_of(&record) {
-            None => (Vec::new(), Vec::new()),
+        let (all, signed, unsigned) = match snapshot_of(&record) {
+            None => (Vec::new(), Vec::new(), Vec::new()),
             Some(current) => {
                 let signatures = signatures_of(current);
-                let signed = signatures
+                let all: Vec<Value> = signatures
                     .iter()
-                    .filter(|s| is_signed(s))
                     .map(|signature| {
                         let mut info = signature.as_object().cloned().unwrap_or_default();
                         let verdict = Self::verdict_in(verdicts.as_deref(), signature);
@@ -94,18 +98,24 @@ impl SignatureCapability {
                         Value::Object(info)
                     })
                     .collect();
+                let signed = all.iter().filter(|s| is_signed(s)).cloned().collect();
                 let unsigned = signatures
                     .iter()
                     .filter(|s| !is_signed(s))
                     .map(|s| s.get("field").cloned().unwrap_or_else(epdf_kernel::undefined))
                     .collect();
-                (signed, unsigned)
+                (all, signed, unsigned)
             }
         };
-        let (signed, unsigned) = (Rc::new(signed), Rc::new(unsigned));
-        *self.0.lists.borrow_mut() =
-            Some(Lists { record, verdicts, signed: signed.clone(), unsigned: unsigned.clone() });
-        (signed, unsigned)
+        let (all, signed, unsigned) = (Rc::new(all), Rc::new(signed), Rc::new(unsigned));
+        *self.0.lists.borrow_mut() = Some(Lists {
+            record,
+            verdicts,
+            all: all.clone(),
+            signed: signed.clone(),
+            unsigned: unsigned.clone(),
+        });
+        (all, signed, unsigned)
     }
 
     /// `getSnapshot()`: every signature field and its facts, the file's
@@ -122,17 +132,29 @@ impl SignatureCapability {
     /// `listSignatures()`: the signed fields, in document order, each with
     /// its verdict once checked.
     pub fn list_signatures(&self) -> Rc<Vec<Value>> {
-        self.lists().0
+        self.lists().1
     }
 
     /// `listUnsignedFields()`: signature fields still to sign.
     pub fn list_unsigned_fields(&self) -> Rc<Vec<Value>> {
-        self.lists().1
+        self.lists().2
     }
 
-    /// `getSignature(address)`: one signature field's facts, signed or not,
-    /// by its ref or its widget's, or `None`.
+    /// `getSignature(address)`: one signature field's facts and verdict,
+    /// signed or not, by its ref or its widget's, or `None`: the same value
+    /// `listSignatures()` holds for a signed one.
     pub fn get_signature(&self, field: &Value) -> Option<Value> {
+        let signature = self.find_signature(field)?;
+        self.lists()
+            .0
+            .iter()
+            .find(|info| strict_eq(info.get("index"), signature.get("index")))
+            .cloned()
+    }
+
+    /// `findSignature(address)`: one signature field's facts, signed or
+    /// not, by its ref or its widget's, or `None`.
+    pub(crate) fn find_signature(&self, field: &Value) -> Option<Value> {
         let current = self.snapshot()?;
         let signatures = signatures_of(&current);
         if let Some(widget) = widget_of(field) {
@@ -147,7 +169,7 @@ impl SignatureCapability {
                 return Some(found.clone());
             }
             let owner = self.form().get_field_for_widget(widget)?;
-            return self.get_signature(owner.get("ref").unwrap_or(&epdf_kernel::undefined()));
+            return self.find_signature(owner.get("ref").unwrap_or(&epdf_kernel::undefined()));
         }
         if !is_field_ref(field) {
             return None;
@@ -174,7 +196,7 @@ impl SignatureCapability {
     /// `getVerdict(address)`: one signed field's verdict from the last
     /// check, or `None`.
     pub fn get_verdict(&self, field: &Value) -> Option<Value> {
-        let signature = self.get_signature(field)?;
+        let signature = self.find_signature(field)?;
         Self::verdict_in(self.state().verdicts.as_deref(), &signature)
     }
 

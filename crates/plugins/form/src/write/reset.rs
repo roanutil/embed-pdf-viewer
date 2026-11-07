@@ -28,7 +28,7 @@ impl crate::controller::Core {
     /// `resettable(field)`: the engine refuses push button and signature
     /// refs, and another signer's fields are theirs.
     fn resettable(&self, field: &Value) -> bool {
-        !matches!(str_of(field, "family"), Some("pushbutton" | "signature")) && self.may_fill(field)
+        !matches!(str_of(field, "kind"), Some("pushbutton" | "signature")) && self.may_fill(field)
     }
 
     /// `resetSelection(targets, exclude, origin, options)`: `None` when it

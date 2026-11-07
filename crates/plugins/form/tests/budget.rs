@@ -77,13 +77,13 @@ fn text(n: u32, calculate: bool) -> Value {
             "ref": { "kind": "objectNumber", "page": page, "objectNumber": 100 + n },
             "objectNumber": 100 + n, "page": page
         }],
-        "family": "text", "value": "1", "defaultValue": "", "maxLength": null,
+        "kind": "text", "value": "1", "defaultValue": "", "maxLength": null,
         "multiline": false, "password": false, "comb": false
     });
     if calculate {
         field["actions"] = json!({ "calculate": {
             "root": { "type": "javascript", "subtype": "JavaScript", "script": "while(true){}", "next": [] },
-            "incomplete": false, "warningFlags": 0, "warnings": []
+            "incomplete": false, "warnings": []
         } });
     }
     field

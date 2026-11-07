@@ -30,17 +30,17 @@ use serde_json::{Map, Value, json};
 
 use crate::controller::Core;
 use crate::model::Box;
-use crate::tools::definitions::{FormToolDef, form_tool_by_id};
+use crate::tools::definitions::{FormToolDefinition, form_tool_by_id};
 use crate::value::{get, items};
 
-/// `nextFieldName(family, taken)`: `text_1`, `text_2`, ..., the first one
+/// `nextFieldName(kind, taken)`: `text_1`, `text_2`, ..., the first one
 /// the form doesn't have.
-pub fn next_field_name(family: &str, taken: &std::collections::HashSet<String>) -> String {
+pub fn next_field_name(kind: &str, taken: &std::collections::HashSet<String>) -> String {
     let mut count = 1;
-    while taken.contains(&format!("{family}_{count}")) {
+    while taken.contains(&format!("{kind}_{count}")) {
         count += 1;
     }
-    format!("{family}_{count}")
+    format!("{kind}_{count}")
 }
 
 /// `clampToPage(box, page)`: the part of a box on the page; `None` when too
@@ -59,23 +59,23 @@ pub fn clamp_to_page(bx: Box, page: Box) -> Option<Box> {
 }
 
 /// `toolDraft(tool, name, widget)`: the field a palette tool places.
-pub fn tool_draft(tool: &FormToolDef, name: &str, widget: Value) -> Value {
+pub fn tool_draft(tool: &FormToolDefinition, name: &str, widget: Value) -> Value {
     let with = |key: &'static str, value: Value| crate::value::spread(&widget, [(key, value)]);
-    match tool.family {
+    match tool.field_kind {
         "radio" => json!({
-            "family": "radio", "name": name, "widgets": [with("exportValue", json!("Choice1"))],
+            "kind": "radio", "name": name, "widgets": [with("exportValue", json!("Choice1"))],
         }),
         "combobox" | "listbox" => json!({
-            "family": tool.family, "name": name, "widgets": [widget],
+            "kind": tool.field_kind, "name": name, "widgets": [widget],
             "options": [
                 { "label": "Option 1", "value": "Option 1" },
                 { "label": "Option 2", "value": "Option 2" },
             ],
         }),
         "pushbutton" => json!({
-            "family": "pushbutton", "name": name, "widgets": [with("caption", json!("Button"))],
+            "kind": "pushbutton", "name": name, "widgets": [with("caption", json!("Button"))],
         }),
-        family => json!({ "family": family, "name": name, "widgets": [widget] }),
+        kind => json!({ "kind": kind, "name": name, "widgets": [widget] }),
     }
 }
 
@@ -112,7 +112,7 @@ fn place(
     form: Rc<Core>,
     interaction: InteractionCapability,
     annotation: Option<AnnotationCapability>,
-    tool: &'static FormToolDef,
+    tool: &'static FormToolDefinition,
     page: PageRef,
     bx: Box,
 ) -> Promise<()> {
@@ -132,7 +132,7 @@ fn place(
         let look = widget_appearance_of(defaults.as_object().unwrap_or(&Map::new()));
         let taken =
             form.list(None).iter().map(|f| crate::value::string_of(get(f, "name"))).collect();
-        let name = next_field_name(tool.family, &taken);
+        let name = next_field_name(tool.field_kind, &taken);
         let mut widget = Map::new();
         widget.insert("page".into(), page_json.clone());
         widget.insert("rect".into(), rect.to_json());

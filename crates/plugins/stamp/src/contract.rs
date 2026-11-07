@@ -462,7 +462,7 @@ pub struct ImportLibraryOptions {
     pub name: Option<String>,
     pub categories: Option<Vec<String>>,
     /// Kind stamped onto every imported asset.
-    pub kind: Option<StampAssetKind>,
+    pub asset_kind: Option<StampAssetKind>,
     /// What the file is for; overrides what the file says.
     pub library_kind: Option<StampLibraryKind>,
     /// Fallback per-page labels for a plain PDF, by page index. `Ok(None)`
@@ -481,10 +481,10 @@ pub enum MarkSource {
     Pdf { source: Value, page_index: Option<f64> },
 }
 
-/// `AddAssetInput`. `source` and `preview` are `BinarySource`s as canonical
+/// `CreateAssetInput`. `source` and `preview` are `BinarySource`s as canonical
 /// JSON.
 #[derive(Clone, Debug, Default)]
-pub struct AddAssetInput {
+pub struct CreateAssetInput {
     /// Target library; omitted, a new single-asset library named after the
     /// asset.
     pub library_id: Option<String>,
@@ -586,7 +586,7 @@ pub struct BatchResult {
 
 // ── events ────────────────────────────────────────────────────────────────────
 
-/// `StampLibraryChangedEvent['reason']`.
+/// `StampLibraryChangedEvent['type']`.
 #[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -594,10 +594,10 @@ pub enum StampLibraryChangeReason {
     Created,
     Imported,
     Updated,
-    AssetAdded,
+    AssetCreated,
     AssetUpdated,
-    AssetRemoved,
-    Removed,
+    AssetDeleted,
+    Deleted,
 }
 
 /// `StampLibraryChangedEvent`: a library's bytes changed, and why.
@@ -605,7 +605,8 @@ pub enum StampLibraryChangeReason {
 #[serde(rename_all = "camelCase")]
 pub struct StampLibraryChangedEvent {
     pub library_id: String,
-    pub reason: StampLibraryChangeReason,
+    #[serde(rename = "type")]
+    pub change_type: StampLibraryChangeReason,
 }
 
 /// `StampLibraryCreatedEvent`, `StampLibraryUpdatedEvent` and

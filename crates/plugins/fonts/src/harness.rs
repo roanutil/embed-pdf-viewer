@@ -77,7 +77,17 @@ pub fn functions() -> FunctionTable {
         ("standardFontProgramLoad", |a| {
             Ok(Bytes(standard_font_program(font(a, "programHash")?).load().to_vec()).to_json())
         }),
-        ("standardFontCss", |a| ok(standard_font_css(font(a, "programHash")?))),
+        ("standardFontCss", |a| {
+            // Each program keeps its `load` function, which canonical JSON
+            // notes as `{"$function": true}`.
+            let mut css = to_value(&standard_font_css(font(a, "programHash")?));
+            if let Some(programs) = css.get_mut("programs").and_then(Value::as_array_mut) {
+                for program in programs.iter_mut().filter_map(Value::as_object_mut) {
+                    program.insert("load".into(), serde_json::json!({ "$function": true }));
+                }
+            }
+            Ok(css)
+        }),
         ("fontProgramFamily", |a| ok(font_program_family(&arg::<String>(a, 0)?))),
         ("decodeBase64", |a| Ok(Bytes(decode_base64(&arg::<String>(a, 0)?)).to_json())),
     ]

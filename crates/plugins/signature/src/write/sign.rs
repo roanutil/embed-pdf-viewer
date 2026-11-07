@@ -187,7 +187,7 @@ impl SignatureCapability {
                     let doc = busy.seal_unless_cancelled(options.signal.as_ref())?;
                     // The cryptography loads the first time someone signs.
                     import_module().await;
-                    let key = busy.resolve_key(input.key.clone()).await?;
+                    let key = busy.resolve_key(input.signing_key.clone()).await?;
                     // The certificate's subject is the default /Name; the
                     // caller's facts win.
                     let subject = match &key {

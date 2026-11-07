@@ -54,7 +54,7 @@ impl Core {
             if !self.takes_input(field) {
                 continue;
             }
-            if str_of(field, "family") == Some("radio")
+            if str_of(field, "kind") == Some("radio")
                 && !groups.insert(format!(
                     "{}@{}",
                     field_key_of(field),
@@ -87,7 +87,7 @@ impl Core {
             .collect()
     }
     fn box_at_stop(&self, rows: &[Rc<Value>], stop: &Stop, backward: bool) -> Rc<Value> {
-        if str_of(&stop.field, "family") != Some("radio") {
+        if str_of(&stop.field, "kind") != Some("radio") {
             return stop.row.clone();
         }
         let buttons =
@@ -159,7 +159,7 @@ impl Core {
             .filter(|s| {
                 (!options["empty"].as_bool().unwrap_or(false) || is_empty(&s.field))
                     && !(field.is_some_and(|f| {
-                        str_of(f, "family") == Some("radio") && Rc::ptr_eq(f, &s.field)
+                        str_of(f, "kind") == Some("radio") && Rc::ptr_eq(f, &s.field)
                     }) && page.as_ref() == Some(&s.row["page"]["objectNumber"]))
             })
             .collect();
@@ -187,7 +187,7 @@ impl Core {
         let index = self.view();
         let widget = widget_object_of(reference);
         let Some(field) = shared_field_for_widget(&index, widget)
-            .filter(|f| str_of(f, "family") == Some("radio") && self.takes_input(f))
+            .filter(|f| str_of(f, "kind") == Some("radio") && self.takes_input(f))
         else {
             return false;
         };

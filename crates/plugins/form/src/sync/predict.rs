@@ -59,7 +59,7 @@ fn reset_targets(index: &FieldIndex) -> Vec<Value> {
     index
         .fields()
         .iter()
-        .filter(|f| str_of(f, "family").is_some_and(|family| RESET_FAMILIES.contains(&family)))
+        .filter(|f| str_of(f, "kind").is_some_and(|family| RESET_FAMILIES.contains(&family)))
         .map(|f| (**f).clone())
         .collect()
 }

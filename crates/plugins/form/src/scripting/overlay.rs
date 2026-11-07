@@ -76,7 +76,7 @@ pub fn script_value_from_form_value(
     field: &ScriptFieldInput,
     value: &Value,
 ) -> Result<Value, Error> {
-    match field.family.as_str() {
+    match field.kind.as_str() {
         "text" | "combobox" if has(value, "value") => return Ok(or(get(value, "value"), "")),
         "radio" if has(value, "value") => return Ok(or(get(value, "value"), "Off")),
         "checkbox" => {
@@ -103,7 +103,7 @@ pub fn script_value_from_form_value(
     }
     Err(Error::new(format!(
         "Form field '{}' ({}) does not take this value",
-        field.name, field.family
+        field.name, field.kind
     )))
 }
 
@@ -120,7 +120,7 @@ pub fn string_or_empty(value: Option<&Value>) -> String {
 /// it, or none for a family that holds none.
 pub fn form_value_from_script_value(field: &ScriptFieldInput) -> Option<Value> {
     let value = field.value.as_ref().filter(|v| !epdf_kernel::is_undefined(v));
-    match field.family.as_str() {
+    match field.kind.as_str() {
         "text" => Some(json!({ "value": string_or_empty(value) })),
         "checkbox" | "radio" => {
             // `value === null || String(value) === 'Off'`: an `undefined`

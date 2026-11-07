@@ -86,7 +86,7 @@ fn a_free_asset_placement_falls_back_to_the_stamp_plugin_and_settles() {
     let trace = replay("place-by-mode-visual");
     // `placeMark({assetId}, at)`: the stamp plugin places it, annotation 60.
     let placed = settled_of(&trace, 5);
-    assert_eq!(placed["resolved"]["kind"], "placed");
+    assert_eq!(placed["resolved"]["status"], "placed");
     assert_eq!(placed["resolved"]["annotation"]["objectNumber"], 60);
     assert_eq!(paths(&trace[5]), ["apply"]);
     // Bytes go through the annotation plugin, the next number.
@@ -173,13 +173,13 @@ fn plugins(config: SignatureConfig) -> Vec<AnyPlugin> {
     ]
 }
 
-fn cms_key(on_sign: impl Fn() + 'static) -> SignatureKey {
+fn cms_key(on_sign: impl Fn() + 'static) -> SigningKey {
     // The CMS the vectors' signer answers, which passes the completion gate
     // against their prepared digest.
     let spec =
         case("sign-one-shot")["plugins"][2]["config"]["signer"]["answer"]["resolves"].clone();
     let cms = epdf_kernel::bytes::Bytes::from_json(&spec).expect("cms bytes").0;
-    SignatureKey::port(SignerPort::Cms(CmsSigner {
+    SigningKey::port(SignerPort::Cms(CmsSigner {
         sign: Rc::new(move |_: CmsSignRequest| {
             on_sign();
             Promise::resolved(cms.clone())
@@ -266,19 +266,26 @@ fn a_settings_change_applies_at_once_and_replaces_the_key_whole() {
     let signature = &rig.signature;
     assert_eq!(signature.get_mode(), SignatureMode::Visual);
     let key = cms_key(|| {});
-    signature
-        .update_settings(&SignatureConfig { key: Some(Some(key.clone())), ..Default::default() });
+    signature.update_settings(&SignatureConfig {
+        signing_key: Some(Some(key.clone())),
+        ..Default::default()
+    });
     assert_eq!(signature.get_mode(), SignatureMode::Sign, "a key makes sign the default");
-    assert!(signature.get_settings().key.is_some_and(|k| k.same(&key)), "the same port reads back");
+    assert!(
+        signature.get_settings().signing_key.is_some_and(|k| k.same(&key)),
+        "the same port reads back"
+    );
     signature.update_settings(&SignatureConfig {
         mode: Some(Some(SignatureMode::Ask)),
         ..Default::default()
     });
     assert_eq!(signature.get_mode(), SignatureMode::Ask);
     let other = cms_key(|| {});
-    signature
-        .update_settings(&SignatureConfig { key: Some(Some(other.clone())), ..Default::default() });
-    assert!(signature.get_settings().key.is_some_and(|k| k.same(&other) && !k.same(&key)));
+    signature.update_settings(&SignatureConfig {
+        signing_key: Some(Some(other.clone())),
+        ..Default::default()
+    });
+    assert!(signature.get_settings().signing_key.is_some_and(|k| k.same(&other) && !k.same(&key)));
     // A port rebuilt from the same parts is another key here (identity, a
     // Rust-only divergence: the TypeScript's `sameValue` would call a
     // rebuilt CMS port no change). The setting changes and reads back as the
@@ -286,27 +293,29 @@ fn a_settings_change_applies_at_once_and_replaces_the_key_whole() {
     let changes = Rc::new(std::cell::Cell::new(0));
     let heard = changes.clone();
     let off = signature.on_settings_changed(move |event| {
-        assert_eq!(event.changed, ["key"]);
+        assert_eq!(event.changed, ["signingKey"]);
         heard.set(heard.get() + 1);
         Ok(())
     });
-    let SignatureKey::Port(port) = &other else { panic!("a port") };
-    let rebuilt = SignatureKey::port((**port).clone());
+    let SigningKey::Port(port) = &other else { panic!("a port") };
+    let rebuilt = SigningKey::port((**port).clone());
     signature.update_settings(&SignatureConfig {
-        key: Some(Some(rebuilt.clone())),
+        signing_key: Some(Some(rebuilt.clone())),
         ..Default::default()
     });
     assert_eq!(changes.get(), 1);
-    assert!(signature.get_settings().key.is_some_and(|k| k.same(&rebuilt) && !k.same(&other)));
+    assert!(
+        signature.get_settings().signing_key.is_some_and(|k| k.same(&rebuilt) && !k.same(&other))
+    );
     // The same key again changes nothing.
     signature.update_settings(&SignatureConfig {
-        key: Some(Some(rebuilt.clone())),
+        signing_key: Some(Some(rebuilt.clone())),
         ..Default::default()
     });
     assert_eq!(changes.get(), 1);
     off.call();
     signature.reset_settings();
-    assert!(signature.get_settings().key.is_none());
+    assert!(signature.get_settings().signing_key.is_none());
     assert_eq!(signature.get_mode(), SignatureMode::Visual);
 }
 
@@ -315,7 +324,7 @@ fn a_signal_that_fires_before_the_seal_leaves_nothing_signed() {
     let signal = AbortSignal::new();
     let aborting = signal.clone();
     let config = SignatureConfig {
-        key: Some(Some(cms_key(move || aborting.abort(Error::new("stop"))))),
+        signing_key: Some(Some(cms_key(move || aborting.abort(Error::new("stop"))))),
         ..Default::default()
     };
     let rig = Rig::open(config, engine_of("sign-one-shot"));
@@ -447,20 +456,25 @@ fn a_replaced_key_is_released_from_the_port_table() {
     let signature = &rig.signature;
     for _ in 0..50 {
         let key = cms_key(|| {});
-        signature.update_settings(&SignatureConfig { key: Some(Some(key)), ..Default::default() });
+        signature.update_settings(&SignatureConfig {
+            signing_key: Some(Some(key)),
+            ..Default::default()
+        });
     }
     assert_eq!(signature.retained_ports(), 1, "only the current key");
-    let kept = signature.get_settings().key.expect("a key");
-    signature.update_settings(&SignatureConfig { key: Some(None), ..Default::default() });
+    let kept = signature.get_settings().signing_key.expect("a key");
+    signature.update_settings(&SignatureConfig { signing_key: Some(None), ..Default::default() });
     assert_eq!(signature.retained_ports(), 0);
-    signature
-        .update_settings(&SignatureConfig { key: Some(Some(kept.clone())), ..Default::default() });
+    signature.update_settings(&SignatureConfig {
+        signing_key: Some(Some(kept.clone())),
+        ..Default::default()
+    });
     assert!(
-        signature.get_settings().key.is_some_and(|k| k.same(&kept)),
+        signature.get_settings().signing_key.is_some_and(|k| k.same(&kept)),
         "set again, it reads back"
     );
     signature.reset_settings();
-    assert!(signature.get_settings().key.is_none());
+    assert!(signature.get_settings().signing_key.is_none());
 }
 
 /// M37's count covers both ports: a trust port the settings name is held
@@ -475,7 +489,7 @@ fn the_port_table_counts_the_trust_port_beside_the_key() {
     }
     let rig = Rig::open(SignatureConfig::default(), engine_of("nothing-signed-reads"));
     rig.signature.update_settings(&SignatureConfig {
-        key: Some(Some(cms_key(|| {}))),
+        signing_key: Some(Some(cms_key(|| {}))),
         trust: Some(Some(Rc::new(NoAnchors))),
         ..Default::default()
     });
@@ -489,7 +503,7 @@ fn a_reset_releases_the_key_it_replaced() {
     let rig = Rig::open(SignatureConfig::default(), engine_of("nothing-signed-reads"));
     let signature = &rig.signature;
     signature.update_settings(&SignatureConfig {
-        key: Some(Some(cms_key(|| {}))),
+        signing_key: Some(Some(cms_key(|| {}))),
         ..Default::default()
     });
     assert_eq!(signature.retained_ports(), 1);

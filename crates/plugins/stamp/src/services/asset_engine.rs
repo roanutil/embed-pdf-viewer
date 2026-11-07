@@ -141,7 +141,7 @@ pub(crate) fn image_to_preview(image: &Value) -> Result<StampAssetPreview, Error
     }
     Ok(StampAssetPreview {
         bytes,
-        mime_type: image.get("contentType").filter(|v| !is_undefined(v)).cloned(),
+        mime_type: image.get("mimeType").filter(|v| !is_undefined(v)).cloned(),
     })
 }
 

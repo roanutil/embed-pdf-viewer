@@ -9,7 +9,7 @@ use epdf_kernel::rt::Promise;
 use epdf_signature_core::SignerPort;
 use serde_json::Value;
 
-use crate::contract::{SignatureKey, SignatureMode};
+use crate::contract::{SignatureMode, SigningKey};
 use crate::controller::SignatureCapability;
 use crate::promise::adopt;
 
@@ -18,7 +18,7 @@ impl SignatureCapability {
     /// without.
     pub fn get_mode(&self) -> SignatureMode {
         let settings = self.settings();
-        settings.mode.unwrap_or(if settings.key.is_some() {
+        settings.mode.unwrap_or(if settings.signing_key.is_some() {
             SignatureMode::Sign
         } else {
             SignatureMode::Visual
@@ -27,8 +27,8 @@ impl SignatureCapability {
 
     /// `resolveKey(override)`: an `async` function. `invalid-input` without
     /// a key; a function key is called and its answer adopted.
-    pub(crate) fn resolve_key(&self, override_: Option<SignatureKey>) -> Promise<SignerPort> {
-        let key = override_.or_else(|| self.settings().key);
+    pub(crate) fn resolve_key(&self, override_: Option<SigningKey>) -> Promise<SignerPort> {
+        let key = override_.or_else(|| self.settings().signing_key);
         Promise::spawn(async move {
             match key {
                 None => Err(plugin_error(
@@ -38,8 +38,8 @@ impl SignatureCapability {
                     None,
                     None,
                 )),
-                Some(SignatureKey::Port(port)) => Ok((*port).clone()),
-                Some(SignatureKey::Thunk(thunk)) => adopt(thunk()).await,
+                Some(SigningKey::Port(port)) => Ok((*port).clone()),
+                Some(SigningKey::Thunk(thunk)) => adopt(thunk()).await,
             }
         })
     }

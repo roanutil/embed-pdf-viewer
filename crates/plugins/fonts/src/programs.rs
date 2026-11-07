@@ -11,7 +11,7 @@ use crate::{FontStyle, PROGRAMS, StandardFont, face};
 /// A font program a renderer can mount: its bytes, the CSS family it goes by,
 /// and its style. Serializes to its data members, as the TypeScript object
 /// minus `load`.
-#[derive(Debug, Serialize)]
+#[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct FontProgram {
     /// SHA-256 of the bytes, hex.
     pub hash: &'static str,

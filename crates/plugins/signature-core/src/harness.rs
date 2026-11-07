@@ -301,9 +301,9 @@ fn trust_port(h: &Harness, value: Option<&Value>) -> Option<Rc<dyn TrustPort>> {
 fn validation_time(value: Option<&Value>) -> Option<ValidationTime> {
     let value = present(value)?;
     Some(match value.get("kind").and_then(Value::as_str) {
-        Some("timestamp") => {
-            ValidationTime::Timestamp { gen_time: value["genTime"].as_f64().unwrap_or(f64::NAN) }
-        }
+        Some("timestamp") => ValidationTime::Timestamp {
+            gen_time: value["genTime"].as_str().unwrap_or_default().into(),
+        },
         _ => ValidationTime::Now,
     })
 }
@@ -413,7 +413,9 @@ impl SignatureCapability {
                         profile: Profile::from_name(input["profile"].as_str().unwrap_or_default())
                             .unwrap_or(Profile::CadesB),
                         signer: signer?,
-                        signing_time: present(input.get("signingTime")).and_then(Value::as_f64),
+                        signing_time: present(input.get("signingTime"))
+                            .and_then(Value::as_str)
+                            .map(str::to_string),
                     })
                     .await?;
                     Ok(bytes_json(&built))
@@ -427,7 +429,9 @@ impl SignatureCapability {
                     &Prepared {
                         digest: bytes(&prepared["digest"]),
                         algorithm: prepared["algorithm"].as_str().unwrap_or_default().to_string(),
-                        contents_size: prepared["contentsSize"].as_f64().unwrap_or(f64::NAN),
+                        contents_size_bytes: prepared["contentsSizeBytes"]
+                            .as_f64()
+                            .unwrap_or(f64::NAN),
                     },
                     // An unknown profile is neither `cades-b` nor `timestamp`,
                     // so the TypeScript checks it as `pkcs7`.
@@ -459,7 +463,7 @@ impl SignatureCapability {
                 let options = present(args.get(1)).cloned().unwrap_or(Value::Null);
                 let options = ValidateOptions {
                     trust: trust_port(&h, options.get("trust")),
-                    at: validation_time(options.get("at")),
+                    validation_time: validation_time(options.get("validationTime")),
                     until: options.get("until").and_then(Value::as_str).map(str::to_string),
                 };
                 spawn(async move {
