@@ -102,7 +102,8 @@ pub fn page_widget_of(
         caption: widget.caption,
         check_style: widget.check_style,
         field: widget.field,
-        field_family: widget.field_family,
+        field_kind: widget.field_kind,
+        has_mark: widget.has_mark,
     })
 }
 
@@ -347,7 +348,7 @@ mod tests {
             "ref": { "kind": "objectNumber", "page": page_ref(4), "objectNumber": 8 },
             "page": page_ref(4), "hasAppearance": false, "appearanceState": null, "nm": null,
             "rect": rect, "box": rect, "rotation": null, "subtype": "widget",
-            "field": null, "fieldFamily": "unknown", "actions": null
+            "field": null, "fieldKind": "unknown", "hasMark": false, "actions": null
         });
         let nulls = [
             "contents",

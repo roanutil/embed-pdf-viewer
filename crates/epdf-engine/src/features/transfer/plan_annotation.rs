@@ -823,12 +823,12 @@ mod tests {
             3,
             10,
             json!({ "subtype": "widget",
-            "field": { "kind": "objectNumber", "objectNumber": 44 }, "fieldFamily": "text" }),
+            "field": { "kind": "objectNumber", "objectNumber": 44 }, "fieldKind": "text" }),
         );
         let inert = annotation(
             3,
             11,
-            json!({ "subtype": "widget", "field": null, "fieldFamily": "unknown" }),
+            json!({ "subtype": "widget", "field": null, "fieldKind": "unknown" }),
         );
         let planned = plan(&[field.clone(), inert.clone(), annotation(3, 12, json!({}))]);
         assert_eq!(items_of(&planned), [2]);

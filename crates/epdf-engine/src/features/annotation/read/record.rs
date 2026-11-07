@@ -191,7 +191,12 @@ pub struct WidgetAnnotation<C: Coordinates = PdfCoordinates> {
     pub check_style: Option<WidgetCheckStyle>,
     /// The field the widget belongs to, or `None` when it's in none.
     pub field: Option<FormFieldRef>,
-    pub field_family: FormFieldFamily,
+    /// The field's kind (`fieldKind`), `unknown` in none.
+    pub field_kind: FormFieldFamily,
+    /// Whether a mark is in the widget: its field is a signature field that
+    /// is signed, or that a mark was drawn into without signing. The widget
+    /// then shows that mark, not its box. `false` for every other widget.
+    pub has_mark: bool,
 }
 
 /// The one subtype a [`WidgetAnnotation`] has.
@@ -391,34 +396,58 @@ pub fn read_widget_annotation(
         caption: dictionary_read("MK", annotation.mk_text(MK_CAPTION))?,
         check_style: None,
         field: None,
-        field_family: FormFieldFamily::Unknown,
+        field_kind: FormFieldFamily::Unknown,
+        // A mark drawn in records how it fits; the join adds a signature,
+        // and keeps it only for a signature field's widget.
+        has_mark: read_appearance_fit(annotation)?.is_some(),
     })
 }
 
-/// Stamp a widget row with its field and family (`joinWidgetFieldNumbers`).
+/// `/EMBD_Metadata/AppearanceFit` (`readAppearanceFit`): how a drawing
+/// placed in an annotation fills its box, a stamp's or a mark drawn into a
+/// signature field's widget. `None` when it records none, or one we don't
+/// know.
+pub fn read_appearance_fit(annotation: &Annotation<'_>) -> Result<Option<String>, EngineError> {
+    if !annotation.has_embed_metadata() {
+        return Ok(None);
+    }
+    let fit = dictionary_read("AppearanceFit", annotation.embed_metadata_string("AppearanceFit"))?;
+    Ok(fit.filter(|fit| matches!(fit.as_str(), "contain" | "cover" | "fill")))
+}
+
+/// `EPDFForm_GetFieldValueKind`: the field has no `/V`.
+const VALUE_KIND_NONE: i32 = 0;
+
+/// Stamp a widget row with its field and kind (`joinWidgetFieldNumbers`).
 /// `/MK /CA` is a push button's caption and a checkbox's or radio button's
-/// symbol; another widget's reads as neither.
+/// symbol; another widget's reads as neither. A signature field's widget
+/// has a mark in it when the field is signed (it has a value) or a mark was
+/// drawn into it (the read found its fit); no other widget has one.
 pub fn join_widget_field(model: &pdfium::FormModel<'_>, widget: &mut WidgetAnnotation) {
     let AnnotationRef::ObjectNumber { annot, .. } = widget.base.annotation_ref else {
         widget.caption = None;
+        widget.has_mark = false;
         return;
     };
     let field = model.field_index_for_widget(annot).and_then(|index| model.field(index));
     let Some(field) = field.filter(|field| field.object_number() > 0) else {
         // In no field, or in one stored inline, which no ref can address.
         widget.field = None;
-        widget.field_family = FormFieldFamily::Unknown;
+        widget.field_kind = FormFieldFamily::Unknown;
         widget.caption = None;
+        widget.has_mark = false;
         return;
     };
     widget.field = Some(FormFieldRef::ObjectNumber { field: field.object_number() });
-    widget.field_family = FormFieldFamily::from_code(field.family_code());
-    if matches!(widget.field_family, FormFieldFamily::Checkbox | FormFieldFamily::Radio) {
+    widget.field_kind = FormFieldFamily::from_code(field.family_code());
+    if matches!(widget.field_kind, FormFieldFamily::Checkbox | FormFieldFamily::Radio) {
         widget.check_style = WidgetCheckStyle::of_caption(widget.caption.as_deref());
     }
-    if widget.field_family != FormFieldFamily::Pushbutton {
+    if widget.field_kind != FormFieldFamily::Pushbutton {
         widget.caption = None;
     }
+    widget.has_mark = widget.field_kind == FormFieldFamily::Signature
+        && (widget.has_mark || field.value_kind() != VALUE_KIND_NONE);
 }
 
 #[cfg(test)]
