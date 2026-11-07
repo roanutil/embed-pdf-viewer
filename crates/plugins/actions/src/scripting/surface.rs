@@ -47,7 +47,7 @@ impl ActionsCapability {
             {
                 self.suppress(format!(
                     "script {} request from a detached realm suppressed: no document surface",
-                    effect.kind()
+                    effect.effect_type()
                 ));
                 continue;
             }
@@ -120,7 +120,7 @@ impl ActionsCapability {
                 self.report_diagnostic(
                     &ActionDiagnostic::new(
                         ActionDiagnosticCode::NoAdapter,
-                        format!("script {}: no UI adapter installed", effect.kind()),
+                        format!("script {}: no UI adapter installed", effect.effect_type()),
                     ),
                     &place,
                 );
@@ -140,9 +140,9 @@ impl ActionsCapability {
                         )?;
                     }
                 }
-                ScriptUiEffect::GotoPage { page } => {
+                ScriptUiEffect::GoToPage { page_index } => {
                     if let Some(goto_page) = &adapter.goto_page {
-                        goto_page(*page, &ui_context)?;
+                        goto_page(*page_index, &ui_context)?;
                     }
                 }
                 _ => (adapter.print)(Some(&ui_context))?,

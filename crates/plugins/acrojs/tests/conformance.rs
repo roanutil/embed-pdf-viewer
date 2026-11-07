@@ -25,12 +25,12 @@ fn prelude_is_the_generated_file() {
 #[test]
 fn a_script_can_request_a_field_cursor() {
     let effect: epdf_acrojs::ScriptUiEffect = serde_json::from_value(serde_json::json!({
-        "kind": "focusField", "field": "email"
+        "type": "focusField", "field": "email"
     }))
     .expect("the field focus effect");
-    assert_eq!(effect.kind(), "focusField");
+    assert_eq!(effect.effect_type(), "focusField");
     assert_eq!(
         serde_json::to_value(effect).unwrap(),
-        serde_json::json!({ "kind": "focusField", "field": "email" })
+        serde_json::json!({ "type": "focusField", "field": "email" })
     );
 }
