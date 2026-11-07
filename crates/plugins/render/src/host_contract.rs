@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
 
 use crate::contract::{PageLayerOptions, ser_page};
-use crate::raster_store::ReleaseImage;
+use crate::raster_store::{PageImageHandle, ReleaseImage};
 
 /// `PaintSettings`: resolved config the view layers need. The same `Rc`
 /// until a setting it reads changes.
@@ -88,10 +88,17 @@ pub struct AppearancesOptions {
 /// states (`AnnotationAppearanceImage`, as the engine answered it), and the
 /// version of the item it shows. Serializes as the picture with `version`
 /// added last, as the TypeScript's spread does.
+///
+/// Rust only: on a host that keeps each engine image on its own side
+/// (`RenderHost::release_image`), the picture's `image` is held as a
+/// [`PageImageHandle`], so the host lets go of it once the last picture that
+/// shares it drops (the store's kept sets and the recent pictures), as the
+/// TypeScript's garbage collector would.
 #[derive(Clone, Debug, PartialEq)]
 pub struct AppearancePicture {
     pub picture: Value,
     pub version: f64,
+    pub(crate) image: Option<PageImageHandle>,
 }
 
 impl AppearancePicture {

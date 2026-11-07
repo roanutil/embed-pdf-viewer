@@ -119,6 +119,7 @@ export type RustKernelClass = new (
   callJs: (id: string, argsJson: string) => unknown,
   releaseJs: (id: string) => void,
   settingsJson?: string,
+  nextFrame?: (run: (timeMs: number) => void) => unknown,
 ) => RustKernel;
 
 type Fn = (...args: unknown[]) => unknown;
@@ -126,31 +127,6 @@ type Outcome = { returned: unknown } | { threw: unknown } | { promise: number };
 
 /** Members whose result is something new on every call. */
 const MAKES_NEW = /^(create|register|on[A-Z]|subscribe)/;
-
-/** Members whose answer carries engine images (`$host`) nothing reads
- *  through the host table again once they are decoded: annotation's
- *  `renderAppearances` passes the engine's
- *  `page.annotations.renderAppearanceImages` images straight through
- *  (`crates/plugins/annotation/src/read/render.rs`), and the viewer reads
- *  each one's `objectUrl()` off the live handle, which keeps its own bytes.
- *  Their entries are released once the answer is decoded (`promise`).
- *  Only outermost `$host` ids are released (`hostIds`), so a member added
- *  here must answer no live value nested inside another: that inner one
- *  would stay in the table. */
-const RELEASES_HOSTS = new Set(['renderAppearances']);
-
-/** Every `$host` id in a canonical value. One inside another `$host` is
- *  never looked for: a held image's `$hostBytes` goes with its release. */
-function hostIds(value: unknown, out: number[] = []): number[] {
-  if (Array.isArray(value)) {
-    for (const item of value) hostIds(item, out);
-  } else if (value !== null && typeof value === 'object') {
-    const object = value as Record<string, unknown>;
-    if (typeof object.$host === 'number') out.push(object.$host);
-    else for (const member of Object.values(object)) hostIds(member, out);
-  }
-  return out;
-}
 
 /** How many distinct calls keep their last answer for reuse. */
 const ANSWERS_KEPT = 4096;
@@ -665,19 +641,15 @@ export class Wire {
     return value;
   }
 
-  /** A promise id as a promise of its decoded value, with `abort`. A
-   *  `member` in `RELEASES_HOSTS` has the value's `$host` entries released
-   *  once it is decoded. A promise is never cached or reused (`invoke`), so
-   *  nothing decodes the same value twice. */
-  promise(id: number, member?: string): Promise<unknown> & { abort(reason?: unknown): void } {
+  /** A promise id as a promise of its decoded value, with `abort`. An
+   *  engine image in it stays in the host table until the Rust side lets go
+   *  of it (render's `releaseImage`, which its kept appearance pictures
+   *  reach too): the render plugin answers the same pictures again. A
+   *  promise is never cached or reused (`invoke`), so nothing decodes the
+   *  same value twice. */
+  promise(id: number): Promise<unknown> & { abort(reason?: unknown): void } {
     const out = this.rust.promise(id).then(
-      (value) => {
-        const live = this.decode(value);
-        if (member !== undefined && RELEASES_HOSTS.has(member)) {
-          for (const n of hostIds(value)) this.bridge.release(n);
-        }
-        return live;
-      },
+      (value) => this.decode(value),
       (error) => {
         throw toError(error, (v) => this.decode(v));
       },
@@ -864,7 +836,7 @@ export class Wire {
     this.settle(member);
     if ('threw' in outcome) throw toError(outcome.threw, (v) => this.decode(v));
     if ('promise' in outcome) {
-      const promise = this.promise(outcome.promise, member);
+      const promise = this.promise(outcome.promise);
       for (const signal of signals) {
         if (signal.aborted) {
           promise.abort(signal.reason);
@@ -983,7 +955,7 @@ const ONE_HIT = ['getActiveHit', 'nextHit', 'previousHit', 'goToHit'] as const;
 function shareHits(capability: Record<string, unknown>): void {
   const listHits = capability.listHits;
   if (typeof listHits !== 'function' || typeof capability.getActiveHit !== 'function') return;
-  type Hit = { page: unknown; charStart: number };
+  type Hit = { page: unknown; start: number };
   for (const name of ONE_HIT) {
     const one = capability[name];
     if (typeof one !== 'function') continue;
@@ -991,7 +963,7 @@ function shareHits(capability: Record<string, unknown>): void {
       const hit = one(...args) as Hit | null;
       if (!hit) return hit;
       const listed = (listHits({ page: hit.page }) as readonly Hit[]).find(
-        (other) => other.charStart === hit.charStart,
+        (other) => other.start === hit.start,
       );
       return listed ?? hit;
     };

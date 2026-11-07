@@ -59,13 +59,15 @@ afterEach(async () => {
   setHosts({});
 });
 
-/** Start `plugins` over the local engine and open the fixture (or `file`). */
+/** Start `plugins` over the local engine (with `clock`) and open the
+ *  fixture (or `file`). */
 async function openFixture(
   plugins: Parameters<typeof createKernel>[0]['plugins'],
   file?: Uint8Array,
+  clock?: Parameters<typeof createKernel>[0]['clock'],
 ) {
   const engine = createLocalEngine({ runtime: { prefer: 'wasm' } });
-  const k = createKernel({ engine, plugins });
+  const k = createKernel({ engine, plugins, clock });
   kernel = k;
   await k.start();
   const ready = new Promise<void>((done) => {
@@ -212,7 +214,7 @@ describe('the Kernel shim over the Rust kernel', () => {
     const second = search.nextHit();
     expect(first).not.toBeNull();
     expect(second).not.toBeNull();
-    expect(second!.charStart).not.toBe(first!.charStart);
+    expect(second!.start).not.toBe(first!.start);
   });
 
   test('a getter inside a subscribe listener sees a mutation made in that listener', async () => {
@@ -356,9 +358,12 @@ describe('the Kernel shim over the Rust kernel', () => {
       }
     }
     const commands = k.capability(CommandsToken) as unknown as {
-      matchStroke(stroke: unknown, options: { isMac: boolean }): string | null;
+      matchStroke(stroke: unknown, options: { isMac: boolean }): unknown;
     };
-    expect(commands.matchStroke(new Stroke(), { isMac: false })).toBe('probe');
+    expect(commands.matchStroke(new Stroke(), { isMac: false })).toEqual({
+      commandId: 'probe',
+      refusal: null,
+    });
   });
 
   test("the hosts' scheduler runs the stage's frames", async () => {
@@ -371,6 +376,34 @@ describe('the Kernel shim over the Rust kernel', () => {
 
     stage.scrollTo({ top: 100, behavior: 'smooth' });
     expect(raf).toHaveBeenCalled();
+    for (let t = 0; t < 2000 && frames.length > 0; t += 16) frames.shift()!(t);
+    expect(stage.getScrollMetrics().scrollTop).toBe(100);
+  });
+
+  test("createKernel's clock.nextFrame runs the stage's frames", async () => {
+    const frames: ((timeMs: number) => void)[] = [];
+    const nextFrame = vi.fn((run: (timeMs: number) => void) => {
+      frames.push(run);
+      return () => {};
+    });
+    const clock = {
+      now: () => performance.now(),
+      after: (ms: number, run: () => void) => {
+        const timer = setTimeout(run, ms);
+        return () => clearTimeout(timer);
+      },
+      nextFrame,
+    };
+    const k = await openFixture(
+      [stagePlugin(), interactionPlugin(), renderPlugin()],
+      undefined,
+      clock,
+    );
+    const stage = k.capability(StageToken);
+    stage.setViewportSize({ width: 800, height: 120 });
+
+    stage.scrollTo({ top: 100, behavior: 'smooth' });
+    expect(nextFrame).toHaveBeenCalled();
     for (let t = 0; t < 2000 && frames.length > 0; t += 16) frames.shift()!(t);
     expect(stage.getScrollMetrics().scrollTop).toBe(100);
   });
@@ -441,11 +474,11 @@ describe('the Kernel shim over the Rust kernel', () => {
     expect(annotation.links.get(root.ref)).toBe(null);
   });
 
-  test('a JS plugin with its own reducer is refused', () => {
+  test('a JS plugin with its own state is refused', () => {
     const engine = createLocalEngine({ runtime: { prefer: 'wasm' } });
-    const plugin = { id: 'mine', reduce: (state: unknown) => state };
-    expect(() => createKernel({ engine, plugins: [plugin] })).toThrow(
-      '[core-wasm] JS plugin "mine" has reduce; only init-only JS plugins run in the eval build',
+    const plugin = { id: 'mine', state: () => ({}) };
+    expect(() => createKernel({ engine, plugins: [plugin as never] })).toThrow(
+      '[core-wasm] JS plugin "mine" has state; only init-only JS plugins run in the eval build',
     );
   });
 });
@@ -488,7 +521,7 @@ describe('closed documents and destroyed kernels', () => {
     const k = await openFixture([stagePlugin(), interactionPlugin(), renderPlugin()]);
     await k.destroy();
     // As `packages/core/main/src/kernel.ts` answers once destroyed.
-    expect(k.status()).toBe('destroyed');
+    expect(k.getStatus()).toBe('destroyed');
     expect(k.tryCapability(StageToken)).toBe(null);
     expect(() => k.capability(StageToken)).toThrow(
       '[kernel] capability("stage") on a destroyed kernel',
@@ -575,7 +608,9 @@ describe('Rust rejections keep their error class', () => {
     expect((cause as Error).message).toBe('[kernel] cancelled: open');
   });
 
-  test('closing a document while it opens rejects the open with a CancelledError', async () => {
+  // As the TS kernel's `open()` does (`toPluginError`): `operation-cancelled`,
+  // with the kernel's CancelledError as its cause.
+  test('closing a document while it opens rejects the open as cancelled', async () => {
     const engine = createLocalEngine({ runtime: { prefer: 'wasm' } });
     const k = createKernel({ engine, plugins: [stagePlugin()] });
     kernel = k;
@@ -594,6 +629,7 @@ describe('Rust rejections keep their error class', () => {
     await k.documents.close(id);
     release();
     const error = await settled;
-    expect(isCancelled(error)).toBe(true);
+    expect(isPluginError(error, 'operation-cancelled')).toBe(true);
+    expect(isCancelled((error as { cause?: unknown }).cause)).toBe(true);
   });
 });

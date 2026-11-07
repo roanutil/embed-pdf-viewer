@@ -82,7 +82,7 @@ return {
     }
     return pon === 7 ? -1 : 3;
   },
-  lastServerId(doc) { return '42'; },
+  lastServerSequence(doc) { return '42'; },
   subscribe(doc, l) {
     if (doc === 'refuses-subscribe') throw new Error('no listener for you');
     listener = l;

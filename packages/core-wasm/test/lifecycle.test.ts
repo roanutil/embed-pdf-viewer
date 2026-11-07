@@ -9,7 +9,7 @@ import { isPluginError, PluginError } from '@embedpdf/core';
 import type { CapabilityToken, Engine, Kernel } from '@embedpdf/core';
 
 import { WasmKernel } from '../wasm-node/epdf_web.js';
-import { commandsPlugin, createKernel, kernelCounts, setWasmKernel } from '../src';
+import { commandsPlugin, createKernel, i18nPlugin, kernelCounts, setWasmKernel } from '../src';
 
 const DocumentsToken = { name: 'documents' } as CapabilityToken<unknown>;
 const CommandsToken = { name: 'commands' } as CapabilityToken<unknown>;
@@ -33,13 +33,14 @@ function build(plugins: Parameters<typeof createKernel>[0]['plugins'] = [command
 
 describe('a destroyed kernel', () => {
   test('answers as the TS kernel does', async () => {
-    const k = build();
+    // Commands keeps no state (its definitions are settings); i18n does.
+    const k = build([commandsPlugin(), i18nPlugin()]);
     await k.start();
     const held = k.getState();
-    expect(held.plugins.commands).toBeDefined();
+    expect(held.plugins.i18n).toBeDefined();
     await k.destroy();
 
-    expect(k.status()).toBe('destroyed');
+    expect(k.getStatus()).toBe('destroyed');
     expect(k.tryCapability(DocumentsToken)).toBe(null);
     expect(k.tryCapability(CommandsToken)).toBe(null);
     expect(() => k.capability(CommandsToken)).toThrow(
@@ -51,7 +52,7 @@ describe('a destroyed kernel', () => {
       plugins: {},
     });
     // A snapshot held from before reads its slices as gone, not throwing.
-    expect(held.plugins.commands).toBeUndefined();
+    expect(held.plugins.i18n).toBeUndefined();
     await expect(k.start()).rejects.toThrow('[kernel] start() on a destroyed kernel');
   });
 
@@ -62,7 +63,7 @@ describe('a destroyed kernel', () => {
     const destroying = k.destroy();
     // With no document to close the Rust side may already be through; the
     // shim frees it only once its promise settles, so it is still there.
-    const now = k.status();
+    const now = k.getStatus();
     expect(['destroying', 'destroyed']).toContain(now);
     expect(k.tryCapability(DocumentsToken)).toBe(null);
     await expect(k.start()).rejects.toThrow(`[kernel] start() on a ${now} kernel`);
@@ -97,7 +98,7 @@ describe('init-only JS plugins', () => {
     const plugin = {
       id: 'late',
       init: async () => {
-        seen.push(k.status());
+        seen.push(k.getStatus());
         await new Promise((done) => setTimeout(done, 5));
         seen.push('init done');
       },
@@ -106,7 +107,7 @@ describe('init-only JS plugins', () => {
     await k.start();
     seen.push('started');
     expect(seen).toEqual(['starting', 'init done', 'started']);
-    expect(k.status()).toBe('started');
+    expect(k.getStatus()).toBe('started');
   });
 
   test('a failing init fails start() and the kernel', async () => {
@@ -120,7 +121,7 @@ describe('init-only JS plugins', () => {
     };
     const k = build([commandsPlugin(), plugin]);
     await expect(k.start()).rejects.toThrow('init failed');
-    expect(k.status()).toBe('failed');
+    expect(k.getStatus()).toBe('failed');
     expect(torn).toEqual(['cleanup']);
     expect(k.tryCapability(CommandsToken)).toBe(null);
     expect(() => k.capability(CommandsToken)).toThrow(
@@ -239,7 +240,7 @@ describe('a kernel being destroyed', () => {
     opening.catch(() => {});
     const seen: unknown[] = [];
     k.documents.onClosed(() => {
-      seen.push(k.status(), k.tryCapability(CommandsToken), k.tryCapability(DocumentsToken));
+      seen.push(k.getStatus(), k.tryCapability(CommandsToken), k.tryCapability(DocumentsToken));
       try {
         k.capability(CommandsToken);
       } catch (error) {

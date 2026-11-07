@@ -58,7 +58,7 @@ test('a page open action runs through the QuickJS sandbox by default', async () 
   });
 
   // What stage reports once the page is on screen.
-  const page = { kind: 'objectNumber', pageObjectNumber: 3 } as const;
+  const page = { kind: 'objectNumber', objectNumber: 3 } as const;
   actions.reportPageState({
     currentPage: page,
     visiblePages: [page],

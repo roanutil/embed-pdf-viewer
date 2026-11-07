@@ -50,7 +50,7 @@ return {
   capabilities() { return '{}'; },
   security(doc, member) { return member === 'passwordPrompt' ? '{"state":"none"}' : 'null'; },
   pageIndex() { return -1; },
-  lastServerId() { return null; },
+  lastServerSequence() { return null; },
   subscribe() { return () => {}; },
   destroy() { return Promise.resolve('{"$undefined":true}'); },
 };
@@ -100,10 +100,10 @@ fn one_resolver_serves_every_live_kernel_with_unique_ids() {
     // anything itself: the resolver above is the only one, and it is
     // shared, not tied to either kernel's construction.
     let first_kernel =
-        WasmKernel::new("[]", eval(STUB_ENGINE), no_op_call_js(), no_op_release_js(), None)
+        WasmKernel::new("[]", eval(STUB_ENGINE), no_op_call_js(), no_op_release_js(), None, None)
             .unwrap();
     let second_kernel =
-        WasmKernel::new("[]", eval(STUB_ENGINE), no_op_call_js(), no_op_release_js(), None)
+        WasmKernel::new("[]", eval(STUB_ENGINE), no_op_call_js(), no_op_release_js(), None, None)
             .unwrap();
 
     let first_id = hold(&source, &[1, 2, 3]);

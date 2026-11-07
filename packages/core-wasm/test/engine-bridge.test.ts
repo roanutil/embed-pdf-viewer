@@ -43,7 +43,7 @@ describe('the engine bridge over the local engine', () => {
       ),
     );
     pagesList = JSON.parse(await bridge.call(docId, 'pages.list', null, '[]'));
-    firstPon = (pagesList.pages[0] as { ref: { pageObjectNumber: number } }).ref.pageObjectNumber;
+    firstPon = (pagesList.pages[0] as { ref: { objectNumber: number } }).ref.objectNumber;
   });
   afterAll(async () => {
     await bridge.destroy();
@@ -92,7 +92,7 @@ describe('the engine bridge over the local engine', () => {
     expect(bridge.has(docId, 'noSuchService')).toBe(false);
     expect(bridge.has(docId, 'page.noSuchService')).toBe(false);
     expect(bridge.pageIndex(docId, firstPon)).toBe(-1);
-    expect(bridge.lastServerId(docId)).toBeNull();
+    expect(bridge.lastServerSequence(docId)).toBeNull();
   });
 
   test('an engine refusal rejects with the canonical error', async () => {

@@ -1,11 +1,12 @@
 /**
  * Baked annotation appearances over the real engine: the annotation
  * plugin's `renderAppearances` answers the engine's
- * `page.annotations.renderAppearanceImages` images as they came, `$host`
- * handles with a `$hostBytes` entry each. The viewer reads each image's
- * `objectUrl()` and revokes it later, and nothing on the Rust side reads
- * the images again, so the wire releases both entries once it has decoded
- * the answer. The decoded image keeps its own bytes.
+ * `page.annotations.renderAppearances` images as they came, `$host`
+ * handles with a `$hostBytes` entry each. The render plugin keeps the
+ * pictures it fetched (its last few sets per page, for undo), and answers a
+ * repeated ask from them, so their entries stay in the host table while it
+ * does, and go once it lets go of them (`releaseImage`), here when the
+ * document closes. The decoded image keeps its own bytes.
  *
  * `ebook.pdf`'s page object 181 has five baked appearances. Images are BMP
  * for the reason `stamp-preview.test.ts` gives.
@@ -33,7 +34,7 @@ import {
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ebook = resolve(here, '..', '..', 'viewer', 'main', 'public', 'ebook.pdf');
-const page = { kind: 'objectNumber', pageObjectNumber: 181 } as const;
+const page = { kind: 'objectNumber', objectNumber: 181 } as const;
 
 let kernel: Kernel | undefined;
 
@@ -81,18 +82,27 @@ const macrotask = () => new Promise<void>((done) => setTimeout(done, 0));
 type Appearance = { image: PageImageHandle };
 
 describe('baked annotation appearances over the real engine', () => {
-  test('each render leaves the host table where it started, and its images still read', async () => {
+  test('a repeated render answers the kept pictures, and closing lets go of them', async () => {
     const k = await annotationKernel();
     const anno = k.capability(AnnotationHostToken);
     await macrotask();
     const before = kernelCounts(k).allHosts;
 
     const renders: Appearance[][] = [];
-    for (const scale of [1, 1, 2]) {
-      renders.push((await anno.renderAppearances(page, scale)) as Appearance[]);
-      await macrotask();
-      expect(kernelCounts(k).allHosts).toBe(before);
-    }
+    renders.push((await anno.renderAppearances(page, 1)) as Appearance[]);
+    await macrotask();
+    // Five images, and the bytes of each.
+    const held = kernelCounts(k).allHosts;
+    expect(held).toBe(before + 10);
+
+    // The same ask: the kept set, nothing new held, nothing let go of.
+    renders.push((await anno.renderAppearances(page, 1)) as Appearance[]);
+    await macrotask();
+    expect(kernelCounts(k).allHosts).toBe(held);
+
+    renders.push((await anno.renderAppearances(page, 2)) as Appearance[]);
+    await macrotask();
+    expect(kernelCounts(k).allHosts).toBe(held + 10);
 
     for (const images of renders) {
       expect(images).toHaveLength(5);
@@ -105,5 +115,9 @@ describe('baked annotation appearances over the real engine', () => {
         url.revoke();
       }
     }
+
+    await k.documents.close('ebook');
+    await macrotask();
+    expect(kernelCounts(k).allHosts).toBeLessThanOrEqual(before);
   }, 60_000);
 });

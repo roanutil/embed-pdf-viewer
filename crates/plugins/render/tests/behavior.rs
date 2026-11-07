@@ -527,6 +527,43 @@ fn appearance_asks_share_a_fetch_and_keep_their_sets() {
     assert!(rig.warnings.borrow().is_empty());
 }
 
+/// Rust only: on a host that keeps engine images (`release_image`), an
+/// appearance picture's image goes back to the host once no picture holds
+/// it: one no item asked for at once, the kept ones with the plugin.
+#[test]
+fn appearance_images_go_back_to_the_host_once_nothing_keeps_them() {
+    let item = |n: u32| json!({ "kind": "objectNumber", "objectNumber": n });
+    let picture = |n: u32| json!({ "ref": item(n), "state": null, "image": { "$host": n } });
+    let rig = Rig::new(
+        json!(["doc.render", "doc.annotate.read"]),
+        RenderConfig::default(),
+        vec![json!({ "path": "page.annotations.renderAppearances", "times": 1, "defer": "a0" })],
+    );
+    let ask = AppearancesOptions {
+        family: AppearanceFamily::Annotations,
+        scale: 2.0,
+        items: vec![AppearanceItem { reference: item(5), version: 1.0 }],
+        signal: None,
+    };
+    let asked = rig.render.render_appearances(PAGE, ask.clone());
+    rt::run_until_stalled();
+    assert!(rig.fake.settle("a0", Ok(json!({ "appearances": [picture(5), picture(6)] }))));
+    rt::run_until_stalled();
+    assert_eq!(asked.peek().expect("settled").expect("pictures").len(), 1);
+    assert_eq!(rig.released.get(), 1, "item 6's image: no item asked for it");
+    drop(asked);
+    let again = rig.render.render_appearances(PAGE, ask);
+    rt::run_until_stalled();
+    assert_eq!(again.peek().expect("settled").expect("pictures").len(), 1);
+    assert_eq!(rig.released.get(), 1, "the kept set still holds item 5's");
+    let Rig { kernel, render, released, .. } = rig;
+    drop((again, render));
+    kernel.documents().close("a");
+    rt::run_until_stalled();
+    drop(kernel);
+    assert_eq!(released.get(), 2);
+}
+
 /// Ruling13.16: every render asks the engine with `priority: 'high'`, and
 /// with the view it is for when it knows one, as `controller.ts` does
 /// (`ctx.doc.with({priority: 'high', view})`).

@@ -8,7 +8,7 @@
  * that still hold a `Blob` after `PREPARE` are read by `readBinarySources`
  * (`Wire.call` in `proxy.ts`).
  */
-import { pageTransform, type PageRotation, type PageTransform } from '@embedpdf/core-geometry';
+import { pageTransform, type PageTransform, type Rotation } from '@embedpdf/core-geometry';
 import { readBlobs } from './engine-bridge';
 
 type Obj = Record<string, unknown>;
@@ -45,7 +45,7 @@ const points = (n: number) => Math.round(n * 1e6) / 1e6;
 
 function withPageTransform(page: Obj): Obj {
   const t = page.transform as Obj & PageTransform;
-  const rotation = t.rotation as PageRotation;
+  const rotation = t.rotation as Rotation;
   const quarter = rotation === 90 || rotation === 270;
   const scale = page.contentScale as number;
   const width = (quarter ? page.height : page.width) as number;
