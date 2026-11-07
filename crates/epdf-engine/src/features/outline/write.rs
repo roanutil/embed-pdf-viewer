@@ -520,7 +520,10 @@ impl<'a> OutlineMutator<'a> {
     }
 
     fn meta(&self, changed: Vec<OutlineItemRef>) -> OutlineMutationMeta {
-        OutlineMutationMeta { meta: MutationMeta::local(Vec::new(), &self.stamp), changed }
+        OutlineMutationMeta {
+            meta: MutationMeta::local(Vec::new(), &self.stamp),
+            changed_refs: changed,
+        }
     }
 }
 

@@ -1020,7 +1020,7 @@ fn each_appearance_answers_its_picture_in_upstreams_shape() {
         let image = &appearance["image"];
         assert_eq!(
             *image,
-            json!({ "contentType": "image/png", "width": 40, "height": 40,
+            json!({ "mimeType": "image/png", "width": 40, "height": 40,
                 "bytes": { "payload": i } }),
             "{answer}"
         );

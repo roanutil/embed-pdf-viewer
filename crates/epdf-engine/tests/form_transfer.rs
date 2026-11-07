@@ -260,47 +260,47 @@ impl Engine {
 fn build(engine: &mut Engine, doc: &str) {
     engine.create(
         doc,
-        json!({ "family": "text", "name": "customer.name", "maxLength": 40,
+        json!({ "kind": "text", "name": "customer.name", "maxLength": 40,
         "actions": { "validate": script("validated();") },
         "widgets": [{ "page": page(FIRST), "rect": wide(240.0) }] }),
     );
     engine.set_value(doc, "customer.name", json!({ "value": "Ada" }));
     engine.create(
         doc,
-        json!({ "family": "checkbox", "name": "agree",
+        json!({ "kind": "checkbox", "name": "agree",
         "widgets": [{ "page": page(FIRST), "rect": small(20.0, 200.0), "exportValue": "Yes" }] }),
     );
     engine.set_value(doc, "agree", json!({ "checked": true }));
     engine.create(
         doc,
-        json!({ "family": "radio", "name": "plan", "widgets": [
+        json!({ "kind": "radio", "name": "plan", "widgets": [
         { "page": page(FIRST), "rect": small(20.0, 160.0), "exportValue": "basic" },
         { "page": page(SECOND), "rect": small(20.0, 160.0), "exportValue": "pro" }] }),
     );
     engine.set_value(doc, "plan", json!({ "value": "pro" }));
-    engine.create(doc, json!({ "family": "combobox", "name": "country",
+    engine.create(doc, json!({ "kind": "combobox", "name": "country",
         "options": [{ "label": "Netherlands", "value": "NL" }, { "label": "Belgium", "value": "BE" }],
         "widgets": [{ "page": page(SECOND), "rect": wide(240.0) }] }));
     engine.set_value(doc, "country", json!({ "value": "BE" }));
-    engine.create(doc, json!({ "family": "listbox", "name": "tags", "multiSelect": true,
+    engine.create(doc, json!({ "kind": "listbox", "name": "tags", "multiSelect": true,
         "options": [{ "label": "A", "value": "a" }, { "label": "B", "value": "b" },
             { "label": "C", "value": "c" }],
         "widgets": [{ "page": page(SECOND), "rect": { "x": 20, "y": 120, "width": 80, "height": 60 } }] }));
     engine.set_value(doc, "tags", json!({ "selectedValues": ["a", "c"] }));
-    engine.create(doc, json!({ "family": "pushbutton", "name": "go", "widgets": [{
+    engine.create(doc, json!({ "kind": "pushbutton", "name": "go", "widgets": [{
         "page": page(SECOND), "rect": { "x": 200, "y": 240, "width": 60, "height": 24 },
         "caption": "Go", "actions": { "activate": { "type": "uri", "uri": "https://example.com" } } }] }));
-    engine.create(doc, json!({ "family": "signature", "name": "sign",
+    engine.create(doc, json!({ "kind": "signature", "name": "sign",
         "widgets": [{ "page": page(SECOND), "rect": { "x": 200, "y": 20, "width": 80, "height": 40 } }] }));
     engine.create(
         doc,
-        json!({ "family": "text", "name": "subtotal",
+        json!({ "kind": "text", "name": "subtotal",
         "actions": { "calculate": script("event.value = 1;") },
         "widgets": [{ "page": page(FIRST), "rect": wide(100.0) }] }),
     );
     engine.create(
         doc,
-        json!({ "family": "text", "name": "total",
+        json!({ "kind": "text", "name": "total",
         "actions": { "calculate": script("event.value = 2;") },
         "widgets": [{ "page": page(FIRST), "rect": wide(60.0) }] }),
     );
@@ -567,7 +567,7 @@ fn a_field_whose_name_is_taken_is_left_out_and_so_is_one_that_would_be_its_paren
     let bundle = source_bundle(&mut engine);
     engine.open("target", alice(), everything(), two_pages());
     for name in ["agree", "customer", "go.now"] {
-        engine.create("target", json!({ "family": "text", "name": name }));
+        engine.create("target", json!({ "kind": "text", "name": name }));
     }
     let result = engine.import("target", &bundle, json!({})).unwrap()["result"].clone();
     let names: std::collections::HashMap<String, Value> = bundle["fields"]
@@ -599,7 +599,7 @@ fn the_calculation_order_of_the_copies_follows_the_forms_own_as_the_bundle_has_i
     engine.open("target", alice(), everything(), two_pages());
     engine.create(
         "target",
-        json!({ "family": "text", "name": "own",
+        json!({ "kind": "text", "name": "own",
         "actions": { "calculate": script("event.value = 0;") } }),
     );
     let result = engine.import("target", &bundle, json!({})).unwrap()["result"].clone();
@@ -659,7 +659,7 @@ fn a_values_import_fills_the_fields_of_the_same_name_and_reports_what_it_leaves_
     assert_eq!(names_of(&result), ["customer.name", "tags"]);
     let reasons: Vec<&Value> =
         result["dropped"].as_array().unwrap().iter().map(|d| &d["reason"]).collect();
-    assert_eq!(reasons, [&json!("no-field"), &json!("wrong-family"), &json!("value-not-allowed")]);
+    assert_eq!(reasons, [&json!("no-field"), &json!("wrong-kind"), &json!("value-not-allowed")]);
     let name = engine.field("target", "customer.name");
     assert_eq!(
         (name["value"].clone(), name["filledBy"].clone(), name["importedBy"].clone()),
@@ -676,7 +676,7 @@ fn a_design_import_is_undone_and_redone_with_fields_widgets_and_calculation_orde
     engine.open("target", alice(), everything(), two_pages());
     engine.create(
         "target",
-        json!({ "family": "text", "name": "own",
+        json!({ "kind": "text", "name": "own",
         "actions": { "calculate": script("event.value = 0;") } }),
     );
     let before = engine.list("target");

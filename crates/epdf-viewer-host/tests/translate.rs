@@ -859,7 +859,10 @@ fn the_security_state_is_the_typescripts_state_not_the_probe() {
     assert_eq!(
         plain,
         json!({ "encryption": { "state": "none", "requiresPassword": false },
-            "permissions": { "known": true, "bits": 4_294_967_295_u32, "allAllowed": true,
+            "permissions": { "known": true, "flags": { "print": true, "modifyContents": true, "copy": true,
+                "modifyAnnotations": true, "fillForms": true, "copyForAccessibility": true,
+                "assemble": true, "printHighQuality": true },
+                "allAllowed": true,
                 "openedAs": "none", "securityHandlerRevision": null, "canUpgradeToOwner": false },
             "access": { "required": false, "reasons": [] } })
     );
@@ -879,7 +882,10 @@ fn the_security_state_is_the_typescripts_state_not_the_probe() {
     assert_eq!(
         unlocked,
         json!({ "encryption": { "state": "encrypted", "requiresPassword": false },
-            "permissions": { "known": true, "bits": 4_294_967_292_u32, "allAllowed": true,
+            "permissions": { "known": true, "flags": { "print": true, "modifyContents": true, "copy": true,
+                "modifyAnnotations": true, "fillForms": true, "copyForAccessibility": true,
+                "assemble": true, "printHighQuality": true },
+                "allAllowed": true,
                 "openedAs": "user", "securityHandlerRevision": 6, "canUpgradeToOwner": true },
             "access": { "required": false, "reasons": [] } })
     );

@@ -124,14 +124,21 @@ pub struct SignatureSignerInput {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SignatureSeedValue {
-    pub required_flags: u32,
-    pub present_flags: u32,
-    pub version: Option<i32>,
+    /// `/V`: the seed-value parser the signer needs (1 = PDF 1.5, 2 = PDF 1.7).
+    pub parser_version: Option<i32>,
+    pub parser_version_required: bool,
+    /// `/MDP /P` when present: 0 = approval signature only.
     pub mdp: Option<u8>,
     pub filter: Option<String>,
+    pub filter_required: bool,
     pub sub_filters: Vec<String>,
+    pub sub_filters_required: bool,
     pub digest_methods: Vec<String>,
+    pub digest_methods_required: bool,
     pub reasons: Vec<String>,
+    pub reasons_required: bool,
+    /// A required entry this engine does not implement: signing this field
+    /// is refused.
     pub unsupported_required: bool,
 }
 
@@ -191,7 +198,9 @@ pub struct SignatureDto {
     pub filter: Option<String>,
     pub sub_filter: Option<String>,
     pub byte_range: Option<[u64; 4]>,
-    pub contents_size: u64,
+    /// DER length of `/Contents` as its TLV declares (0 when unsigned or
+    /// malformed).
+    pub contents_size_bytes: u64,
     pub coverage: Option<SignatureCoverage>,
     pub revision_index: Option<u32>,
     pub signer: SignatureSigner,
@@ -263,7 +272,7 @@ pub struct SignatureSnapshot {
 #[serde(rename_all = "camelCase")]
 pub struct BaseVersionInfo {
     pub sha256: String,
-    pub byte_length: u64,
+    pub size_bytes: u64,
 }
 
 /// `DocumentVersionRef`.

@@ -96,7 +96,7 @@ pub fn assert_form_bundle_manifest(
     for (index, row) in fields.iter().enumerate() {
         let data = record(row).and_then(|row| row.get("data")).and_then(record);
         let field = data.filter(|data| {
-            data.get("family").is_some_and(Value::is_string)
+            data.get("kind").is_some_and(Value::is_string)
                 && data.get("name").is_some_and(Value::is_string)
                 && data.get("ref").is_some_and(Value::is_object)
         });

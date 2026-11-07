@@ -202,7 +202,7 @@ fn a_document_program_is_read_by_its_display_hash() {
 
         let info = result(
             &mut host,
-            serde_json::json!({ "kind": "document.fonts.program", "displayHash": hash,
+            serde_json::json!({ "kind": "document.fonts.program", "displaySha256": hash,
                 "part": "info" }),
         );
         assert_eq!(info["bytes"], serde_json::Value::Null);
@@ -219,7 +219,7 @@ fn a_document_program_is_read_by_its_display_hash() {
 
         let (json, payloads) = call(
             &mut host,
-            serde_json::json!({ "kind": "document.fonts.program", "displayHash": hash,
+            serde_json::json!({ "kind": "document.fonts.program", "displaySha256": hash,
                 "part": "data" }),
             vec![],
         );
@@ -229,7 +229,7 @@ fn a_document_program_is_read_by_its_display_hash() {
         let unknown = "0".repeat(64);
         let (json, _) = call(
             &mut host,
-            serde_json::json!({ "kind": "document.fonts.program", "displayHash": unknown,
+            serde_json::json!({ "kind": "document.fonts.program", "displaySha256": unknown,
                 "part": "info" }),
             vec![],
         );
@@ -249,7 +249,7 @@ fn an_engine_fonts_program_is_read_by_its_hash_served_or_not() {
 
         let info = result(
             &mut host,
-            serde_json::json!({ "kind": "document.fonts.program", "displayHash": hash,
+            serde_json::json!({ "kind": "document.fonts.program", "displaySha256": hash,
                 "part": "info" }),
         );
         // hhea ascender 1900 and descender -500 over 2048 units per em.
@@ -259,7 +259,7 @@ fn an_engine_fonts_program_is_read_by_its_hash_served_or_not() {
 
         let (json, payloads) = call(
             &mut host,
-            serde_json::json!({ "kind": "document.fonts.program", "displayHash": hash,
+            serde_json::json!({ "kind": "document.fonts.program", "displaySha256": hash,
                 "part": "data" }),
             vec![],
         );
@@ -375,7 +375,7 @@ fn every_document_font_kind_wants_an_open_document() {
             serde_json::json!({ "kind": "document.fonts.resolve", "docId": "nothing",
                 "runs": [] }),
             serde_json::json!({ "kind": "document.fonts.program", "docId": "nothing",
-                "displayHash": "00", "part": "info" }),
+                "displaySha256": "00", "part": "info" }),
         ] {
             let (json, _) = call(&mut host, request.clone(), vec![]);
             assert!(json.get("error").is_some(), "{request}: {json}");

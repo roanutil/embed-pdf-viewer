@@ -1220,7 +1220,7 @@ mod tests {
 
     #[test]
     fn an_error_answer_crosses_unchanged() {
-        let json = r#"{"error":{"name":"EngineError","code":"NotFound","message":"no page"}}"#;
+        let json = r#"{"error":{"code":"NotFound","message":"no page"}}"#;
         let response = HostResponse { json: json.into(), payloads: Vec::new() };
         let converted = result_in_page_space(
             WireKind::PagesRender,

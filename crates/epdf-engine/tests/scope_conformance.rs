@@ -22,14 +22,14 @@ use std::collections::BTreeSet;
 
 use epdf_engine::auth::scope::{
     CollabAction, CollabEntity, CollabTarget, DocCapability, FieldGroupRight, FieldWriteAction,
-    IdentityClaims, PdfBits, check_any_field_action, check_capability, check_collab,
-    check_field_action, check_plugin_permission, check_set_group, decode_pdf_bits,
-    expanded_capabilities, field_rights_of, parse_all, parse_scope, plugin_permissions_of,
+    IdentityClaims, PdfPermissionFlags, check_any_field_action, check_capability, check_collab,
+    check_field_action, check_plugin_permission, check_set_group, expanded_capabilities,
+    field_rights_of, parse_all, parse_scope, permission_flags_of, plugin_permissions_of,
     scope_not_covered,
 };
 use serde::Deserialize;
 
-const SCHEMA_VERSION: u32 = 1;
+const SCHEMA_VERSION: u32 = 2;
 
 fn read(name: &str) -> String {
     let path = test_support::corpus::vectors_dir("scope").join(name);
@@ -216,32 +216,35 @@ struct ResolveFile {
 struct BitsEntry {
     name: String,
     raw: Option<i64>,
-    bits: BitsShape,
+    flags: FlagsShape,
 }
 
+/// `PdfPermissionFlags` as TypeScript spells it, written out rather than
+/// deserialized into the Rust type for the same reason as `shape_difference`.
 #[derive(Debug, Deserialize, PartialEq, Eq)]
-struct BitsShape {
-    bit3: bool,
-    bit4: bool,
-    bit5: bool,
-    bit6: bool,
-    bit9: bool,
-    bit10: bool,
-    bit11: bool,
-    bit12: bool,
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct FlagsShape {
+    print: bool,
+    modify_contents: bool,
+    copy: bool,
+    modify_annotations: bool,
+    fill_forms: bool,
+    copy_for_accessibility: bool,
+    assemble: bool,
+    print_high_quality: bool,
 }
 
-impl From<PdfBits> for BitsShape {
-    fn from(b: PdfBits) -> Self {
+impl From<PdfPermissionFlags> for FlagsShape {
+    fn from(b: PdfPermissionFlags) -> Self {
         Self {
-            bit3: b.bit3,
-            bit4: b.bit4,
-            bit5: b.bit5,
-            bit6: b.bit6,
-            bit9: b.bit9,
-            bit10: b.bit10,
-            bit11: b.bit11,
-            bit12: b.bit12,
+            print: b.print,
+            modify_contents: b.modify_contents,
+            copy: b.copy,
+            modify_annotations: b.modify_annotations,
+            fill_forms: b.fill_forms,
+            copy_for_accessibility: b.copy_for_accessibility,
+            assemble: b.assemble,
+            print_high_quality: b.print_high_quality,
         }
     }
 }
@@ -302,9 +305,9 @@ fn the_bit_decoder_agrees_with_typescript() {
     // assertions would not name.
     let file: ResolveFile = serde_json::from_str(&read("resolve.json")).expect("resolve.json");
     for entry in &file.bits {
-        let actual: BitsShape = decode_pdf_bits(entry.raw).into();
+        let actual: FlagsShape = permission_flags_of(entry.raw).into();
         assert_eq!(
-            actual, entry.bits,
+            actual, entry.flags,
             "permission word {:?} ({:?}) decoded differently",
             entry.name, entry.raw,
         );
@@ -329,8 +332,8 @@ fn resolution_agrees_with_typescript() {
     assert_eq!(file.kind, "scope.resolve");
     assert!(file.cases.len() >= 20, "the corpus shrank: {} cases", file.cases.len());
 
-    let bits_by_name: std::collections::BTreeMap<&str, PdfBits> =
-        file.bits.iter().map(|b| (b.name.as_str(), decode_pdf_bits(b.raw))).collect();
+    let bits_by_name: std::collections::BTreeMap<&str, PdfPermissionFlags> =
+        file.bits.iter().map(|b| (b.name.as_str(), permission_flags_of(b.raw))).collect();
 
     let mut failures = Vec::new();
     let mut checked = 0usize;

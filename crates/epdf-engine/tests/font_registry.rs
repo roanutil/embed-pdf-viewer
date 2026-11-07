@@ -172,6 +172,7 @@ fn startup_fonts_register_in_order_and_join_the_chain() {
                 fallback: true,
                 tier: fallback_tier::OWN,
                 serve: false,
+                built_in: false,
             },
             StartupFont {
                 key: "display".to_string(),
@@ -182,6 +183,7 @@ fn startup_fonts_register_in_order_and_join_the_chain() {
                 fallback: false,
                 tier: fallback_tier::OWN,
                 serve: false,
+                built_in: false,
             },
         ];
         registry.register_startup(&fonts).expect("startup");
@@ -321,6 +323,7 @@ fn startup_fonts_join_the_chain_in_their_tier() {
             fallback: true,
             tier,
             serve: false,
+            built_in: false,
         };
         registry
             .register_startup(&[
@@ -465,6 +468,7 @@ fn a_program_only_a_kept_font_has_is_not_served() {
                 fallback: false,
                 tier: fallback_tier::OWN,
                 serve: false,
+                built_in: false,
             }])
             .expect("startup");
         let sha256 = registry.engine_font_facts()[0].sha256.clone();

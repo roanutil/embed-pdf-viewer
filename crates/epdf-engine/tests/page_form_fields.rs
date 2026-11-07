@@ -65,7 +65,7 @@ fn fields_of(host: &mut Host) -> BTreeMap<String, (Value, usize)> {
     forms(host)
         .iter()
         .map(|field| {
-            let value = match field["family"].as_str() {
+            let value = match field["kind"].as_str() {
                 Some("text" | "radio") => field["value"].clone(),
                 Some("checkbox") => field["checked"].clone(),
                 _ => json!(""),

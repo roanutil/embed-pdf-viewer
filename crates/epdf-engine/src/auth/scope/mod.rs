@@ -1,4 +1,4 @@
-//! Scope vocabulary, parser, resolver and PDF bit decoder.
+//! Scope vocabulary, parser, resolver and PDF permission flags.
 //!
 //! G3. Replaces `packages/engine/core/src/auth/scope/*` for native, where
 //! permission enforcement has no other owner.
@@ -16,13 +16,14 @@
 //!
 //! Of `builders.ts`, only `materializePdfPermissions` has a counterpart
 //! ([`resolver::materialize_pdf_permissions`]): it is the one reading of the
-//! PDF bits, which the resolver and the permission advisory share. The rest
+//! PDF permission flags, which the resolver and the security state's grants
+//! share. The rest
 //! mints scope arrays for SDK callers, which is a cloud concern; the engine
 //! only ever consumes them.
 
 pub mod coverage;
 pub mod parser;
-pub mod pdf_bits;
+pub mod permission_flags;
 pub mod resolver;
 pub mod types;
 
@@ -31,7 +32,7 @@ pub use parser::{
     CORE_NAMESPACES, InvalidScope, is_plugin_id, parse_scope, plugin_of_permission,
     validate_scope_array,
 };
-pub use pdf_bits::decode_pdf_bits;
+pub use permission_flags::permission_flags_of;
 pub use resolver::{
     Capabilities, check_any_capability, check_any_field_action, check_capability, check_collab,
     check_field_action, check_plugin_permission, check_set_group, expand_raw_scope,
@@ -41,5 +42,5 @@ pub use resolver::{
 pub use types::{
     CollabAction, CollabActionPattern, CollabEntity, CollabFilter, CollabTarget, DocCapability,
     FieldAction, FieldActionPattern, FieldFilter, FieldGroupRight, FieldRights, FieldWriteAction,
-    IdentityClaims, ParsedScope, PdfBits,
+    IdentityClaims, ParsedScope, PdfPermissionFlags,
 };

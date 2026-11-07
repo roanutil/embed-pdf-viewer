@@ -43,7 +43,7 @@ fn the_asset_engine_opens_bytes_and_renders_png() {
     assert!(!named.is_empty(), "the shipped library has a registry");
     assert!(named[0]["target"]["page"]["objectNumber"].is_u64(), "{}", named[0]);
     let image = image.unwrap();
-    assert_eq!(image["contentType"], json!("image/png"));
+    assert_eq!(image["mimeType"], json!("image/png"));
     assert_eq!(image["width"], json!(64));
     let png = Bytes::from_json(&image["source"]["bytes"]).unwrap().0;
     assert_eq!(&png[..8], b"\x89PNG\r\n\x1a\n");

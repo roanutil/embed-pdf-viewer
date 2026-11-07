@@ -138,7 +138,7 @@ fn signature(index: u32, field_object_number: u32, extra: Value) -> Value {
         "filter": "Adobe.PPKLite",
         "subFilter": "ETSI.CAdES.detached",
         "byteRange": [0, 100, 200, 100],
-        "contentsSize": 8,
+        "contentsSizeBytes": 8,
         "coverage": "whole-revision",
         "revisionIndex": 1,
         "signer": { "name": null, "reason": null, "location": null, "contactInfo": null,
@@ -177,8 +177,8 @@ fn unsigned(index: u32, field: u32, extra: Value) -> Value {
 
 fn base_fields() -> Value {
     json!([
-        { "objectNumber": 20, "name": "name", "family": "text", "widgets": [21] },
-        { "objectNumber": 30, "name": "sig0", "family": "signature", "widgets": [30] },
+        { "objectNumber": 20, "name": "name", "kind": "text", "widgets": [21] },
+        { "objectNumber": 30, "name": "sig0", "kind": "signature", "widgets": [30] },
     ])
 }
 
@@ -568,9 +568,10 @@ fn metadata_info_trailer_housekeeping_and_dss_are_permitted_even_under_lta() {
 
 fn with_sig1() -> Value {
     let mut fields = base_fields();
-    fields.as_array_mut().unwrap().push(
-        json!({ "objectNumber": 60, "name": "sig1", "family": "signature", "widgets": [60] }),
-    );
+    fields
+        .as_array_mut()
+        .unwrap()
+        .push(json!({ "objectNumber": 60, "name": "sig1", "kind": "signature", "widgets": [60] }));
     fields
 }
 
@@ -887,8 +888,8 @@ fn a_field_added_and_signed_in_one_step_is_permitted_its_v_and_indirect_lock_cla
 #[test]
 fn a_lock_landing_on_a_terminal_without_its_own_ff_is_judged_against_the_effective_flags() {
     let fields = json!([
-        { "objectNumber": 20, "name": "name", "family": "text", "widgets": [21], "flags": 4096 },
-        { "objectNumber": 30, "name": "sig0", "family": "signature", "widgets": [30] },
+        { "objectNumber": 20, "name": "name", "kind": "text", "widgets": [21], "flags": 4096 },
+        { "objectNumber": 30, "name": "sig0", "kind": "signature", "widgets": [30] },
     ]);
     let before = structure(json!({ "fields": fields, "signatures": [] }));
     let after = structure(json!({ "fields": fields, "signatures": [signature(0, 30, json!({
@@ -952,7 +953,7 @@ fn an_appearance_stream_shared_between_two_fields_is_nobodys_regeneration() {
     fields
         .as_array_mut()
         .unwrap()
-        .push(json!({ "objectNumber": 40, "name": "other", "family": "text", "widgets": [40] }));
+        .push(json!({ "objectNumber": 40, "name": "other", "kind": "text", "widgets": [40] }));
     let two = structure(json!({ "fields": fields, "signatures": [certification(2)] }));
     let changes = [
         fill_change(),

@@ -387,12 +387,12 @@ fn only_the_user_who_made_a_change_may_undo_it() {
 #[test]
 fn each_op_is_checked_against_the_changes_authority() {
     let mut host = open();
-    let bits = json!({ "bit3": true, "bit4": true, "bit5": true, "bit6": true, "bit9": true,
-        "bit10": true, "bit11": true, "bit12": true });
+    let bits = json!({ "print": true, "modifyContents": true, "copy": true, "modifyAnnotations": true, "fillForms": true,
+        "copyForAccessibility": true, "assemble": true, "printHighQuality": true });
     let refused = send(
         &mut host,
         json!({ "kind": "document.apply", "change": { "ops": [update(json!({ "title": "x" }))] },
-            "authority": { "identity": {}, "grants": { "scope": ["doc.open"], "pdfBits": bits } } }),
+            "authority": { "identity": {}, "grants": { "scope": ["doc.open"], "permissionFlags": bits } } }),
     )
     .expect_err("doc.open does not grant a metadata write");
     assert_eq!(refused["code"], "Forbidden", "{refused}");

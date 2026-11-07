@@ -379,14 +379,14 @@ fn dropping_a_page_state_forgets_its_revision_and_weak_flag() {
 
 #[test]
 fn a_session_opened_with_a_scope_enforces_it() {
-    use epdf_engine::auth::scope::{DocCapability, IdentityClaims, PdfBits};
+    use epdf_engine::auth::scope::{DocCapability, IdentityClaims, PdfPermissionFlags};
     use epdf_engine::session::authority::SessionAuthority;
 
     let mut session = DocumentSession::new();
     let authority = SessionAuthority::new(
         &["doc.open".to_string(), "doc.render".to_string()],
         IdentityClaims::default(),
-        PdfBits::default(),
+        PdfPermissionFlags::default(),
     )
     .expect("parse scope");
     session.open_with(report(), None, authority).expect("open");
@@ -401,7 +401,7 @@ fn a_session_opened_with_a_scope_enforces_it() {
 
 #[test]
 fn opening_reads_the_declared_permission_word_for_pdf_permissions() {
-    use epdf_engine::auth::scope::{DocCapability, IdentityClaims, PdfBits};
+    use epdf_engine::auth::scope::{DocCapability, IdentityClaims, PdfPermissionFlags};
     use epdf_engine::session::authority::SessionAuthority;
 
     // encrypted-r4-aes-128.pdf denies copying and allows the rest. The word
@@ -411,7 +411,7 @@ fn opening_reads_the_declared_permission_word_for_pdf_permissions() {
     let authority = SessionAuthority::new(
         &["pdf.permissions".to_string()],
         IdentityClaims::default(),
-        PdfBits::default(),
+        PdfPermissionFlags::default(),
     )
     .expect("parse scope");
     session.open_with(bytes(ENCRYPTED), Some("user"), authority).expect("open");

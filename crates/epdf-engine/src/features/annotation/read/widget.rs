@@ -14,7 +14,7 @@
 //!
 //! # The join happens after this reader, not inside it
 //!
-//! `field_object_number` and `field_family` are the key onto the forms side,
+//! `field_object_number` and `field_kind` are the key onto the forms side,
 //! and this reader always writes the unattached values into them. Resolving
 //! them means following `/Parent` to a FIELD dictionary, which no
 //! annotation-plane accessor can do: the reconciled form model is the
@@ -62,7 +62,7 @@ pub struct WidgetFields {
     /// as zero here and stamped by [`super::widget_join`].
     pub field_object_number: u32,
     /// The owning field's family, on the same terms.
-    pub field_family: FormFieldFamily,
+    pub field_kind: FormFieldFamily,
 }
 
 /// Read them.
@@ -79,7 +79,7 @@ pub fn read_widget(annotation: &Annotation<'_>) -> Result<WidgetFields, EngineEr
         font_color: appearance.map(|da| Color { r: da.color.0, g: da.color.1, b: da.color.2 }),
         text_align: TextAlignment::from_code(annotation.text_alignment()),
         field_object_number: UNATTACHED_FIELD_OBJECT_NUMBER,
-        field_family: FormFieldFamily::Unknown,
+        field_kind: FormFieldFamily::Unknown,
     })
 }
 
@@ -115,7 +115,7 @@ mod tests {
             font_color: None,
             text_align: TextAlignment::Left,
             field_object_number: UNATTACHED_FIELD_OBJECT_NUMBER,
-            field_family: FormFieldFamily::Unknown,
+            field_kind: FormFieldFamily::Unknown,
         };
         let value = serde_json::to_value(&fields).unwrap();
         assert!(value.get("fontFamily").is_none());

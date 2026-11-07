@@ -84,7 +84,7 @@ fn prepare_then_complete_seals_the_field() {
     );
     assert_eq!(digest.len(), 32);
     assert_eq!(prepared["algorithm"], json!("sha256"));
-    assert_eq!(prepared["contentsSize"], json!(8192));
+    assert_eq!(prepared["contentsSizeBytes"], json!(8192));
     assert_eq!(prepared["subFilter"], json!("ETSI.CAdES.detached"));
     assert_eq!(prepared["expectedVersion"]["baseSha256"], before["sha256"]);
     let cms = test_cms(&digest);
@@ -269,11 +269,11 @@ fn a_signature_field_is_authored_filled_visually_and_refuses_a_visual_fill_once_
     let artwork = fixture("signature_artwork.pdf");
     let created = sig_call(
         &mut host,
-        json!({ "kind": "forms.createField", "docId": doc, "draft": { "family": "signature",
+        json!({ "kind": "forms.createField", "docId": doc, "draft": { "kind": "signature",
             "name": "sig2", "widgets": [{ "page": page_ref(pon),
                 "rect": { "x": 50, "y": 50, "width": 200, "height": 70 } }] } }),
     );
-    assert_eq!(created["result"]["field"]["family"], json!("signature"), "{created}");
+    assert_eq!(created["result"]["field"]["kind"], json!("signature"), "{created}");
     let listed = sig_list(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
     let names: Vec<(Value, Value)> = listed["signatures"]
         .as_array()
@@ -353,7 +353,7 @@ fn a_signature_field_is_authored_filled_visually_and_refuses_a_visual_fill_once_
         json!({ "kind": "forms.setSignatureAppearance", "docId": doc, "ref": fqn("sig2") }),
         artwork,
     );
-    assert_eq!(again["result"]["field"]["family"], json!("signature"), "{again}");
+    assert_eq!(again["result"]["field"]["kind"], json!("signature"), "{again}");
 }
 
 #[test]
@@ -395,10 +395,10 @@ fn a_visual_fill_is_a_change_op_its_undo_takes_back_and_only_a_signer_may_undo()
     let mut host = Host::new();
     let (doc, _) = sig_open_fixture(&mut host, &format!("{FIX}/unsigned_sigfield.pdf"));
     let artwork = fixture("signature_artwork.pdf");
-    let bits = json!({ "bit3": true, "bit4": true, "bit5": true, "bit6": true, "bit9": true,
-        "bit10": true, "bit11": true, "bit12": true });
+    let bits = json!({ "print": true, "modifyContents": true, "copy": true, "modifyAnnotations": true, "fillForms": true,
+        "copyForAccessibility": true, "assemble": true, "printHighQuality": true });
     let authority = |scope: Value| {
-        json!({ "identity": { "userId": "ann" }, "grants": { "scope": scope, "pdfBits": bits },
+        json!({ "identity": { "userId": "ann" }, "grants": { "scope": scope, "permissionFlags": bits },
             "protection": null })
     };
     let read_widget = |host: &mut Host| {
@@ -666,8 +666,8 @@ fn a_request_authority_decides_who_signs() {
     let mut host = open_groups(json!(["*"]), json!({}));
     let seller = json!({ "identity": { "userId": "bob" }, "grants": {
         "scope": ["doc.open", "fields:*:group=seller"],
-        "pdfBits": { "bit3": true, "bit4": true, "bit5": true, "bit6": true, "bit9": true,
-            "bit10": true, "bit11": true, "bit12": true } }, "protection": null });
+        "permissionFlags": { "print": true, "modifyContents": true, "copy": true, "modifyAnnotations": true, "fillForms": true,
+            "copyForAccessibility": true, "assemble": true, "printHighQuality": true } }, "protection": null });
     let refused = envelope(
         &mut host,
         json!({ "kind": "signatures.prepare", "docId": "groups", "authority": seller,
@@ -683,8 +683,8 @@ fn a_request_authority_decides_who_signs() {
     // Its completion is checked again, under the authority it carries.
     let buyer = json!({ "identity": { "userId": "alice" }, "grants": {
         "scope": ["doc.open", "fields:*:group=buyer"],
-        "pdfBits": { "bit3": true, "bit4": true, "bit5": true, "bit6": true, "bit9": true,
-            "bit10": true, "bit11": true, "bit12": true } }, "protection": null });
+        "permissionFlags": { "print": true, "modifyContents": true, "copy": true, "modifyAnnotations": true, "fillForms": true,
+            "copyForAccessibility": true, "assemble": true, "printHighQuality": true } }, "protection": null });
     let complete = |authority: &Value| {
         json!({ "kind": "signatures.complete", "docId": "groups", "authority": authority,
             "input": { "signingId": prepared["signingId"],

@@ -339,40 +339,13 @@ pub struct WireAuthorityIdentity {
     pub group_id: Option<String>,
 }
 
-/// An authority's `grants`: the caller's scope and the PDF permission bits.
+/// An authority's `grants`: the caller's scope and what the file's
+/// permissions allow (`permissionFlags`, a780243ba).
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WireGrants {
     pub scope: Vec<String>,
-    pub pdf_bits: WirePdfBits,
-}
-
-/// `PdfBits`, as the wire spells it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-pub struct WirePdfBits {
-    pub bit3: bool,
-    pub bit4: bool,
-    pub bit5: bool,
-    pub bit6: bool,
-    pub bit9: bool,
-    pub bit10: bool,
-    pub bit11: bool,
-    pub bit12: bool,
-}
-
-impl From<WirePdfBits> for crate::auth::scope::types::PdfBits {
-    fn from(w: WirePdfBits) -> Self {
-        Self {
-            bit3: w.bit3,
-            bit4: w.bit4,
-            bit5: w.bit5,
-            bit6: w.bit6,
-            bit9: w.bit9,
-            bit10: w.bit10,
-            bit11: w.bit11,
-            bit12: w.bit12,
-        }
-    }
+    pub permission_flags: crate::auth::scope::types::PdfPermissionFlags,
 }
 
 /// `grants`: present, and `null` or the grants.
@@ -704,7 +677,7 @@ impl Host {
                     // A serializer that cannot write an error has left
                     // the host with nothing to report, so this is the
                     // one place that hand-builds JSON.
-                    String::from(r#"{"error":{"name":"EngineError","code":"Unknown","message":"unserializable"}}"#)
+                    String::from(r#"{"error":{"code":"Unknown","message":"unserializable"}}"#)
                 }),
                 payloads: Vec::new(),
             },
@@ -940,7 +913,15 @@ impl Host {
                     italic: crate::features::fonts::italic_from_wire(field(body, "italic")?),
                 };
                 let data = payload(&payloads, 0, "the font file")?;
-                fonts.register(key.clone(), &description, data)?;
+                // `builtIn`: one of the fallback fonts the engine adds on its
+                // own; absent for the app's.
+                let built_in = body.get("builtIn").and_then(serde_json::Value::as_bool);
+                fonts.register_marked(
+                    key.clone(),
+                    &description,
+                    data,
+                    built_in.unwrap_or(false),
+                )?;
                 let identity = fonts.identity_info(&key)?;
                 serde_json::json!({ "fontKey": key, "identity": identity })
             }
@@ -1404,7 +1385,7 @@ impl Host {
             // ascent, descent, bytes }`, the bytes payload 0 for
             // `part: 'data'` and `null` otherwise.
             "document.fonts.program" => {
-                let display_hash = string_field(body, "displayHash")?;
+                let display_hash = string_field(body, "displaySha256")?;
                 let part = string_field(body, "part")?;
                 self.fonts()?;
                 let fonts = self.fonts.as_ref().expect("just claimed");
@@ -2790,9 +2771,7 @@ impl Host {
             error: None,
             event: Some(event),
         })
-        .unwrap_or_else(|_| {
-            String::from(r#"{"error":{"name":"EngineError","code":"Unknown","message":"Unknown"}}"#)
-        });
+        .unwrap_or_else(|_| String::from(r#"{"error":{"code":"Unknown","message":"Unknown"}}"#));
         Ok(HostResponse { json, payloads })
     }
 
@@ -3095,9 +3074,7 @@ fn ok(result: serde_json::Value) -> HostResponse {
     HostResponse {
         json: serde_json::to_string(&Envelope { result: Some(result), error: None, event: None })
             .unwrap_or_else(|_| {
-                String::from(
-                    r#"{"error":{"name":"EngineError","code":"Unknown","message":"Unknown"}}"#,
-                )
+                String::from(r#"{"error":{"code":"Unknown","message":"Unknown"}}"#)
             }),
         payloads: Vec::new(),
     }
@@ -3137,7 +3114,7 @@ fn encoded_json(
     payload: usize,
 ) -> serde_json::Value {
     serde_json::json!({
-        "contentType": encoded.content_type,
+        "mimeType": encoded.content_type,
         "width": encoded.width,
         "height": encoded.height,
         "bytes": { "payload": payload },
@@ -3248,9 +3225,7 @@ fn bytes_response(bytes: Vec<u8>) -> HostResponse {
 
 fn envelope(result: serde_json::Value) -> String {
     serde_json::to_string(&Envelope { result: Some(result), error: None, event: None })
-        .unwrap_or_else(|_| {
-            String::from(r#"{"error":{"name":"EngineError","code":"Unknown","message":"Unknown"}}"#)
-        })
+        .unwrap_or_else(|_| String::from(r#"{"error":{"code":"Unknown","message":"Unknown"}}"#))
 }
 
 fn form_model_missing() -> EngineError {
@@ -3377,7 +3352,7 @@ fn change_authority(
                 display_name: wire.identity.display_name.clone(),
             };
             let mut authority =
-                SessionAuthority::new(&grants.scope, identity, grants.pdf_bits.into()).map_err(
+                SessionAuthority::new(&grants.scope, identity, grants.permission_flags).map_err(
                     |e| {
                         EngineError::with_message(
                             EngineErrorCode::InvalidArg,

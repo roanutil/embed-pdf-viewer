@@ -191,7 +191,11 @@ pub struct WidgetAnnotation<C: Coordinates = PdfCoordinates> {
     pub check_style: Option<WidgetCheckStyle>,
     /// The field the widget belongs to, or `None` when it's in none.
     pub field: Option<FormFieldRef>,
-    pub field_family: FormFieldFamily,
+    pub field_kind: FormFieldFamily,
+    /// A mark is in the widget: its signature field is signed, or a mark was
+    /// drawn into it (14fbaf093). Its style no longer draws.
+    #[serde(default)]
+    pub has_mark: bool,
 }
 
 /// The one subtype a [`WidgetAnnotation`] has.
@@ -389,35 +393,47 @@ pub fn read_widget_annotation(
         caption: dictionary_read("MK", annotation.mk_text(MK_CAPTION))?,
         check_style: None,
         field: None,
-        field_family: FormFieldFamily::Unknown,
+        field_kind: FormFieldFamily::Unknown,
+        // A mark drawn in records how it fits; the join adds a signature,
+        // and keeps it only for a signature field's widget.
+        has_mark: super::kinds::read_appearance_fit(annotation)?.is_some(),
     })
 }
 
 /// Stamp a widget row with its field and family (`joinWidgetFieldNumbers`).
 /// `/MK /CA` is a push button's caption and a checkbox's or radio button's
-/// symbol; another widget's reads as neither.
+/// symbol; another widget's reads as neither. A signature field's widget has
+/// a mark in it when the field is signed (it has a value) or a mark was
+/// drawn into it (the read found its fit); no other widget has one.
 pub fn join_widget_field(model: &pdfium::FormModel<'_>, widget: &mut WidgetAnnotation) {
     let AnnotationRef::ObjectNumber { annot, .. } = widget.base.annotation_ref else {
         widget.caption = None;
+        widget.has_mark = false;
         return;
     };
     let field = model.field_index_for_widget(annot).and_then(|index| model.field(index));
     let Some(field) = field.filter(|field| field.object_number() > 0) else {
         // In no field, or in one stored inline, which no ref can address.
         widget.field = None;
-        widget.field_family = FormFieldFamily::Unknown;
+        widget.field_kind = FormFieldFamily::Unknown;
         widget.caption = None;
+        widget.has_mark = false;
         return;
     };
     widget.field = Some(FormFieldRef::ObjectNumber { field: field.object_number() });
-    widget.field_family = FormFieldFamily::from_code(field.family_code());
-    if matches!(widget.field_family, FormFieldFamily::Checkbox | FormFieldFamily::Radio) {
+    widget.field_kind = FormFieldFamily::from_code(field.family_code());
+    if matches!(widget.field_kind, FormFieldFamily::Checkbox | FormFieldFamily::Radio) {
         widget.check_style = WidgetCheckStyle::of_caption(widget.caption.as_deref());
     }
-    if widget.field_family != FormFieldFamily::Pushbutton {
+    if widget.field_kind != FormFieldFamily::Pushbutton {
         widget.caption = None;
     }
+    widget.has_mark = widget.field_kind == FormFieldFamily::Signature
+        && (widget.has_mark || field.value_kind() != VALUE_KIND_NONE);
 }
+
+/// `EPDFForm_GetFieldValueKind`: the field has no `/V`.
+const VALUE_KIND_NONE: i32 = 0;
 
 #[cfg(test)]
 mod tests {

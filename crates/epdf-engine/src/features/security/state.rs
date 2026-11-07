@@ -12,7 +12,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::auth::scope::{DocCapability, PdfBits, materialize_pdf_permissions};
+use crate::auth::scope::{PdfPermissionFlags, permission_flags_of};
 
 /// How a document was unlocked.
 ///
@@ -172,50 +172,13 @@ pub fn unknown_security(probed_at: i64) -> SecurityProbeInfo {
     }
 }
 
-/// Capability-shaped booleans for a UI badge.
-///
-/// These must mirror the bit combinations
-/// [`crate::auth::scope`] uses when expanding `pdf.permissions`, and the
-/// conformance runner checks that they do rather than trusting this comment:
-/// an advisory that says "you can print in high quality" where the resolver
-/// denies `doc.print.high` is a UI that lies about what the document allows.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PermissionAdvisory {
-    pub can_print: bool,
-    pub can_print_high: bool,
-    pub can_copy: bool,
-    pub can_annotate: bool,
-    pub can_fill_forms: bool,
-    pub can_modify_forms: bool,
-    pub can_modify_pages: bool,
-    pub can_assemble: bool,
-}
-
-/// What `pdf.permissions` grants on a file with these bits
-/// (`advisoryFromPdfBits`, `document-security-state.ts`): read off
-/// [`materialize_pdf_permissions`], so the advisory and the resolver cannot
-/// disagree.
-pub fn advisory_from_pdf_bits(b: PdfBits) -> PermissionAdvisory {
-    let granted = materialize_pdf_permissions(b);
-    let has = |c: DocCapability| granted.contains(&c);
-    PermissionAdvisory {
-        can_print: has(DocCapability::DocPrint),
-        can_print_high: has(DocCapability::DocPrintHigh),
-        can_copy: has(DocCapability::DocTextCopy),
-        can_annotate: has(DocCapability::DocAnnotateModify),
-        can_fill_forms: has(DocCapability::DocFormsFill),
-        can_modify_forms: has(DocCapability::DocFormsModify),
-        can_modify_pages: has(DocCapability::DocPagesModify),
-        can_assemble: has(DocCapability::DocPagesAssemble),
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PermissionState {
     pub known: bool,
-    pub bits: Option<u32>,
+    /// What the file's permissions allow; `None` until it was read
+    /// (a780243ba replaced the raw `bits` word).
+    pub flags: Option<PdfPermissionFlags>,
     pub all_allowed: Option<bool>,
     pub opened_as: Option<OpenedAs>,
     pub security_handler_revision: Option<i32>,
@@ -282,7 +245,7 @@ pub fn security_state_from_probe(info: &SecurityProbeInfo, opts: &StateOptions) 
         },
         permissions: PermissionState {
             known,
-            bits: info.pdf_permissions_bits,
+            flags: info.pdf_permissions_bits.map(|word| permission_flags_of(Some(i64::from(word)))),
             all_allowed: info.pdf_permissions_all_allowed,
             opened_as: info.pdf_opened_as,
             security_handler_revision: info.security_handler_revision,
@@ -367,7 +330,7 @@ mod prompt_tests {
             encryption: EncryptionSummary { state: encryption, requires_password },
             permissions: PermissionState {
                 known,
-                bits: None,
+                flags: None,
                 all_allowed: None,
                 opened_as,
                 security_handler_revision: None,

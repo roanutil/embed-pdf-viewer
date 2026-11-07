@@ -724,21 +724,29 @@ fn synthesised(size: f64, color: &str, contents: Option<&str>) -> RichTextDocume
     }
 }
 
-fn read_stamp(annotation: &Annotation<'_>) -> Result<StampRecord, EngineError> {
+/// The fit an annotation records (`readAppearanceFit`), or `None` when it
+/// records none or one we don't know. A stamp's drawing records it, and so
+/// does a mark drawn into a signature field's widget.
+pub fn read_appearance_fit(annotation: &Annotation<'_>) -> Result<Option<StampFit>, EngineError> {
     let fit = if annotation.has_embed_metadata() {
         dictionary_read(KEY_APPEARANCE_FIT, annotation.embed_metadata_string(KEY_APPEARANCE_FIT))?
     } else {
         None
     };
+    Ok(match fit.as_deref() {
+        Some("contain") => Some(StampFit::Contain),
+        Some("cover") => Some(StampFit::Cover),
+        Some("fill") => Some(StampFit::Fill),
+        _ => None,
+    })
+}
+
+fn read_stamp(annotation: &Annotation<'_>) -> Result<StampRecord, EngineError> {
+    let fit = read_appearance_fit(annotation)?;
     let shape = read_annotation_box(annotation);
     Ok(StampRecord {
         name: dictionary_read("Name", annotation.name())?,
-        fit: match fit.as_deref() {
-            Some("contain") => Some(StampFit::Contain),
-            Some("cover") => Some(StampFit::Cover),
-            Some("fill") => Some(StampFit::Fill),
-            _ => None,
-        },
+        fit,
         opacity: raw_opacity(annotation).unwrap_or(1.0),
         content_box: shape.content_box,
         rotation: shape.rotation,

@@ -284,6 +284,9 @@ pub struct FormFieldBase<C: Coordinates = PdfCoordinates> {
     pub field_ref: FormFieldRef,
     /// The fully qualified name, such as `billing.name`.
     pub name: String,
+    /// `kind` on the wire (c4b286a69); the Rust name stays `family` beside
+    /// the payload enum [`FormFieldKind`].
+    #[serde(rename = "kind")]
     pub family: FormFieldFamily,
     pub origin: FormFieldOrigin,
     /// The USER must not change the value. Programmatic writes are still
@@ -336,7 +339,7 @@ pub struct FieldAttribution {
 
 /// The family-specific half.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "family", rename_all = "camelCase")]
+#[serde(tag = "kind", rename_all = "camelCase")]
 #[serde(rename_all_fields = "camelCase")]
 pub enum FormFieldKind {
     Text {

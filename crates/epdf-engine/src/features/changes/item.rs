@@ -312,7 +312,7 @@ pub enum ChangeItem {
     /// `OutlineMoveResult`: the children of every parent the move changed.
     #[serde(rename = "outline.move")]
     OutlineMove { orders: Vec<crate::features::outline::OutlineOrder>, meta: OutlineMutationMeta },
-    /// `OutlineDeleteResult`: in `meta.changed`, what went, the item first.
+    /// `OutlineDeleteResult`: in `meta.changedRefs`, what went, the item first.
     #[serde(rename = "outline.delete")]
     OutlineDelete { meta: OutlineMutationMeta },
     /// `OutlineRestoreResult`, only in an undo: what a delete removed, back
@@ -580,10 +580,10 @@ impl ChangeItem {
                 "outline.moved",
                 serde_json::json!({ "orders": to_value(orders)?, "meta": to_value(meta)? }),
             ),
-            // `deletedOutlineItemsOf`: the refs in `meta.changed`.
+            // `deletedOutlineItemsOf`: the refs in `meta.changedRefs`.
             Self::OutlineDelete { meta } => (
                 "outline.deleted",
-                serde_json::json!({ "deleted": to_value(&meta.changed)?,
+                serde_json::json!({ "deleted": to_value(&meta.changed_refs)?,
                     "meta": to_value(meta)? }),
             ),
             Self::OutlineRestore { items, order, meta } => (

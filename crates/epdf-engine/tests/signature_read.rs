@@ -86,7 +86,7 @@ fn contents_and_revision_bytes_are_payloads() {
     let version =
         sig_call(&mut host, json!({ "kind": "document.version", "docId": doc }))["version"].clone();
     assert_eq!(version["sha256"].as_str().unwrap().len(), 64);
-    assert!(version["byteLength"].as_u64().unwrap() > revision.len() as u64);
+    assert!(version["sizeBytes"].as_u64().unwrap() > revision.len() as u64);
 }
 
 #[test]

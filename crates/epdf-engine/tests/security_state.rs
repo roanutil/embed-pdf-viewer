@@ -5,20 +5,22 @@
 //! combination of bits; the half that reads a real encrypted file is separate.
 //!
 //! The vectors under `tooling/engine-conformance/vectors/security/` are what
-//! `buildSecurityInfo`, `openedAsFromCode`, `advisoryFromPdfBits` and
+//! `buildSecurityInfo`, `openedAsFromCode`, `advisoryFromPdfPermissionFlags` and
 //! `securityStateFromProbe` produce. Regenerate them, deliberately, with:
 //!   pnpm --filter @embedpdf/tooling-engine-conformance run security
 
-use epdf_engine::auth::scope::{DocCapability, ParsedScope, check_capability, decode_pdf_bits};
+use epdf_engine::auth::scope::{
+    DocCapability, ParsedScope, PdfPermissionFlags, check_capability, materialize_pdf_permissions,
+    permission_flags_of,
+};
 use epdf_engine::features::security::state::{
-    ALL_STANDARD_SECURITY_PERMISSIONS, OpenedAs, PermissionAdvisory, SecurityProbeInfo,
-    SecurityState, StateOptions, advisory_from_pdf_bits, build_security_info,
-    has_all_standard_security_permissions, normalize_u32, password_blocked,
+    ALL_STANDARD_SECURITY_PERMISSIONS, OpenedAs, SecurityProbeInfo, SecurityState, StateOptions,
+    build_security_info, has_all_standard_security_permissions, normalize_u32, password_blocked,
     security_state_from_probe, unknown_security, unsupported_security,
 };
 use serde::Deserialize;
 
-const SCHEMA_VERSION: u32 = 1;
+const SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -70,7 +72,9 @@ struct AdvisoryCase {
     name: String,
     covers: String,
     raw: Option<i64>,
-    advisory: PermissionAdvisory,
+    flags: PdfPermissionFlags,
+    /// `materializePdfPermissions(flags)`, sorted.
+    granted: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -192,48 +196,37 @@ fn opened_as_from_code_agrees_with_typescript() {
 }
 
 #[test]
-fn the_advisory_agrees_with_typescript() {
+fn the_flags_and_their_grants_agree_with_typescript() {
+    // a780243ba removed the advisory; what `pdf.permissions` grants on a file
+    // with these flags is what it was read off, so the cases check that.
     let file = load();
+    assert!(file.advisory.len() >= 8, "the corpus shrank");
     for case in &file.advisory {
-        let bits = decode_pdf_bits(case.raw);
-        assert_eq!(advisory_from_pdf_bits(bits), case.advisory, "{}: {}", case.name, case.covers,);
+        let flags = permission_flags_of(case.raw);
+        assert_eq!(flags, case.flags, "{}: flags ({})", case.name, case.covers);
+        let mut granted: Vec<&str> =
+            materialize_pdf_permissions(flags).iter().map(|c| c.as_str()).collect();
+        granted.sort_unstable();
+        assert_eq!(granted, case.granted, "{}: granted ({})", case.name, case.covers);
     }
 }
 
 #[test]
-fn the_advisory_and_the_scope_resolver_tell_the_same_story() {
-    // `document-security-state.ts` says the advisory "MUST mirror the bit
-    // combinations the scope resolver uses for pdf.permissions expansion". A
-    // comment cannot enforce that, and the two live in different packages on
-    // both sides, so the pairing is checked here: an advisory that says "you
-    // can print in high quality" where the resolver denies `doc.print.high`
-    // is a UI that lies about the document.
-    //
-    // Only the capabilities that have a bit behind them are paired. The
-    // advisory has no field for the cloud-only ones, which is correct: there
-    // is nothing about them for a badge to advise.
+fn the_scope_resolver_allows_every_grant() {
+    // `pdf.permissions` in a scope expands to at least the materialized
+    // grant (plus what those capabilities imply), so a UI that reads the
+    // grant cannot promise what the resolver denies.
     let file = load();
     let virtual_scope = [ParsedScope::Virtual];
     for case in &file.advisory {
-        let bits = decode_pdf_bits(case.raw);
-        let advisory = advisory_from_pdf_bits(bits);
-        let granted = |c: DocCapability| check_capability(c, &virtual_scope, bits);
-
-        let pairs = [
-            ("canPrint", advisory.can_print, granted(DocCapability::DocPrint)),
-            ("canPrintHigh", advisory.can_print_high, granted(DocCapability::DocPrintHigh)),
-            ("canCopy", advisory.can_copy, granted(DocCapability::DocTextCopy)),
-            ("canAnnotate", advisory.can_annotate, granted(DocCapability::DocAnnotateModify)),
-            ("canFillForms", advisory.can_fill_forms, granted(DocCapability::DocFormsFill)),
-            ("canModifyForms", advisory.can_modify_forms, granted(DocCapability::DocFormsModify)),
-            ("canModifyPages", advisory.can_modify_pages, granted(DocCapability::DocPagesModify)),
-            ("canAssemble", advisory.can_assemble, granted(DocCapability::DocPagesAssemble)),
-        ];
-        for (field, advised, resolved) in pairs {
-            assert_eq!(
-                advised, resolved,
-                "{}: advisory {field} says {advised}, the resolver says {resolved} ({})",
-                case.name, case.covers,
+        let flags = permission_flags_of(case.raw);
+        for name in &case.granted {
+            let capability = DocCapability::parse(name).expect("a capability Rust has");
+            assert!(
+                check_capability(capability, &virtual_scope, flags),
+                "{}: {name} is granted and the resolver denies it ({})",
+                case.name,
+                case.covers,
             );
         }
     }

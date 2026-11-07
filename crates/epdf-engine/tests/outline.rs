@@ -598,7 +598,7 @@ fn a_move_takes_items_together_with_the_items_under_them_and_names_both_parents(
     let mut host = open(outline_fixture());
     let moved =
         move_items(&mut host, &[C, D], Some(A), json!({ "after": r(A1) })).expect("the move");
-    assert_eq!(moved["meta"]["changed"], json!([r(C), r(D)]));
+    assert_eq!(moved["meta"]["changedRefs"], json!([r(C), r(D)]));
     assert_eq!(order_of(&moved["orders"], None), [6, 7]);
     assert_eq!(order_of(&moved["orders"], Some(A)), [10, 8, 9]);
     let outline = get(&mut host);
@@ -630,7 +630,7 @@ fn a_delete_takes_the_items_under_the_item_and_an_undo_brings_the_same_ones_back
     let mut host = open(outline_fixture());
     let before = get(&mut host);
     let deleted = delete(&mut host, C);
-    assert_eq!(deleted["meta"]["changed"], json!([r(C), r(C1)]));
+    assert_eq!(deleted["meta"]["changedRefs"], json!([r(C), r(C1)]));
     assert_eq!(titles(&get(&mut host)), ["A", "A1", "B", "D"]);
     let undone = undo(&mut host, &deleted["meta"]["opId"]);
     let types: Vec<&str> =
@@ -681,7 +681,7 @@ fn each_write_publishes_its_outline_event_with_its_result() {
     assert_eq!(types, ["outline.created", "outline.updated", "outline.moved", "outline.deleted"]);
     assert_matches(outline[0], json!({ "item": { "title": "New", "parent": r(C) } }));
     assert_matches(outline[1], json!({ "item": { "title": "Newer" } }));
-    assert_matches(outline[2], json!({ "meta": { "changed": [created] } }));
+    assert_matches(outline[2], json!({ "meta": { "changedRefs": [created] } }));
     assert_matches(outline[3], json!({ "deleted": [created] }));
 }
 

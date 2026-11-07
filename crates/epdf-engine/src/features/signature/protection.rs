@@ -205,7 +205,7 @@ mod tests {
             filter: None,
             sub_filter: None,
             byte_range: Some([0, 1, 2, 3]),
-            contents_size: 8,
+            contents_size_bytes: 8,
             coverage: Some(SignatureCoverage::WholeRevision),
             revision_index: Some(1),
             signer: SignatureSigner::default(),

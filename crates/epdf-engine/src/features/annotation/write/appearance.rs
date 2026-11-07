@@ -111,7 +111,7 @@ const INERT_KEYS: &[&str] = &[
     "file",
     // The field a widget belongs to, as the form reads it.
     "field",
-    "fieldFamily",
+    "fieldKind",
 ];
 
 /// The kinds whose `/AP` paints `/Contents`. Everywhere else `contents` is

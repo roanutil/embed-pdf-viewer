@@ -305,8 +305,8 @@ fn restrictions_of_program(program: &FontProgramFacts) -> Vec<FontRestriction> {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ListedProgram {
-    pub display_hash: Option<String>,
-    pub source_hash: Option<String>,
+    pub display_sha256: Option<String>,
+    pub source_sha256: Option<String>,
     pub embedded: Embedded,
     pub format: Option<FontFormat>,
     pub embedding_permission: Option<ProgramPermission>,
@@ -318,8 +318,8 @@ fn listed_program(program: &FontProgramFacts) -> ListedProgram {
     let displayable = is_displayable(program);
     let none = program.embedded == Embedded::None;
     ListedProgram {
-        display_hash: if displayable { program.display_sha256.clone() } else { None },
-        source_hash: if none { None } else { program.sha256.clone() },
+        display_sha256: if displayable { program.display_sha256.clone() } else { None },
+        source_sha256: if none { None } else { program.sha256.clone() },
         embedded: program.embedded,
         format: if none { None } else { program.format },
         embedding_permission: match program.permission {

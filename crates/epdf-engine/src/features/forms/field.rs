@@ -223,6 +223,8 @@ pub struct WidgetPlacement<C: Coordinates = PdfCoordinates> {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", bound = "")]
 pub struct FormFieldDraft<C: Coordinates = PdfCoordinates> {
+    /// `kind` on the wire (c4b286a69).
+    #[serde(rename = "kind")]
     pub family: CreatableFamily,
     /// The dotted fully qualified name. Missing ancestors are created and a
     /// sibling collision is refused.
@@ -263,11 +265,12 @@ impl<C: Coordinates> FormFieldDraft<C> {
 }
 
 /// What `forms.update` changes (`FormFieldPatch`): the settings it names.
-/// `family` is optional (the ref says it); when given it must match.
+/// `kind` is optional (the ref says it); when given it must match.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct FormFieldPatch {
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// `kind` on the wire (c4b286a69).
+    #[serde(rename = "kind", skip_serializing_if = "Option::is_none")]
     pub family: Option<FormFieldFamily>,
     /// The field's own `/T` segment. Reparenting is not supported.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -313,7 +316,7 @@ impl FormFieldPatch {
 
 /// The patch members every family has (`PATCH_BASE_MEMBERS`).
 const PATCH_BASE_MEMBERS: [&str; 9] = [
-    "family",
+    "kind",
     "name",
     "readOnly",
     "required",
@@ -346,7 +349,7 @@ fn assert_patch_fits_family(
         EngineError::with_message(EngineErrorCode::InvalidArg, message)
             .with_details(serde_json::json!({ "field": field }))
     };
-    if let Some(named) = patch.get("family") {
+    if let Some(named) = patch.get("kind") {
         let named_family = serde_json::from_value::<FormFieldFamily>(named.clone()).ok();
         if named_family != Some(family) {
             return Err(invalid(
@@ -355,7 +358,7 @@ fn assert_patch_fits_family(
                     named.as_str().unwrap_or_default(),
                     family_name(family)
                 ),
-                "family",
+                "kind",
             ));
         }
     }
@@ -1532,7 +1535,7 @@ mod tests {
             fits(serde_json::json!({ "multiline": true }), FormFieldFamily::Radio).unwrap_err();
         assert_eq!(refused.message, "'multiline' does not apply to a radio field");
         let wrong =
-            fits(serde_json::json!({ "family": "text" }), FormFieldFamily::Listbox).unwrap_err();
+            fits(serde_json::json!({ "kind": "text" }), FormFieldFamily::Listbox).unwrap_err();
         assert_eq!(wrong.message, "patch family 'text' does not match field family 'listbox'");
         let list =
             fits(serde_json::json!({ "defaultValue": "a" }), FormFieldFamily::Listbox).unwrap_err();

@@ -565,14 +565,14 @@ fn a_delete_refused_after_its_promotion_leaves_the_page_as_it_was() {
     let bytes_before = saved(&mut replay);
     let inline = refs(&before).into_iter().find(|r| r["kind"] == "baseIndex").expect("inline");
     // May delete only its own annotations; the inline one is no one's.
-    let bits = json!({ "bit3": true, "bit4": true, "bit5": true, "bit6": true, "bit9": true,
-        "bit10": true, "bit11": true, "bit12": true });
+    let bits = json!({ "print": true, "modifyContents": true, "copy": true, "modifyAnnotations": true, "fillForms": true,
+        "copyForAccessibility": true, "assemble": true, "printHighQuality": true });
     let refused = replay
         .replay(&json!({ "kind": "document.apply", "jobId": "<job>", "docId": DOC,
             "opId": "refused", "change": { "ops": [{ "type": "annotations.delete", "ref": inline }] },
             "authority": { "identity": { "userId": "someone" },
                 "grants": { "scope": ["doc.open", "doc.annotate.modify", "annotations:delete:self"],
-                    "pdfBits": bits } } }))
+                    "permissionFlags": bits } } }))
         .expect_err("not the caller's to delete");
     assert_eq!(refused["code"], "Forbidden", "{refused}");
     assert_eq!(listed(&mut replay, pon), before, "the refused delete changed the listing");

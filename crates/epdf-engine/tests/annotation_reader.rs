@@ -267,11 +267,11 @@ fn a_widget_is_joined_to_the_field_that_owns_it() {
         attached["field"]["objectNumber"].as_u64().is_some_and(|n| n > 0),
         "an attached widget reports no field",
     );
-    assert_eq!(attached["fieldFamily"], "text");
+    assert_eq!(attached["fieldKind"], "text");
 
     let inert = by_name("a-bare-widget");
     assert_eq!(inert["field"], Value::Null);
-    assert_eq!(inert["fieldFamily"], "unknown");
+    assert_eq!(inert["fieldKind"], "unknown");
 
     // This widget has an object number, so it reaches the lookup rather than
     // being skipped for want of a key, and the lookup has to answer that it
@@ -280,7 +280,7 @@ fn a_widget_is_joined_to_the_field_that_owns_it() {
     let orphan = by_name("an-orphan-widget");
     assert_eq!(orphan["ref"]["kind"], "objectNumber");
     assert_eq!(orphan["field"], Value::Null);
-    assert_eq!(orphan["fieldFamily"], "unknown");
+    assert_eq!(orphan["fieldKind"], "unknown");
 }
 
 #[test]

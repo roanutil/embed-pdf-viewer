@@ -842,12 +842,12 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
             let Value::Object(mut image) = take(&mut result, "image")? else {
                 return Err(malformed("an encoded render whose image is not an object".into()));
             };
-            let content_type = take(&mut image, "contentType")?;
+            let mime_type = take(&mut image, "mimeType")?;
             json!({
                 "width": image.remove("width").unwrap_or(Value::Null),
                 "height": image.remove("height").unwrap_or(Value::Null),
                 "format": "png",
-                "contentType": content_type,
+                "mimeType": mime_type,
                 "source": { "kind": "bytes", "bytes": epdf_kernel::bytes::Bytes(bytes).to_json() },
             })
         }

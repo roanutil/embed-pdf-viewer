@@ -391,8 +391,8 @@ fn a_write_envelope_is_read_whole() {
     let body = serde_json::json!({ "kind": "annotations.delete", "effect": "write",
         "jobId": 7, "opId": "op-7", "objectNumberFloor": 900,
         "authority": { "identity": { "userId": "u", "displayName": "U" },
-            "grants": { "scope": ["*"], "pdfBits": { "bit3": true, "bit4": true, "bit5": true,
-                "bit6": true, "bit9": true, "bit10": true, "bit11": true, "bit12": true } } } });
+            "grants": { "scope": ["*"], "permissionFlags": { "print": true, "modifyContents": true, "copy": true,
+                "modifyAnnotations": true, "fillForms": true, "copyForAccessibility": true, "assemble": true, "printHighQuality": true } } } });
     let envelope = JobEnvelope::parse("annotations.delete", &body).expect("a whole envelope");
     assert_eq!(envelope.effect, Some(RequestEffect::Write));
     assert_eq!(envelope.job_id.map(|j| j.to_string()), Some("7".into()));
@@ -548,17 +548,15 @@ fn a_request_that_is_not_json_is_a_wire_error_rather_than_a_panic() {
 
 #[test]
 fn a_refusal_carries_the_serialized_engine_error_and_nothing_else() {
-    // `WorkerHost` rejects with `serializeError(err)`: `{name: "EngineError",
-    // code, message, details?}` and no `cause`. The `name` is what
-    // `EngineError.is` sniffs once the value has lost its prototype.
+    // `WorkerHost` rejects with `serializeError(err)`: `{code, message,
+    // details?}`, with no `cause` and, since ff3030aaf, no `name`.
     let mut host = open();
     let missing =
         send(&mut host, serde_json::json!({ "kind": "pages.geometry", "page": page_ref(999_999) }));
     let error = missing["error"].as_object().expect("an error object");
     let mut keys: Vec<&str> = error.keys().map(String::as_str).collect();
     keys.sort_unstable();
-    assert_eq!(keys, ["code", "message", "name"], "{missing}");
-    assert_eq!(missing["error"]["name"], "EngineError", "{missing}");
+    assert_eq!(keys, ["code", "message"], "{missing}");
     assert_eq!(missing["error"]["code"], "NotFound", "{missing}");
     assert!(missing["error"]["message"].is_string(), "{missing}");
     assert!(missing.get("result").is_none(), "a refusal carried a result: {missing}");
