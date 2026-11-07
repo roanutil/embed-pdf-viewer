@@ -43,10 +43,10 @@ pub struct AttachmentFileInfo {
     pub mime_type: Option<String>,
     /// `/Desc`.
     pub description: Option<String>,
-    /// `/Params /Size`, the DECODED length.
-    pub size: Option<i32>,
-    /// `/Params /CheckSum`, as lowercase hex.
-    pub checksum: Option<String>,
+    /// `/Params /Size`, the DECODED length in bytes.
+    pub size_bytes: Option<i32>,
+    /// `/Params /CheckSum`, the MD5 as lowercase hex.
+    pub md5: Option<String>,
     /// `/Params /CreationDate`, as ISO 8601 with the offset the PDF date was
     /// written with (fd175ba50). A date that does not parse reads `null`.
     pub created_at: Option<String>,
@@ -105,11 +105,9 @@ pub fn read_attachment_info(
         description: present(dictionary_read("Desc", attachment.description())?),
         // A negative size is PDFium reporting something it could not make
         // sense of, and a negative length is not a fact about a file.
-        size: dictionary_read("Size", attachment.integer_value("Size"))?.filter(|size| *size >= 0),
-        checksum: normalize_checksum(dictionary_read(
-            "CheckSum",
-            attachment.string_value("CheckSum"),
-        )?),
+        size_bytes: dictionary_read("Size", attachment.integer_value("Size"))?
+            .filter(|size| *size >= 0),
+        md5: normalize_checksum(dictionary_read("CheckSum", attachment.string_value("CheckSum"))?),
         created_at: date("CreationDate")?,
         modified_at: date("ModDate")?,
     })

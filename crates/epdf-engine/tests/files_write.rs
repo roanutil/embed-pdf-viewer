@@ -380,7 +380,7 @@ fn an_undone_create_deletes_the_file_and_its_undo_brings_it_back() {
     let item = &redone["items"][0];
     assert_eq!(item["type"], "attachments.restore", "{redone}");
     assert_eq!(item["attachment"]["ref"], serde_json::json!({ "kind": "key", "key": "added.txt" }));
-    assert_eq!(item["attachment"]["size"], 5, "{redone}");
+    assert_eq!(item["attachment"]["sizeBytes"], 5, "{redone}");
     assert!(keys(&listing(&mut replay)).contains(&"added.txt"));
 }
 
@@ -549,7 +549,7 @@ fn an_undo_leaves_alone_a_file_someone_put_under_the_name_since() {
     assert_eq!(undone["items"][0]["op"], "attachments.delete", "{undone}");
     let listed = listing(&mut replay);
     let entry = listed.iter().find(|e| e["ref"]["key"] == "added.txt").expect("still there");
-    assert_eq!(entry["size"], 14);
+    assert_eq!(entry["sizeBytes"], 14);
 }
 
 /// `pieceinfo.test.ts`, "pieceInfo update preflight": an invalid value

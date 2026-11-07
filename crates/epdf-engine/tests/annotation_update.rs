@@ -1374,7 +1374,7 @@ fn an_update_ops_expectation_compares_values_not_spellings() {
 
 #[test]
 fn a_file_sent_back_renamed_is_renamed_and_its_undo_restores_the_annotation() {
-    // `AttachmentFileWriteSchema` ignores what a read adds (size, checksum,
+    // `AttachmentFileWriteSchema` ignores what a read adds (size, MD5,
     // dates), so the whole `file` a read gives can be sent back changed.
     let file = load();
     let attachment = case(&file, "file-attachment-icon");
@@ -1397,7 +1397,7 @@ fn a_file_sent_back_renamed_is_renamed_and_its_undo_restores_the_annotation() {
     let item = &applied["result"]["items"][0]["annotation"];
     assert_eq!(item["file"]["name"], "renamed.txt", "{item}");
     assert_eq!(item["file"]["description"], "described", "{item}");
-    assert_eq!(item["file"]["size"], created["file"]["size"], "the bytes stay: {item}");
+    assert_eq!(item["file"]["sizeBytes"], created["file"]["sizeBytes"], "the bytes stay: {item}");
 
     // The undo puts the annotation's dictionary back from its capture
     // (`revertObjects`). The rename was written into the file

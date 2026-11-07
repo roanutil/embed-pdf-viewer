@@ -1252,7 +1252,7 @@ fn as_taken(exported: &Exported, dropped: &Value) -> Exported {
 /// What two documents can agree on after an import (`normalized`): refs to
 /// annotations as positions in the bundle, pages as their position, without
 /// `importedBy`, `hasAppearance`, a framed or turned kind's `rect`, a
-/// link's `activate` action, a file's size and checksum, and in `stamp`
+/// link's `activate` action, a file's size and MD5, and in `stamp`
 /// mode the attribution it stamps.
 fn normalized(exported: &Exported, attribution: &str) -> Value {
     let items = exported.items();
@@ -1333,8 +1333,8 @@ fn normalized(exported: &Exported, attribution: &str) -> Value {
             }
             if subtype == "file-attachment" && data["file"].is_object() {
                 let mut file = data["file"].as_object().unwrap().clone();
-                file.remove("size");
-                file.remove("checksum");
+                file.remove("sizeBytes");
+                file.remove("md5");
                 fields.insert("file".into(), Value::Object(file));
             }
             json!({ "data": pages(Value::Object(fields), None, &page_position), "resources": item["resources"] })

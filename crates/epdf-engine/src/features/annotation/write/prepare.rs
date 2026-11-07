@@ -848,7 +848,7 @@ pub(crate) fn read_field(
                 None
             } else {
                 // `AttachmentFileWriteSchema` strips the keys it doesn't
-                // name: what a read adds (size, checksum, dates) is ignored,
+                // name: what a read adds (size, MD5, dates) is ignored,
                 // so a read can be sent back.
                 #[derive(serde::Deserialize)]
                 #[serde(rename_all = "camelCase")]
