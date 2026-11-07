@@ -58,20 +58,20 @@ impl SignatureMode {
     }
 }
 
-/// `SignatureKey`: the key that signs, a signer port or a function that
+/// `SigningKey`: the key that signs, a signer port or a function that
 /// returns one when someone signs (`SignerPort | (() => SignerPort |
 /// Promise<SignerPort>)`). The port is held by `Rc`: the key setting is one
 /// value, and a clone of it is the same value, as a JavaScript object is.
 #[derive(Clone)]
-pub enum SignatureKey {
+pub enum SigningKey {
     Port(Rc<SignerPort>),
     Thunk(Rc<dyn Fn() -> Promise<SignerPort>>),
 }
 
-impl SignatureKey {
+impl SigningKey {
     /// A port as the key setting.
-    pub fn port(port: SignerPort) -> SignatureKey {
-        SignatureKey::Port(Rc::new(port))
+    pub fn port(port: SignerPort) -> SigningKey {
+        SigningKey::Port(Rc::new(port))
     }
 
     /// The same setting value, by identity: a clone of the key is the same
@@ -81,12 +81,12 @@ impl SignatureKey {
     /// plain port object, so a CMS port rebuilt over the same `sign` is no
     /// change there. A Rust-only divergence, as interaction's tools are
     /// (README).
-    pub fn same(&self, other: &SignatureKey) -> bool {
+    pub fn same(&self, other: &SigningKey) -> bool {
         match (self, other) {
-            (SignatureKey::Thunk(a), SignatureKey::Thunk(b)) => {
+            (SigningKey::Thunk(a), SigningKey::Thunk(b)) => {
                 std::ptr::addr_eq(Rc::as_ptr(a), Rc::as_ptr(b))
             }
-            (SignatureKey::Port(a), SignatureKey::Port(b)) => Rc::ptr_eq(a, b),
+            (SigningKey::Port(a), SigningKey::Port(b)) => Rc::ptr_eq(a, b),
             _ => false,
         }
     }
@@ -98,9 +98,9 @@ impl SignatureKey {
 /// them whole.
 #[derive(Clone, Default)]
 pub struct SignatureSettings {
-    /// The key: a raw signer (the CMS is built here) or a CMS signer (a
-    /// service builds it); `None` for none.
-    pub key: Option<SignatureKey>,
+    /// The signing key: a raw signer (the CMS is built here) or a CMS
+    /// signer (a service builds it); `None` for none.
+    pub signing_key: Option<SigningKey>,
     /// What a mark does in a field; `None` is `sign` with a key, else
     /// `visual`.
     pub mode: Option<SignatureMode>,
@@ -121,7 +121,7 @@ pub fn signature_defaults() -> SignatureSettings {
 /// The outer `Option` is "not given"; `Some(None)` is an explicit `null`.
 #[derive(Clone, Default)]
 pub struct SignatureConfig {
-    pub key: Option<Option<SignatureKey>>,
+    pub signing_key: Option<Option<SigningKey>>,
     pub mode: Option<Option<SignatureMode>>,
     pub trust: Option<Option<Rc<dyn TrustPort>>>,
     pub allow_certify: Option<bool>,
@@ -165,8 +165,8 @@ pub struct OperationOptions {
 pub struct SignFieldInput {
     pub field: Value,
     pub mark: Option<Mark>,
-    /// A per-call key; the `key` setting otherwise.
-    pub key: Option<SignatureKey>,
+    /// A per-call key; the `signingKey` setting otherwise.
+    pub signing_key: Option<SigningKey>,
     /// What the signature dictionary says about the signer; the name
     /// defaults to the certificate's subject.
     pub signer: Option<Value>,
@@ -182,7 +182,7 @@ impl SignFieldInput {
         SignFieldInput {
             field,
             mark: Some(mark),
-            key: None,
+            signing_key: None,
             signer: None,
             appearance: None,
             certify: None,
@@ -290,12 +290,14 @@ impl PlaceMarkResult {
     pub fn to_json(&self) -> Value {
         match self {
             PlaceMarkResult::Signed { field, result } => {
-                json!({ "kind": "signed", "field": field, "result": result })
+                json!({ "status": "signed", "field": field, "result": result })
             }
-            PlaceMarkResult::Filled { field } => json!({ "kind": "filled", "field": field }),
-            PlaceMarkResult::Requested { field } => json!({ "kind": "requested", "field": field }),
+            PlaceMarkResult::Filled { field } => json!({ "status": "filled", "field": field }),
+            PlaceMarkResult::Requested { field } => {
+                json!({ "status": "requested", "field": field })
+            }
             PlaceMarkResult::Placed { annotation } => {
-                json!({ "kind": "placed", "annotation": annotation })
+                json!({ "status": "placed", "annotation": annotation })
             }
         }
     }
@@ -385,7 +387,7 @@ pub struct SignatureInspectionRequestedEvent {
 /// (now by default), and `persisted` or `working-copy` (the default).
 #[derive(Clone, Default)]
 pub struct SignatureValidateOptions {
-    pub at: Option<ValidationTime>,
+    pub validation_time: Option<ValidationTime>,
     pub until: Option<String>,
     pub signal: Option<AbortSignal>,
 }

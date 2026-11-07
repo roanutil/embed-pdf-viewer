@@ -15,13 +15,12 @@ use crate::promise::adopt;
 use crate::services::errors::verb;
 
 impl SignatureCapability {
-    /// `refresh(options)`: read the signatures again; resolves the
-    /// snapshot.
-    pub fn refresh(&self, options: OperationOptions) -> Promise<Option<Value>> {
+    /// `refresh(options)`: read the signatures again.
+    pub fn refresh(&self, options: OperationOptions) -> Promise<()> {
         let this = self.clone();
         verb(Promise::spawn(async move {
             this.cancellable(options.signal, this.mirror().refresh()).await?;
-            Ok(this.snapshot())
+            Ok(())
         }))
     }
 
@@ -78,7 +77,7 @@ impl SignatureCapability {
             } else {
                 // `!signature?.signed || signature.revisionIndex === null`.
                 let signature =
-                    this.get_signature(&target).filter(|s| s.get("signed").is_some_and(truthy));
+                    this.find_signature(&target).filter(|s| s.get("signed").is_some_and(truthy));
                 let revision = signature.as_ref().map(|s| s.get("revisionIndex"));
                 match revision {
                     Some(Some(Value::Null)) | None => {

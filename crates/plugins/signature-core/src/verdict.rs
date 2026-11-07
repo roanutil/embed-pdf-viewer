@@ -16,7 +16,7 @@ use crate::trust::{CmsInput, TrustPort, TrustStatus, ValidationTime, validate_ch
 #[derive(Clone, Default)]
 pub struct ValidateOptions {
     pub trust: Option<Rc<dyn TrustPort>>,
-    pub at: Option<ValidationTime>,
+    pub validation_time: Option<ValidationTime>,
     /// `persisted` (default) or `working-copy`.
     pub until: Option<String>,
 }
@@ -64,7 +64,7 @@ async fn validate_one(
     signature: &Value,
     options: &ValidateOptions,
 ) -> Result<Value, Error> {
-    let at = options.at.clone().unwrap_or(ValidationTime::Now);
+    let at = options.validation_time.clone().unwrap_or(ValidationTime::Now);
     let mut integrity = "indeterminate";
     let mut cryptography = Cryptography::Unsupported;
     let mut trust = TrustStatus::Unknown;
@@ -151,7 +151,7 @@ async fn validate_one(
     if let Some(reason) = trust_reason {
         out.insert("trustReason".into(), json!(reason));
     }
-    out.insert("validatedAt".into(), at.to_json());
+    out.insert("validationTime".into(), at.to_json());
     out.insert("modifications".into(), modifications);
     out.insert("summary".into(), json!(summary));
     out.insert("cms".into(), internal.as_ref().map_or(Value::Null, |i| i.parsed.to_json()));

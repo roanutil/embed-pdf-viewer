@@ -23,7 +23,7 @@ impl SignatureCapability {
     pub(crate) fn mark_bytes(&self, mark: &Mark) -> Promise<Vec<u8>> {
         match mark {
             Mark::Asset { asset_id } => {
-                match self.stamp().and_then(|stamp| stamp.read_asset_bytes(asset_id)) {
+                match self.stamp().and_then(|stamp| stamp.get_asset_bytes(asset_id)) {
                     Some(bytes) => Promise::resolved(bytes),
                     None => Promise::rejected(plugin_error(
                         code::NOT_FOUND,

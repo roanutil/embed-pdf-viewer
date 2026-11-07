@@ -48,7 +48,7 @@ impl SignatureCapability {
             .await?;
             let run = ValidateOptions {
                 trust: this.settings().trust,
-                at: options.at.clone(),
+                validation_time: options.validation_time.clone(),
                 until: Some(options.until.clone().unwrap_or_else(|| "working-copy".into())),
             };
             let judging = Promise::spawn(validate_signatures(doc, run));

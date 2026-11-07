@@ -13,8 +13,8 @@ use crate::oids::{self, Digest};
 pub struct ParsedCms {
     pub digest_algorithm: Digest,
     pub message_digest: Vec<u8>,
-    /// Epoch milliseconds.
-    pub signing_time: Option<f64>,
+    /// ISO 8601, as `toISOString` writes it.
+    pub signing_time: Option<String>,
     pub signer_certificate: Vec<u8>,
     pub certificates: Vec<Vec<u8>>,
     pub signature_algorithm: String,
@@ -31,7 +31,7 @@ impl ParsedCms {
         json!({
             "digestAlgorithm": self.digest_algorithm.name(),
             "messageDigest": bytes_json(&self.message_digest),
-            "signingTime": self.signing_time.map_or(Value::Null, |ms| json!({ "$date": ms })),
+            "signingTime": self.signing_time,
             "signerCertificate": bytes_json(&self.signer_certificate),
             "certificates": self.certificates.iter().map(|c| bytes_json(c)).collect::<Vec<_>>(),
             "signatureAlgorithm": self.signature_algorithm,
@@ -411,10 +411,16 @@ pub fn parse_cms_content(cms: &[u8], content_kind: CmsContent) -> Result<Interna
     }
     .ok_or_else(|| ParseError::malformed("CMS has no message-digest attribute"))?;
 
+    // `timeValue.toDate().toISOString()`, which throws for an invalid time.
     let signing_time = match attr(oids::SIGNING_TIME) {
         Some(a) => a.first()?.and_then(Node::time),
         None => None,
-    };
+    }
+    .map(|ms| {
+        der::iso_string(ms)
+            .ok_or_else(|| ParseError::Other(Error::named("RangeError", "Invalid time value")))
+    })
+    .transpose()?;
 
     let ess = attr(oids::SIGNING_CERTIFICATE_V2);
     let mut ess_cert_hash = None;

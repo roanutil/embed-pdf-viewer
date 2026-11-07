@@ -38,7 +38,12 @@ fn issuers_that_issue_each_other_are_refused() {
     let trust: Rc<dyn TrustPort> = Rc::new(Anchors(vec![fixture("certs", "root")]));
     rt::spawn(async move {
         *slot.borrow_mut() = Some(
-            validate_chain(cms, Some(trust), ValidationTime::Timestamp { gen_time: 1.7e12 }).await,
+            validate_chain(
+                cms,
+                Some(trust),
+                ValidationTime::Timestamp { gen_time: "2023-11-14T22:13:20.000Z".into() },
+            )
+            .await,
         );
     });
     rt::run_until_stalled();

@@ -138,8 +138,8 @@ pub struct BuildInput {
     pub hash: Digest,
     pub profile: Profile,
     pub signer: RawSigner,
-    /// Epoch milliseconds; `pkcs7` only.
-    pub signing_time: Option<f64>,
+    /// ISO 8601; `pkcs7` only.
+    pub signing_time: Option<String>,
 }
 
 pub(crate) fn attribute(oid: &str, value: Vec<u8>) -> Vec<u8> {
@@ -236,8 +236,9 @@ pub async fn build_detached_cms(input: BuildInput) -> Result<Vec<u8>, Error> {
         attribute(oids::MESSAGE_DIGEST, der::octet_string(&input.digest)),
     ];
     if input.profile == Profile::Pkcs7
-        && let Some(time) = input.signing_time
+        && let Some(time) = &input.signing_time
     {
+        let time = der::date_from_iso(time);
         attributes.push(attribute(oids::SIGNING_TIME, der::utc_time(time)));
     }
     if input.profile == Profile::CadesB {

@@ -118,7 +118,7 @@ pub fn host_plugin(
     });
     crate::signature_plugin(crate::SignatureConfig {
         mode: config.mode.map(|mode| Some(mode.into())),
-        key: Some(Some(crate::SignatureKey::Thunk(resolve))),
+        signing_key: Some(Some(crate::SigningKey::Thunk(resolve))),
         trust: Some(Some(std::rc::Rc::new(ports::SlotTrust(trust)))),
         allow_certify: config.allow_certify,
     })
@@ -241,18 +241,19 @@ impl SignatureHandle {
         &self,
         cancel: Arc<CancelToken>,
     ) -> Result<Option<SignatureSnapshot>, ViewerError> {
+        // `refresh()` resolves nothing; the snapshot is read after it.
         self.cap
             .call_promise_cancellable(
                 cancel,
                 |c| Ok(open(c)?.refresh(none())),
-                |s: Option<Value>| {
-                    s.as_ref()
-                        .map(SignatureSnapshot::from_json)
-                        .transpose()
-                        .map_err(ViewerError::from)
-                },
+                |()| Ok::<(), ViewerError>(()),
             )
-            .await?
+            .await??;
+        self.cap
+            .call(|c| {
+                open(c)?.get_snapshot().as_ref().map(SignatureSnapshot::from_json).transpose()
+            })
+            .await
     }
 
     /// Judge every signature. Without trust anchors a good one tops out at
@@ -367,7 +368,7 @@ impl SignatureHandle {
                     let key = signer
                         .map(|signer| ports::signer_port(signer, post))
                         .transpose()?
-                        .map(crate::SignatureKey::port);
+                        .map(crate::SigningKey::port);
                     Ok(open(c)?.sign(input.into_core(key), none()))
                 },
                 |v: Value| SignatureCompletion::from_json(&v).map_err(ViewerError::from),

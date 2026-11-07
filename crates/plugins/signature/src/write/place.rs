@@ -31,8 +31,8 @@ impl SignatureCapability {
         if same_field_ref(left, right) {
             return true;
         }
-        let Some(signature) = self.get_signature(left) else { return false };
-        let other = self.get_signature(right);
+        let Some(signature) = self.find_signature(left) else { return false };
+        let other = self.find_signature(right);
         strict_eq(signature.get("index"), other.as_ref().and_then(|o| o.get("index")))
     }
 

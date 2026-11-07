@@ -7,7 +7,7 @@
 //!   that name while a signature factory is current (the plugin writes them
 //!   through [`crate::console`]; the sink is put back when the case's kernel
 //!   is dropped);
-//! - `config.signer` is the `key` setting, `{kind: 'cms' | 'raw', answer,
+//! - `config.signer` is the `signingKey` setting, `{kind: 'cms' | 'raw', answer,
 //!   ...}`, whose `sign` logs as `signer.sign`; `thunk: true` wraps it in a
 //!   function that logs `signer.resolve`. `config.trust` is `{anchors}`,
 //!   logged as `trust.anchors`. A per-call key is a `$fn` or a port object
@@ -169,11 +169,11 @@ fn port_from(sign: Callback, value: &Value) -> Result<SignerPort, Error> {
 
 /// A key in a call's arguments: a port object whose `sign` is a `$fn`, or
 /// a `$fn` that answers one.
-fn call_key(value: &Value, h: &Harness) -> Result<SignatureKey, Error> {
+fn call_key(value: &Value, h: &Harness) -> Result<SigningKey, Error> {
     if value.get("$fn").is_some() {
         let resolve = h.callback(value);
         let h = h.clone();
-        return Ok(SignatureKey::Thunk(Rc::new(move || {
+        return Ok(SigningKey::Thunk(Rc::new(move || {
             let h = h.clone();
             answer(resolve.call(Vec::new())).map(move |port| {
                 let sign = h.callback(port.get("sign").unwrap_or(&Value::Null));
@@ -181,11 +181,11 @@ fn call_key(value: &Value, h: &Harness) -> Result<SignatureKey, Error> {
             })
         })));
     }
-    port_from(h.callback(value.get("sign").unwrap_or(&Value::Null)), value).map(SignatureKey::port)
+    port_from(h.callback(value.get("sign").unwrap_or(&Value::Null)), value).map(SigningKey::port)
 }
 
 /// `config.signer`: `{kind, answer, ...}`, `thunk` for a function.
-fn config_key(spec: &Value, h: &Harness) -> Result<SignatureKey, Error> {
+fn config_key(spec: &Value, h: &Harness) -> Result<SigningKey, Error> {
     let mut sign = json!({ "$fn": "signer.sign" });
     if let (Some(Value::Object(answer)), Value::Object(out)) = (spec.get("answer"), &mut sign) {
         for (k, v) in answer {
@@ -194,10 +194,10 @@ fn config_key(spec: &Value, h: &Harness) -> Result<SignatureKey, Error> {
     }
     let port = port_from(h.callback(&sign), spec)?;
     if spec.get("thunk").and_then(Value::as_bool) != Some(true) {
-        return Ok(SignatureKey::port(port));
+        return Ok(SigningKey::port(port));
     }
     let h = h.clone();
-    Ok(SignatureKey::Thunk(Rc::new(move || {
+    Ok(SigningKey::Thunk(Rc::new(move || {
         h.log("signer.resolve", Vec::new());
         Promise::resolved(port.clone())
     })))
@@ -227,7 +227,7 @@ fn config_of(spec: &Value, h: &Harness) -> Result<SignatureConfig, Error> {
     Ok(SignatureConfig {
         mode: defined(spec.get("mode")).map(|m| m.as_str().and_then(SignatureMode::from_name)),
         allow_certify: spec.get("allowCertify").and_then(Value::as_bool),
-        key: present(spec.get("signer")).map(|s| config_key(s, h)).transpose()?.map(Some),
+        signing_key: present(spec.get("signer")).map(|s| config_key(s, h)).transpose()?.map(Some),
         trust,
     })
 }
@@ -251,7 +251,7 @@ fn sign_input(value: &Value, h: &Harness) -> Result<SignFieldInput, Error> {
     Ok(SignFieldInput {
         field: value.get("field").cloned().unwrap_or_else(undefined),
         mark: mark_of(value.get("mark")),
-        key: present(value.get("key")).map(|k| call_key(k, h)).transpose()?,
+        signing_key: present(value.get("signingKey")).map(|k| call_key(k, h)).transpose()?,
         signer: defined(value.get("signer")),
         appearance: defined(value.get("appearance")),
         certify: defined(value.get("certify")),
@@ -274,14 +274,16 @@ fn prepare_input(value: &Value) -> PrepareSignatureInput {
 
 fn validate_options(value: Option<&Value>) -> SignatureValidateOptions {
     let Some(opts) = present(value) else { return SignatureValidateOptions::default() };
-    let at = present(opts.get("at")).map(|at| match at.get("kind").and_then(Value::as_str) {
-        Some("timestamp") => ValidationTime::Timestamp {
-            gen_time: at.get("genTime").and_then(Value::as_f64).unwrap_or(f64::NAN),
-        },
-        _ => ValidationTime::Now,
+    let at = present(opts.get("validationTime")).map(|at| {
+        match at.get("kind").and_then(Value::as_str) {
+            Some("timestamp") => ValidationTime::Timestamp {
+                gen_time: at.get("genTime").and_then(Value::as_str).unwrap_or_default().into(),
+            },
+            _ => ValidationTime::Now,
+        }
     });
     SignatureValidateOptions {
-        at,
+        validation_time: at,
         until: present(opts.get("until")).and_then(Value::as_str).map(str::to_string),
         signal: None,
     }
@@ -353,7 +355,7 @@ fn call_signature(
         "isBusy" => Outcome::Returned(json!(cap.is_busy())),
         "getMode" => Outcome::Returned(json!(cap.get_mode().as_str())),
         "getTarget" => Outcome::Returned(optional(cap.get_target())),
-        "refresh" => value_promise(cap.refresh(none()), |s| s.clone().unwrap_or(Value::Null)),
+        "refresh" => value_promise(cap.refresh(none()), |()| epdf_kernel::undefined()),
         "validate" => value_promise(cap.validate(validate_options(arg(0))), |v| (**v).clone()),
         "validateField" => Outcome::Promise(cap.validate_field(field(), validate_options(arg(1)))),
         "analyzeChanges" => Outcome::Promise(cap.analyze_changes(field(), none())),

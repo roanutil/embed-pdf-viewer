@@ -458,6 +458,98 @@ pub fn epoch_ms(y: i64, mo: i64, d: i64, h: i64, mi: i64, s: i64) -> f64 {
     ((days_from_civil(y, mo, d) * 86_400 + h * 3600 + mi * 60 + s) * 1000) as f64
 }
 
+/// `new Date(ms).toISOString()`, or `None` where it throws its `RangeError`
+/// (a time outside the `Date` range).
+pub fn iso_string(ms: f64) -> Option<String> {
+    if !ms.is_finite() || ms.abs() > 8.64e15 {
+        return None;
+    }
+    let ms = ms.trunc();
+    let (y, mo, d, h, mi, s) = civil(ms);
+    let millis = ms.rem_euclid(1000.0) as i64;
+    let year = if (0..=9999).contains(&y) {
+        format!("{y:04}")
+    } else {
+        format!("{}{:06}", if y < 0 { '-' } else { '+' }, y.abs())
+    };
+    Some(format!("{year}-{mo:02}-{d:02}T{h:02}:{mi:02}:{s:02}.{millis:03}Z"))
+}
+
+/// `new Date(text).getTime()` over the ISO 8601 date-time forms
+/// `toISOString` writes (`YYYY-MM-DD`, `THH:mm`, seconds, a fraction, and
+/// `Z` or an offset; a six-digit signed year): anything else is `NaN`. A
+/// date-time without an offset reads as UTC, as it does where the vectors
+/// were generated.
+pub fn date_from_iso(text: &str) -> f64 {
+    fn number(s: &str, n: usize) -> Option<(i64, &str)> {
+        if s.len() < n || !s.as_bytes()[..n].iter().all(u8::is_ascii_digit) {
+            return None;
+        }
+        Some((s[..n].parse().ok()?, &s[n..]))
+    }
+    let parse = || -> Option<f64> {
+        let (year, rest) = match text.as_bytes().first()? {
+            b'+' | b'-' => {
+                let (year, rest) = number(&text[1..], 6)?;
+                (if text.starts_with('-') { -year } else { year }, rest)
+            }
+            _ => number(text, 4)?,
+        };
+        let (month, day, mut rest) = match rest.strip_prefix('-') {
+            Some(r) => {
+                let (month, r) = number(r, 2)?;
+                match r.strip_prefix('-') {
+                    Some(r) => {
+                        let (day, r) = number(r, 2)?;
+                        (month, day, r)
+                    }
+                    None => (month, 1, r),
+                }
+            }
+            None => (1, 1, rest),
+        };
+        if !(1..=12).contains(&month) || !(1..=31).contains(&day) {
+            return None;
+        }
+        let (mut hours, mut minutes, mut seconds, mut millis, mut offset) = (0, 0, 0, 0f64, 0i64);
+        if let Some(r) = rest.strip_prefix('T') {
+            let (h, r) = number(r, 2)?;
+            let (m, r) = number(r.strip_prefix(':')?, 2)?;
+            (hours, minutes, rest) = (h, m, r);
+            if let Some(r) = rest.strip_prefix(':') {
+                let (s, r) = number(r, 2)?;
+                (seconds, rest) = (s, r);
+                if let Some(r) = rest.strip_prefix('.') {
+                    let len = r.bytes().take_while(u8::is_ascii_digit).count();
+                    if len == 0 {
+                        return None;
+                    }
+                    millis = (format!("0.{}", &r[..len]).parse::<f64>().ok()? * 1000.0).trunc();
+                    rest = &r[len..];
+                }
+            }
+            if let Some(r) = rest.strip_prefix('Z') {
+                rest = r;
+            } else if rest.starts_with('+') || rest.starts_with('-') {
+                let sign = if rest.starts_with('-') { -1 } else { 1 };
+                let (oh, r) = number(&rest[1..], 2)?;
+                let (om, r) = number(r.strip_prefix(':')?, 2)?;
+                (offset, rest) = (sign * (oh * 60 + om), r);
+            }
+            if hours > 24 || minutes > 59 || seconds > 59 {
+                return None;
+            }
+        }
+        if !rest.is_empty() {
+            return None;
+        }
+        let ms = epoch_ms(year, month, day, hours, minutes, seconds) - (offset * 60_000) as f64;
+        let ms = ms + millis;
+        (ms.abs() <= 8.64e15).then_some(ms)
+    };
+    parse().unwrap_or(f64::NAN)
+}
+
 fn digits(text: &str, at: usize, n: usize) -> Option<i64> {
     let part = text.get(at..at + n)?;
     if !part.bytes().all(|b| b.is_ascii_digit()) {

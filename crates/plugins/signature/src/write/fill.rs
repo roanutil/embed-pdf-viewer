@@ -29,7 +29,7 @@ impl SignatureCapability {
                     None,
                 ));
             }
-            if let Some(signature) = this.get_signature(&field)
+            if let Some(signature) = this.find_signature(&field)
                 && signature.get("signed").is_some_and(truthy)
             {
                 return Err(plugin_error(
