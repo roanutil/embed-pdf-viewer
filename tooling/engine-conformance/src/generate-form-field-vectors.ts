@@ -64,14 +64,14 @@ const CASES: readonly FieldCase[] = [
     name: 'create-text-bare',
     covers:
       'A field with a name and nothing else. No widget, so it appears nowhere on any page: legal, and what an import-only field looks like.',
-    draft: { family: 'text', name: 'new.plain' },
+    draft: { kind: 'text', name: 'new.plain' },
   },
   {
     name: 'create-text-full',
     covers:
       'Every member a text draft carries, including a widget. The field and the widget are born apart and joined by a third call.',
     draft: {
-      family: 'text',
+      kind: 'text',
       name: 'new.full',
       multiline: true, required: true,
       alternateName: 'Tell us more',
@@ -86,7 +86,7 @@ const CASES: readonly FieldCase[] = [
     covers:
       'A checkbox widget with no onState. Yes is the default, which is the conventional token and not the only legal one.',
     draft: {
-      family: 'checkbox',
+      kind: 'checkbox',
       name: 'new.box',
       widget: { pageObjectNumber: PAGE, rect: { left: 72, bottom: 260, right: 92, top: 280 } },
     },
@@ -96,7 +96,7 @@ const CASES: readonly FieldCase[] = [
     covers:
       'ONE field with TWO widgets, which is the ISO radio model. Each carries the state it turns on with, because that is how the group tells them apart.',
     draft: {
-      family: 'radio',
+      kind: 'radio',
       name: 'new.colour',
       noToggleToOff: true,
       widgets: [
@@ -117,7 +117,7 @@ const CASES: readonly FieldCase[] = [
     name: 'create-combobox-with-options',
     covers: 'A choice field and its options, which carry a label and an export value separately.',
     draft: {
-      family: 'combobox',
+      kind: 'combobox',
       name: 'new.size',
       edit: true,
       options: [
@@ -132,7 +132,7 @@ const CASES: readonly FieldCase[] = [
     covers:
       'A widget with an appearance, which goes through the widget-plane writer the annotation kind uses, so a widget placed here and one created through annotations.create cannot drift.',
     draft: {
-      family: 'listbox',
+      kind: 'listbox',
       name: 'new.langs',
       multiSelect: true,
       options: [
@@ -157,19 +157,19 @@ const CASES: readonly FieldCase[] = [
     name: 'create-text-comb',
     covers:
       'The comb flag, which draws fixed character cells and is meaningful only with a maxLength. Its bit is 25 in the spec table and 24 as a shift, which is where a table read straight off §12.7.4 goes wrong by one.',
-    draft: { family: 'text', name: 'new.comb', comb: true, maxLength: 8 },
+    draft: { kind: 'text', name: 'new.comb', comb: true, maxLength: 8 },
   },
   {
     name: 'create-unnamed-refused',
     covers: 'A field with no name. A field is addressed by name, so one without is unreachable.',
-    draft: { family: 'text', name: '' },
+    draft: { kind: 'text', name: '' },
     refused: true,
   },
   {
     name: 'create-text-with-options-refused',
     covers:
       'Options on a family that has none. They would be written and then never read, which is a draft saying something the field cannot mean.',
-    draft: { family: 'text', name: 'new.odd', options: [{ label: 'A', value: 'a' }] },
+    draft: { kind: 'text', name: 'new.odd', options: [{ label: 'A', value: 'a' }] },
     refused: true,
   },
   // `attachWidget` adopted an existing widget annotation into a field. It
@@ -189,7 +189,7 @@ const CASES: readonly FieldCase[] = [
   {
     name: 'create-name-collision-refused',
     covers: 'A name a sibling already has.',
-    draft: { family: 'text', name: 'notes' },
+    draft: { kind: 'text', name: 'notes' },
     refused: true,
   },
   {
@@ -197,7 +197,7 @@ const CASES: readonly FieldCase[] = [
     covers:
       'A radio widget with no onState. The group addresses its widgets by state, so one without could never be turned on.',
     draft: {
-      family: 'radio',
+      kind: 'radio',
       name: 'new.bad',
       widgets: [{ pageObjectNumber: PAGE, rect: { left: 72, bottom: 180, right: 92, top: 200 } }],
     },
@@ -207,14 +207,14 @@ const CASES: readonly FieldCase[] = [
     name: 'update-rename',
     covers: 'A field renamed, which changes its own /T segment rather than moving it.',
     patchOf: { kind: 'objectNumber', fieldObjectNumber: 5 },
-    patch: { family: 'text', name: 'renamed' },
+    patch: { kind: 'text', name: 'renamed' },
   },
   {
     name: 'update-flags-and-names',
     covers: 'Flags set and cleared in one write, plus the two optional names.',
     patchOf: { kind: 'objectNumber', fieldObjectNumber: 4 },
     patch: {
-      family: 'text',
+      kind: 'text',
       required: false, readOnly: true,
       alternateName: 'Renamed label',
       mappingName: 'renamed_export',
@@ -225,20 +225,20 @@ const CASES: readonly FieldCase[] = [
     covers:
       'The tri-state clears. There is no remover for either name, so a clear writes an empty string and the reader reports an empty /TU as absent.',
     patchOf: { kind: 'objectNumber', fieldObjectNumber: 4 },
-    patch: { family: 'text', alternateName: null, mappingName: null },
+    patch: { kind: 'text', alternateName: null, mappingName: null },
   },
   {
     name: 'update-clear-default-value',
     covers:
       'Removing /DV, which is not the same as setting it to nothing: one entry goes away and the other holds an empty string.',
     patchOf: { kind: 'objectNumber', fieldObjectNumber: 4 },
-    patch: { family: 'text', defaultValue: null },
+    patch: { kind: 'text', defaultValue: null },
   },
   {
     name: 'update-max-length-clear',
     covers: 'Clearing the limit, which is writing zero: an absent /MaxLen means no limit.',
     patchOf: { kind: 'objectNumber', fieldObjectNumber: 4 },
-    patch: { family: 'text', maxLength: null },
+    patch: { kind: 'text', maxLength: null },
   },
   {
     name: 'update-options',
@@ -246,7 +246,7 @@ const CASES: readonly FieldCase[] = [
       'A replacement option list. PDFium re-syncs the selection: an export value that is no longer an option is dropped.',
     patchOf: { kind: 'objectNumber', fieldObjectNumber: 11 },
     patch: {
-      family: 'listbox',
+      kind: 'listbox',
       options: [
         { label: 'English', value: 'en' },
         { label: 'Welsh', value: 'cy' },
@@ -258,14 +258,14 @@ const CASES: readonly FieldCase[] = [
     covers:
       'A text patch aimed at a list box. Refused before anything is written, because the members that follow are family-specific.',
     patchOf: { kind: 'objectNumber', fieldObjectNumber: 11 },
-    patch: { family: 'text', name: 'wrong' },
+    patch: { kind: 'text', name: 'wrong' },
     refused: true,
   },
   {
     name: 'update-rename-collision-refused',
     covers: 'A rename onto a name a sibling already has.',
     patchOf: { kind: 'objectNumber', fieldObjectNumber: 5 },
-    patch: { family: 'text', name: 'quantity' },
+    patch: { kind: 'text', name: 'quantity' },
     refused: true,
   },
   {

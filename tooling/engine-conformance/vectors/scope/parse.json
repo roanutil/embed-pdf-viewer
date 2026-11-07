@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "scope.parse",
   "cases": [
   {"name":"wildcard","covers":"The global escape hatch.","scope":"*","valid":true,"parsed":{"kind":"wildcard"}},

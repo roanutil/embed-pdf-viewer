@@ -5,6 +5,6 @@
   "fixture": "tooling/engine-conformance/fixtures/reverse_and_gapped_text.pdf",
   "covers": "Two layout cases nothing else produces: a run whose glyphs read backwards, so a segment's advance is -1, and a run with a gap wide enough to split it. Mutation testing found both untested.",
   "pages": [
-  {"index":0,"pageObjectNumber":3,"snapshot":{"text":"ABCD\r\nE F","charCount":9}}
+  {"index":0,"pageObjectNumber":3,"snapshot":{"text":"ABCD\nE F","charCount":9,"charMap":[[5,4]]}}
   ]
 }

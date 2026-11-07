@@ -163,7 +163,7 @@ async function readCase(entry: MoveCase): Promise<unknown> {
         afterOrder: after.annotations.map((a) => a.nm),
         order: result.order,
         meta: {
-          changed: result.meta.changed,
+          changedRefs: result.meta.changedRefs,
         },
       };
     } finally {
