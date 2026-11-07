@@ -197,7 +197,7 @@ pub struct LocaleLoadFailedEvent {
 #[derive(Clone)]
 pub struct I18nSettingsChanged {
     pub settings: Rc<I18nSettings>,
-    pub changed: Vec<String>,
+    pub changed_keys: Vec<String>,
 }
 
 /// `getTranslator()`'s function: `t` bound to the strings in effect when it

@@ -328,28 +328,28 @@ fn a_pack_that_lands_after_a_newer_switch_registers_without_switching() {
 }
 
 #[test]
-fn a_pack_loaded_under_another_code_registers_and_shows_under_its_own() {
+fn a_pack_loaded_under_another_code_registers_and_never_shows() {
+    // Since upstream 58435c49a the switch waits for `ar` to be ready, and a
+    // pack under another code never makes it so: the pack registers under
+    // its own code, the loader counts as run, and the switch stays pending.
+    // The TypeScript does the same (`lazy-pack-with-a-different-code`).
     let deferred = Deferred::default();
     let rig = Rig::with(loaders(vec![("ar", deferred.loader())]));
     let switched = rig.switch("ar");
     deferred.resolve(Locale { code: "ar-EG".into(), ..ar() });
-    assert!(matches!(switched.peek(), Some(Ok(()))));
-    assert_eq!(rig.i18n.get_locale(), "ar-EG");
-    assert_eq!(rig.i18n.get_loading_locale(), None);
-    // `ar` is still only in `loaders`: switching to it loads it again.
+    assert!(switched.peek().is_none());
+    assert_eq!(rig.i18n.get_locale(), "en");
+    assert_eq!(rig.i18n.get_loading_locale(), Some("ar".into()));
     assert_eq!(
         rig.listed(),
         [("en".into(), true), ("es".into(), true), ("ar-EG".into(), true), ("ar".into(), false)]
     );
+    // Switching to it again replaces the first switch and fetches nothing:
+    // `loading` already names it.
     let again = rig.switch("ar");
-    assert_eq!(deferred.calls.get(), 2);
-    deferred.resolve(ar());
-    assert!(matches!(again.peek(), Some(Ok(()))));
-    assert_eq!(rig.i18n.get_locale(), "ar");
-    assert_eq!(
-        *rig.changed.borrow(),
-        [("en".into(), "ar-EG".into()), ("ar-EG".into(), "ar".into())]
-    );
+    assert_eq!(rejection(&switched).map(|(code, _)| code), Some(code::OPERATION_CANCELLED.into()));
+    assert_eq!(deferred.calls.get(), 1);
+    assert!(again.peek().is_none());
 }
 
 #[test]
@@ -436,7 +436,7 @@ fn the_settings_are_the_workspaces_and_changes_follow_through() {
     let events: Rc<RefCell<Vec<Vec<String>>>> = Rc::default();
     let log = events.clone();
     rig.i18n.on_settings_changed(move |event| {
-        log.borrow_mut().push(event.changed.clone());
+        log.borrow_mut().push(event.changed_keys.clone());
         Ok(())
     });
     let settings = rig.i18n.get_settings();
@@ -546,9 +546,9 @@ fn after_close_a_late_pack_is_dropped_and_reported_once() {
     rig.kernel.destroy();
     rt::run_until_stalled();
     deferred.resolve(ar());
-    // The state still reads `loading: ar`, so the waiter settles as the
-    // TypeScript's does; both writes are refused, reported once.
-    assert!(matches!(switched.peek(), Some(Ok(()))));
+    // The pack's write is refused, reported once, so `ar` never becomes
+    // ready and the waiter never settles, as the TypeScript's doesn't.
+    assert!(switched.peek().is_none());
     let reports = rig.reports.borrow();
     assert_eq!(reports.len(), 1, "{reports:?}");
     assert!(

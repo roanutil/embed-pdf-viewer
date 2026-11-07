@@ -47,9 +47,9 @@ fn unknown_locale(code: &str) -> Error {
 /// identity) and the fallback locale. The cache holds the inputs, as the
 /// TypeScript's `memo` does, so an address is never reused while compared.
 type TranslatorInputs = (String, Rc<JsRecord<Rc<Locale>>>, String);
-/// `listLocales`' memo inputs: the loaded languages and the loaders, both by
-/// identity, held by the cache.
-type ListInputs = (Rc<JsRecord<Rc<Locale>>>, Rc<JsRecord<LocaleLoader>>);
+/// `listLocales`' memo inputs: the languages, the fetched ones and the
+/// loaders, all by identity, held by the cache.
+type ListInputs = (Rc<JsRecord<Rc<Locale>>>, Rc<JsRecord<bool>>, Rc<JsRecord<LocaleLoader>>);
 
 struct Inner {
     cx: I18nContext,
@@ -205,7 +205,7 @@ impl I18nCapability {
             let Some(inner) = this.upgrade() else { return Ok(()) };
             listener(&I18nSettingsChanged {
                 settings: I18nCapability(inner).settings_of(event.settings.clone()),
-                changed: event.changed.clone(),
+                changed_keys: event.changed.clone(),
             })
         })
     }
@@ -277,10 +277,11 @@ impl I18nCapability {
     pub fn list_locales(&self) -> Rc<Vec<LocaleInfo>> {
         let state = self.state();
         let loaders = self.current_settings().loaders.clone();
-        let inputs: ListInputs = (state.locales.clone(), loaders.clone());
+        let inputs: ListInputs = (state.locales.clone(), state.fetched.clone(), loaders.clone());
         if let Some((cached, listed)) = &*self.0.listed.borrow()
             && Rc::ptr_eq(&cached.0, &inputs.0)
             && Rc::ptr_eq(&cached.1, &inputs.1)
+            && Rc::ptr_eq(&cached.2, &inputs.2)
         {
             return listed.clone();
         }
@@ -291,7 +292,7 @@ impl I18nCapability {
                 code: locale.code.clone(),
                 name: locale.name.clone(),
                 direction: locale.direction.unwrap_or(TextDirection::Ltr),
-                loaded: true,
+                loaded: model::is_loaded(&state, |code| self.has_loader(code), &locale.code),
             })
             .collect();
         for code in loaders.keys() {
@@ -309,7 +310,8 @@ impl I18nCapability {
         listed
     }
 
-    /// `getLoadingLocale()`: the code of the language being loaded.
+    /// `getLoadingLocale()`: the code of the language on its way: it shows
+    /// once it and the fallback language have loaded.
     pub fn get_loading_locale(&self) -> Option<String> {
         self.state().loading.clone()
     }
@@ -317,7 +319,8 @@ impl I18nCapability {
     // ── verbs ──
 
     /// `setLocale(code, options)`: switch the language, loading it first
-    /// when it's in `loaders`. Resolves once it shows, and fires
+    /// when it's in `loaders`, and waiting for the fallback language while
+    /// that loads. Resolves once it shows, and fires
     /// `on_locale_changed`. Rejects `not-found` for a code that is neither
     /// loaded nor in `loaders`, `operation-failed` when it can't load (and
     /// fires `on_locale_load_failed`), and `operation-cancelled` when the
@@ -335,12 +338,12 @@ impl I18nCapability {
                 None,
             ));
         }
-        if is_registered(&self.state().locales, code) {
+        if model::is_ready(&self.state(), |code| self.has_loader(code), code) {
             self.supersede();
             self.update(|state| model::set_locale(state, code));
             return Promise::resolved(());
         }
-        if !self.has_loader(code) {
+        if !is_registered(&self.state().locales, code) && !self.has_loader(code) {
             return Promise::rejected(unknown_locale(code));
         }
         self.supersede();
@@ -424,7 +427,8 @@ impl I18nCapability {
     }
 
     /// `followSettings()`: follow a settings change. New languages register,
-    /// and a new `locale` becomes current.
+    /// a new fallback language with a loader is fetched, and a new `locale`
+    /// becomes current.
     fn follow_settings(&self) {
         let previous = RefCell::new(self.current_settings());
         let this = Rc::downgrade(&self.0);
@@ -447,6 +451,13 @@ impl I18nCapability {
                         api.update(|state| model::register_locale(state, locale));
                     }
                 }
+            }
+            if event.changed.iter().any(|k| k == "fallbackLocale" || k == "loaders") {
+                let has_loader =
+                    |code: &str| next.loaders.contains_key(code) || Inherited::of(code).is_some();
+                api.update(|state| {
+                    model::follow_fallback(state, &next.fallback_locale, has_loader)
+                });
             }
             if event.changed.iter().any(|k| k == "locale") {
                 let code = next.locale.clone().unwrap_or_else(|| next.fallback_locale.clone());
@@ -551,7 +562,11 @@ pub fn create_i18n_controller(
         let inner = weak.upgrade()?;
         I18nCapability(inner).current_settings().loaders.get(code).cloned()
     });
-    let _ = api.0.loaders.set(Loaders::new(cx, loader_of, settle, on_failed));
+    let weak = Rc::downgrade(&api.0);
+    let has_loader = Rc::new(move |code: &str| {
+        weak.upgrade().is_some_and(|inner| I18nCapability(inner).has_loader(code))
+    });
+    let _ = api.0.loaders.set(Loaders::new(cx, loader_of, has_loader, settle, on_failed));
 
     let connecting = api.clone();
     Ok((api, Rc::new(move || connecting.connect())))

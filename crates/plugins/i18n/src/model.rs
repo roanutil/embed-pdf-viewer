@@ -17,11 +17,17 @@ use crate::js::{Inherited, JsRecord};
 pub struct I18nState {
     /// The current language's code.
     pub locale: String,
-    /// The loaded languages, by code: what `t()` reads. The same `Rc` until
-    /// a language is added, replaced or removed.
+    /// The languages' strings, by code: what `t()` reads. The same `Rc`
+    /// until a language is added, replaced or removed.
     pub locales: Rc<JsRecord<Rc<Locale>>>,
-    /// The code of a language in `loaders` being fetched, or `None`.
+    /// The language to show once it and the fallback language have loaded,
+    /// or `None`.
     pub loading: Option<String>,
+    /// The fallback language while its loader runs, or `None`; no language
+    /// shows before it.
+    pub loading_fallback: Option<String>,
+    /// The languages whose loader has run, by code (`Record<string, true>`).
+    pub fetched: Rc<JsRecord<bool>>,
     /// Strings added to a language before it loaded, by code; they merge in
     /// when it does.
     pub waiting_translations: Rc<JsRecord<TranslationDictionary>>,
@@ -40,15 +46,58 @@ pub fn initial_i18n_state() -> I18nState {
         locale: String::new(),
         locales: Rc::default(),
         loading: None,
+        loading_fallback: None,
+        fetched: Rc::default(),
         waiting_translations: Rc::default(),
     }
 }
 
-/// `seedFromSettings(state, settings)`: the settings' languages loaded, and
-/// their `locale` current. A start language that is still to load shows
-/// `fallback_locale` meanwhile, and `loading` names it, so the loader
-/// fetches it once connected. `has_loader` is `settings.loaders[code] !==
-/// undefined`.
+/// `state.fetched[code]`: an own entry, or an `Object.prototype` member,
+/// which a JavaScript record lookup also finds (and which is truthy).
+fn is_fetched(state: &I18nState, code: &str) -> bool {
+    state.fetched.contains_key(code) || Inherited::of(code).is_some()
+}
+
+/// `needsFetch(state, loaders, code)`: whether a language's loader is still
+/// to run. A language in `locales` too shows those strings meanwhile.
+/// `has_loader` is `loaders[code] !== undefined`.
+pub fn needs_fetch(state: &I18nState, has_loader: impl Fn(&str) -> bool, code: &str) -> bool {
+    has_loader(code) && !is_fetched(state, code)
+}
+
+/// `isLoaded(state, loaders, code)`: whether a language has all its
+/// strings: it's in, and its loader, if it has one, has run.
+pub fn is_loaded(state: &I18nState, has_loader: impl Fn(&str) -> bool, code: &str) -> bool {
+    is_registered(&state.locales, code) && !needs_fetch(state, has_loader, code)
+}
+
+/// `isReady(state, loaders, code)`: whether a language can show now: it's
+/// loaded, and the fallback language isn't on its way.
+pub fn is_ready(state: &I18nState, has_loader: impl Fn(&str) -> bool, code: &str) -> bool {
+    is_loaded(state, has_loader, code) && state.loading_fallback.is_none()
+}
+
+/// `followFallback(state, settings)`: the fallback language waits for its
+/// loader when it has one that hasn't run.
+pub fn follow_fallback(
+    state: &Rc<I18nState>,
+    fallback_locale: &str,
+    has_loader: impl Fn(&str) -> bool,
+) -> Rc<I18nState> {
+    let loading_fallback =
+        needs_fetch(state, has_loader, fallback_locale).then(|| fallback_locale.to_string());
+    if state.loading_fallback == loading_fallback {
+        return state.clone();
+    }
+    Rc::new(I18nState { loading_fallback, ..(**state).clone() })
+}
+
+/// `seedFromSettings(state, settings)`: the settings' languages in, the
+/// fallback language fetched when it has a loader, and their `locale`
+/// current once it can show. Until then `loading` names it, so the loader
+/// fetches it once connected, and the fallback language shows, or, while
+/// that loads too, the first language in `locales`. `has_loader` is
+/// `settings.loaders[code] !== undefined`.
 pub fn seed_from_settings(
     state: &Rc<I18nState>,
     locale: Option<&str>,
@@ -56,14 +105,21 @@ pub fn seed_from_settings(
     locales: &[Locale],
     has_loader: impl Fn(&str) -> bool,
 ) -> Rc<I18nState> {
-    let seeded =
+    let registered =
         locales.iter().fold(state.clone(), |state, locale| register_locale(&state, locale));
+    let seeded = follow_fallback(&registered, fallback_locale, &has_loader);
     let locale = locale.unwrap_or(fallback_locale);
-    if is_registered(&seeded.locales, locale) || !has_loader(locale) {
+    let known = is_registered(&seeded.locales, locale) || has_loader(locale);
+    if !known || is_ready(&seeded, &has_loader, locale) {
         return Rc::new(I18nState { locale: locale.to_string(), ..(*seeded).clone() });
     }
+    let meanwhile = if is_registered(&seeded.locales, fallback_locale) {
+        fallback_locale
+    } else {
+        seeded.locales.keys().next().unwrap_or(fallback_locale)
+    };
     Rc::new(I18nState {
-        locale: fallback_locale.to_string(),
+        locale: meanwhile.to_string(),
         loading: Some(locale.to_string()),
         ..(*seeded).clone()
     })
@@ -169,7 +225,21 @@ pub fn unregister_locale(state: &Rc<I18nState>, code: &str) -> Rc<I18nState> {
     }
     let mut locales = (*state.locales).clone();
     locales.remove(code);
-    Rc::new(I18nState { locales: Rc::new(locales), ..(**state).clone() })
+    let mut fetched = (*state.fetched).clone();
+    fetched.remove(code);
+    Rc::new(I18nState { locales: Rc::new(locales), fetched: Rc::new(fetched), ..(**state).clone() })
+}
+
+/// `arriveLocale(state, code, locale)`: a language from its loader arrived:
+/// it registers in place of any strings the language had, and a wait for
+/// it as the fallback language ends.
+pub fn arrive_locale(state: &Rc<I18nState>, code: &str, locale: &Locale) -> Rc<I18nState> {
+    let registered = register_locale(state, locale);
+    let mut fetched = (*registered.fetched).clone();
+    fetched.insert(code, true);
+    let loading_fallback =
+        registered.loading_fallback.clone().filter(|waiting| waiting.as_str() != code);
+    Rc::new(I18nState { fetched: Rc::new(fetched), loading_fallback, ..(*registered).clone() })
 }
 
 /// `addTranslations(state, code, dictionary)`: merge strings into a
@@ -220,4 +290,13 @@ pub fn end_locale_load(state: &Rc<I18nState>, code: &str) -> Rc<I18nState> {
         return state.clone();
     }
     Rc::new(I18nState { loading: None, ..(**state).clone() })
+}
+
+/// `endFallbackLoad(state, code)`: the fallback language's loader failed:
+/// languages show without it.
+pub fn end_fallback_load(state: &Rc<I18nState>, code: &str) -> Rc<I18nState> {
+    if state.loading_fallback.as_deref() != Some(code) {
+        return state.clone();
+    }
+    Rc::new(I18nState { loading_fallback: None, ..(**state).clone() })
 }

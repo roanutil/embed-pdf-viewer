@@ -356,8 +356,17 @@ fn f_initial(_args: &[Value]) -> Result<Value, Error> {
     to_json(&initial_i18n_state())
 }
 
-/// `seedFromSettings(state, settings)` reads only whether a loader is there
-/// (`!== undefined`), so the vector's loaders are placeholders.
+/// `loaders[code] !== undefined` over a vector's loaders, which are
+/// placeholders: the model reads only whether a loader is there.
+fn has_loader_in(loaders: Option<&Value>) -> impl Fn(&str) -> bool + '_ {
+    let loaders = loaders.and_then(Value::as_object);
+    move |code: &str| {
+        loaders.and_then(|l| l.get(code)).is_some_and(|v| !is_undefined(v))
+            || Inherited::of(code).is_some()
+    }
+}
+
+/// `seedFromSettings(state, settings)`.
 fn f_seed(args: &[Value]) -> Result<Value, Error> {
     let state = state_arg(args)?;
     let settings = arg(args, 1).cloned().unwrap_or_else(|| json!({}));
@@ -366,13 +375,48 @@ fn f_seed(args: &[Value]) -> Result<Value, Error> {
         None => Vec::new(),
     };
     let fallback = settings.get("fallbackLocale").and_then(Value::as_str).unwrap_or_default();
-    let loaders = settings.get("loaders").and_then(Value::as_object);
-    let has_loader = |code: &str| {
-        loaders.and_then(|l| l.get(code)).is_some_and(|v| !is_undefined(v))
-            || Inherited::of(code).is_some()
-    };
+    let has_loader = has_loader_in(settings.get("loaders"));
     let locale = settings.get("locale").and_then(Value::as_str);
     to_json(&*model::seed_from_settings(&state, locale, fallback, &locales, has_loader))
+}
+
+/// `needsFetch`, `isLoaded` and `isReady` take `(state, loaders, code)`.
+fn predicate(
+    args: &[Value],
+    f: fn(&I18nState, &dyn Fn(&str) -> bool, &str) -> bool,
+) -> Result<Value, Error> {
+    let state = state_arg(args)?;
+    let code = arg(args, 2).and_then(Value::as_str).unwrap_or_default();
+    Ok(json!(f(&state, &has_loader_in(arg(args, 1)), code)))
+}
+
+fn f_needs_fetch(args: &[Value]) -> Result<Value, Error> {
+    predicate(args, |state, has, code| model::needs_fetch(state, has, code))
+}
+
+fn f_is_loaded(args: &[Value]) -> Result<Value, Error> {
+    predicate(args, |state, has, code| model::is_loaded(state, has, code))
+}
+
+fn f_is_ready(args: &[Value]) -> Result<Value, Error> {
+    predicate(args, |state, has, code| model::is_ready(state, has, code))
+}
+
+/// `followFallback(state, { fallbackLocale, loaders })`.
+fn f_follow_fallback(args: &[Value]) -> Result<Value, Error> {
+    let settings = arg(args, 1).cloned().unwrap_or_else(|| json!({}));
+    let fallback = settings.get("fallbackLocale").and_then(Value::as_str).unwrap_or_default();
+    let has_loader = has_loader_in(settings.get("loaders"));
+    to_json(&*model::follow_fallback(&state_arg(args)?, fallback, has_loader))
+}
+
+fn f_arrive(args: &[Value]) -> Result<Value, Error> {
+    let locale: Locale = decode("locale", arg(args, 2).unwrap_or(&Value::Null))?;
+    to_json(&*model::arrive_locale(&state_arg(args)?, code_arg(args), &locale))
+}
+
+fn f_end_fallback(args: &[Value]) -> Result<Value, Error> {
+    to_json(&*model::end_fallback_load(&state_arg(args)?, code_arg(args)))
 }
 
 fn f_merge(args: &[Value]) -> Result<Value, Error> {
@@ -458,6 +502,12 @@ pub fn functions() -> FunctionTable {
         ("addTranslations", f_add),
         ("startLocaleLoad", f_start),
         ("endLocaleLoad", f_end),
+        ("followFallback", f_follow_fallback),
+        ("arriveLocale", f_arrive),
+        ("endFallbackLoad", f_end_fallback),
+        ("needsFetch", f_needs_fetch),
+        ("isLoaded", f_is_loaded),
+        ("isReady", f_is_ready),
         ("plurals", f_plurals),
     ]
 }
