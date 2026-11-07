@@ -4,7 +4,7 @@
 
 use serde::Serialize;
 
-use crate::{FontStyle, StandardFamily, StandardFont, standard_font_program};
+use crate::{FontProgram, FontStyle, StandardFamily, StandardFont, standard_font_program};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -12,6 +12,9 @@ pub struct StandardFontCss {
     pub font_family: String,
     pub font_weight: u32,
     pub font_style: FontStyle,
+    /// The program `font_family` names first: whatever draws the text mounts
+    /// it.
+    pub programs: Vec<&'static FontProgram>,
 }
 
 /// `STACKS`.
@@ -31,5 +34,6 @@ pub fn standard_font_css(font: StandardFont) -> StandardFontCss {
         font_family: format!("\"{}\", {}", program.family, stack(font.face().family)),
         font_weight: program.weight,
         font_style: program.style,
+        programs: vec![program],
     }
 }
