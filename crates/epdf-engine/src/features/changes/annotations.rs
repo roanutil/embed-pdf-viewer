@@ -1061,11 +1061,10 @@ fn values_changed(
     after: &Map<String, Value>,
     patch: &Map<String, Value>,
 ) -> RevertFallback {
+    // A `subtype` changed to a sibling kind is a change too.
     let keys: Vec<&String> = patch
         .keys()
-        .filter(|key| {
-            *key != "subtype" && !super::applier::values_equal(before.get(*key), after.get(*key))
-        })
+        .filter(|key| !super::applier::values_equal(before.get(*key), after.get(*key)))
         .collect();
     let pick = |from: &Map<String, Value>| {
         keys.iter()

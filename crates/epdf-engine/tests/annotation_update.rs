@@ -367,7 +367,11 @@ fn a_patch_for_the_wrong_subtype_is_refused() {
     .outcome
     .expect_err("a square patch on a highlight");
     assert_eq!(refused["code"], "InvalidArg", "{refused}");
-    assert!(refused["message"].as_str().unwrap().contains("subtype cannot change"), "{refused}");
+    assert_eq!(
+        refused["message"], "highlight can become underline, squiggly or strikeout, not square",
+        "{refused}"
+    );
+    assert_eq!(refused["details"]["field"], "subtype");
 
     // An empty quad list is refused: a markup marks something.
     let refused =
@@ -689,6 +693,177 @@ fn a_color_sent_back_unchanged_stays_as_the_file_stores_it() {
     let after = listed(&mut replay).into_iter().find(|a| a["nm"] == "colored").unwrap();
     assert_eq!(after["contents"], "kept");
     assert_eq!(after["color"], square["color"]);
+}
+
+// ── runAnnotationMutationConformance's kind changes ─────────────────────────
+
+const KIND_QUAD: &str = r#"[{ "upperLeft": { "x": 72, "y": 92 }, "upperRight": { "x": 200, "y": 92 },
+    "lowerLeft": { "x": 72, "y": 72 }, "lowerRight": { "x": 200, "y": 72 } }]"#;
+
+fn kind_quad() -> Value {
+    serde_json::from_str(KIND_QUAD).unwrap()
+}
+
+fn apply_change(replay: &mut Replay, op_id: &str, change: Value) -> Result<Value, Value> {
+    replay.replay(&json!({ "kind": "document.apply", "jobId": "<job>", "docId": DOC,
+        "opId": op_id, "change": change }))
+}
+
+fn read_back(replay: &mut Replay, reference: &Value) -> Value {
+    listed(replay).into_iter().find(|a| &a["ref"] == reference).expect("the annotation")
+}
+
+#[test]
+fn a_highlight_becomes_a_squiggly_line_and_stays_the_same_annotation() {
+    let mut replay = open(&load());
+    let mark = markup(
+        &mut replay,
+        json!({ "subtype": "highlight", "contents": "kind change", "color": "#1d4ed8",
+            "quadPoints": kind_quad() }),
+    );
+    let reply = markup(
+        &mut replay,
+        json!({ "subtype": "text", "rect": icon_rect(), "contents": "a reply to the mark",
+            "reply": { "to": mark["ref"], "type": "reply" } }),
+    );
+    let order: Vec<Value> = listed(&mut replay).iter().map(|a| a["ref"].clone()).collect();
+
+    let result =
+        update(&mut replay, &mark["ref"], &json!({ "subtype": "squiggly" }), &BTreeMap::new())
+            .outcome
+            .expect("a sibling kind");
+    assert_eq!(result["appearance"]["changed"], true, "{result}");
+    let changed = &result["annotation"];
+    assert_eq!(changed["subtype"], "squiggly");
+    for field in ["ref", "nm", "contents", "author", "createdAt", "color", "quadPoints"] {
+        assert_eq!(changed[field], mark[field], "{field}");
+    }
+    // Same place in the drawing order; its reply still answers it.
+    let after: Vec<Value> = listed(&mut replay).iter().map(|a| a["ref"].clone()).collect();
+    assert_eq!(after, order);
+    assert_eq!(read_back(&mut replay, &reply["ref"])["reply"]["to"], mark["ref"]);
+    assert_eq!(read_back(&mut replay, &mark["ref"])["subtype"], "squiggly");
+}
+
+#[test]
+fn a_square_becomes_a_circle_with_a_new_color_and_back() {
+    let mut replay = open(&load());
+    let square = markup(
+        &mut replay,
+        json!({ "subtype": "square", "box": shape_box(), "color": "#008000", "strokeWidth": 2 }),
+    );
+    let circle = update(
+        &mut replay,
+        &square["ref"],
+        &json!({ "subtype": "circle", "color": "#dc143c" }),
+        &BTreeMap::new(),
+    )
+    .outcome
+    .expect("a circle")["annotation"]
+        .clone();
+    assert_eq!(circle["subtype"], "circle");
+    assert_eq!(circle["ref"], square["ref"]);
+    assert_eq!(circle["box"], square["box"]);
+    assert_eq!(circle["color"], "#dc143c");
+    assert_eq!(circle["strokeWidth"], 2.0);
+    let back =
+        update(&mut replay, &square["ref"], &json!({ "subtype": "square" }), &BTreeMap::new())
+            .outcome
+            .expect("a square again")["annotation"]
+            .clone();
+    assert_eq!(back["subtype"], "square");
+    assert_eq!(back["color"], "#dc143c");
+}
+
+#[test]
+fn a_kind_outside_the_group_or_over_a_value_the_new_kind_cannot_hold_is_refused() {
+    let mut replay = open(&load());
+    let mark = markup(&mut replay, json!({ "subtype": "highlight", "quadPoints": kind_quad() }));
+    let refused = update(&mut replay, &mark["ref"], &json!({ "subtype": "ink" }), &BTreeMap::new())
+        .outcome
+        .expect_err("another family");
+    assert_eq!(refused["code"], "InvalidArg", "{refused}");
+    assert_eq!(refused["details"]["field"], "subtype");
+    let ink = markup(
+        &mut replay,
+        json!({ "subtype": "ink", "inkList": [[{ "x": 80, "y": 80 }, { "x": 120, "y": 120 }]] }),
+    );
+    let refused =
+        update(&mut replay, &ink["ref"], &json!({ "subtype": "square" }), &BTreeMap::new())
+            .outcome
+            .expect_err("a kind with no siblings");
+    assert_eq!(refused["details"]["field"], "subtype", "{refused}");
+
+    // A replacement's strikeout holds an intent a highlight has no field for.
+    let caret = markup(
+        &mut replay,
+        json!({ "subtype": "caret", "intent": "replace", "contents": "invoice",
+            "box": { "x": 72, "y": 72, "width": 8, "height": 12 } }),
+    );
+    let strikeout = markup(
+        &mut replay,
+        json!({ "subtype": "strikeout", "intent": "strikeout-text-edit",
+            "quadPoints": kind_quad(), "reply": { "to": caret["ref"], "type": "group" } }),
+    );
+    let refused = update(
+        &mut replay,
+        &strikeout["ref"],
+        &json!({ "subtype": "highlight" }),
+        &BTreeMap::new(),
+    )
+    .outcome
+    .expect_err("an intent a highlight can't hold");
+    assert_eq!(refused["code"], "InvalidArg", "{refused}");
+    assert_eq!(refused["details"]["field"], "intent");
+    let kept = read_back(&mut replay, &strikeout["ref"]);
+    assert_eq!(kept["subtype"], "strikeout");
+    assert_eq!(kept["intent"], "strikeout-text-edit");
+
+    // Cleared first, in the same change, it becomes a highlight, still in
+    // its group.
+    apply_change(
+        &mut replay,
+        "op-k",
+        json!({ "ops": [
+            { "type": "annotations.update", "ref": strikeout["ref"], "patch": { "intent": null } },
+            { "type": "annotations.update", "ref": strikeout["ref"],
+                "patch": { "subtype": "highlight" } }] }),
+    )
+    .expect("cleared first");
+    let changed = read_back(&mut replay, &strikeout["ref"]);
+    assert_eq!(changed["subtype"], "highlight");
+    assert_eq!(changed["reply"]["type"], "group");
+    assert_eq!(changed["reply"]["to"], caret["ref"]);
+}
+
+#[test]
+fn undo_puts_the_old_kind_back_and_so_does_an_undo_after_a_later_change() {
+    let mut replay = open(&load());
+    let highlight =
+        json!({ "subtype": "highlight", "color": "#ffff00", "quadPoints": kind_quad() });
+    let mark = markup(&mut replay, highlight.clone());
+    let retype = |reference: &Value| {
+        json!({ "ops": [{ "type": "annotations.update", "ref": reference,
+            "patch": { "subtype": "underline" } }] })
+    };
+    apply_change(&mut replay, "op-a", retype(&mark["ref"])).expect("retyped");
+    assert_eq!(read_back(&mut replay, &mark["ref"])["subtype"], "underline");
+    apply_change(&mut replay, "op-b", json!({ "undoOf": "op-a" })).expect("undone");
+    assert_eq!(read_back(&mut replay, &mark["ref"])["subtype"], "highlight");
+    apply_change(&mut replay, "op-c", json!({ "undoOf": "op-b" })).expect("redone");
+    assert_eq!(read_back(&mut replay, &mark["ref"])["subtype"], "underline");
+
+    // Restyled since: the undo puts back the kind by value and keeps the new
+    // color.
+    let other = markup(&mut replay, highlight);
+    apply_change(&mut replay, "op-d", retype(&other["ref"])).expect("retyped");
+    update(&mut replay, &other["ref"], &json!({ "color": "#16a34a" }), &BTreeMap::new())
+        .outcome
+        .expect("restyled");
+    apply_change(&mut replay, "op-e", json!({ "undoOf": "op-d" })).expect("undone");
+    let restored = read_back(&mut replay, &other["ref"]);
+    assert_eq!(restored["subtype"], "highlight", "{restored}");
+    assert_eq!(restored["color"], "#16a34a");
 }
 
 // ── runDrawingDetailsConformance's dash patterns ────────────────────────────

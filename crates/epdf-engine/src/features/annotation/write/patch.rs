@@ -68,20 +68,89 @@ fn assert_declared_fields(
     Err(invalid(format!("{} has no field {}", subtype.as_str(), unknown.join(", "))))
 }
 
-/// `annotationPatchForTarget`: the patch as the target's kind. A different
-/// subtype, a changed name, a field the kind doesn't declare, or any change
-/// to an annotation of a type the engine doesn't model is refused.
+/// `SIBLING_KINDS`: kinds that take the same fields, so an update turns one
+/// into another by its `subtype` (ISO 32000-2 describes each group with one
+/// table of entries).
+const SIBLING_KINDS: &[&[AnnotationSubtype]] = &[
+    &[
+        AnnotationSubtype::Highlight,
+        AnnotationSubtype::Underline,
+        AnnotationSubtype::Squiggly,
+        AnnotationSubtype::Strikeout,
+    ],
+    &[AnnotationSubtype::Square, AnnotationSubtype::Circle],
+];
+
+/// `siblingKindsOf`: the kinds an annotation of `subtype` can become.
+pub fn sibling_kinds_of(subtype: AnnotationSubtype) -> Vec<AnnotationSubtype> {
+    SIBLING_KINDS
+        .iter()
+        .find(|kinds| kinds.contains(&subtype))
+        .map(|kinds| kinds.iter().copied().filter(|kind| *kind != subtype).collect())
+        .unwrap_or_default()
+}
+
+/// `orList`: `["a", "b", "c"]` as "a, b or c".
+fn or_list(names: &[&str]) -> String {
+    match names.split_last() {
+        Some((last, rest)) if !rest.is_empty() => format!("{} or {last}", rest.join(", ")),
+        _ => names.join(""),
+    }
+}
+
+/// `kindAfter`: the kind an update leaves the annotation, its own or the
+/// sibling the patch names. Any other subtype is refused, naming the kinds
+/// it can become. A value the new kind has no field for is refused, never
+/// dropped: the caller clears it first, in the same change.
+fn kind_after(
+    current: &Map<String, Value>,
+    subtype: AnnotationSubtype,
+    requested: Option<&Value>,
+) -> Result<AnnotationSubtype, EngineError> {
+    let Some(requested) = requested.filter(|named| named.as_str() != Some(subtype.as_str())) else {
+        return Ok(subtype);
+    };
+    let siblings = sibling_kinds_of(subtype);
+    let named = requested.as_str().unwrap_or_default();
+    let Some(target) = siblings.iter().copied().find(|kind| kind.as_str() == named) else {
+        let names: Vec<&str> = siblings.iter().map(|kind| kind.as_str()).collect();
+        let message = if names.is_empty() {
+            format!("{} has no other kind it can become", subtype.as_str())
+        } else {
+            let shown = requested.as_str().map_or_else(|| requested.to_string(), str::to_owned);
+            format!("{} can become {}, not {shown}", subtype.as_str(), or_list(&names))
+        };
+        return Err(invalid(message).with_details(serde_json::json!({ "field": "subtype" })));
+    };
+    for (name, _) in super::prepare::declared_fields(subtype) {
+        let Some(value) = current.get(name).filter(|value| !value.is_null()) else {
+            continue;
+        };
+        if owner_of(target, name).is_some() {
+            continue;
+        }
+        let shown = value.as_str().map_or_else(|| value.to_string(), |text| format!("'{text}'"));
+        return Err(invalid(format!(
+            "{} field '{name}' holds {shown}, and {} has no such field: clear it first, in the same change",
+            subtype.as_str(),
+            target.as_str()
+        ))
+        .with_details(serde_json::json!({ "field": name })));
+    }
+    Ok(target)
+}
+
+/// `annotationPatchForTarget`: the patch as the kind it leaves the
+/// annotation (`kindAfter`). A subtype the annotation can't become, a
+/// changed name, a field the kind doesn't declare, or any change to an
+/// annotation of a type the engine doesn't model is refused.
 fn patch_for_target(
     current: &Map<String, Value>,
     mut patch: Map<String, Value>,
 ) -> Result<(AnnotationSubtype, Map<String, Value>), EngineError> {
-    let subtype = subtype_of(current)?;
-    if let Some(named) = patch.get("subtype")
-        && named.as_str() != Some(subtype.as_str())
-    {
-        return Err(invalid("Annotation subtype cannot change"));
-    }
-    if subtype == AnnotationSubtype::Unsupported {
+    let own = subtype_of(current)?;
+    let subtype = kind_after(current, own, patch.get("subtype"))?;
+    if own == AnnotationSubtype::Unsupported {
         return Err(invalid("an annotation of a type the engine doesn't model can't be updated"));
     }
     if let Some(nm) = patch.get("nm")
@@ -695,7 +764,7 @@ mod tests {
 
     #[test]
     fn a_subtype_or_name_change_is_refused() {
-        for patch in [json!({ "subtype": "circle" }), json!({ "nm": "other" })] {
+        for patch in [json!({ "subtype": "ink" }), json!({ "nm": "other" })] {
             let refused = pdf_prepare_annotation_patch(&square(), map(patch)).unwrap_err();
             assert_eq!(refused.code, EngineErrorCode::InvalidArg);
         }

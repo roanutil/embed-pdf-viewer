@@ -216,6 +216,13 @@ pub fn update_annotation(
         p::settle_annotation_turn(&annotation)?;
     }
 
+    // A sibling kind (the resolver allows no other) is named first: its
+    // fields are then written as its own, and its appearance drawn below.
+    if current.get("subtype").and_then(Value::as_str) != Some(resolved.subtype.as_str())
+        && !annotation.set_subtype(resolved.subtype.code())
+    {
+        return Err(unknown("EPDFAnnot_SetSubtype returned false"));
+    }
     apply_patch(document, &annotation, &current, &resolved, &resources, services)?;
     // A derived plain label supersedes imported rich contents: a stale `/RC`
     // would show a different value where rich text is preferred.
