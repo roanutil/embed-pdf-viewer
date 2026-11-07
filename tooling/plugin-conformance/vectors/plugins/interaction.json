@@ -259,7 +259,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -423,7 +423,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -514,7 +514,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -593,7 +593,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -672,7 +672,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -789,7 +789,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2686,12 +2686,71 @@
                   }
                 }
               ]
-            },
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
             {
-              "fn": "high.onDown",
+              "fn": "low.enabledFor",
               "args": [
                 {
-                  "phase": "down",
+                  "id": "pointer",
+                  "cursor": "default",
+                  "enables": {
+                    "$set": [
+                      "text-select",
+                      "annotation-edit",
+                      "annotation-marquee",
+                      "form-fill",
+                      "link-nav"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "high.enabledFor",
+              "args": [
+                {
+                  "id": "pointer",
+                  "cursor": "default",
+                  "enables": {
+                    "$set": [
+                      "text-select",
+                      "annotation-edit",
+                      "annotation-marquee",
+                      "form-fill",
+                      "link-nav"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "high.onHover",
+              "args": [
+                {
+                  "phase": "move",
                   "viewport": {
                     "x": 10,
                     "y": 20
@@ -2714,29 +2773,9 @@
                   }
                 }
               ]
-            }
-          ],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 2
-            }
-          },
-          "outcome": {
-            "returned": {
-              "$undefined": true
-            }
-          }
-        },
-        {
-          "settled": [],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [],
-          "callbacks": [
+            },
             {
-              "fn": "high.onMove",
+              "fn": "low.onHover",
               "args": [
                 {
                   "phase": "move",
@@ -2782,36 +2821,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "high.onUp",
-              "args": [
-                {
-                  "phase": "up",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
@@ -3528,62 +3538,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "a.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "b.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -3594,8 +3548,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },
@@ -3606,7 +3563,117 @@
           "engine": [],
           "callbacks": [
             {
-              "fn": "b.onMove",
+              "fn": "a.enabledFor",
+              "args": [
+                {
+                  "id": "pointer",
+                  "cursor": "default",
+                  "enables": {
+                    "$set": [
+                      "text-select",
+                      "annotation-edit",
+                      "annotation-marquee",
+                      "form-fill",
+                      "link-nav"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "b.enabledFor",
+              "args": [
+                {
+                  "id": "pointer",
+                  "cursor": "default",
+                  "enables": {
+                    "$set": [
+                      "text-select",
+                      "annotation-edit",
+                      "annotation-marquee",
+                      "form-fill",
+                      "link-nav"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "c.enabledFor",
+              "args": [
+                {
+                  "id": "pointer",
+                  "cursor": "default",
+                  "enables": {
+                    "$set": [
+                      "text-select",
+                      "annotation-edit",
+                      "annotation-marquee",
+                      "form-fill",
+                      "link-nav"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "a.onHover",
+              "args": [
+                {
+                  "phase": "move",
+                  "viewport": {
+                    "x": 10,
+                    "y": 20
+                  },
+                  "modifiers": {
+                    "shift": false,
+                    "alt": false,
+                    "ctrl": false,
+                    "meta": false
+                  },
+                  "page": {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "point": {
+                      "x": 5,
+                      "y": 6
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "b.onHover",
+              "args": [
+                {
+                  "phase": "move",
+                  "viewport": {
+                    "x": 10,
+                    "y": 20
+                  },
+                  "modifiers": {
+                    "shift": false,
+                    "alt": false,
+                    "ctrl": false,
+                    "meta": false
+                  },
+                  "page": {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "pageObjectNumber": 1
+                    },
+                    "point": {
+                      "x": 5,
+                      "y": 6
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "c.onHover",
               "args": [
                 {
                   "phase": "move",
@@ -3652,36 +3719,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "b.onUp",
-              "args": [
-                {
-                  "phase": "up",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
@@ -3754,90 +3792,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "a.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "b.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "c.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -3848,8 +3802,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },
@@ -4549,118 +4506,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "top.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "first.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "second.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "third.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -4671,8 +4516,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },
@@ -5351,34 +5199,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "text.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -5389,8 +5209,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },
@@ -5399,36 +5222,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "text.onUp",
-              "args": [
-                {
-                  "phase": "up",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
@@ -5529,34 +5323,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "scroll.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -5567,8 +5333,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },
@@ -5579,7 +5348,43 @@
           "engine": [],
           "callbacks": [
             {
-              "fn": "scroll.onMove",
+              "fn": "text.enabledFor",
+              "args": [
+                {
+                  "id": "pan",
+                  "cursor": "grab",
+                  "gapCursor": "grab",
+                  "enables": {
+                    "$set": [
+                      "scroll",
+                      "annotation-edit",
+                      "form-fill",
+                      "link-nav"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "scroll.enabledFor",
+              "args": [
+                {
+                  "id": "pan",
+                  "cursor": "grab",
+                  "gapCursor": "grab",
+                  "enables": {
+                    "$set": [
+                      "scroll",
+                      "annotation-edit",
+                      "form-fill",
+                      "link-nav"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "scroll.onHover",
               "args": [
                 {
                   "phase": "move",
@@ -6042,12 +5847,71 @@
                   }
                 }
               ]
-            },
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
             {
-              "fn": "bare.onDown",
+              "fn": "bare.enabledFor",
               "args": [
                 {
-                  "phase": "down",
+                  "id": "pointer",
+                  "cursor": "default",
+                  "enables": {
+                    "$set": [
+                      "text-select",
+                      "annotation-edit",
+                      "annotation-marquee",
+                      "form-fill",
+                      "link-nav"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "hover.enabledFor",
+              "args": [
+                {
+                  "id": "pointer",
+                  "cursor": "default",
+                  "enables": {
+                    "$set": [
+                      "text-select",
+                      "annotation-edit",
+                      "annotation-marquee",
+                      "form-fill",
+                      "link-nav"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "hover.onHover",
+              "args": [
+                {
+                  "phase": "move",
                   "viewport": {
                     "x": 10,
                     "y": 20
@@ -6072,25 +5936,6 @@
               ]
             }
           ],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 2
-            }
-          },
-          "outcome": {
-            "returned": {
-              "$undefined": true
-            }
-          }
-        },
-        {
-          "settled": [],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [],
-          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
@@ -6885,34 +6730,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "full.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -6923,8 +6740,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },
@@ -6933,36 +6753,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "full.onCancel",
-              "args": [
-                {
-                  "phase": "cancel",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
@@ -7137,62 +6928,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "full.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "upOnly.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -7203,8 +6938,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },
@@ -7213,36 +6951,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "upOnly.onUp",
-              "args": [
-                {
-                  "phase": "cancel",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
@@ -7315,90 +7024,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "full.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "upOnly.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "none.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -7409,8 +7034,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },
@@ -7933,34 +7561,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "h.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -7971,8 +7571,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },
@@ -7999,34 +7602,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "h.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -8037,8 +7612,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },
@@ -8633,64 +8211,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "lensA.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "source": "lens-a",
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "any.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "source": "lens-a",
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -8701,8 +8221,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },
@@ -8729,35 +8252,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "any.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "source": "lens-c",
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -8768,8 +8262,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },
@@ -8832,90 +8329,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "lensA.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "lensB.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "any.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -8926,8 +8339,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },
@@ -9609,34 +9025,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "owner.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -9647,8 +9035,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },
@@ -9835,34 +9226,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "late.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -9873,8 +9236,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },
@@ -9904,7 +9270,25 @@
           "engine": [],
           "callbacks": [
             {
-              "fn": "late.onMove",
+              "fn": "late.enabledFor",
+              "args": [
+                {
+                  "id": "pointer",
+                  "cursor": "default",
+                  "enables": {
+                    "$set": [
+                      "text-select",
+                      "annotation-edit",
+                      "annotation-marquee",
+                      "form-fill",
+                      "link-nav"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "late.onHover",
               "args": [
                 {
                   "phase": "move",
@@ -9950,36 +9334,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "late.onUp",
-              "args": [
-                {
-                  "phase": "up",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
@@ -10435,35 +9790,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "other.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "source": "lens-b",
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -10474,8 +9800,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },
@@ -10502,35 +9831,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "scoped.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "source": "lens-a",
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -10541,8 +9841,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },
@@ -10607,35 +9910,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "other.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "source": "lens-b",
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -10646,8 +9920,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         }
@@ -11045,34 +10322,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "h.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -11083,8 +10332,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           },
           "state": {
@@ -16709,44 +15961,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "h.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": true,
-                    "alt": false,
-                    "ctrl": true,
-                    "meta": false
-                  },
-                  "clickCount": 2,
-                  "pointerType": "pen",
-                  "gesture": "long-press",
-                  "source": "lens-a",
-                  "project": {
-                    "$function": true
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 1.5,
-                      "y": -2
-                    },
-                    "scale": 1.25,
-                    "rotation": 270,
-                    "zoom": 0.5
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -16757,8 +15971,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         }
@@ -19359,48 +18576,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "h.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "pointerType": "pen",
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "started",
-              "args": [
-                {
-                  "toolId": "pointer",
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  },
-                  "pointerType": "pen"
-                }
-              ]
             }
           ],
           "reports": [],
@@ -19411,8 +18586,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },
@@ -19421,50 +18599,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "h.onUp",
-              "args": [
-                {
-                  "phase": "up",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "pointerType": "pen",
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "ended",
-              "args": [
-                {
-                  "toolId": "pointer",
-                  "page": {
-                    "kind": "objectNumber",
-                    "pageObjectNumber": 1
-                  },
-                  "pointerType": "pen"
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
@@ -19501,34 +18636,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "h.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "started",
-              "args": [
-                {
-                  "toolId": "pointer",
-                  "page": null,
-                  "pointerType": "mouse"
-                }
-              ]
             }
           ],
           "reports": [],
@@ -19539,8 +18646,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },
@@ -19549,36 +18659,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "h.onCancel",
-              "args": [
-                {
-                  "phase": "cancel",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "cancelled",
-              "args": [
-                {
-                  "toolId": "pointer",
-                  "page": null,
-                  "pointerType": "mouse"
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
@@ -19615,34 +18696,6 @@
                   }
                 }
               ]
-            },
-            {
-              "fn": "h.onDown",
-              "args": [
-                {
-                  "phase": "down",
-                  "viewport": {
-                    "x": 10,
-                    "y": 20
-                  },
-                  "modifiers": {
-                    "shift": false,
-                    "alt": false,
-                    "ctrl": false,
-                    "meta": false
-                  },
-                  "page": {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "pageObjectNumber": 1
-                    },
-                    "point": {
-                      "x": 5,
-                      "y": 6
-                    }
-                  }
-                }
-              ]
             }
           ],
           "reports": [],
@@ -19653,8 +18706,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "TypeError",
+                "message": "handler.onPointerDown is not a function"
+              }
             }
           }
         },

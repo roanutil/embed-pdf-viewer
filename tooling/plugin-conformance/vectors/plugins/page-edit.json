@@ -896,7 +896,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1104,7 +1104,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1312,7 +1312,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1580,7 +1580,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1755,7 +1755,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -1970,7 +1970,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2145,7 +2145,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2360,7 +2360,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2535,7 +2535,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2810,7 +2810,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -2985,7 +2985,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3160,7 +3160,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3382,7 +3382,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3557,7 +3557,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3732,7 +3732,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -3954,7 +3954,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4129,7 +4129,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4304,7 +4304,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -4888,9 +4888,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
@@ -5278,9 +5278,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
@@ -5668,9 +5668,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000003",
                         "index": 0,
@@ -6058,9 +6058,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000004",
                         "index": 0,
@@ -6448,9 +6448,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000005",
                         "index": 0,
@@ -6895,7 +6895,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -6930,7 +6930,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -7303,7 +7303,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -7671,7 +7671,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -7706,7 +7706,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -8079,7 +8079,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -8114,7 +8114,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 3,
+                "pagesSequence": 3,
                 "pages": [
                   {
                     "index": 0,
@@ -8487,7 +8487,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 3,
+                  "pagesSequence": 3,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -8522,7 +8522,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 4,
+                "pagesSequence": 4,
                 "pages": [
                   {
                     "index": 0,
@@ -8895,7 +8895,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 4,
+                  "pagesSequence": 4,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -8930,7 +8930,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 5,
+                "pagesSequence": 5,
                 "pages": [
                   {
                     "index": 0,
@@ -9303,7 +9303,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 5,
+                  "pagesSequence": 5,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -9524,7 +9524,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 5,
+                  "pagesSequence": 5,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -9745,7 +9745,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 5,
+                  "pagesSequence": 5,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10113,7 +10113,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 5,
+                  "pagesSequence": 5,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -10689,9 +10689,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
@@ -10911,9 +10911,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "s2",
-              "sub": "other",
-              "ts": 0,
-              "serverId": null
+              "subject": "other",
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             }
           }
         },
@@ -11218,7 +11218,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11246,7 +11246,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -11592,7 +11592,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -11627,7 +11627,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -12000,7 +12000,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12368,7 +12368,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -12952,9 +12952,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
@@ -13348,9 +13348,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
@@ -13630,9 +13630,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000003",
                         "index": 0,
@@ -14028,7 +14028,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14063,7 +14063,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -14440,7 +14440,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -14475,7 +14475,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -14852,7 +14852,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15220,7 +15220,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15255,7 +15255,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 3,
+                "pagesSequence": 3,
                 "pages": [
                   {
                     "index": 0,
@@ -15521,7 +15521,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 3,
+                  "pagesSequence": 3,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15783,7 +15783,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 3,
+                  "pagesSequence": 3,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -15951,7 +15951,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 3,
+                  "pagesSequence": 3,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -16792,7 +16792,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17000,7 +17000,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17221,7 +17221,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17442,7 +17442,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17663,7 +17663,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -17884,7 +17884,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18105,7 +18105,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18326,7 +18326,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18547,7 +18547,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -18768,7 +18768,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19036,7 +19036,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19211,7 +19211,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19271,7 +19271,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "b",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -19439,7 +19439,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "b",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -19815,7 +19815,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -19990,7 +19990,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -20380,9 +20380,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
@@ -20526,9 +20526,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
@@ -21231,7 +21231,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21259,7 +21259,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -21632,7 +21632,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -21660,7 +21660,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -21926,7 +21926,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22188,7 +22188,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22347,7 +22347,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22609,7 +22609,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -22768,7 +22768,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23030,7 +23030,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -23710,9 +23710,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
@@ -24310,9 +24310,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
@@ -25016,9 +25016,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000003",
                         "index": 0,
@@ -26056,9 +26056,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000004",
                         "index": 0,
@@ -26473,7 +26473,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -26513,7 +26513,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -26734,7 +26734,281 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
+                "pages": [
+                  {
+                    "index": 0,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 10
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 100,
+                      "height": 200
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 100,
+                      "top": 200
+                    }
+                  },
+                  {
+                    "index": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 20
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 300,
+                      "height": 400
+                    },
+                    "rotation": 90,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 300,
+                      "top": 400
+                    }
+                  },
+                  {
+                    "index": 2,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 30
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 500,
+                      "height": 600
+                    },
+                    "rotation": 270,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 500,
+                      "top": 600
+                    }
+                  },
+                  {
+                    "index": 3,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 99
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 500,
+                      "height": 600
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 500,
+                      "top": 600
+                    }
+                  },
+                  {
+                    "index": 4,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 31
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 500,
+                      "height": 600
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 500,
+                      "top": 600
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "event": "pagesChanged",
+              "value": {
+                "documentId": "a",
+                "pagesSequence": 3,
                 "pages": [
                   {
                     "index": 0,
@@ -27224,7 +27498,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 3,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -27264,7 +27538,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 3,
+                "pagesSequence": 4,
                 "pages": [
                   {
                     "index": 0,
@@ -27538,7 +27812,334 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 4,
+                "pagesSequence": 5,
+                "pages": [
+                  {
+                    "index": 0,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 10
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 100,
+                      "height": 200
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 100,
+                      "top": 200
+                    }
+                  },
+                  {
+                    "index": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 20
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 300,
+                      "height": 400
+                    },
+                    "rotation": 90,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 300,
+                      "top": 400
+                    }
+                  },
+                  {
+                    "index": 2,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 30
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 500,
+                      "height": 600
+                    },
+                    "rotation": 270,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 500,
+                      "top": 600
+                    }
+                  },
+                  {
+                    "index": 3,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 99
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 500,
+                      "height": 600
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 500,
+                      "top": 600
+                    }
+                  },
+                  {
+                    "index": 4,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 98
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 500,
+                      "height": 600
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 500,
+                      "top": 600
+                    }
+                  },
+                  {
+                    "index": 5,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 32
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 500,
+                      "height": 600
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 500,
+                      "top": 600
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "event": "pagesChanged",
+              "value": {
+                "documentId": "a",
+                "pagesSequence": 6,
                 "pages": [
                   {
                     "index": 0,
@@ -28134,7 +28735,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 4,
+                  "pagesSequence": 6,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -28174,7 +28775,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 5,
+                "pagesSequence": 7,
                 "pages": [
                   {
                     "index": 0,
@@ -28501,7 +29102,387 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 6,
+                "pagesSequence": 8,
+                "pages": [
+                  {
+                    "index": 0,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 10
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 100,
+                      "height": 200
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 100,
+                      "top": 200
+                    }
+                  },
+                  {
+                    "index": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 20
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 300,
+                      "height": 400
+                    },
+                    "rotation": 90,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 300,
+                      "top": 400
+                    }
+                  },
+                  {
+                    "index": 2,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 33
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 300,
+                      "height": 400
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 300,
+                      "top": 400
+                    }
+                  },
+                  {
+                    "index": 3,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 97
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 300,
+                      "height": 400
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 300,
+                      "top": 400
+                    }
+                  },
+                  {
+                    "index": 4,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 30
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 500,
+                      "height": 600
+                    },
+                    "rotation": 270,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 500,
+                      "top": 600
+                    }
+                  },
+                  {
+                    "index": 5,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 99
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 500,
+                      "height": 600
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 500,
+                      "top": 600
+                    }
+                  },
+                  {
+                    "index": 6,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 98
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 500,
+                      "height": 600
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 500,
+                      "top": 600
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "event": "pagesChanged",
+              "value": {
+                "documentId": "a",
+                "pagesSequence": 9,
                 "pages": [
                   {
                     "index": 0,
@@ -29208,7 +30189,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 6,
+                  "pagesSequence": 9,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -29256,7 +30237,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 7,
+                "pagesSequence": 10,
                 "pages": [
                   {
                     "index": 0,
@@ -29742,7 +30723,652 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 8,
+                "pagesSequence": 11,
+                "pages": [
+                  {
+                    "index": 0,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 10
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 100,
+                      "height": 200
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 100,
+                        "height": 200
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 100,
+                      "top": 200
+                    }
+                  },
+                  {
+                    "index": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 34
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 612,
+                      "height": 792
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 612,
+                      "top": 792
+                    }
+                  },
+                  {
+                    "index": 2,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 35
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 612,
+                      "height": 792
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 612,
+                      "top": 792
+                    }
+                  },
+                  {
+                    "index": 3,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 36
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 612,
+                      "height": 792
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 612,
+                      "top": 792
+                    }
+                  },
+                  {
+                    "index": 4,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 96
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 612,
+                      "height": 792
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 612,
+                      "top": 792
+                    }
+                  },
+                  {
+                    "index": 5,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 95
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 612,
+                      "height": 792
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 612,
+                      "top": 792
+                    }
+                  },
+                  {
+                    "index": 6,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 94
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 612,
+                      "height": 792
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 612,
+                      "top": 792
+                    }
+                  },
+                  {
+                    "index": 7,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 20
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 300,
+                      "height": 400
+                    },
+                    "rotation": 90,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 300,
+                      "top": 400
+                    }
+                  },
+                  {
+                    "index": 8,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 97
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 300,
+                      "height": 400
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 300,
+                        "height": 400
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 300,
+                      "top": 400
+                    }
+                  },
+                  {
+                    "index": 9,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 30
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 500,
+                      "height": 600
+                    },
+                    "rotation": 270,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 500,
+                      "top": 600
+                    }
+                  },
+                  {
+                    "index": 10,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 99
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 500,
+                      "height": 600
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 500,
+                      "top": 600
+                    }
+                  },
+                  {
+                    "index": 11,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 98
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 500,
+                      "height": 600
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 500,
+                        "height": 600
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 500,
+                      "top": 600
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "event": "pagesChanged",
+              "value": {
+                "documentId": "a",
+                "pagesSequence": 12,
                 "pages": [
                   {
                     "index": 0,
@@ -30769,7 +32395,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 8,
+                  "pagesSequence": 12,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -31308,7 +32934,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 8,
+                  "pagesSequence": 12,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -31847,7 +33473,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 8,
+                  "pagesSequence": 12,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -32851,7 +34477,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 8,
+                  "pagesSequence": 12,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -33428,7 +35054,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -33649,7 +35275,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -33870,7 +35496,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34091,7 +35717,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34312,7 +35938,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -34992,9 +36618,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
@@ -35592,9 +37218,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
@@ -35968,7 +37594,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36008,7 +37634,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -36484,7 +38110,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -36524,7 +38150,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -37111,7 +38737,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -37438,7 +39064,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -38018,7 +39644,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -38571,7 +40197,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -38819,7 +40445,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39217,9 +40843,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
@@ -39499,9 +41125,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
@@ -39719,7 +41345,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39780,7 +41406,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -39820,7 +41446,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -39882,7 +41508,122 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
+                "pages": [
+                  {
+                    "index": 0,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 99
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 612,
+                      "height": 792
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 612,
+                      "top": 792
+                    }
+                  },
+                  {
+                    "index": 1,
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "label": null,
+                    "size": {
+                      "width": 612,
+                      "height": 792
+                    },
+                    "rotation": 0,
+                    "userUnit": 1,
+                    "tabOrder": null,
+                    "boxes": {
+                      "media": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "crop": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "bleed": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "trim": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      },
+                      "art": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 612,
+                        "height": 792
+                      }
+                    },
+                    "pdfCropBox": {
+                      "left": 0,
+                      "bottom": 0,
+                      "right": 612,
+                      "top": 792
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "event": "pagesChanged",
+              "value": {
+                "documentId": "a",
+                "pagesSequence": 3,
                 "pages": [
                   {
                     "index": 0,
@@ -40054,7 +41795,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 3,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40094,7 +41835,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 3,
+                "pagesSequence": 4,
                 "pages": [
                   {
                     "index": 0,
@@ -40358,7 +42099,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 3,
+                  "pagesSequence": 4,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40526,7 +42267,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 3,
+                  "pagesSequence": 4,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -40788,7 +42529,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 3,
+                  "pagesSequence": 4,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -41999,9 +43740,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
@@ -42245,9 +43986,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 1,
@@ -42491,9 +44232,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 2,
@@ -42905,7 +44646,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -42940,7 +44681,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -43443,7 +45184,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -43717,7 +45458,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -44191,7 +45932,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -44765,9 +46506,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
@@ -45153,9 +46894,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
@@ -45541,9 +47282,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000003",
                         "index": 0,
@@ -45944,7 +47685,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -45979,7 +47720,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -46352,7 +48093,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -46387,7 +48128,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -46765,7 +48506,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -47009,7 +48750,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -47230,7 +48971,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -47598,7 +49339,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -48392,9 +50133,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
@@ -48985,7 +50726,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -49029,7 +50770,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -49674,7 +51415,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -50004,7 +51745,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -50363,7 +52104,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -50727,7 +52468,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -51407,9 +53148,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00004996-02d2-7000-8000-000000000001",
                         "index": 0,
@@ -52085,7 +53826,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -52290,7 +54031,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -52330,7 +54071,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -52859,7 +54600,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -53165,7 +54906,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -53471,7 +55212,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -53777,7 +55518,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -54083,7 +55824,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -54389,7 +56130,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -54695,7 +56436,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -55001,7 +56742,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -55307,7 +57048,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -55613,7 +57354,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -56551,9 +58292,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
@@ -56744,9 +58485,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 1,
@@ -56937,9 +58678,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 2,
@@ -57282,7 +59023,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -57317,7 +59058,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -57710,7 +59451,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -58078,7 +59819,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -58758,9 +60499,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
@@ -59358,9 +61099,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
@@ -59963,7 +61704,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -60231,7 +61972,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -60406,7 +62147,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -60450,7 +62191,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -60951,7 +62692,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -61126,7 +62867,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -61170,7 +62911,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -61777,7 +63518,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -61952,7 +63693,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -62286,7 +64027,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -62461,7 +64202,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -62795,7 +64536,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -62970,7 +64711,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -63332,7 +65073,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -63507,7 +65248,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -64305,9 +66046,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
@@ -65011,9 +66752,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
@@ -65424,7 +67165,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -65468,7 +67209,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -66066,7 +67807,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -66106,7 +67847,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -66800,7 +68541,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -67180,7 +68921,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -67560,7 +69301,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -67947,7 +69688,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -68633,7 +70374,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -69088,9 +70829,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
@@ -69301,9 +71042,9 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
                       "tx": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
@@ -70225,7 +71966,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -70339,7 +72080,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 1,
+                "pagesSequence": 1,
                 "pages": [
                   {
                     "index": 0,
@@ -70841,7 +72582,7 @@
                       [
                         77,
                         {
-                          "look": "copy",
+                          "kind": "copy",
                           "of": {
                             "kind": "objectNumber",
                             "objectNumber": 10
@@ -70850,7 +72591,7 @@
                       ]
                     ]
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -71409,7 +73150,7 @@
                       [
                         77,
                         {
-                          "look": "copy",
+                          "kind": "copy",
                           "of": {
                             "kind": "objectNumber",
                             "objectNumber": 10
@@ -71418,7 +73159,7 @@
                       ]
                     ]
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -71771,7 +73512,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -72328,7 +74069,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 1,
+                  "pagesSequence": 1,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -72679,7 +74420,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 2,
+                "pagesSequence": 2,
                 "pages": [
                   {
                     "index": 0,
@@ -73064,7 +74805,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -73624,7 +75365,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -74028,7 +75769,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -74588,7 +76329,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 2,
+                  "pagesSequence": 2,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -75158,7 +76899,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 3,
+                "pagesSequence": 3,
                 "pages": [
                   {
                     "index": 0,
@@ -75643,12 +77384,12 @@
                       [
                         20,
                         {
-                          "look": "own"
+                          "kind": "own"
                         }
                       ]
                     ]
                   },
-                  "revision": 3,
+                  "pagesSequence": 3,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -76317,12 +78058,12 @@
                       [
                         20,
                         {
-                          "look": "own"
+                          "kind": "own"
                         }
                       ]
                     ]
                   },
-                  "revision": 3,
+                  "pagesSequence": 3,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -76843,7 +78584,7 @@
               "event": "pagesChanged",
               "value": {
                 "documentId": "a",
-                "revision": 4,
+                "pagesSequence": 4,
                 "pages": [
                   {
                     "index": 0,
@@ -77447,18 +79188,18 @@
                       [
                         20,
                         {
-                          "look": "own"
+                          "kind": "own"
                         }
                       ],
                       [
                         88,
                         {
-                          "look": "blank"
+                          "kind": "blank"
                         }
                       ]
                     ]
                   },
-                  "revision": 4,
+                  "pagesSequence": 4,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -78182,18 +79923,18 @@
                       [
                         20,
                         {
-                          "look": "own"
+                          "kind": "own"
                         }
                       ],
                       [
                         88,
                         {
-                          "look": "blank"
+                          "kind": "blank"
                         }
                       ]
                     ]
                   },
-                  "revision": 4,
+                  "pagesSequence": 4,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -78963,7 +80704,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -79171,7 +80912,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -79379,7 +81120,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -79608,7 +81349,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -79834,7 +81575,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -80072,7 +81813,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },
@@ -80280,7 +82021,7 @@
                   "pendingPages": {
                     "$map": []
                   },
-                  "revision": 0,
+                  "pagesSequence": 0,
                   "renderPolicy": {
                     "kind": "continuous"
                   },

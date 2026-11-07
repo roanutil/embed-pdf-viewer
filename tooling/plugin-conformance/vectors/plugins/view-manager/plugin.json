@@ -5066,7 +5066,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-1"
           ]
@@ -5100,7 +5100,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-1"
           ]
@@ -13998,7 +13998,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-4",
             {
@@ -14045,7 +14045,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-3"
           ]
@@ -14079,7 +14079,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-1"
           ]
@@ -14121,7 +14121,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-2",
             {
@@ -14172,7 +14172,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-6",
             {
@@ -14209,7 +14209,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-5"
           ]
@@ -18168,7 +18168,7 @@
           "target": {
             "token": "view-manager"
           },
-          "method": "removePane",
+          "method": "deletePane",
           "args": [
             "pane-2"
           ]
@@ -18252,6 +18252,24 @@
           "status": "created",
           "engineState": {},
           "outcome": {
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] \"onPaneRemoved\" is not a function"
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
             "returned": {
               "$ref": 1
             }
@@ -18284,21 +18302,6 @@
           "outcome": {
             "returned": {
               "$ref": 3
-            }
-          }
-        },
-        {
-          "settled": [],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [],
-          "callbacks": [],
-          "reports": [],
-          "status": "created",
-          "engineState": {},
-          "outcome": {
-            "returned": {
-              "$ref": 4
             }
           }
         },
@@ -19005,14 +19008,6 @@
                   "toPaneId": "pane-1"
                 }
               ]
-            },
-            {
-              "fn": "removed",
-              "args": [
-                {
-                  "paneId": "pane-2"
-                }
-              ]
             }
           ],
           "reports": [
@@ -19248,8 +19243,11 @@
             }
           },
           "outcome": {
-            "returned": {
-              "$undefined": true
+            "threw": {
+              "$error": {
+                "name": "Error",
+                "message": "[scenario] no ref 4"
+              }
             }
           }
         },

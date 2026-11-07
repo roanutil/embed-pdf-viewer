@@ -4313,7 +4313,7 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -4660,7 +4660,7 @@
                   "integrity": "valid",
                   "cryptography": "valid",
                   "trust": "trusted",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -5013,7 +5013,7 @@
                   "cryptography": "valid",
                   "trust": "untrusted",
                   "trustReason": "No valid certificate paths found",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -5354,7 +5354,7 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -5690,7 +5690,7 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -6013,7 +6013,7 @@
                   "integrity": "indeterminate",
                   "cryptography": "unsupported",
                   "trust": "unknown",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -6475,7 +6475,7 @@
                   "integrity": "indeterminate",
                   "cryptography": "unsupported",
                   "trust": "unknown",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -6519,7 +6519,7 @@
                   "integrity": "indeterminate",
                   "cryptography": "unsupported",
                   "trust": "unknown",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -6563,7 +6563,7 @@
                   "integrity": "indeterminate",
                   "cryptography": "unsupported",
                   "trust": "unknown",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -6607,7 +6607,7 @@
                   "integrity": "indeterminate",
                   "cryptography": "unsupported",
                   "trust": "unknown",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -6889,7 +6889,7 @@
                   "integrity": "invalid",
                   "cryptography": "unsupported",
                   "trust": "unknown",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -7177,7 +7177,7 @@
                   "integrity": "indeterminate",
                   "cryptography": "unsupported",
                   "trust": "unknown",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -7475,7 +7475,7 @@
                   "integrity": "invalid",
                   "cryptography": "unsupported",
                   "trust": "unknown",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -7775,7 +7775,7 @@
                   "integrity": "indeterminate",
                   "cryptography": "unsupported",
                   "trust": "unknown",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -8080,7 +8080,7 @@
                   "cryptography": "invalid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -8416,7 +8416,7 @@
                   "cryptography": "unsupported",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -8749,7 +8749,7 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -9110,7 +9110,7 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -9483,7 +9483,7 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -9855,7 +9855,7 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -10226,7 +10226,7 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {
@@ -10604,12 +10604,8 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
-                    "kind": "timestamp",
-                    "genTime": {
-                      "$date": 1906502400000
-                    },
-                    "tokenVerified": true
+                  "validationTime": {
+                    "kind": "now"
                   },
                   "modifications": {
                     "verdict": "permitted",
@@ -10967,7 +10963,7 @@
                   "cryptography": "valid",
                   "trust": "unknown",
                   "trustReason": "no trust anchors configured",
-                  "validatedAt": {
+                  "validationTime": {
                     "kind": "now"
                   },
                   "modifications": {

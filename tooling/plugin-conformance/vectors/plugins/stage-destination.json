@@ -30,7 +30,7 @@
             "width": 0,
             "height": 0
           },
-          "anchor": {
+          "align": {
             "x": "start",
             "y": "start"
           },
@@ -67,7 +67,7 @@
             "width": 0,
             "height": 0
           },
-          "anchor": {
+          "align": {
             "x": "keep",
             "y": "start"
           },
@@ -102,7 +102,7 @@
             "width": 0,
             "height": 0
           },
-          "anchor": {
+          "align": {
             "x": "start",
             "y": "keep"
           },
@@ -119,6 +119,12 @@
           "page": {
             "kind": "objectNumber",
             "objectNumber": 12
+          },
+          "x": {
+            "$number": "NaN"
+          },
+          "y": {
+            "$number": "NaN"
           }
         },
         {
@@ -129,14 +135,18 @@
       "outcome": {
         "returned": {
           "rect": {
-            "x": 0,
-            "y": 0,
+            "x": {
+              "$number": "NaN"
+            },
+            "y": {
+              "$number": "NaN"
+            },
             "width": 0,
             "height": 0
           },
-          "anchor": {
-            "x": "keep",
-            "y": "keep"
+          "align": {
+            "x": "start",
+            "y": "start"
           },
           "zoom": "keep"
         }
@@ -169,7 +179,7 @@
             "width": 0,
             "height": 0
           },
-          "anchor": {
+          "align": {
             "x": "start",
             "y": "start"
           },
@@ -206,7 +216,7 @@
             "width": 0,
             "height": 0
           },
-          "anchor": {
+          "align": {
             "x": "start",
             "y": "start"
           },
@@ -242,7 +252,7 @@
             "width": 0,
             "height": 0
           },
-          "anchor": {
+          "align": {
             "x": "start",
             "y": "start"
           },
@@ -277,7 +287,7 @@
             "width": 0,
             "height": 0
           },
-          "anchor": {
+          "align": {
             "x": "start",
             "y": "start"
           },
@@ -357,7 +367,7 @@
             "height": 0
           },
           "zoom": "fit-width",
-          "anchor": {
+          "align": {
             "y": "start"
           }
         }
@@ -389,7 +399,7 @@
             "height": 0
           },
           "zoom": "fit-width",
-          "anchor": {
+          "align": {
             "y": "keep"
           }
         }
@@ -404,6 +414,9 @@
           "page": {
             "kind": "objectNumber",
             "objectNumber": 12
+          },
+          "y": {
+            "$number": "NaN"
           }
         },
         {
@@ -415,13 +428,15 @@
         "returned": {
           "rect": {
             "x": 0,
-            "y": 0,
+            "y": {
+              "$number": "NaN"
+            },
             "width": 600,
             "height": 0
           },
           "zoom": "fit-width",
-          "anchor": {
-            "y": "keep"
+          "align": {
+            "y": "start"
           }
         }
       }
@@ -452,7 +467,7 @@
             "height": 0
           },
           "zoom": "fit-width",
-          "anchor": {
+          "align": {
             "y": "start"
           }
         }
@@ -484,7 +499,7 @@
             "height": 792
           },
           "zoom": "fit-height",
-          "anchor": {
+          "align": {
             "x": "start"
           }
         }
@@ -516,7 +531,7 @@
             "height": 780
           },
           "zoom": "fit-height",
-          "anchor": {
+          "align": {
             "x": "keep"
           }
         }
@@ -548,7 +563,7 @@
             "height": 780
           },
           "zoom": "fit-height",
-          "anchor": {
+          "align": {
             "x": "start"
           }
         }
@@ -700,7 +715,7 @@
             "height": 0
           },
           "zoom": "fit-width",
-          "anchor": {
+          "align": {
             "y": "start"
           }
         }
@@ -732,7 +747,7 @@
             "height": 0
           },
           "zoom": "fit-width",
-          "anchor": {
+          "align": {
             "y": "keep"
           }
         }
@@ -747,6 +762,9 @@
           "page": {
             "kind": "objectNumber",
             "objectNumber": 12
+          },
+          "y": {
+            "$number": "NaN"
           }
         },
         {
@@ -758,13 +776,15 @@
         "returned": {
           "rect": {
             "x": 0,
-            "y": 0,
+            "y": {
+              "$number": "NaN"
+            },
             "width": 612,
             "height": 0
           },
           "zoom": "fit-width",
-          "anchor": {
-            "y": "keep"
+          "align": {
+            "y": "start"
           }
         }
       }
@@ -795,7 +815,7 @@
             "height": 780
           },
           "zoom": "fit-height",
-          "anchor": {
+          "align": {
             "x": "start"
           }
         }
@@ -827,7 +847,7 @@
             "height": 792
           },
           "zoom": "fit-height",
-          "anchor": {
+          "align": {
             "x": "keep"
           }
         }
@@ -842,6 +862,9 @@
           "page": {
             "kind": "objectNumber",
             "objectNumber": 12
+          },
+          "x": {
+            "$number": "NaN"
           }
         },
         {
@@ -852,14 +875,16 @@
       "outcome": {
         "returned": {
           "rect": {
-            "x": 0,
+            "x": {
+              "$number": "NaN"
+            },
             "y": 0,
             "width": 0,
             "height": 792
           },
           "zoom": "fit-height",
-          "anchor": {
-            "x": "keep"
+          "align": {
+            "x": "start"
           }
         }
       }
@@ -912,7 +937,7 @@
             "width": 0,
             "height": 0
           },
-          "anchor": {
+          "align": {
             "x": "start",
             "y": "start"
           },

@@ -5,7 +5,7 @@
   "cases": [
     {
       "name": "initial-state",
-      "fn": "initialViewManagerState",
+      "fn": "initialViewManagerModel",
       "args": [],
       "outcome": {
         "returned": {
@@ -124,7 +124,7 @@
     },
     {
       "name": "remove-unknown-is-ignored",
-      "fn": "removePane",
+      "fn": "deletePane",
       "args": [
         {
           "panes": {
@@ -197,7 +197,7 @@
     },
     {
       "name": "remove-focused-focuses-the-last",
-      "fn": "removePane",
+      "fn": "deletePane",
       "args": [
         {
           "panes": {
@@ -262,7 +262,7 @@
     },
     {
       "name": "remove-unfocused-keeps-focus",
-      "fn": "removePane",
+      "fn": "deletePane",
       "args": [
         {
           "panes": {
@@ -325,7 +325,7 @@
     },
     {
       "name": "remove-the-only-view",
-      "fn": "removePane",
+      "fn": "deletePane",
       "args": [
         {
           "panes": {

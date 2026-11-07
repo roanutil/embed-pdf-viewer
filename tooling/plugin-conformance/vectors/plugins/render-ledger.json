@@ -11,7 +11,8 @@
         "returned": {
           "contentEpochs": {},
           "annotationEpochs": {},
-          "fieldEpochs": {}
+          "fieldEpochs": {},
+          "snapshot": null
         }
       }
     },
@@ -22,7 +23,8 @@
         {
           "contentEpochs": {},
           "annotationEpochs": {},
-          "fieldEpochs": {}
+          "fieldEpochs": {},
+          "snapshot": null
         },
         [
           11
@@ -37,7 +39,8 @@
             "annotationEpochs": {
               "11": 1
             },
-            "fieldEpochs": {}
+            "fieldEpochs": {},
+            "snapshot": null
           }
         }
       }

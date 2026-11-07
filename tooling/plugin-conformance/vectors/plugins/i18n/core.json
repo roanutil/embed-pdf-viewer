@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "kind": "function",
-  "describes": "packages/plugin/i18n: translate, interpolate, negotiateLocale, initialI18nState and named state transitions.",
+  "describes": "packages/plugin/i18n: translate, interpolate, negotiateLocale, initialI18nModel and named state transitions.",
   "cases": [
     {
       "name": "translate-current-locale",
@@ -2284,6 +2284,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2298,6 +2300,8 @@
           "locale": "en",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -2310,6 +2314,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2390,6 +2396,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -2402,6 +2410,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2501,6 +2511,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -2513,6 +2525,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2643,6 +2657,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -2655,6 +2671,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2711,6 +2729,8 @@
             }
           },
           "loading": "ar",
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -2723,6 +2743,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2774,7 +2796,7 @@
       ],
       "outcome": {
         "returned": {
-          "locale": "ar",
+          "locale": "en",
           "locales": {
             "en": {
               "code": "en",
@@ -2814,7 +2836,9 @@
               }
             }
           },
-          "loading": null,
+          "loading": "ar",
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -2827,6 +2851,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2883,6 +2909,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -2895,6 +2923,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2937,6 +2967,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -2949,6 +2981,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2965,6 +2999,8 @@
           "locale": "en",
           "locales": {},
           "loading": "ar",
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -2977,6 +3013,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2993,6 +3031,8 @@
           "locale": "toString",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -4096,13 +4136,15 @@
     },
     {
       "name": "initial-empty-state",
-      "fn": "initialI18nState",
+      "fn": "initialI18nModel",
       "args": [],
       "outcome": {
         "returned": {
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -4153,31 +4195,11 @@
         "es"
       ],
       "outcome": {
-        "returned": {
-          "locale": "es",
-          "locales": {
-            "en": {
-              "code": "en",
-              "name": "English",
-              "translations": {
-                "commands": {
-                  "zoom": {
-                    "in": "Zoom In",
-                    "out": "Zoom Out"
-                  },
-                  "save": "Save"
-                },
-                "zoomLevel": "Zoom Level ({level}%)",
-                "pages": {
-                  "one": "{count} page",
-                  "other": "{count} pages"
-                },
-                "greeting": "Hello {name}, you have {count} {unknown}"
-              }
-            }
-          },
-          "loading": null,
-          "waitingTranslations": {}
+        "threw": {
+          "$error": {
+            "name": "TypeError",
+            "message": "Cannot destructure 'state.fetched' as it is undefined."
+          }
         }
       }
     },
@@ -4315,44 +4337,11 @@
       ],
       "covers": "An Object.prototype member reads as registered, so the transition copies the packs and deletes nothing: a new state with the same content.",
       "outcome": {
-        "returned": {
-          "locale": "es",
-          "locales": {
-            "en": {
-              "code": "en",
-              "name": "English",
-              "translations": {
-                "commands": {
-                  "zoom": {
-                    "in": "Zoom In",
-                    "out": "Zoom Out"
-                  },
-                  "save": "Save"
-                },
-                "zoomLevel": "Zoom Level ({level}%)",
-                "pages": {
-                  "one": "{count} page",
-                  "other": "{count} pages"
-                },
-                "greeting": "Hello {name}, you have {count} {unknown}"
-              }
-            },
-            "es": {
-              "code": "es",
-              "name": "Español",
-              "translations": {
-                "commands": {
-                  "save": "Guardar"
-                },
-                "pages": {
-                  "one": "{count} página",
-                  "other": "{count} páginas"
-                }
-              }
-            }
-          },
-          "loading": null,
-          "waitingTranslations": {}
+        "threw": {
+          "$error": {
+            "name": "TypeError",
+            "message": "Cannot destructure 'state.fetched' as it is undefined."
+          }
         }
       }
     },

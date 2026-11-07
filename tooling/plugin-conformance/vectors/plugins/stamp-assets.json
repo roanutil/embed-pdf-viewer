@@ -145,6 +145,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 1,
                   "pages": [
                     {
@@ -258,6 +259,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -634,6 +636,7 @@
                     "modifiedBy": null,
                     "importedBy": null,
                     "actions": null,
+                    "richText": null,
                     "box": {
                       "x": 0,
                       "y": 0,
@@ -655,7 +658,7 @@
                     "cacheDelta": null,
                     "opId": "asset-engine-write",
                     "undoable": true,
-                    "changed": [
+                    "changedRefs": [
                       {
                         "kind": "objectNumber",
                         "page": {
@@ -767,6 +770,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -912,6 +916,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -1046,6 +1051,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -1173,6 +1179,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -1339,6 +1346,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -1487,6 +1495,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -1970,6 +1979,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 1,
                   "pages": [
                     {
@@ -2083,6 +2093,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -2459,6 +2470,7 @@
                     "modifiedBy": null,
                     "importedBy": null,
                     "actions": null,
+                    "richText": null,
                     "box": {
                       "x": 0,
                       "y": 0,
@@ -2480,7 +2492,7 @@
                     "cacheDelta": null,
                     "opId": "asset-engine-write",
                     "undoable": true,
-                    "changed": [
+                    "changedRefs": [
                       {
                         "kind": "objectNumber",
                         "page": {
@@ -2604,6 +2616,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -2749,6 +2762,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -2883,6 +2897,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -3010,6 +3025,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -3176,6 +3192,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -3324,6 +3341,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -3878,7 +3896,7 @@
           "target": {
             "token": "stamp"
           },
-          "method": "readAssetBytes",
+          "method": "getAssetBytes",
           "args": [
             "stamp-lib-0-3:Photo"
           ]
@@ -4485,7 +4503,7 @@
               "args": [
                 {
                   "libraryId": "stamp-lib-0-0",
-                  "reason": "created"
+                  "type": "created"
                 }
               ]
             },
@@ -4508,7 +4526,7 @@
               "args": [
                 {
                   "libraryId": "stamp-lib-0-0",
-                  "reason": "asset-added"
+                  "type": "asset-created"
                 }
               ]
             },
@@ -5011,7 +5029,7 @@
               "args": [
                 {
                   "libraryId": "stamp-lib-0-3",
-                  "reason": "created"
+                  "type": "created"
                 }
               ]
             },
@@ -5034,7 +5052,7 @@
               "args": [
                 {
                   "libraryId": "stamp-lib-0-3",
-                  "reason": "asset-added"
+                  "type": "asset-created"
                 }
               ]
             },
@@ -5430,8 +5448,7 @@
             "returned": {
               "bytes": {
                 "$bytes": "cG5nLTkwMA=="
-              },
-              "mimeType": "image/png"
+              }
             }
           },
           "state": {
@@ -5853,6 +5870,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 1,
                   "pages": [
                     {
@@ -5966,6 +5984,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -6342,6 +6361,7 @@
                     "modifiedBy": null,
                     "importedBy": null,
                     "actions": null,
+                    "richText": null,
                     "box": {
                       "x": 0,
                       "y": 0,
@@ -6363,7 +6383,7 @@
                     "cacheDelta": null,
                     "opId": "asset-engine-write",
                     "undoable": true,
-                    "changed": [
+                    "changedRefs": [
                       {
                         "kind": "objectNumber",
                         "page": {
@@ -6475,6 +6495,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -6620,6 +6641,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -6754,6 +6776,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -6881,6 +6904,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -7047,6 +7071,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -7195,6 +7220,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -7678,6 +7704,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 1,
                   "pages": [
                     {
@@ -7791,6 +7818,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -8167,6 +8195,7 @@
                     "modifiedBy": null,
                     "importedBy": null,
                     "actions": null,
+                    "richText": null,
                     "box": {
                       "x": 0,
                       "y": 0,
@@ -8188,7 +8217,7 @@
                     "cacheDelta": null,
                     "opId": "asset-engine-write",
                     "undoable": true,
-                    "changed": [
+                    "changedRefs": [
                       {
                         "kind": "objectNumber",
                         "page": {
@@ -8300,6 +8329,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -8445,6 +8475,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -8579,6 +8610,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -8706,6 +8738,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -8872,6 +8905,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -9020,6 +9054,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -9503,6 +9538,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 1,
                   "pages": [
                     {
@@ -9616,6 +9652,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -9992,6 +10029,7 @@
                     "modifiedBy": null,
                     "importedBy": null,
                     "actions": null,
+                    "richText": null,
                     "box": {
                       "x": 0,
                       "y": 0,
@@ -10013,7 +10051,7 @@
                     "cacheDelta": null,
                     "opId": "asset-engine-write",
                     "undoable": true,
-                    "changed": [
+                    "changedRefs": [
                       {
                         "kind": "objectNumber",
                         "page": {
@@ -10125,6 +10163,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -10270,6 +10309,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -10404,6 +10444,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -10531,6 +10572,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -10697,6 +10739,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -10845,6 +10888,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -13502,6 +13546,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 1,
                   "pages": [
                     {
@@ -13615,6 +13660,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -13995,6 +14041,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -14140,6 +14187,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -14274,6 +14322,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -14401,6 +14450,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -14567,6 +14617,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -14715,6 +14766,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -15198,6 +15250,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 1,
                   "pages": [
                     {
@@ -15311,6 +15364,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -15691,6 +15745,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -15836,6 +15891,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -15970,6 +16026,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -16097,6 +16154,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -16263,6 +16321,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -16411,6 +16470,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -16894,6 +16954,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 1,
                   "pages": [
                     {
@@ -17007,6 +17068,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -17387,6 +17449,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -17532,6 +17595,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -17666,6 +17730,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -17793,6 +17858,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -17959,6 +18025,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -18107,6 +18174,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -20156,8 +20224,7 @@
             "returned": {
               "bytes": {
                 "$bytes": "cG5nLTkwMA=="
-              },
-              "mimeType": "image/png"
+              }
             }
           },
           "state": {
@@ -20974,6 +21041,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 1,
                   "pages": [
                     {
@@ -21087,6 +21155,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -21463,6 +21532,7 @@
                     "modifiedBy": null,
                     "importedBy": null,
                     "actions": null,
+                    "richText": null,
                     "box": {
                       "x": 0,
                       "y": 0,
@@ -21484,7 +21554,7 @@
                     "cacheDelta": null,
                     "opId": "asset-engine-write",
                     "undoable": true,
-                    "changed": [
+                    "changedRefs": [
                       {
                         "kind": "objectNumber",
                         "page": {
@@ -21596,6 +21666,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -21741,6 +21812,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -21875,6 +21947,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -22002,6 +22075,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -22168,6 +22242,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -22316,6 +22391,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -22890,6 +22966,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -23098,6 +23175,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -23296,6 +23374,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -23487,6 +23566,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 3,
                   "pages": [
                     {
@@ -23717,6 +23797,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -23928,6 +24009,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -24149,6 +24231,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -25819,6 +25902,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 1,
                   "pages": [
                     {
@@ -25932,6 +26016,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -26324,6 +26409,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -26479,6 +26565,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -26624,6 +26711,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -26762,6 +26850,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -26939,6 +27028,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -27087,6 +27177,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -27625,7 +27716,7 @@
           "target": {
             "token": "stamp"
           },
-          "method": "readAssetBytes",
+          "method": "getAssetBytes",
           "args": [
             "stamp-lib-0-1:Signed"
           ]
@@ -28174,7 +28265,7 @@
               "args": [
                 {
                   "libraryId": "stamp-lib-0-1",
-                  "reason": "imported"
+                  "type": "imported"
                 }
               ]
             },
@@ -28501,7 +28592,7 @@
               "args": [
                 {
                   "libraryId": "stamp-lib-0-1",
-                  "reason": "asset-added"
+                  "type": "asset-created"
                 }
               ]
             },
@@ -28924,8 +29015,7 @@
             "returned": {
               "bytes": {
                 "$bytes": "cG5nLTEwMQ=="
-              },
-              "mimeType": "image/png"
+              }
             }
           },
           "state": {
@@ -29068,6 +29158,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 1,
                   "pages": [
                     {
@@ -29181,6 +29272,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -29561,6 +29653,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -29716,6 +29809,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -29861,6 +29955,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -29999,6 +30094,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -30176,6 +30272,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -30324,6 +30421,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -31616,6 +31714,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 1,
                   "pages": [
                     {
@@ -31729,6 +31828,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -32120,6 +32220,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -32315,6 +32416,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 3,
                   "pages": [
                     {
@@ -32534,6 +32636,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -32735,6 +32838,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -32946,6 +33050,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -33562,6 +33667,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -33631,6 +33737,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 1,
                   "pages": [
                     {
@@ -33744,6 +33851,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -34132,6 +34240,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -34287,6 +34396,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -34432,6 +34542,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -34570,6 +34681,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -34747,6 +34859,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -34895,6 +35008,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -35424,6 +35538,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -35579,6 +35694,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -35724,6 +35840,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -35862,6 +35979,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -36039,6 +36157,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -36187,6 +36306,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -37803,6 +37923,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 1,
                   "pages": [
                     {
@@ -37916,6 +38037,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -38303,6 +38425,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -38458,6 +38581,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -38603,6 +38727,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -38741,6 +38866,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -38918,6 +39044,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -39066,6 +39193,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -39587,6 +39715,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -39742,6 +39871,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -39887,6 +40017,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -40025,6 +40156,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -40202,6 +40334,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -40350,6 +40483,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -41437,7 +41571,7 @@
               "args": [
                 {
                   "libraryId": "stamp-lib-0-1",
-                  "reason": "imported"
+                  "type": "imported"
                 }
               ]
             },
@@ -42087,7 +42221,7 @@
               "args": [
                 {
                   "libraryId": "stamp-lib-0-1",
-                  "reason": "asset-added"
+                  "type": "asset-created"
                 }
               ]
             },
@@ -42424,6 +42558,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -42590,6 +42725,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -42738,6 +42874,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -43136,7 +43273,7 @@
           "target": {
             "token": "stamp"
           },
-          "method": "readAssetBytes",
+          "method": "getAssetBytes",
           "args": [
             "stamp-lib-0-1:Stamp1"
           ]
@@ -44266,6 +44403,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -44432,6 +44570,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -44580,6 +44719,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -45049,6 +45189,7 @@
                 "path": "pages.delete",
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -45134,6 +45275,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -45321,6 +45463,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -45479,6 +45622,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -46000,7 +46144,7 @@
           "target": {
             "token": "stamp"
           },
-          "method": "readAssetBytes",
+          "method": "getAssetBytes",
           "args": [
             "stamp-lib-0-1:Stamp1"
           ]
@@ -46718,7 +46862,7 @@
               "args": [
                 {
                   "libraryId": "stamp-lib-0-1",
-                  "reason": "imported"
+                  "type": "imported"
                 }
               ]
             },
@@ -47083,7 +47227,7 @@
               "args": [
                 {
                   "libraryId": "stamp-lib-0-1",
-                  "reason": "asset-removed"
+                  "type": "asset-deleted"
                 }
               ]
             },
@@ -47506,6 +47650,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 1,
                   "pages": [
                     {
@@ -47619,6 +47764,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -47902,6 +48048,7 @@
                 "path": "pages.delete",
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 0,
                     "pages": [],
                     "namedPages": []
@@ -47922,6 +48069,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 1,
                   "pages": [
                     {
@@ -48035,6 +48183,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -48377,6 +48526,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 1,
                   "pages": [
                     {
@@ -48490,6 +48640,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -48866,6 +49017,7 @@
                     "modifiedBy": null,
                     "importedBy": null,
                     "actions": null,
+                    "richText": null,
                     "box": {
                       "x": 0,
                       "y": 0,
@@ -48887,7 +49039,7 @@
                     "cacheDelta": null,
                     "opId": "asset-engine-write",
                     "undoable": true,
-                    "changed": [
+                    "changedRefs": [
                       {
                         "kind": "objectNumber",
                         "page": {
@@ -48999,6 +49151,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -49144,6 +49297,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -49278,6 +49432,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -49405,6 +49560,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -49571,6 +49727,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -49719,6 +49876,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -50188,6 +50346,7 @@
                 "path": "pages.delete",
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -50262,6 +50421,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -50428,6 +50588,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -50576,6 +50737,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -51053,7 +51215,7 @@
           "target": {
             "token": "stamp"
           },
-          "method": "readAssetBytes",
+          "method": "getAssetBytes",
           "args": [
             "stamp-lib-0-3:Logo"
           ]
@@ -52673,6 +52835,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -52839,6 +53002,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -52987,6 +53151,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -53464,6 +53629,7 @@
                 "path": "pages.delete",
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -53538,6 +53704,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -53704,6 +53871,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -53852,6 +54020,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -54321,6 +54490,7 @@
                 "path": "pages.delete",
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -54406,6 +54576,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -54593,6 +54764,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -54751,6 +54923,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -55269,7 +55442,7 @@
           "target": {
             "token": "stamp"
           },
-          "method": "readAssetBytes",
+          "method": "getAssetBytes",
           "args": [
             "stamp-lib-0-1:Stamp1"
           ]
@@ -55999,7 +56172,7 @@
               "args": [
                 {
                   "libraryId": "stamp-lib-0-1",
-                  "reason": "imported"
+                  "type": "imported"
                 }
               ]
             },
@@ -56676,7 +56849,7 @@
               "args": [
                 {
                   "libraryId": "stamp-lib-0-1",
-                  "reason": "asset-removed"
+                  "type": "asset-deleted"
                 }
               ]
             },
@@ -56999,6 +57172,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 3,
                   "pages": [
                     {
@@ -57218,6 +57392,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -57419,6 +57594,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -57630,6 +57806,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -58239,6 +58416,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -58405,6 +58583,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -58553,6 +58732,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -59083,6 +59263,7 @@
                 "path": "pages.delete",
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -59231,6 +59412,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 3,
                   "pages": [
                     {
@@ -59481,6 +59663,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -59702,6 +59885,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -59923,6 +60107,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -60533,6 +60718,7 @@
                 "path": "pages.delete",
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -60618,6 +60804,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -60805,6 +60992,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -60973,6 +61161,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -61452,6 +61641,7 @@
                 "path": "pages.delete",
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -61537,6 +61727,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -61724,6 +61915,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -61882,6 +62074,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -65709,6 +65902,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -65875,6 +66069,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -66023,6 +66218,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -66543,7 +66739,7 @@
           "target": {
             "token": "stamp"
           },
-          "method": "readAssetBytes",
+          "method": "getAssetBytes",
           "args": [
             "stamp-lib-0-1:Stamp1"
           ]
@@ -67271,7 +67467,7 @@
               "args": [
                 {
                   "libraryId": "stamp-lib-0-1",
-                  "reason": "imported"
+                  "type": "imported"
                 }
               ]
             },
@@ -67568,7 +67764,7 @@
               "args": [
                 {
                   "libraryId": "stamp-lib-0-1",
-                  "reason": "removed"
+                  "type": "deleted"
                 }
               ]
             },
@@ -67956,6 +68152,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -68122,6 +68319,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -68270,6 +68468,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -68739,6 +68938,7 @@
                 "path": "pages.delete",
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -68824,6 +69024,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -69011,6 +69212,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -69169,6 +69371,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -70741,6 +70944,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -70907,6 +71111,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -71055,6 +71260,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -71524,6 +71730,7 @@
                 "path": "pages.delete",
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -71609,6 +71816,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -71796,6 +72004,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -71954,6 +72163,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -73570,6 +73780,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -73736,6 +73947,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -73884,6 +74096,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -74353,6 +74566,7 @@
                 "path": "pages.delete",
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -74438,6 +74652,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -74625,6 +74840,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -74783,6 +74999,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -75300,6 +75517,7 @@
                     "modifiedBy": null,
                     "importedBy": null,
                     "actions": null,
+                    "richText": null,
                     "box": {
                       "x": 0,
                       "y": 0,
@@ -75321,7 +75539,7 @@
                     "cacheDelta": null,
                     "opId": "asset-engine-write",
                     "undoable": true,
-                    "changed": [
+                    "changedRefs": [
                       {
                         "kind": "objectNumber",
                         "page": {
@@ -75433,6 +75651,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -75588,6 +75807,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -75733,6 +75953,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -75871,6 +76092,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -76048,6 +76270,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -76206,6 +76429,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -78110,6 +78334,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 2,
                   "pages": [
                     {
@@ -78276,6 +78501,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -78424,6 +78650,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -78907,6 +79134,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 1,
                   "pages": [
                     {
@@ -79020,6 +79248,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 1,
                     "pages": [
                       {
@@ -80561,6 +80790,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 3,
                   "pages": [
                     {
@@ -80780,6 +81010,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -80981,6 +81212,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -81192,6 +81424,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -81855,6 +82088,7 @@
                 "path": "pages.delete",
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 2,
                     "pages": [
                       {
@@ -82003,6 +82237,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 3,
                   "pages": [
                     {
@@ -82253,6 +82488,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -82474,6 +82710,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -82695,6 +82932,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -83410,6 +83648,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -83628,6 +83867,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -83836,6 +84076,7 @@
                     }
                   ],
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -84037,6 +84278,7 @@
               {
                 "path": "pages.list",
                 "value": {
+                  "labels": [],
                   "pageCount": 3,
                   "pages": [
                     {
@@ -84277,6 +84519,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -84498,6 +84741,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {
@@ -84719,6 +84963,7 @@
                 ],
                 "value": {
                   "layout": {
+                    "labels": [],
                     "pageCount": 3,
                     "pages": [
                       {

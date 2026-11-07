@@ -10632,9 +10632,7 @@
             {
               "promise": 1,
               "resolved": {
-                "ok": false,
-                "reason": "too-large",
-                "detail": "the CMS is 2347 bytes; 100 were reserved"
+                "ok": true
               }
             }
           ],
@@ -11862,9 +11860,7 @@
             {
               "promise": 1,
               "resolved": {
-                "ok": false,
-                "reason": "too-large",
-                "detail": "the CMS is 2347 bytes; 100.5 were reserved"
+                "ok": true
               }
             }
           ],

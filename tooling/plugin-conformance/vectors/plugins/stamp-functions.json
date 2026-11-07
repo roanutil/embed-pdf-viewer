@@ -5,7 +5,7 @@
   "cases": [
     {
       "name": "initial-state",
-      "fn": "initialStampState",
+      "fn": "initialStampModel",
       "args": [],
       "outcome": {
         "returned": {

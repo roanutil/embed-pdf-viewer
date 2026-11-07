@@ -28,8 +28,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/scaled-upright-start-1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/scaled-upright-start-1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -93,8 +93,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/scaled-turned-start-1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/scaled-turned-start-1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -158,8 +158,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/tilted-upright-start-1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/tilted-upright-start-1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -223,8 +223,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/tilted-turned-start-1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/tilted-turned-start-1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -288,8 +288,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/rotated-upright-start-1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/rotated-upright-start-1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -353,8 +353,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/rotated-turned-start-1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/rotated-turned-start-1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -418,8 +418,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/none-upright-start-1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/none-upright-start-1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {}
@@ -456,8 +456,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/none-turned-start-1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/none-turned-start-1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {}
@@ -494,8 +494,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/scaled-upright-start--1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/scaled-upright-start--1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -559,8 +559,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/scaled-turned-start--1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/scaled-turned-start--1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -624,8 +624,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/tilted-upright-start--1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/tilted-upright-start--1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -689,8 +689,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/tilted-turned-start--1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/tilted-turned-start--1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -754,8 +754,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/rotated-upright-start--1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/rotated-upright-start--1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -819,8 +819,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/rotated-turned-start--1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/rotated-turned-start--1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -884,8 +884,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/none-upright-start--1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/none-upright-start--1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {}
@@ -922,8 +922,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/none-turned-start--1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/none-turned-start--1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {}
@@ -960,8 +960,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/scaled-upright-end-1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/scaled-upright-end-1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -1025,8 +1025,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/scaled-turned-end-1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/scaled-turned-end-1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -1090,8 +1090,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/tilted-upright-end-1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/tilted-upright-end-1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -1155,8 +1155,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/tilted-turned-end-1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/tilted-turned-end-1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -1220,8 +1220,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/rotated-upright-end-1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/rotated-upright-end-1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -1285,8 +1285,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/rotated-turned-end-1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/rotated-turned-end-1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -1350,8 +1350,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/none-upright-end-1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/none-upright-end-1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {}
@@ -1388,8 +1388,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/none-turned-end-1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/none-turned-end-1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {}
@@ -1426,8 +1426,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/scaled-upright-end--1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/scaled-upright-end--1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -1491,8 +1491,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/scaled-turned-end--1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/scaled-turned-end--1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -1556,8 +1556,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/tilted-upright-end--1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/tilted-upright-end--1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -1621,8 +1621,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/tilted-turned-end--1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/tilted-turned-end--1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -1686,8 +1686,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/rotated-upright-end--1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/rotated-upright-end--1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -1751,8 +1751,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/rotated-turned-end--1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/rotated-turned-end--1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -1816,8 +1816,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/none-upright-end--1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/none-upright-end--1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {}
@@ -1854,8 +1854,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/none-turned-end--1",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/none-turned-end--1",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {}
@@ -1892,8 +1892,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/degenerate-cell",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/degenerate-cell",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -1939,8 +1939,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/no-advance-start",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/no-advance-start",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -2004,8 +2004,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/no-advance-end",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/no-advance-end",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {
@@ -2069,8 +2069,8 @@
       }
     },
     {
-      "name": "selectionHandleGeom/half-projected",
-      "fn": "selectionHandleGeom",
+      "name": "selectionHandleGeometry/half-projected",
+      "fn": "selectionHandleGeometry",
       "args": [
         {
           "matrices": {

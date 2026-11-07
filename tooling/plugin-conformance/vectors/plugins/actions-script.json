@@ -27765,10 +27765,18 @@
           ],
           "callbacks": [
             {
-              "fn": "sandbox.run",
+              "fn": "sandbox.factory",
               "args": [
-                0,
-                "b()",
+                1
+              ]
+            },
+            {
+              "fn": "sandbox.boot",
+              "args": [
+                1,
+                [
+                  "function lib() {}\n;\nvar x = 1;"
+                ],
                 {
                   "document": {
                     "id": "a",
@@ -27786,6 +27794,181 @@
                     "nowMs": 0,
                     "utcOffsetMinutes": 0,
                     "randomSeed": 3636279728
+                  },
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 100
+                      },
+                      "name": "name",
+                      "kind": "text",
+                      "value": "name-value",
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 101
+                      },
+                      "name": "choice",
+                      "kind": "combobox",
+                      "value": [
+                        "1"
+                      ],
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false,
+                      "options": [
+                        {
+                          "label": "One",
+                          "value": "1"
+                        }
+                      ]
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 102
+                      },
+                      "name": "empty",
+                      "kind": "text",
+                      "value": null,
+                      "defaultValue": null,
+                      "display": "visible",
+                      "readOnly": false,
+                      "required": false
+                    }
+                  ],
+                  "annots": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 6
+                      },
+                      "name": "tip",
+                      "subtype": "square",
+                      "page": 0,
+                      "rect": [
+                        100,
+                        600,
+                        200,
+                        700
+                      ],
+                      "contents": "hello",
+                      "author": "Ada",
+                      "subject": "Note",
+                      "strokeColor": [
+                        "RGB",
+                        1,
+                        0,
+                        0.2
+                      ],
+                      "fillColor": [
+                        "T"
+                      ],
+                      "opacity": 0.5,
+                      "width": 2,
+                      "borderStyle": "D",
+                      "dash": [
+                        3,
+                        1
+                      ],
+                      "hidden": true,
+                      "print": false,
+                      "readOnly": true,
+                      "locked": true,
+                      "noView": false,
+                      "toggleNoView": true,
+                      "opaqueBody": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 9
+                      },
+                      "name": "",
+                      "subtype": "stamp",
+                      "page": 0,
+                      "rect": [
+                        100,
+                        600,
+                        200,
+                        700
+                      ],
+                      "contents": "",
+                      "author": "",
+                      "subject": "",
+                      "strokeColor": [
+                        "T"
+                      ],
+                      "fillColor": [
+                        "T"
+                      ],
+                      "opacity": 1,
+                      "width": 1,
+                      "borderStyle": "S",
+                      "dash": [],
+                      "hidden": false,
+                      "print": true,
+                      "readOnly": false,
+                      "locked": false,
+                      "noView": false,
+                      "toggleNoView": false,
+                      "opaqueBody": true
+                    }
+                  ],
+                  "annotPages": [
+                    0
+                  ],
+                  "annotsCoverDocument": false,
+                  "event": {
+                    "kind": "name-tree-boot"
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            },
+            {
+              "fn": "sandbox.run",
+              "args": [
+                1,
+                "b()",
+                {
+                  "document": {
+                    "id": "a",
+                    "fileName": "document.pdf",
+                    "pageCount": 2,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "Ada",
+                    "loginName": "u-1",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 0,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 3653057347
                   },
                   "fields": [
                     {
@@ -33918,7 +34101,14 @@
               "args": []
             }
           ],
-          "callbacks": [],
+          "callbacks": [
+            {
+              "fn": "sandbox.dispose",
+              "args": [
+                0
+              ]
+            }
+          ],
           "reports": [],
           "status": "started",
           "engineState": {
@@ -36910,7 +37100,14 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [],
+          "callbacks": [
+            {
+              "fn": "sandbox.dispose",
+              "args": [
+                1
+              ]
+            }
+          ],
           "reports": [],
           "status": "started",
           "engineState": {
@@ -38284,7 +38481,14 @@
               "args": []
             }
           ],
-          "callbacks": [],
+          "callbacks": [
+            {
+              "fn": "sandbox.dispose",
+              "args": [
+                0
+              ]
+            }
+          ],
           "reports": [],
           "status": "started",
           "engineState": {
