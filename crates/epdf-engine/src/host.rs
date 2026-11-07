@@ -913,7 +913,15 @@ impl Host {
                     italic: crate::features::fonts::italic_from_wire(field(body, "italic")?),
                 };
                 let data = payload(&payloads, 0, "the font file")?;
-                fonts.register(key.clone(), &description, data)?;
+                // `builtIn`: one of the fallback fonts the engine adds on its
+                // own; absent for the app's.
+                let built_in = body.get("builtIn").and_then(serde_json::Value::as_bool);
+                fonts.register_marked(
+                    key.clone(),
+                    &description,
+                    data,
+                    built_in.unwrap_or(false),
+                )?;
                 let identity = fonts.identity_info(&key)?;
                 serde_json::json!({ "fontKey": key, "identity": identity })
             }
@@ -1377,7 +1385,7 @@ impl Host {
             // ascent, descent, bytes }`, the bytes payload 0 for
             // `part: 'data'` and `null` otherwise.
             "document.fonts.program" => {
-                let display_hash = string_field(body, "displayHash")?;
+                let display_hash = string_field(body, "displaySha256")?;
                 let part = string_field(body, "part")?;
                 self.fonts()?;
                 let fonts = self.fonts.as_ref().expect("just claimed");

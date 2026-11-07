@@ -700,7 +700,7 @@ fn a_version_and_a_file_save_answer_as_upstream_does() {
     call(&mut host, serde_json::json!({ "kind": "open.fatMem", "docId": "d" }), vec![bytes(PLAIN)]);
     let version =
         call(&mut host, serde_json::json!({ "kind": "document.version", "docId": "d" }), vec![]);
-    assert_eq!(version["result"]["version"]["byteLength"], bytes(PLAIN).len(), "{version}");
+    assert_eq!(version["result"]["version"]["sizeBytes"], bytes(PLAIN).len(), "{version}");
     assert_eq!(version["result"]["version"]["sha256"].as_str().map(str::len), Some(64));
 
     let dir = std::env::temp_dir().join(format!("epdf-save-file-{}", std::process::id()));

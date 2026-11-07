@@ -35,7 +35,7 @@ fn seal() -> Sealed {
     let (prepared, _) = sig_prepare(
         &mut host,
         json!({ "kind": "signatures.prepare", "docId": doc,
-                "input": { "field": field, "certify": { "permission": 2 }, "contentsSize": 512 } }),
+                "input": { "field": field, "certify": { "permission": 2 }, "contentsSizeBytes": 512 } }),
     );
     let input = json!({ "signingId": prepared["signingId"], "expectedVersion": prepared["expectedVersion"] });
     let completed = sig_call_with_payload(
@@ -52,7 +52,7 @@ fn seal() -> Sealed {
     Sealed {
         bytes,
         byte_range: range.try_into().unwrap(),
-        contents_size: prepared["contentsSize"].as_u64().unwrap(),
+        contents_size: prepared["contentsSizeBytes"].as_u64().unwrap(),
         field_object_number,
         version: completed["result"]["version"].clone(),
     }
@@ -77,7 +77,7 @@ fn write(name: &str, bytes: &[u8]) -> String {
 
 fn request(sealed: &Sealed, path: &str) -> Value {
     json!({ "kind": "signatures.finalizeCandidate", "jobId": 1, "path": path,
-            "byteRange": sealed.byte_range, "contentsSize": sealed.contents_size,
+            "byteRange": sealed.byte_range, "contentsSizeBytes": sealed.contents_size,
             "fieldObjectNumber": sealed.field_object_number, "password": null })
 }
 
@@ -153,7 +153,7 @@ fn a_finalize_refuses_what_the_typescript_refuses() {
         "does not span",
     );
     refuse(
-        with("contentsSize", json!(sealed.contents_size - 1)),
+        with("contentsSizeBytes", json!(sealed.contents_size - 1)),
         &FAKE_CMS,
         "InvalidArg",
         "hex digits",

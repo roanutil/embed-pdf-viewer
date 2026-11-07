@@ -223,14 +223,14 @@ fn empty_and_unloadable_font_data_are_refused_as_the_registrar_words_it() {
 }
 
 #[test]
-fn registering_a_key_twice_replaces_what_it_names() {
-    // `FontRegistrar.register` has no duplicate check: the second call
-    // registers again and the key answers the newer identity.
+fn registering_a_key_twice_keeps_the_first_font() {
+    // `FontRegistrar.register`: a key registers once, and registering it
+    // again is a no-op that keeps the first font (7d76a8d05).
     on_a_fresh_thread(|| {
         let mut host = Host::new();
         register(&mut host, "roboto", 0, roboto());
         let again = register(&mut host, "roboto", 1, roboto());
-        assert_eq!(again["result"]["identity"]["italic"], json!(true), "{again}");
+        assert_eq!(again["result"]["identity"]["italic"], json!(false), "{again}");
     });
 }
 

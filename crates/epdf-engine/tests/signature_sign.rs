@@ -84,7 +84,7 @@ fn prepare_then_complete_seals_the_field() {
     );
     assert_eq!(digest.len(), 32);
     assert_eq!(prepared["algorithm"], json!("sha256"));
-    assert_eq!(prepared["contentsSize"], json!(8192));
+    assert_eq!(prepared["contentsSizeBytes"], json!(8192));
     assert_eq!(prepared["subFilter"], json!("ETSI.CAdES.detached"));
     assert_eq!(prepared["expectedVersion"]["baseSha256"], before["sha256"]);
     let cms = test_cms(&digest);

@@ -24,9 +24,14 @@ use super::types::{
 
 // Mirrors public/epdf_signature.h.
 const KIND_DOC_TIMESTAMP: i32 = 1;
+// `/SV /Ff` (ISO 32000-2 Table 260), named in the read.
+const SV_FILTER: u32 = 1 << 0;
+const SV_SUBFILTER: u32 = 1 << 1;
 const SV_V: u32 = 1 << 2;
+const SV_REASONS: u32 = 1 << 3;
 const SV_LEGAL_ATTESTATION: u32 = 1 << 4;
 const SV_ADD_REV_INFO: u32 = 1 << 5;
+const SV_DIGEST_METHOD: u32 = 1 << 6;
 const SV_LOCK_DOCUMENT: u32 = 1 << 7;
 const SV_APPEARANCE_FILTER: u32 = 1 << 8;
 const SV_MDP: u32 = 1 << 17;
@@ -93,15 +98,19 @@ fn read_seed_value(
     let present_flags = model.seed_value_present_flags(index);
     let version = model.seed_value_version(index);
     let mdp = model.seed_value_mdp(index);
+    let required = |bit: u32| required_flags & bit != 0;
     Ok(Some(SignatureSeedValue {
-        required_flags,
-        present_flags,
-        version: (version > 0).then_some(version),
+        parser_version: (version > 0).then_some(version),
+        parser_version_required: required(SV_V),
         mdp: ((present_flags & SV_MDP) != 0 && (0..=3).contains(&mdp)).then_some(mdp as u8),
         filter: model.seed_value_filter(index).map_err(native)?,
+        filter_required: required(SV_FILTER),
         sub_filters: model.seed_value_list(index, SV_LIST_SUBFILTER).map_err(native)?,
+        sub_filters_required: required(SV_SUBFILTER),
         digest_methods: model.seed_value_list(index, SV_LIST_DIGEST_METHOD).map_err(native)?,
+        digest_methods_required: required(SV_DIGEST_METHOD),
         reasons: model.seed_value_list(index, SV_LIST_REASONS).map_err(native)?,
+        reasons_required: required(SV_REASONS),
         unsupported_required: (required_flags & SV_UNSUPPORTED_REQUIRED) != 0
             || ((required_flags & SV_V) != 0 && version > SUPPORTED_SEED_VALUE_VERSION),
     }))
@@ -133,7 +142,7 @@ pub fn read_signatures_from_model(
             filter: s(i, string_key::FILTER)?,
             sub_filter: s(i, string_key::SUBFILTER)?,
             byte_range: if signed { model.byte_range(i) } else { None },
-            contents_size: if signed { model.contents_len(i) } else { 0 },
+            contents_size_bytes: if signed { model.contents_len(i) } else { 0 },
             coverage: signed.then(|| coverage(model.coverage(i))),
             revision_index: (signed && revision_index >= 0).then_some(revision_index as u32),
             signer: SignatureSigner {
@@ -342,7 +351,7 @@ pub fn version(session: &DocumentSession) -> Result<BaseVersionInfo, EngineError
     let sha = doc.layer_base_sha256().ok_or_else(|| {
         EngineError::with_message(EngineErrorCode::Unknown, "failed to read the base hash")
     })?;
-    Ok(BaseVersionInfo { sha256: to_hex(&sha), byte_length })
+    Ok(BaseVersionInfo { sha256: to_hex(&sha), size_bytes: byte_length })
 }
 
 /// `SignatureReader.digestRange`.

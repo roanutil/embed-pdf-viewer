@@ -129,6 +129,9 @@ pub struct StartupFont {
     /// Whether its bytes may go to a browser (`StartupFontSpec.serve`, the
     /// server's `serve`); false by default there.
     pub serve: bool,
+    /// One of the fallback fonts the engine adds on its own
+    /// (`StartupFontSpec.builtIn`); false by default there.
+    pub built_in: bool,
 }
 
 /// `FontFormat`: what a program is, as the wire spells it.
@@ -182,6 +185,9 @@ pub struct EngineFontFacts {
     pub sha256: String,
     /// Whether its bytes may go to a browser.
     pub served: bool,
+    /// One of the fallback fonts the engine adds on its own, not the app's
+    /// (7d76a8d05).
+    pub built_in: bool,
 }
 
 /// A program's coverage and line metrics, as `programFor(..).info()` and
@@ -225,13 +231,14 @@ struct RegisteredProgram {
     format: FontFormat,
     post_script_name: Option<String>,
     served: bool,
+    built_in: bool,
 }
 
 impl RegisteredProgram {
     /// `readProgram`: the hash, `''` when the fork has none; `opentype` for
     /// `EPDF_FONT_FORMAT_OPENTYPE` and `truetype` for anything else; the
     /// PostScript name, `null` when empty.
-    fn read(id: FontId, served: bool) -> Self {
+    fn read(id: FontId, served: bool, built_in: bool) -> Self {
         Self {
             sha256: pdfium::font_program_hash(id).map(|hash| hex(&hash)).unwrap_or_default(),
             format: match pdfium::font_program_format(id) {
@@ -243,6 +250,7 @@ impl RegisteredProgram {
                 .flatten()
                 .filter(|name| !name.is_empty()),
             served,
+            built_in,
         }
     }
 }
@@ -498,8 +506,8 @@ impl FontRegistry {
     }
 
     /// Record what `readProgram` reads for a key, keeping its first place.
-    fn remember_program(&mut self, key: &str, id: FontId, served: bool) {
-        let program = RegisteredProgram::read(id, served);
+    fn remember_program(&mut self, key: &str, id: FontId, served: bool, built_in: bool) {
+        let program = RegisteredProgram::read(id, served, built_in);
         match self.programs.iter_mut().find(|(k, _)| k == key) {
             Some(entry) => entry.1 = program,
             None => self.programs.push((key.to_owned(), program)),
@@ -508,14 +516,31 @@ impl FontRegistry {
 
     /// Register a font from bytes.
     ///
-    /// PDFium copies them, so the caller's buffer is free on return.
+    /// PDFium copies them, so the caller's buffer is free on return. A key
+    /// registers once: registering it again is a no-op that keeps the first
+    /// font.
     pub fn register(
         &mut self,
         key: impl Into<String>,
         description: &FontDescription,
         bytes: &[u8],
     ) -> Result<FontId, EngineError> {
+        self.register_marked(key, description, bytes, false)
+    }
+
+    /// [`FontRegistry::register`], saying whether the font is one of the
+    /// fallback fonts the engine adds on its own (`builtIn`).
+    pub fn register_marked(
+        &mut self,
+        key: impl Into<String>,
+        description: &FontDescription,
+        bytes: &[u8],
+        built_in: bool,
+    ) -> Result<FontId, EngineError> {
         let key = key.into();
+        if let Some(id) = self.ids.get(&key) {
+            return Ok(*id);
+        }
         // `FontRegistrar.register` refuses empty bytes before the runtime
         // sees them, with a message of its own.
         if bytes.is_empty() {
@@ -528,7 +553,7 @@ impl FontRegistry {
             .map_err(|e| registration_failed(&key, None, e))?;
         remember_identity(&key, id, description);
         // An application's own font: its bytes may go to a browser.
-        self.remember_program(&key, id, true);
+        self.remember_program(&key, id, true, built_in);
         self.ids.insert(key, id);
         Ok(id)
     }
@@ -553,7 +578,24 @@ impl FontRegistry {
         path: &std::path::Path,
         served: bool,
     ) -> Result<FontId, EngineError> {
+        self.register_file_marked(key, description, path, served, false)
+    }
+
+    /// [`FontRegistry::register_file_served`], saying whether the font is
+    /// one of the fallback fonts the engine adds on its own. A key registers
+    /// once, as in [`FontRegistry::register`].
+    pub fn register_file_marked(
+        &mut self,
+        key: impl Into<String>,
+        description: &FontDescription,
+        path: &std::path::Path,
+        served: bool,
+        built_in: bool,
+    ) -> Result<FontId, EngineError> {
         let key = key.into();
+        if let Some(id) = self.ids.get(&key) {
+            return Ok(*id);
+        }
         let access =
             FileAccess::from_file(path).map_err(|e| registration_failed(&key, Some(path), e))?;
         let id = pdfium::register_font_file(description, &access)
@@ -562,7 +604,7 @@ impl FontRegistry {
         // would leak a file descriptor per attempt.
         self.retained.push(access);
         remember_identity(&key, id, description);
-        self.remember_program(&key, id, served);
+        self.remember_program(&key, id, served, built_in);
         self.ids.insert(key, id);
         Ok(id)
     }
@@ -575,7 +617,13 @@ impl FontRegistry {
     /// workers different answers for the same missing glyph.
     pub fn register_startup(&mut self, fonts: &[StartupFont]) -> Result<(), EngineError> {
         for font in fonts {
-            self.register_file_served(font.key.clone(), &font.description, &font.path, font.serve)?;
+            self.register_file_marked(
+                font.key.clone(),
+                &font.description,
+                &font.path,
+                font.serve,
+                font.built_in,
+            )?;
             if font.fallback {
                 self.add_fallback_in_tier(&font.key, font.tier)?;
             }
@@ -681,6 +729,7 @@ impl FontRegistry {
                     format: program.format,
                     sha256: program.sha256,
                     served: program.served,
+                    built_in: program.built_in,
                 })
             })
             .collect()

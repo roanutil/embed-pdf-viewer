@@ -91,7 +91,7 @@ pub struct SignaturePrepareInput {
     #[serde(default)]
     pub digest: Option<DigestAlgorithm>,
     #[serde(default)]
-    pub contents_size: Option<f64>,
+    pub contents_size_bytes: Option<f64>,
     /// `/Name`, `/Reason`, `/Location`, `/ContactInfo` and `/M`.
     #[serde(default)]
     pub signer: Option<SignatureSignerInput>,
@@ -110,7 +110,7 @@ pub struct SignaturePrepared {
     pub signing_id: String,
     pub algorithm: DigestAlgorithm,
     pub byte_range: [u64; 4],
-    pub contents_size: u64,
+    pub contents_size_bytes: u64,
     pub sub_filter: String,
     pub expected_version: DocumentVersionRef,
     pub expires_at: Option<String>,
@@ -392,7 +392,7 @@ pub fn prepare(
     let Some(subfilter) = subfilter_code(&sub_filter) else {
         return Err(refused(format!("unsupported subFilter '{sub_filter}'")));
     };
-    let contents_size = input.contents_size.unwrap_or(DEFAULT_CONTENTS_SIZE as f64);
+    let contents_size = input.contents_size_bytes.unwrap_or(DEFAULT_CONTENTS_SIZE as f64);
     if contents_size.fract() != 0.0
         || contents_size < MIN_CONTENTS_SIZE as f64
         || contents_size > MAX_CONTENTS_SIZE as f64
@@ -464,7 +464,7 @@ pub fn prepare(
         signing_id,
         algorithm,
         byte_range: sealed.byte_range,
-        contents_size,
+        contents_size_bytes: contents_size,
         sub_filter,
         expected_version,
         expires_at: None,
@@ -517,11 +517,11 @@ pub fn complete(
     if cms.first() != Some(&0x30) {
         return Err(refused("the CMS is not a DER SEQUENCE"));
     }
-    if cms.len() as u64 > pending.prepared.contents_size {
+    if cms.len() as u64 > pending.prepared.contents_size_bytes {
         return Err(refused(format!(
             "the CMS ({} bytes) does not fit the reserved {} bytes",
             cms.len(),
-            pending.prepared.contents_size
+            pending.prepared.contents_size_bytes
         )));
     }
 
@@ -604,7 +604,7 @@ pub struct FinalizeCandidateInput {
     /// The `/ByteRange` the prepare reported.
     pub byte_range: [u64; 4],
     /// The reserved `/Contents` size the prepare reported.
-    pub contents_size: u64,
+    pub contents_size_bytes: u64,
     pub field_object_number: u32,
     #[serde(default)]
     pub password: Option<String>,
@@ -654,22 +654,22 @@ pub fn finalize_candidate(
     // The hole is `<` + hex digits + `>`: the range's gap, less the
     // delimiters.
     let hex_length = (r2 - r1).checked_sub(2);
-    if hex_length != input.contents_size.checked_mul(2) {
+    if hex_length != input.contents_size_bytes.checked_mul(2) {
         return Err(invalid(format!(
             "the /Contents hole holds {} hex digits, not the {} of contentsSize",
             (r2 - r1) as i128 - 2,
-            i128::from(input.contents_size) * 2
+            i128::from(input.contents_size_bytes) * 2
         )));
     }
     let hex_length = hex_length.expect("equal to a checked product");
     if cms.first() != Some(&0x30) {
         return Err(refused("the CMS is not a DER SEQUENCE"));
     }
-    if cms.len() as u64 > input.contents_size {
+    if cms.len() as u64 > input.contents_size_bytes {
         return Err(refused(format!(
             "the CMS ({} bytes) does not fit the reserved {} bytes",
             cms.len(),
-            input.contents_size
+            input.contents_size_bytes
         )));
     }
 
@@ -731,7 +731,10 @@ pub fn finalize_candidate(
     Ok(FinalizedCandidate {
         signature,
         protection: snapshot.protection,
-        version: BaseVersionInfo { sha256: super::reader::to_hex(&digest), byte_length },
+        version: BaseVersionInfo {
+            sha256: super::reader::to_hex(&digest),
+            size_bytes: byte_length,
+        },
         last_object_number: last_object_number_of(path, input.password.as_deref())?,
     })
 }
