@@ -273,11 +273,16 @@ fn a_write_takes_only_the_fields_its_kind_has_and_refuses_a_rect_with_a_new_shap
     let (m, id) = drawn_square();
     let record = m.record(&id).expect("the square");
     let fields = |v: Value| v.as_object().cloned().expect("fields");
-    // A field the kind doesn't declare, and `subtype`, are ignored.
+    // A field the kind doesn't declare, and a subtype that is no sibling, are ignored.
     assert_eq!(
-        with_values(record, &fields(json!({ "bogus": 1, "subtype": "circle" }))).expect("no error"),
+        with_values(record, &fields(json!({ "bogus": 1, "subtype": "line" }))).expect("no error"),
         None
     );
+    // A sibling kind is taken (5eda225f1): the square becomes a circle.
+    let circle = with_values(record, &fields(json!({ "subtype": "circle" })))
+        .expect("no error")
+        .expect("a kind change");
+    assert_eq!(circle.annotation["subtype"], "circle");
     // A rect is a command: with a changed box it would be a guess.
     let refused = with_values(
         record,
