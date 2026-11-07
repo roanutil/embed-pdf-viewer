@@ -425,7 +425,8 @@ fn signing_spec(cms: Arc<Mutex<Option<Value>>>) -> TestSpec {
 
 /// A local session's event origin.
 fn origin() -> Value {
-    json!({ "kind": "local", "sessionId": "s1", "sub": null, "ts": 0, "serverId": null })
+    json!({ "kind": "local", "sessionId": "s1",
+        "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": null })
 }
 
 fn unsigned_input(s: &SignatureHandle) -> SignatureSignInput {

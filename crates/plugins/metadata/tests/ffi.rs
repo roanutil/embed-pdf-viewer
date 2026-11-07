@@ -53,8 +53,8 @@ fn spec_with(title: &str, custom: Value) -> TestSpec {
     }
     fields.insert("title".into(), json!(title));
     fields.insert("trapped".into(), json!("unknown"));
-    let origin =
-        json!({ "kind": "local", "sessionId": "s1", "sub": null, "ts": 0, "serverId": null });
+    let origin = json!({ "kind": "local", "sessionId": "s1",
+            "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": null });
     let standard = Rc::new(RefCell::new(fields));
     let keys = Rc::new(RefCell::new(custom.as_object().cloned().unwrap_or_default()));
     let (read, read_custom) = (standard.clone(), keys.clone());

@@ -128,7 +128,8 @@ fn pointer(cap: &AnnotationCapability, phase: &str, x: f64, y: f64) {
 fn deleted(refs: Vec<Value>) -> Value {
     json!({
         "type": "annotations.deleted", "page": page(), "deleted": refs,
-        "origin": { "kind": "remote", "sessionId": "s2", "sub": "u-9", "ts": 0, "serverId": null },
+        "origin": { "kind": "remote", "sessionId": "s2",
+            "subject": "u-9", "at": "1970-01-01T00:00:00.000Z", "serverSequence": null },
         "meta": { "affectedPages": [page()], "cacheDelta": null, "changed": [], "opId": "remote-delete", "undoable": true }
     })
 }
@@ -137,7 +138,8 @@ fn deleted(refs: Vec<Value>) -> Value {
 fn created(record: Value) -> Value {
     json!({
         "type": "annotations.created", "page": page(), "annotation": record,
-        "origin": { "kind": "remote", "sessionId": "s2", "sub": "u-9", "ts": 0, "serverId": null },
+        "origin": { "kind": "remote", "sessionId": "s2",
+            "subject": "u-9", "at": "1970-01-01T00:00:00.000Z", "serverSequence": null },
         "meta": { "affectedPages": [page()], "cacheDelta": null, "changed": [], "opId": "remote-create", "undoable": true }
     })
 }
@@ -152,8 +154,9 @@ fn h3_a_created_record_keeps_its_key_before_and_after_the_engine_confirms_it() {
         "type": "annotations.created", "page": page(), "annotation": square(10001, 100.0, 100.0),
         "meta": { "affectedPages": [page()], "cacheDelta": null, "opId": op_id, "undoable": true,
                   "changed": [square_ref(10001)] },
-        "origin": { "kind": "local", "sessionId": "s1", "sub": null, "ts": 0, "serverId": null,
-                    "tx": { "id": op_id, "index": 0, "count": 1 } }
+        "origin": { "kind": "local", "sessionId": "s1",
+            "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": null,
+            "transaction": { "id": op_id, "index": 0, "count": 1 } }
     });
     let (kernel, fake) = kernel(
         Vec::new(),

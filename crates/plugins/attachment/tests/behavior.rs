@@ -42,8 +42,9 @@ fn op(n: u32) -> String {
 }
 
 fn local(op_id: &str) -> Value {
-    json!({ "kind": "local", "sessionId": "s1", "sub": null, "ts": 0, "serverId": null,
-            "tx": { "id": op_id, "index": 0, "count": 1 } })
+    json!({ "kind": "local", "sessionId": "s1",
+        "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": null,
+        "transaction": { "id": op_id, "index": 0, "count": 1 } })
 }
 
 fn meta(op_id: &str, changed: Value) -> Value {
@@ -212,7 +213,7 @@ fn the_list_and_on_changed_lead_the_writes_promise() {
         // The mirror already holds the confirmed file when the event fires.
         let listed = ids(&cap.list()).join(",");
         log.borrow_mut()
-            .push(format!("changed {} {listed} {}", event.kind, event.origin["tx"]["id"]));
+            .push(format!("changed {} {listed} {}", event.kind, event.origin["transaction"]["id"]));
         Ok(())
     });
     let adding = rig.attachment.create(vec![file_source(b"hi", "c.txt")], none());
@@ -357,7 +358,8 @@ fn the_reads_keep_their_rc_until_an_input_changes() {
     late["file"]["name"] = json!("late.txt");
     let event = json!({
         "type": "annotations.created", "page": pr(1), "annotation": late,
-        "origin": { "kind": "remote", "sessionId": "s2", "sub": "u-9", "ts": 0, "serverId": null },
+        "origin": { "kind": "remote", "sessionId": "s2",
+            "subject": "u-9", "at": "1970-01-01T00:00:00.000Z", "serverSequence": null },
         "meta": { "affectedPages": [pr(1)], "cacheDelta": null, "changed": [late["ref"].clone()],
                   "opId": "remote-create", "undoable": true },
     });

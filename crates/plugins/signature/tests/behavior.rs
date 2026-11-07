@@ -355,7 +355,8 @@ fn prepared_event(signing_id: &str) -> Value {
         "type": "signatures.prepared",
         "signingId": signing_id,
         "field": field(2),
-        "origin": { "kind": "local", "sessionId": "s1", "sub": null, "ts": 0, "serverId": null },
+        "origin": { "kind": "local", "sessionId": "s1",
+            "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": null },
     })
 }
 
