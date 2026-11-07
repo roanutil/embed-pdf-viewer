@@ -34,15 +34,6 @@ const expectedFailures = new Map<string, [string, string]>([
   ['fromDTO/no-ref', ['TypeError', "undefined (reading 'kind')"]],
   ['fromDTO/null-ref', ['TypeError', "null (reading 'kind')"]],
   ['buildToolRegistry/unknown-base', ['Error', "tool 'nope' extends an unknown tool"]],
-  // 595fa2bd5 removed both; the cases record the removal (`removedUpstream`).
-  ...['Helvetica', 'courier new', 'Inter', 'Unknown Face', 'no-fonts'].map(
-    (label) =>
-      [`cssFontFamilyForFace/${label}`, ['Error', 'was removed upstream in 595fa2bd5']] as [string, [string, string]],
-  ),
-  ...['helvetica-bold', 'courier', 'symbol', 'inter-bold'].map(
-    (label) =>
-      [`cssFontFamilyForFont/${label}`, ['Error', 'was removed upstream in 595fa2bd5']] as [string, [string, string]],
-  ),
   ...[
     ['bad-default', 'square', 'fontSize', 'square'],
     ['bad-default-line', 'bad-line', 'icon', 'line'],
@@ -103,7 +94,7 @@ function nonfinite(v: unknown): boolean {
   return !!v && typeof v === 'object' && Object.values(v).some(nonfinite);
 }
 
-test('850 historical definitions map exactly to current targets or eight evidenced retirements', async () => {
+test('850 historical definitions map exactly to current targets or nine evidenced retirements', async () => {
   const history = JSON.parse(
     await readFile(new URL('../historical/task-12b2b1a/accounting.json', import.meta.url), 'utf8'),
   );
@@ -146,7 +137,7 @@ test('850 historical definitions map exactly to current targets or eight evidenc
   }
   assert.equal(before, 850);
   assert.equal(after, 843);
-  assert.equal(retired, 8);
+  assert.equal(retired, 9);
 });
 
 test('all843 current calls have exactly their named outcomes, immutable args and no diagnostics', () => {

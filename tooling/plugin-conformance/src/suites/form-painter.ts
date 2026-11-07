@@ -1,5 +1,6 @@
 /**
- * `packages/core/form`: the widget painter. Replayed by
+ * `packages/core/form`: the widget painter, and `packages/core/text`, the
+ * layout it draws its text with. Replayed by
  * `crates/plugins/form-core/tests/conformance.rs`.
  *
  * Distinct from `plugins/form-core.json`, which records the form plugin. This
@@ -8,50 +9,198 @@
  *
  * Pure functions, so one function suite. The widget matrix follows the
  * engine's parity gate (`packages/engine/main/test/widget-painter-parity.test.ts`),
- * which checks the same painter against PDFium's appearance generator. Two
- * entries are wrappers, because the shipping values carry closures:
+ * which checks the same painter against PDFium's appearance generator.
  *
+ * e40c9c236 moved a widget's text layout out of the painter into
+ * `@embedpdf/core-text`: `layoutVariableText(text, font, options)` became
+ * `layoutField(text, fonts, options)`, which lays text out in a face, its
+ * fallbacks and a last resort, in bidi order, as runs; `layoutFontOf(family)`
+ * became the paint fonts (`defaultPaintFonts`, `programPaintFont`); and the
+ * line-break rule `needsBreak` moved to `core/text/src/breaks.ts`, unchanged.
+ * The cases that called the old functions call the new ones with the same
+ * inputs where the contract allows, and the new contract's own behaviour
+ * (directions, fallbacks, joins, graphemes) has cases of its own.
+ *
+ * Several entries are wrappers, because the shipping values carry closures:
+ *
+ * - A `fonts` argument names the fonts a layout draws in, as data
+ *   (`FontsSpec`): a standard font's name, `'last-resort'`, or a program font
+ *   made with `programPaintFont` from its key, its ranges, its metrics and a
+ *   measure of `advance` thousandths per character (marks and joiners take no
+ *   room, and each joiner takes `joined` off, as a cursive face's joined
+ *   forms are narrower). A bare string is `defaultPaintFonts(string)`.
+ * - `defaultPaintFonts(fontFamily, codes)` and `programPaintFont(spec, codes)`
+ *   record each font's data members and ask `covers` and `width` (both
+ *   directions) for each code point the case passes.
+ * - `layoutField(text, fonts, options)` prints each run's font as its key.
+ * - `widgetDrawing` and `textEditorLayout` take an optional `FontsSpec` last,
+ *   for the fonts the form plugin passes when it knows the document's.
  * - `widgetScene(widget, field, shown, placement)` draws the widget with
  *   `widgetDrawing` and places that drawing, as the form plugin does.
  * - `paints(kind)` takes the field kind alone.
+ * - `widgetText(widget, field, shown)` passes `shown` through as given.
+ * - `needsBreak(previous, currents)` asks the line-break rule for each
+ *   current character after `previous`.
  *
- * `layoutFontOf`, `layoutVariableText` and `needsBreak` were the painter's
- * CPVT port, which e40c9c236 removed: a widget's text is laid out by
- * `@embedpdf/core-text` now. Their cases stay and record that removal
- * (`removedUpstream`) until the port decides what replaces them.
- *
- * A font program in a result prints its `load` as `{"$function": true}`.
+ * A font in a result prints its methods as `{"$function": true}`, a font
+ * program its `load`.
  */
-import type { FormField, WidgetAnnotation } from '@embedpdf/engine-core/runtime';
-import { STANDARD_FONTS } from '@embedpdf/engine-core/runtime';
+import { fontProgramFamily } from '../../../../packages/core/fonts/src/index';
+import type { FontProgramInfo, FormField, WidgetAnnotation } from '@embedpdf/engine-core/runtime';
+import { STANDARD_FONTS, isStandardFontName } from '@embedpdf/engine-core/runtime';
 
 import {
   paints,
   textEditorLayout,
   widgetDrawing,
   widgetScene,
+  widgetText,
   type ShownValue,
   type WidgetScenePlacement,
 } from '../../../../packages/core/form/src/index';
+import {
+  defaultPaintFonts,
+  lastResortPaintFont,
+  layoutField,
+  programPaintFont,
+  standardPaintFont,
+  type FieldText,
+  type FieldTextOptions,
+  type PaintFont,
+  type PaintFonts,
+} from '../../../../packages/core/text/src/index';
+import { needsBreak } from '../../../../packages/core/text/src/breaks';
 
-import { removedUpstream } from '../removed';
 import type { FunctionCase, Suite } from '../vectors';
 
+/** A program font as a case writes it: what `programPaintFont` is given, as data. */
+interface ProgramSpec {
+  readonly key: string;
+  /** Inclusive code point ranges, in any order. */
+  readonly ranges: readonly (readonly [number, number])[];
+  readonly ascent?: number;
+  readonly descent?: number;
+  /** Thousandths per character that takes room. */
+  readonly advance: number;
+  /** Thousandths each joiner (U+200D) takes off: a joined form's narrowing. */
+  readonly joined?: number;
+}
+type FontSpec = string | ProgramSpec;
+type FontsSpec =
+  | string
+  | {
+      readonly face: FontSpec;
+      readonly fallbacks?: readonly FontSpec[];
+      readonly lastResort?: FontSpec | null;
+    };
+
+const ZERO_WIDTH_JOINER = '\u200d';
+const TAKES_NO_ROOM = /[\p{M}\u200d]/u;
+
+function programFont(spec: ProgramSpec): PaintFont {
+  const info = {
+    covers: spec.ranges.map(([from, to]) => ({ start: from, count: to - from + 1 })),
+    ascent: spec.ascent ?? 900,
+    descent: spec.descent ?? -300,
+  } as unknown as FontProgramInfo;
+  const program = {
+    hash: spec.key,
+    family: fontProgramFamily(spec.key),
+    weight: 400,
+    style: 'normal' as const,
+    load: () => Promise.resolve(new Uint8Array()),
+  };
+  return programPaintFont(
+    info,
+    program,
+    (text) =>
+      [...text].filter((c) => !TAKES_NO_ROOM.test(c)).length * spec.advance -
+      [...text].filter((c) => c === ZERO_WIDTH_JOINER).length * (spec.joined ?? 0),
+  );
+}
+
+const programs = new Map<string, PaintFont>();
+function fontOf(spec: FontSpec): PaintFont {
+  if (typeof spec !== 'string') {
+    let font = programs.get(spec.key);
+    if (!font) programs.set(spec.key, (font = programFont(spec)));
+    return font;
+  }
+  if (spec === 'last-resort') return lastResortPaintFont();
+  if (isStandardFontName(spec)) return standardPaintFont(spec);
+  throw new Error(`not a font: ${spec}`);
+}
+
+function fontsOf(spec: FontsSpec): PaintFonts {
+  if (typeof spec === 'string') return defaultPaintFonts(spec);
+  return {
+    face: fontOf(spec.face),
+    fallbacks: (spec.fallbacks ?? []).map(fontOf),
+    lastResort:
+      spec.lastResort === undefined
+        ? lastResortPaintFont()
+        : spec.lastResort === null
+          ? null
+          : fontOf(spec.lastResort),
+  };
+}
+
+/** A font's data members, and what it answers for each of `codes`. */
+const probe = (font: PaintFont, codes: readonly number[]) => ({
+  key: font.key,
+  ascent: font.ascent,
+  descent: font.descent,
+  standard: font.standard,
+  fontFamily: font.fontFamily,
+  fontWeight: font.fontWeight,
+  fontStyle: font.fontStyle,
+  program: font.program,
+  covers: codes.map((code) => font.covers(code)),
+  widths: codes.map((code) => font.width(String.fromCodePoint(code), false)),
+  rtlWidths: codes.map((code) => font.width(String.fromCodePoint(code), true)),
+});
+
+/** A layout with each run's font as its key. */
+const keyed = (laid: FieldText<PaintFont>) => ({
+  ...laid,
+  lines: laid.lines.map((line) => ({
+    ...line,
+    runs: line.runs.map((run) => ({ ...run, font: run.font.key })),
+  })),
+});
+
 const functions = {
-  layoutFontOf: removedUpstream('layoutFontOf', 'e40c9c236'),
-  layoutVariableText: removedUpstream('layoutVariableText', 'e40c9c236'),
-  widgetDrawing: (widget: WidgetAnnotation, field: FormField, shown?: ShownValue) =>
-    widgetDrawing(widget, field, shown),
+  defaultPaintFonts: (fontFamily: string | null, codes: readonly number[]) => {
+    const fonts = defaultPaintFonts(fontFamily);
+    return {
+      face: probe(fonts.face, codes),
+      fallbacks: fonts.fallbacks.map((font) => probe(font, codes)),
+      lastResort: fonts.lastResort && probe(fonts.lastResort, codes),
+    };
+  },
+  programPaintFont: (spec: ProgramSpec, codes: readonly number[]) =>
+    probe(programFont(spec), codes),
+  layoutField: (text: string, fonts: FontsSpec, options: FieldTextOptions) =>
+    keyed(layoutField(text, fontsOf(fonts), options)),
+  widgetDrawing: (
+    widget: WidgetAnnotation,
+    field: FormField,
+    shown?: ShownValue,
+    fonts?: FontsSpec,
+  ) => widgetDrawing(widget, field, shown, fonts === undefined ? undefined : fontsOf(fonts)),
   widgetScene: (
     widget: WidgetAnnotation,
     field: FormField,
     shown: ShownValue,
     placement: WidgetScenePlacement,
   ) => widgetScene(widgetDrawing(widget, field, shown)!, placement),
-  textEditorLayout: (widget: WidgetAnnotation, field: FormField, text: string) =>
-    textEditorLayout(widget, field, text),
+  textEditorLayout: (widget: WidgetAnnotation, field: FormField, text: string, fonts?: FontsSpec) =>
+    textEditorLayout(widget, field, text, fonts === undefined ? undefined : fontsOf(fonts)),
   paints: (kind: FormField['kind']) => paints({ kind }),
-  needsBreak: removedUpstream('needsBreak', 'e40c9c236'),
+  widgetText: (widget: WidgetAnnotation, field: FormField, shown?: ShownValue) =>
+    widgetText(widget, field, shown),
+  needsBreak: (previous: number, currents: readonly number[]) =>
+    currents.map((current) => needsBreak(previous, current)),
 };
 
 const cases: FunctionCase[] = [];
@@ -137,35 +286,74 @@ const SAMPLE = 'Hég, quick €12.50 “fox”';
 const PARAGRAPHS =
   'The quick brown fox jumps over the lazy dog, again and again.\nSecond paragraph here\n\nAfter a blank line';
 
-// ── layoutFontOf ──
+// ── defaultPaintFonts (was layoutFontOf) ──
 
-const PROBES = [0x41, 0x6e, 0x20, 0xe9, 0x20ac, 0x201c, 0x416, 0xd83d, 0, 0x2a, 0x3b1, 0x2701];
-for (const font of STANDARD_FONTS) add('layoutFontOf', font, font, PROBES);
-add('layoutFontOf', 'null', null, PROBES);
-add('layoutFontOf', 'undefined', undefined, PROBES);
+/**
+ * The old probes, then a right-to-left pair whose mirrors differ in some
+ * faces, Hebrew, Arabic, a mark, a joiner, a supplementary character and the
+ * edges of the last resort's coverage.
+ */
+const PROBES = [
+  0x41, 0x6e, 0x20, 0xe9, 0x20ac, 0x201c, 0x416, 0xd83d, 0, 0x2a, 0x3b1, 0x2701, 0x28, 0x5b, 0x2264,
+  0xab, 0x5d0, 0x627, 0x301, 0x200d, 0xfe0f, 0x1f600, 0x1f, 0xdfff, 0xe000, 0x10ffff,
+];
+for (const font of STANDARD_FONTS) add('defaultPaintFonts', font, font, PROBES);
+add('defaultPaintFonts', 'null', null, PROBES);
+add('defaultPaintFonts', 'undefined', undefined, PROBES);
 for (const name of ['', 'Helvetica', 'Roboto', 'arial', 'helvetica ']) {
-  add('layoutFontOf', `not-standard:${name}`, name, PROBES);
+  add('defaultPaintFonts', `not-standard:${name}`, name, PROBES);
 }
 
-// ── layoutVariableText ──
+// ── programPaintFont ──
 
+/** A Hebrew face, as the core-text tests make one. */
+const HEBREW: ProgramSpec = { key: 'hebrew', ranges: [[0x590, 0x5ff]], advance: 500 };
+/** An Arabic face whose joined forms are 100 narrower on each joined side. */
+const ARABIC: ProgramSpec = { key: 'arabic', ranges: [[0x600, 0x6ff]], advance: 600, joined: 100 };
+/** A Latin face whose advances aren't whole thousandths. */
+const LATIN: ProgramSpec = { key: 'latin', ranges: [[0x20, 0x7e]], advance: 500.4 };
+/** A face of everything, the core-text tests' last resort. */
+const EVERYTHING: ProgramSpec = { key: 'everything', ranges: [[0, 0x10ffff]], ascent: 800, descent: -200, advance: 500 };
+/** Ranges out of order, touching and one code point wide: the binary search sorts them. */
+const SCATTERED: ProgramSpec = {
+  key: 'scattered',
+  ranges: [[0x100, 0x17f], [0x41, 0x5a], [0x30, 0x39], [0x5b, 0x5b], [0x1f600, 0x1f64f]],
+  ascent: 750,
+  descent: -250,
+  advance: 480,
+};
+for (const spec of [HEBREW, ARABIC, LATIN, EVERYTHING, SCATTERED]) {
+  add('programPaintFont', spec.key, spec, PROBES);
+}
+
+// ── layoutField (was layoutVariableText) ──
+
+/**
+ * The old cases keep their text, font and options. `substitute: '*'` is
+ * `password` now; `centered`, new, is off, as the old layout never centred
+ * (the painter moved the lines itself); a font is a `FontsSpec`, so a family
+ * lays out in its standard font with the last resort behind it, as the
+ * painter does.
+ */
 const plate = (right: number, top: number, left = 0, bottom = 0) => ({ left, bottom, right, top });
 const options = (patch: Record<string, unknown> = {}) => ({
   plate: plate(200, 20),
   fontSize: 10,
   alignment: 0,
   multiline: false,
+  password: false,
   limit: 0,
   cells: 0,
+  centered: false,
   ...patch,
 });
 
-add('layoutVariableText', 'plain', 'Hello', 'helvetica', options());
-add('layoutVariableText', 'offset-plate', 'Hello', 'times-roman', options({ plate: plate(130, 47, 12, 9) }));
+add('layoutField', 'plain', 'Hello', 'helvetica', options());
+add('layoutField', 'offset-plate', 'Hello', 'times-roman', options({ plate: plate(130, 47, 12, 9) }));
 for (const [index, alignment] of [0, 1, 2].entries()) {
-  add('layoutVariableText', `align-${ALIGNS[index]}`, 'Wide WWW text', 'helvetica', options({ alignment }));
+  add('layoutField', `align-${ALIGNS[index]}`, 'Wide WWW text', 'helvetica', options({ alignment }));
   add(
-    'layoutVariableText',
+    'layoutField',
     `multiline-align-${ALIGNS[index]}`,
     PARAGRAPHS,
     'helvetica',
@@ -173,47 +361,98 @@ for (const [index, alignment] of [0, 1, 2].entries()) {
   );
 }
 for (const height of [10, 20, 40, 1000, 0, 3]) {
-  add('layoutVariableText', `fitted-height-${height}`, 'Hello', 'helvetica', options({ plate: plate(200, height), fontSize: 0 }));
+  add('layoutField', `fitted-height-${height}`, 'Hello', 'helvetica', options({ plate: plate(200, height), fontSize: 0 }));
 }
-add('layoutVariableText', 'fitted-wide-text', 'A long value that will not fit in this box at all', 'helvetica', options({ plate: plate(150, 20), fontSize: 0 }));
-add('layoutVariableText', 'fitted-multiline', PARAGRAPHS, 'helvetica', options({ plate: plate(146, 86), fontSize: 0, multiline: true }));
-add('layoutVariableText', 'fitted-multiline-tiny', PARAGRAPHS, 'courier', options({ plate: plate(40, 10), fontSize: 0, multiline: true }));
-add('layoutVariableText', 'fitted-zero-width', 'Hello', 'helvetica', options({ plate: plate(0, 20), fontSize: 0 }));
-add('layoutVariableText', 'fitted-empty', '', 'helvetica', options({ fontSize: 0 }));
-add('layoutVariableText', 'near-zero-size-fits', 'Hello', 'helvetica', options({ fontSize: 0.00005 }));
-add('layoutVariableText', 'long-word', 'Supercalifragilisticexpialidocious word', 'times-roman', options({ plate: plate(76, 56), fontSize: 12, multiline: true }));
-add('layoutVariableText', 'one-char-per-line', 'WWW', 'helvetica', options({ plate: plate(5, 56), multiline: true }));
-add('layoutVariableText', 'cjk', '日本語のテキストを折り返す。次の文です', 'helvetica', options({ plate: plate(40, 80), multiline: true }));
-add('layoutVariableText', 'punctuation', 'one, two; (three) [four] {five} a-b a/b "q" it\'s', 'helvetica', options({ plate: plate(60, 120), multiline: true }));
-add('layoutVariableText', 'open-punctuation', 'a ((((b c', 'helvetica', options({ plate: plate(20, 120), multiline: true }));
-add('layoutVariableText', 'currency', '$100 €5 £3 ¥7 №9', 'helvetica', options({ plate: plate(24, 120), multiline: true }));
-add('layoutVariableText', 'latin-digits', 'abc123def456 ghi789', 'courier', options({ plate: plate(40, 80), multiline: true }));
-add('layoutVariableText', 'line-breaks', 'a\r\nb\rc\nd\n\re', 'helvetica', options({ plate: plate(100, 100), multiline: true }));
-add('layoutVariableText', 'line-breaks-single-line', 'a\r\nb\rc\nd', 'helvetica', options());
-add('layoutVariableText', 'empty-lines', '\n\n', 'helvetica', options({ plate: plate(100, 100), multiline: true }));
-add('layoutVariableText', 'tabs', 'a\tb\t\tc', 'helvetica', options());
-add('layoutVariableText', 'empty', '', 'helvetica', options());
-add('layoutVariableText', 'empty-multiline', '', 'helvetica', options({ multiline: true }));
-add('layoutVariableText', 'limit', 'truncate me please', 'helvetica', options({ limit: 8 }));
-add('layoutVariableText', 'limit-counts-breaks', 'ab\ncd\nef', 'helvetica', options({ limit: 5, multiline: true }));
-add('layoutVariableText', 'substitute', 'secret', 'helvetica', options({ substitute: '*' }));
-add('layoutVariableText', 'substitute-empty', 'secret', 'helvetica', options({ substitute: '' }));
+add('layoutField', 'fitted-wide-text', 'A long value that will not fit in this box at all', 'helvetica', options({ plate: plate(150, 20), fontSize: 0 }));
+add('layoutField', 'fitted-multiline', PARAGRAPHS, 'helvetica', options({ plate: plate(146, 86), fontSize: 0, multiline: true }));
+add('layoutField', 'fitted-multiline-tiny', PARAGRAPHS, 'courier', options({ plate: plate(40, 10), fontSize: 0, multiline: true }));
+add('layoutField', 'fitted-zero-width', 'Hello', 'helvetica', options({ plate: plate(0, 20), fontSize: 0 }));
+add('layoutField', 'fitted-empty', '', 'helvetica', options({ fontSize: 0 }));
+add('layoutField', 'near-zero-size-fits', 'Hello', 'helvetica', options({ fontSize: 0.00005 }));
+add('layoutField', 'long-word', 'Supercalifragilisticexpialidocious word', 'times-roman', options({ plate: plate(76, 56), fontSize: 12, multiline: true }));
+add('layoutField', 'one-char-per-line', 'WWW', 'helvetica', options({ plate: plate(5, 56), multiline: true }));
+add('layoutField', 'cjk', '日本語のテキストを折り返す。次の文です', 'helvetica', options({ plate: plate(40, 80), multiline: true }));
+add('layoutField', 'punctuation', 'one, two; (three) [four] {five} a-b a/b "q" it\'s', 'helvetica', options({ plate: plate(60, 120), multiline: true }));
+add('layoutField', 'open-punctuation', 'a ((((b c', 'helvetica', options({ plate: plate(20, 120), multiline: true }));
+add('layoutField', 'currency', '$100 €5 £3 ¥7 №9', 'helvetica', options({ plate: plate(24, 120), multiline: true }));
+add('layoutField', 'latin-digits', 'abc123def456 ghi789', 'courier', options({ plate: plate(40, 80), multiline: true }));
+add('layoutField', 'line-breaks', 'a\r\nb\rc\nd\n\re', 'helvetica', options({ plate: plate(100, 100), multiline: true }));
+add('layoutField', 'line-breaks-single-line', 'a\r\nb\rc\nd', 'helvetica', options());
+add('layoutField', 'empty-lines', '\n\n', 'helvetica', options({ plate: plate(100, 100), multiline: true }));
+add('layoutField', 'tabs', 'a\tb\t\tc', 'helvetica', options());
+add('layoutField', 'empty', '', 'helvetica', options());
+add('layoutField', 'empty-multiline', '', 'helvetica', options({ multiline: true }));
+add('layoutField', 'limit', 'truncate me please', 'helvetica', options({ limit: 8 }));
+add('layoutField', 'limit-counts-breaks', 'ab\ncd\nef', 'helvetica', options({ limit: 5, multiline: true }));
+add('layoutField', 'password', 'secret', 'helvetica', options({ password: true }));
+add('layoutField', 'password-centered', 'secret', 'helvetica', options({ password: true, centered: true }));
 for (const [index, alignment] of [0, 1, 2].entries()) {
   for (const cells of [6, 10]) {
-    add('layoutVariableText', `comb-${cells}-${ALIGNS[index]}`, 'AiW1é', 'courier', options({ fontSize: 12, alignment, cells }));
+    add('layoutField', `comb-${cells}-${ALIGNS[index]}`, 'AiW1é', 'courier', options({ fontSize: 12, alignment, cells }));
   }
 }
-add('layoutVariableText', 'comb-proportional', 'AiWm.', 'helvetica', options({ fontSize: 12, cells: 7 }));
-add('layoutVariableText', 'comb-overflow', '123456789', 'courier', options({ cells: 4 }));
-add('layoutVariableText', 'comb-empty', '', 'courier', options({ cells: 4, alignment: 2 }));
-add('layoutVariableText', 'comb-fitted', '1234', 'helvetica', options({ fontSize: 0, cells: 4 }));
-add('layoutVariableText', 'comb-multiline', '12\n34', 'courier', options({ cells: 6, multiline: true, plate: plate(120, 60) }));
-add('layoutVariableText', 'missing-glyphs', 'Привет, мир', 'helvetica', options());
-add('layoutVariableText', 'missing-glyph-comb', 'Ж1', 'courier', options({ cells: 3 }));
-add('layoutVariableText', 'astral', 'ok 😀 fine', 'helvetica', options());
-add('layoutVariableText', 'symbol-font', 'abc αβγ', 'symbol', options());
-add('layoutVariableText', 'zero-width-plate', 'Hello there', 'helvetica', options({ plate: plate(0, 20), multiline: true }));
-add('layoutVariableText', 'inverted-plate', 'Hello there', 'helvetica', options({ plate: plate(-20, -10), multiline: true, alignment: 1 }));
+add('layoutField', 'comb-proportional', 'AiWm.', 'helvetica', options({ fontSize: 12, cells: 7 }));
+add('layoutField', 'comb-overflow', '123456789', 'courier', options({ cells: 4 }));
+add('layoutField', 'comb-empty', '', 'courier', options({ cells: 4, alignment: 2 }));
+add('layoutField', 'comb-fitted', '1234', 'helvetica', options({ fontSize: 0, cells: 4 }));
+add('layoutField', 'comb-multiline', '12\n34', 'courier', options({ cells: 6, multiline: true, plate: plate(120, 60) }));
+add('layoutField', 'missing-glyphs', 'Привет, мир', 'helvetica', options());
+add('layoutField', 'missing-glyph-comb', 'Ж1', 'courier', options({ cells: 3 }));
+add('layoutField', 'astral', 'ok 😀 fine', 'helvetica', options());
+add('layoutField', 'symbol-font', 'abc αβγ', 'symbol', options());
+add('layoutField', 'zero-width-plate', 'Hello there', 'helvetica', options({ plate: plate(0, 20), multiline: true }));
+add('layoutField', 'inverted-plate', 'Hello there', 'helvetica', options({ plate: plate(-20, -10), multiline: true, alignment: 1 }));
+
+// The new contract: fonts, directions, graphemes and joins, after the
+// core-text tests (`packages/core/text/test/text.test.ts`).
+const FONTS = { face: 'helvetica', fallbacks: [HEBREW], lastResort: EVERYTHING };
+const FIELD = options({ plate: plate(298, 23, 2, 1), fontSize: 12, centered: true });
+add('layoutField', 'bidi/latin hebrew digits', 'Hello שלום 123', FONTS, FIELD);
+add('layoutField', 'bidi/first strong hebrew', '123 שלום', FONTS, FIELD);
+add('layoutField', 'bidi/hebrew then latin', 'שלום test 123', FONTS, FIELD);
+add('layoutField', 'bidi/latin then hebrew', 'Hello שלום', FONTS, FIELD);
+add('layoutField', 'bidi/neutral only', '123', FONTS, FIELD);
+add('layoutField', 'bidi/empty', '', FONTS, FIELD);
+add('layoutField', 'bidi/nested', 'abc אבג 123 def', FONTS, FIELD);
+add('layoutField', 'bidi/mirrored brackets', 'שלום (a) [ב]', FONTS, FIELD);
+add('layoutField', 'bidi/arabic digits', 'شكرا ١٢٣ abc', { face: 'helvetica', fallbacks: [ARABIC], lastResort: EVERYTHING }, FIELD);
+add('layoutField', 'bidi/trailing spaces', 'שלום   ', FONTS, FIELD);
+add('layoutField', 'bidi/isolates', '⁧abc⁩ שלום', FONTS, FIELD);
+add('layoutField', 'bidi/right aligned rtl', 'שלום', FONTS, { ...FIELD, alignment: 2 });
+add('layoutField', 'fallback/last resort reported', 'A中B', FONTS, FIELD);
+add('layoutField', 'fallback/default last resort', 'A中B Привет', 'times-bold', FIELD);
+add('layoutField', 'fallback/no last resort', 'A中B', { face: 'helvetica', lastResort: null }, FIELD);
+add('layoutField', 'fallback/first that has it all', 'aα', { face: 'courier', fallbacks: ['symbol', 'helvetica'], lastResort: null }, FIELD);
+add('layoutField', 'fallback/program face', 'abcd', { face: LATIN, lastResort: null }, FIELD);
+add('layoutField', 'fallback/program face and standard fallback', 'abc é ž', { face: SCATTERED, fallbacks: ['helvetica'] }, FIELD);
+add('layoutField', 'align/right', 'Hi', FONTS, { ...FIELD, alignment: 2 });
+add('layoutField', 'align/centre', 'Hi', FONTS, { ...FIELD, alignment: 1 });
+add('layoutField', 'multiline/wraps and breaks', 'one two three four five six seven\nשלום', FONTS, { ...FIELD, plate: plate(100, 99, 2, 1), multiline: true, centered: false });
+add('layoutField', 'multiline/rtl wraps', 'שלום עולם שלום עולם שלום עולם', FONTS, { ...FIELD, plate: plate(60, 99, 2, 1), multiline: true, centered: false });
+add('layoutField', 'multiline/centred', 'one\ntwo', FONTS, { ...FIELD, plate: plate(100, 99, 2, 1), multiline: true });
+add('layoutField', 'fitted/long value', 'A long value that has to shrink', FONTS, { ...FIELD, fontSize: 0 });
+add('layoutField', 'fitted/hebrew', 'שלום עולם', FONTS, { ...FIELD, fontSize: 0 });
+add('layoutField', 'fitted/multiline', 'one two three four five six seven\nשלום', FONTS, { ...FIELD, plate: plate(100, 99, 2, 1), fontSize: 0, multiline: true });
+add('layoutField', 'comb/hebrew', 'אב', FONTS, { ...FIELD, cells: 4 });
+add('layoutField', 'comb/arabic joins', 'مرحبا', { face: 'helvetica', fallbacks: [ARABIC], lastResort: EVERYTHING }, { ...FIELD, cells: 5 });
+add('layoutField', 'comb/arabic with marks', 'مَرْحَبًا', { face: 'helvetica', fallbacks: [ARABIC], lastResort: EVERYTHING }, { ...FIELD, cells: 6 });
+add('layoutField', 'comb/arabic centred', 'بب', { face: 'helvetica', fallbacks: [ARABIC], lastResort: EVERYTHING }, { ...FIELD, cells: 5, alignment: 1 });
+add('layoutField', 'comb/non-joiner', 'ب‌ب', { face: 'helvetica', fallbacks: [ARABIC], lastResort: EVERYTHING }, { ...FIELD, cells: 4 });
+add('layoutField', 'comb/supplementary', '😀a😀', FONTS, { ...FIELD, cells: 4 });
+add('layoutField', 'shaped/arabic face with spaces', 'مرحبا بكم  يا', { face: { ...ARABIC, key: 'arabic-spaced', ranges: [[0x20, 0x20], [0x600, 0x6ff]] } }, FIELD);
+add('layoutField', 'shaped/arabic words', 'مرحبا بكم', { face: 'helvetica', fallbacks: [ARABIC], lastResort: EVERYTHING }, FIELD);
+add('layoutField', 'password/hebrew', 'שלום', FONTS, { ...FIELD, password: true });
+add('layoutField', 'password/supplementary', 'a😀b', FONTS, { ...FIELD, password: true });
+add('layoutField', 'graphemes/pointed hebrew', 'שָׁלוֹם', FONTS, FIELD);
+add('layoutField', 'graphemes/joined emoji', 'a 👩‍💻 b', FONTS, FIELD);
+add('layoutField', 'graphemes/variation selector', 'a ☺️ b', FONTS, FIELD);
+add('layoutField', 'graphemes/combining latin', 'é ñ', FONTS, FIELD);
+add('layoutField', 'graphemes/invisible', 'a​b⁠c', FONTS, FIELD);
+add('layoutField', 'graphemes/leading mark', '́a', FONTS, FIELD);
+add('layoutField', 'limit/supplementary', 'a😀b', FONTS, { ...FIELD, limit: 2 });
+add('layoutField', 'limit/fits supplementary', 'a😀b', FONTS, { ...FIELD, limit: 3 });
+add('layoutField', 'limit/multiline crlf', 'ab\r\ncd', FONTS, { ...FIELD, limit: 4, multiline: true });
+add('layoutField', 'breaks/cjk in last resort', '日本語のテキストを折り返す。次の文です', FONTS, { ...FIELD, plate: plate(40, 80), multiline: true, centered: false });
 
 // ── widgetDrawing ──
 
@@ -348,6 +587,18 @@ add('widgetDrawing', 'radio/oval', widget({ strokeWidth: 2 }, 30, 14), toggle('r
 add('widgetDrawing', 'signature', widget(), { kind: 'signature' });
 add('widgetDrawing', 'unknown family', widget(), { kind: 'unknown', rawValue: '' });
 
+// A widget in the fonts the form plugin passes: no approximation for a font
+// it was given, the fallbacks drawing what the face lacks.
+add('widgetDrawing', 'fonts/text hebrew fallback', widget(), text('Hello שלום 123'), {}, FONTS);
+add('widgetDrawing', 'fonts/text rtl comb', widget(), text('אבג', { comb: true, maxLength: 5 }), {}, FONTS);
+add('widgetDrawing', 'fonts/text not standard', widget({ fontFamily: 'Roboto' }), text('Ada'), {}, { face: LATIN, lastResort: null });
+add('widgetDrawing', 'fonts/text missing everywhere', widget(), text('A中B'), {}, { face: 'helvetica', fallbacks: [HEBREW] });
+add('widgetDrawing', 'fonts/combo arabic', widget(), combo('مرحبا'), {}, { face: 'helvetica', fallbacks: [ARABIC], lastResort: EVERYTHING });
+add('widgetDrawing', 'fonts/list hebrew', widget({ fontSize: 9 }, 120, 60), { ...list(['x']), options: [option('שלום', 'x', true), option('Option', 'y')] }, {}, FONTS);
+add('widgetDrawing', 'fonts/button hebrew', widget({ caption: 'שלח' }, 110, 28), { kind: 'pushbutton' }, {}, FONTS);
+add('widgetDrawing', 'text/rtl without fonts', widget(), text('שלום עולם'));
+add('widgetDrawing', 'text/rtl multiline without fonts', widget({}, 80, 60), text('שלום עולם שלום עולם', { multiline: true }));
+
 // ── widgetScene ──
 
 const placementOf = (row: ReturnType<typeof widget>, rotation?: number | null) => ({
@@ -410,6 +661,11 @@ add('textEditorLayout', 'no font', editorRow({ fontFamily: null, fontSize: null 
 add('textEditorLayout', 'italic face', editorRow({ fontFamily: 'times-bold-italic', borderStyle: 'dashed', strokeWidth: 3 }), text(''), 'Ada');
 add('textEditorLayout', 'checkbox', editorRow(), toggle('checkbox'), '');
 add('textEditorLayout', 'combo', editorRow(), combo('a'), 'Alpha');
+add('textEditorLayout', 'rtl', editorRow(), text(''), 'שלום');
+add('textEditorLayout', 'fonts/hebrew fallback', editorRow(), text(''), 'Hello שלום', FONTS);
+add('textEditorLayout', 'fonts/fallback not drawn', editorRow(), text(''), 'Hello', FONTS);
+add('textEditorLayout', 'fonts/no last resort', editorRow(), text(''), 'Hello', { face: LATIN, lastResort: null });
+add('textEditorLayout', 'fonts/comb hebrew', editorRow({ fontSize: 12 }), text('', { comb: true, maxLength: 6 }), 'אבג', FONTS);
 
 // ── paints ──
 
@@ -417,7 +673,21 @@ for (const kind of ['text', 'checkbox', 'radio', 'combobox', 'listbox', 'pushbut
   add('paints', kind, kind);
 }
 
-// ── needsBreak ──
+// ── widgetText ──
+
+add('widgetText', 'text', widget(), text('Ada'));
+add('widgetText', 'text shown', widget(), text('Ada'), { text: '1,234.00' });
+add('widgetText', 'password', widget(), text('secret', { password: true }));
+add('widgetText', 'password empty', widget(), text('', { password: true }));
+add('widgetText', 'combo', widget(), combo('a'));
+add('widgetText', 'combo shown', widget(), combo('a'), { text: 'Alpha' });
+add('widgetText', 'list', widget(), list(['b']));
+add('widgetText', 'button', widget({ caption: 'Go שלח' }), { kind: 'pushbutton' });
+add('widgetText', 'button without caption', widget({ caption: null }), { kind: 'pushbutton' });
+add('widgetText', 'checkbox', widget(), toggle('checkbox'), { checked: true });
+add('widgetText', 'signature', widget(), { kind: 'signature' });
+
+// ── needsBreak (moved to core/text/src/breaks.ts) ──
 
 /** One of each class the rule tells apart, and the edges of its ranges. */
 const CODES = [
@@ -437,7 +707,7 @@ export const suites: Suite[] = [
     kind: 'function',
     file: 'core/form-painter.json',
     describes:
-      'packages/core/form: the widget painter: layout fonts, variable-text layout (fitting, wrapping, combs, limits, line-break classes), widget drawings for every family, border style and check style, scenes placed and turned, and the text editor layout.',
+      'packages/core/form and packages/core/text: the paint fonts, the field layout (fitting, wrapping, combs, limits, line-break classes, bidi order, fallbacks, graphemes, joins), widget drawings for every kind, border style and check style, the text a widget draws, scenes placed and turned, and the text editor layout.',
     functions,
     cases,
   },

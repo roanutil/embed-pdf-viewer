@@ -4884,7 +4884,7 @@
       "file": "plugins/annotation-pure.json",
       "before": 155,
       "after": 153,
-      "added": ["withSnap/current-settings"],
+      "added": ["withSnap/current-settings", "standardFontCssOfFace/bold-italic"],
       "cases": [
         {
           "before": "buildToolRegistry/built-ins",
@@ -5346,63 +5346,64 @@
         },
         {
           "before": "cssFontFamilyForFace/Helvetica",
-          "after": "cssFontFamilyForFace/Helvetica",
+          "after": "standardFontCssOfFace/Helvetica",
           "oldFunction": "cssFontFamilyForFace",
           "oldArgsSha256": "cb60c61c1307fc64c213c591b0a577ebda9f0a76dc337b67b99783af7728b075",
           "task11InputDrift": false
         },
         {
           "before": "cssFontFamilyForFace/courier new",
-          "after": "cssFontFamilyForFace/courier new",
+          "after": "standardFontCssOfFace/courier new",
           "oldFunction": "cssFontFamilyForFace",
           "oldArgsSha256": "a98e19f9ad02823fbca0d122d734fb3fa2b9b378fbc60a59390778feb7778dd4",
           "task11InputDrift": false
         },
         {
           "before": "cssFontFamilyForFace/Inter",
-          "after": "cssFontFamilyForFace/Inter",
+          "after": "standardFontCssOfFace/Inter",
           "oldFunction": "cssFontFamilyForFace",
           "oldArgsSha256": "0b30e7092b9222efb941c53488a3bc871221ce26acbb89cdcb724f26324ed44c",
           "task11InputDrift": false
         },
         {
           "before": "cssFontFamilyForFace/Unknown Face",
-          "after": "cssFontFamilyForFace/Unknown Face",
+          "after": "standardFontCssOfFace/Unknown Face",
           "oldFunction": "cssFontFamilyForFace",
           "oldArgsSha256": "f1ae34ca6a62b403693a7e5be5fcd1e023740deabb992bce8736f6601c98de9e",
           "task11InputDrift": false
         },
         {
           "before": "cssFontFamilyForFace/no-fonts",
-          "after": "cssFontFamilyForFace/no-fonts",
+          "after": null,
+          "reason": "595fa2bd5: a face resolves to the standard font that stands in, with no registered list at this level (the fonts plugin owns registered fonts), so every face case is a no-fonts case.",
           "oldFunction": "cssFontFamilyForFace",
           "oldArgsSha256": "e074f42de5ceadd61dec09e0c9d369038dab58879f34162200e9ba86fb23a627",
           "task11InputDrift": false
         },
         {
           "before": "cssFontFamilyForFont/helvetica-bold",
-          "after": "cssFontFamilyForFont/helvetica-bold",
+          "after": "standardFontCssOfFont/helvetica-bold",
           "oldFunction": "cssFontFamilyForFont",
           "oldArgsSha256": "2ed389d011ea9881b0fcb80d85776f74706048d1160cd37d905a55180e895ffd",
           "task11InputDrift": false
         },
         {
           "before": "cssFontFamilyForFont/courier",
-          "after": "cssFontFamilyForFont/courier",
+          "after": "standardFontCssOfFont/courier",
           "oldFunction": "cssFontFamilyForFont",
           "oldArgsSha256": "e45c36b9c4667e0cee39393cf6c7a0175847253b5ca61caed675ccce8de41e5a",
           "task11InputDrift": false
         },
         {
           "before": "cssFontFamilyForFont/symbol",
-          "after": "cssFontFamilyForFont/symbol",
+          "after": "standardFontCssOfFont/symbol",
           "oldFunction": "cssFontFamilyForFont",
           "oldArgsSha256": "7d99ee89817441b2a53c415c0bf82e8deb88dd2bc6e7d84caa1e027e17ef21ad",
           "task11InputDrift": false
         },
         {
           "before": "cssFontFamilyForFont/inter-bold",
-          "after": "cssFontFamilyForFont/inter-bold",
+          "after": "standardFontCssOfFont/inter-bold",
           "oldFunction": "cssFontFamilyForFont",
           "oldArgsSha256": "13ecdad02aeaa4f25ee5fa261dd499ef623d2b02a22543718dc2fcbe1d713ed0",
           "task11InputDrift": false
