@@ -3,8 +3,8 @@
 //! new file takes. Pure.
 //!
 //! Records are the engine's JSON, as the plugin carries them: an
-//! `Attachment` is `{ref, index, name, mimeType, description, size,
-//! checksum, createdAt, modifiedAt}` with `ref` `{kind: 'key', key}`, and
+//! `Attachment` is `{ref, index, name, mimeType, description, sizeBytes,
+//! md5, createdAt, modifiedAt}` with `ref` `{kind: 'key', key}`, and
 //! the mirror holds the array of them, or `null` before the first read.
 
 use std::collections::HashSet;
@@ -208,10 +208,10 @@ mod tests {
 
     #[test]
     fn files_of_both_homes() {
-        let attachment = json!({ "ref": { "kind": "key", "key": "a.txt" }, "index": 0, "name": "a.txt", "size": 1 });
+        let attachment = json!({ "ref": { "kind": "key", "key": "a.txt" }, "index": 0, "name": "a.txt", "sizeBytes": 1 });
         assert_eq!(
             document_file_of(&attachment),
-            json!({ "name": "a.txt", "size": 1, "id": "doc:a.txt",
+            json!({ "name": "a.txt", "sizeBytes": 1, "id": "doc:a.txt",
                     "home": { "kind": "document", "ref": { "kind": "key", "key": "a.txt" } } })
         );
         let r = json!({ "kind": "objectNumber", "page": { "kind": "objectNumber", "objectNumber": 1 }, "objectNumber": 20 });

@@ -25,7 +25,7 @@ fn key(name: &str) -> Value {
 
 fn att(name: &str, index: usize) -> Value {
     json!({ "ref": key(name), "index": index, "name": name, "mimeType": null, "description": null,
-            "size": null, "checksum": null, "createdAt": null, "modifiedAt": null })
+            "sizeBytes": null, "md5": null, "createdAt": null, "modifiedAt": null })
 }
 
 fn read() -> Value {
@@ -93,8 +93,8 @@ fn file_annotation() -> Value {
     json!({
         "subtype": "file-attachment", "ref": annotation_ref(), "page": pr(1),
         "rect": { "x": 1, "y": 1, "width": 10, "height": 10 },
-        "file": { "name": "f.png", "mimeType": "image/png", "description": null, "size": 1,
-                  "checksum": null, "createdAt": null, "modifiedAt": null },
+        "file": { "name": "f.png", "mimeType": "image/png", "description": null, "sizeBytes": 1,
+                  "md5": null, "createdAt": null, "modifiedAt": null },
     })
 }
 
@@ -189,7 +189,7 @@ fn aborted() -> OperationOptions {
 
 /// The list's file for an attachment named `name`.
 fn doc_file(name: &str) -> Value {
-    json!({ "name": name, "mimeType": null, "description": null, "size": null, "checksum": null,
+    json!({ "name": name, "mimeType": null, "description": null, "sizeBytes": null, "md5": null,
             "createdAt": null, "modifiedAt": null, "id": format!("doc:{name}"),
             "home": { "kind": "document", "ref": key(name) } })
 }
@@ -215,14 +215,14 @@ fn the_list_and_on_changed_lead_the_writes_promise() {
             .push(format!("changed {} {listed} {}", event.kind, event.origin["tx"]["id"]));
         Ok(())
     });
-    let adding = rig.attachment.add(vec![file_source(b"hi", "c.txt")], none());
+    let adding = rig.attachment.create(vec![file_source(b"hi", "c.txt")], none());
     let log = order.clone();
     adding.on_settle(move |result| log.borrow_mut().push(format!("settled {}", result.is_ok())));
     rt::run_until_stalled();
     assert_eq!(
         *order.borrow(),
         [
-            format!("changed added doc:a.txt,doc:b.txt,doc:c.txt \"{}\"", op(1)),
+            format!("changed created doc:a.txt,doc:b.txt,doc:c.txt \"{}\"", op(1)),
             "settled true".to_string()
         ]
     );
@@ -240,12 +240,12 @@ fn an_add_shows_at_once_and_goes_when_the_engine_refuses() {
         count.set(count.get() + 1);
         Ok(())
     });
-    let adding = rig.attachment.add(vec![file_source(b"x", "a.txt")], none());
+    let adding = rig.attachment.create(vec![file_source(b"x", "a.txt")], none());
     rt::run_until_stalled();
     assert_eq!(rig.calls("apply"), 1);
     let shown = rig.attachment.list();
     assert_eq!(ids(&shown), ["doc:a (2).txt", "doc:a.txt", "doc:b.txt"]);
-    assert_eq!(shown[0]["size"], 1);
+    assert_eq!(shown[0]["sizeBytes"], 1);
     assert!(rig.attachment.is_pending(&shown[0]));
     let refusal = json!({ "name": "EngineError", "message": "no", "code": "Refused" });
     assert!(rig.fake.settle("x", Err(&refusal)));
@@ -259,11 +259,11 @@ fn an_add_shows_at_once_and_goes_when_the_engine_refuses() {
 fn the_permission_gates_refuse_before_the_engine() {
     // Without doc.attachments.modify: no read, no apply.
     let rig = Rig::with(vec![read()], json!(["doc.open", "doc.download"]), false);
-    assert!(!rig.attachment.can_add());
-    assert!(!rig.attachment.can_remove(&doc_file("a.txt")));
-    let add = rig.attachment.add(vec![file_source(b"x", "x.txt")], none());
+    assert!(!rig.attachment.can_create());
+    assert!(!rig.attachment.can_delete(&doc_file("a.txt")));
+    let add = rig.attachment.create(vec![file_source(b"x", "x.txt")], none());
     assert!(settled(&add).unwrap().unwrap_err().is_plugin_error(Some("permission-denied")));
-    let remove = rig.attachment.remove(doc_file("a.txt"), none());
+    let remove = rig.attachment.delete(doc_file("a.txt"), none());
     assert!(settled(&remove).unwrap().unwrap_err().is_plugin_error(Some("permission-denied")));
     assert_eq!((rig.calls("attachments.list"), rig.calls("apply")), (0, 0));
 
@@ -278,17 +278,17 @@ fn the_permission_gates_refuse_before_the_engine() {
     // A signal that already fired: nothing starts.
     let rig = Rig::loaded(vec![read()]);
     for promise in [
-        rig.attachment.add(vec![file_source(b"x", "x.txt")], aborted()).convert(|_| Ok(())),
-        rig.attachment.remove(doc_file("a.txt"), aborted()),
+        rig.attachment.create(vec![file_source(b"x", "x.txt")], aborted()).convert(|_| Ok(())),
+        rig.attachment.delete(doc_file("a.txt"), aborted()),
         rig.attachment.download(doc_file("a.txt"), aborted()).convert(|_| Ok(())),
     ] {
         assert!(
             settled(&promise).unwrap().unwrap_err().is_plugin_error(Some("operation-cancelled"))
         );
     }
-    let unknown = rig.attachment.remove(doc_file("zzz"), none());
+    let unknown = rig.attachment.delete(doc_file("zzz"), none());
     assert!(settled(&unknown).unwrap().unwrap_err().is_plugin_error(Some("not-found")));
-    let nameless = rig.attachment.add(vec![json!({ "data": { "$bytes": "eA==" } })], none());
+    let nameless = rig.attachment.create(vec![json!({ "data": { "$bytes": "eA==" } })], none());
     assert!(settled(&nameless).unwrap().unwrap_err().is_plugin_error(Some("invalid-input")));
     assert_eq!((rig.calls("apply"), rig.calls("attachments.download")), (0, 0));
 }
@@ -300,8 +300,8 @@ fn no_optional_plugin_is_needed() {
     // never pending, can't be removed, and can't be saved.
     assert_eq!(ids(&rig.attachment.list()), ["doc:a.txt", "doc:b.txt"]);
     assert!(!rig.attachment.is_pending(&page_file()));
-    assert!(!rig.attachment.can_remove(&page_file()));
-    let remove = rig.attachment.remove(page_file(), none());
+    assert!(!rig.attachment.can_delete(&page_file()));
+    let remove = rig.attachment.delete(page_file(), none());
     let error = settled(&remove).unwrap().unwrap_err();
     assert!(error.is_plugin_error(Some("not-found")));
     assert_eq!(error.message, "attachment.remove: no annotation plugin");
@@ -344,7 +344,7 @@ fn the_reads_keep_their_rc_until_an_input_changes() {
     assert!(Rc::ptr_eq(&chosen, &a.get_selected()));
 
     // A write changes the view, every read's input.
-    settled(&a.add(vec![file_source(b"c", "c.txt")], none())).unwrap().unwrap();
+    settled(&a.create(vec![file_source(b"c", "c.txt")], none())).unwrap().unwrap();
     assert!(!Rc::ptr_eq(&list, &a.list()));
     assert!(!Rc::ptr_eq(&chosen, &a.get_selected()));
     assert_eq!(ids(&a.get_selected()), ["doc:b.txt"]);
@@ -446,42 +446,45 @@ fn reads_and_writes_settle_on_the_typescripts_turns() {
     let rig = Rig::loaded(vec![read(), created(1, "c.txt")]);
     let turn = turn_counter();
     let (changed, _off) = heard_on(|l| rig.attachment.on_changed(l), &turn);
-    let added = reacts_on(rig.attachment.add(vec![file_source(b"hi", "c.txt")], none()), &turn);
+    let added = reacts_on(rig.attachment.create(vec![file_source(b"hi", "c.txt")], none()), &turn);
     rt::run_until_stalled();
     assert_eq!((added.get(), changed.get()), (5, 1));
     let turn = turn_counter();
-    let nothing = reacts_on(rig.attachment.add(Vec::new(), none()), &turn);
+    let nothing = reacts_on(rig.attachment.create(Vec::new(), none()), &turn);
     rt::run_until_stalled();
     assert_eq!(nothing.get(), 1);
     let turn = turn_counter();
-    let nameless =
-        reacts_on(rig.attachment.add(vec![json!({ "data": { "$bytes": "eA==" } })], none()), &turn);
+    let nameless = reacts_on(
+        rig.attachment.create(vec![json!({ "data": { "$bytes": "eA==" } })], none()),
+        &turn,
+    );
     rt::run_until_stalled();
     assert_eq!(nameless.get(), 2);
     let turn = turn_counter();
-    let cancelled = reacts_on(rig.attachment.add(vec![file_source(b"x", "x")], aborted()), &turn);
+    let cancelled =
+        reacts_on(rig.attachment.create(vec![file_source(b"x", "x")], aborted()), &turn);
     rt::run_until_stalled();
     assert_eq!(cancelled.get(), 1);
 
     let rig = Rig::new(vec![read(), created(1, "c.txt")]);
     let turn = turn_counter();
     let (changed, _off) = heard_on(|l| rig.attachment.on_changed(l), &turn);
-    let early = reacts_on(rig.attachment.add(vec![file_source(b"hi", "c.txt")], none()), &turn);
+    let early = reacts_on(rig.attachment.create(vec![file_source(b"hi", "c.txt")], none()), &turn);
     rt::run_until_stalled();
     assert_eq!((early.get(), changed.get()), (14, 10));
 
     let rig = Rig::loaded(vec![read(), removed(1, "a.txt"), refused()]);
     let turn = turn_counter();
     let (changed, _off) = heard_on(|l| rig.attachment.on_changed(l), &turn);
-    let gone = reacts_on(rig.attachment.remove(doc_file("a.txt"), none()), &turn);
+    let gone = reacts_on(rig.attachment.delete(doc_file("a.txt"), none()), &turn);
     rt::run_until_stalled();
     assert_eq!((gone.get(), changed.get()), (4, 0));
     let turn = turn_counter();
-    let unknown = reacts_on(rig.attachment.remove(doc_file("zzz"), none()), &turn);
+    let unknown = reacts_on(rig.attachment.delete(doc_file("zzz"), none()), &turn);
     rt::run_until_stalled();
     assert_eq!(unknown.get(), 1);
     let turn = turn_counter();
-    let refusal = reacts_on(rig.attachment.remove(doc_file("b.txt"), none()), &turn);
+    let refusal = reacts_on(rig.attachment.delete(doc_file("b.txt"), none()), &turn);
     rt::run_until_stalled();
     assert_eq!(refusal.get(), 4);
 
@@ -502,14 +505,14 @@ fn reads_and_writes_settle_on_the_typescripts_turns() {
         Rig::with(vec![annotations(), read(), annotation_deleted(1), resource], json!("*"), true);
     settled(&rig.attachment.ensure_loaded(none())).unwrap().unwrap();
     let turn = turn_counter();
-    let deleted = reacts_on(rig.attachment.remove(page_file(), none()), &turn);
+    let deleted = reacts_on(rig.attachment.delete(page_file(), none()), &turn);
     rt::run_until_stalled();
     assert_eq!(deleted.get(), 7);
     assert_eq!(ids(&rig.attachment.list()), ["doc:a.txt", "doc:b.txt"]);
 
     let rig = Rig::loaded(vec![read()]);
     let turn = turn_counter();
-    let missing = reacts_on(rig.attachment.remove(page_file(), none()), &turn);
+    let missing = reacts_on(rig.attachment.delete(page_file(), none()), &turn);
     rt::run_until_stalled();
     assert_eq!(missing.get(), 1);
 }
