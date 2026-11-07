@@ -542,7 +542,8 @@
                         "default"
                       ],
                       "terminal": "t",
-                      "importance": 3
+                      "importance": 3,
+                      "grow": false
                     }
                   ]
                 }
@@ -633,7 +634,8 @@
                         "y"
                       ],
                       "terminal": "t",
-                      "importance": 2
+                      "importance": 2,
+                      "grow": false
                     }
                   ]
                 }
@@ -957,7 +959,8 @@
                         "narrow"
                       ],
                       "terminal": "zoom:menu",
-                      "importance": 3
+                      "importance": 2,
+                      "grow": false
                     },
                     {
                       "kind": "command",
@@ -967,7 +970,7 @@
                         "icon+label",
                         "icon"
                       ],
-                      "importance": 3
+                      "importance": 2
                     }
                   ]
                 }
@@ -1033,7 +1036,7 @@
                       "variants": [
                         "icon"
                       ],
-                      "importance": 3
+                      "importance": 4
                     },
                     {
                       "kind": "command",
@@ -1042,7 +1045,7 @@
                       "variants": [
                         "icon"
                       ],
-                      "importance": 3
+                      "importance": 4
                     }
                   ]
                 },
@@ -1070,7 +1073,7 @@
                       "variants": [
                         "icon"
                       ],
-                      "importance": 3
+                      "importance": 5
                     }
                   ]
                 }
@@ -1213,7 +1216,8 @@
                         "default"
                       ],
                       "terminal": "a",
-                      "importance": 3
+                      "importance": 3,
+                      "grow": false
                     }
                   ]
                 }
@@ -1267,7 +1271,8 @@
                         "default"
                       ],
                       "terminal": "t",
-                      "importance": 3
+                      "importance": 3,
+                      "grow": false
                     }
                   ]
                 }
@@ -1626,7 +1631,8 @@
                         "default"
                       ],
                       "terminal": "søk",
-                      "importance": 3
+                      "importance": 3,
+                      "grow": false
                     }
                   ]
                 }
@@ -1858,7 +1864,8 @@
                         "narrow"
                       ],
                       "terminal": "zoom:menu",
-                      "importance": 3
+                      "importance": 2,
+                      "grow": false
                     },
                     {
                       "kind": "command",
@@ -1868,7 +1875,7 @@
                         "icon+label",
                         "icon"
                       ],
-                      "importance": 3
+                      "importance": 2
                     }
                   ]
                 }
@@ -1934,7 +1941,7 @@
                       "variants": [
                         "icon"
                       ],
-                      "importance": 3
+                      "importance": 4
                     },
                     {
                       "kind": "command",
@@ -1943,7 +1950,7 @@
                       "variants": [
                         "icon"
                       ],
-                      "importance": 3
+                      "importance": 4
                     }
                   ]
                 },
@@ -1971,7 +1978,7 @@
                       "variants": [
                         "icon"
                       ],
-                      "importance": 3
+                      "importance": 5
                     }
                   ]
                 }

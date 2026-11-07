@@ -1851,6 +1851,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {
             "ar": {
               "commands.save": "App save"
@@ -1933,6 +1935,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -2284,6 +2288,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2298,6 +2304,8 @@
           "locale": "en",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -2310,6 +2318,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2390,6 +2400,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -2402,6 +2414,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2501,6 +2515,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -2513,6 +2529,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2643,6 +2661,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -2655,6 +2675,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2711,6 +2733,8 @@
             }
           },
           "loading": "ar",
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -2723,6 +2747,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2774,7 +2800,7 @@
       ],
       "outcome": {
         "returned": {
-          "locale": "ar",
+          "locale": "en",
           "locales": {
             "en": {
               "code": "en",
@@ -2814,7 +2840,9 @@
               }
             }
           },
-          "loading": null,
+          "loading": "ar",
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -2827,6 +2855,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2883,6 +2913,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -2895,6 +2927,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2937,6 +2971,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -2949,6 +2985,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2965,6 +3003,8 @@
           "locale": "en",
           "locales": {},
           "loading": "ar",
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -2977,6 +3017,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -2993,6 +3035,8 @@
           "locale": "toString",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -3038,6 +3082,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         "ar"
@@ -3080,6 +3126,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -3125,6 +3173,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         "es"
@@ -3167,6 +3217,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -3212,6 +3264,8 @@
             }
           },
           "loading": "ar",
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         "es"
@@ -3254,6 +3308,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -3299,6 +3355,8 @@
             }
           },
           "loading": "en",
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         "en"
@@ -3341,6 +3399,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -3386,6 +3446,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         "hasOwnProperty"
@@ -3428,6 +3490,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -3473,6 +3537,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -3550,6 +3616,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -3595,6 +3663,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         {
@@ -3655,6 +3725,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -3700,6 +3772,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         "ar"
@@ -3742,6 +3816,8 @@
             }
           },
           "loading": "ar",
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -3787,6 +3863,8 @@
             }
           },
           "loading": "ar",
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         "ar"
@@ -3829,6 +3907,8 @@
             }
           },
           "loading": "ar",
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -3874,6 +3954,8 @@
             }
           },
           "loading": "ar",
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         "he"
@@ -3916,6 +3998,8 @@
             }
           },
           "loading": "he",
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -3961,6 +4045,8 @@
             }
           },
           "loading": "ar",
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         "fr"
@@ -4003,6 +4089,8 @@
             }
           },
           "loading": "ar",
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -4048,6 +4136,8 @@
             }
           },
           "loading": "ar",
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         "ar"
@@ -4090,6 +4180,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -4103,6 +4195,8 @@
           "locale": "",
           "locales": {},
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -4148,6 +4242,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         "es"
@@ -4177,6 +4273,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -4222,6 +4320,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         "ar"
@@ -4264,6 +4364,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -4309,6 +4411,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         "toString"
@@ -4352,6 +4456,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -4397,6 +4503,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         "en",
@@ -4459,6 +4567,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         }
       }
@@ -4504,6 +4614,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {}
         },
         "ar",
@@ -4549,6 +4661,8 @@
             }
           },
           "loading": null,
+          "loadingFallback": null,
+          "fetched": {},
           "waitingTranslations": {
             "ar": {
               "a": "b"

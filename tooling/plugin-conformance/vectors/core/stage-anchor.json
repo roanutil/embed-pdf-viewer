@@ -52,8 +52,8 @@
       "outcome": {
         "returned": {
           "pageIndex": 0,
-          "fx": 0.5,
-          "fy": 0.5
+          "fractionX": 0.5,
+          "fractionY": 0.5
         }
       }
     },
@@ -106,8 +106,8 @@
       "outcome": {
         "returned": {
           "pageIndex": 1,
-          "fx": 0.25,
-          "fy": 0.23
+          "fractionX": 0.25,
+          "fractionY": 0.23
         }
       }
     },
@@ -160,8 +160,8 @@
       "outcome": {
         "returned": {
           "pageIndex": 0,
-          "fx": 0.5,
-          "fy": 1.01
+          "fractionX": 0.5,
+          "fractionY": 1.01
         }
       }
     },
@@ -214,8 +214,8 @@
       "outcome": {
         "returned": {
           "pageIndex": 0,
-          "fx": -0.16666666666666666,
-          "fy": -0.125
+          "fractionX": -0.16666666666666666,
+          "fractionY": -0.125
         }
       }
     },
@@ -268,8 +268,8 @@
       "outcome": {
         "returned": {
           "pageIndex": 2,
-          "fx": 1.1666666666666667,
-          "fy": 1247.96
+          "fractionX": 1.1666666666666667,
+          "fractionY": 1247.96
         }
       }
     },
@@ -327,8 +327,8 @@
       "outcome": {
         "returned": {
           "pageIndex": 0,
-          "fx": 0.16666666666666666,
-          "fy": 0.125
+          "fractionX": 0.16666666666666666,
+          "fractionY": 0.125
         }
       }
     },
@@ -386,8 +386,8 @@
       "outcome": {
         "returned": {
           "pageIndex": 1,
-          "fx": 0.8066666666666666,
-          "fy": 0.125
+          "fractionX": 0.8066666666666666,
+          "fractionY": 0.125
         }
       }
     },
@@ -445,8 +445,8 @@
       "outcome": {
         "returned": {
           "pageIndex": 0,
-          "fx": 1.0133333333333334,
-          "fy": 0.125
+          "fractionX": 1.0133333333333334,
+          "fractionY": 0.125
         }
       }
     },
@@ -505,8 +505,8 @@
       "outcome": {
         "returned": {
           "pageIndex": 3,
-          "fx": 0.1,
-          "fy": 0.04857142857142857
+          "fractionX": 0.1,
+          "fractionY": 0.04857142857142857
         }
       }
     },
@@ -566,10 +566,10 @@
       "outcome": {
         "returned": {
           "pageIndex": 0,
-          "fx": {
+          "fractionX": {
             "$number": "NaN"
           },
-          "fy": 0.125
+          "fractionY": 0.125
         }
       }
     },
@@ -658,8 +658,8 @@
       "outcome": {
         "returned": {
           "pageIndex": 4,
-          "fx": 0.08666666666666667,
-          "fy": 0.065
+          "fractionX": 0.08666666666666667,
+          "fractionY": 0.065
         }
       }
     },
@@ -840,8 +840,8 @@
       "args": [
         {
           "pageIndex": 1,
-          "fx": 0.25,
-          "fy": 0.5
+          "fractionX": 0.25,
+          "fractionY": 0.5
         },
         {
           "kind": "linear",
@@ -900,8 +900,8 @@
       "args": [
         {
           "pageIndex": 1,
-          "fx": 0.5,
-          "fy": 0.5
+          "fractionX": 0.5,
+          "fractionY": 0.5
         },
         {
           "kind": "linear",
@@ -965,8 +965,8 @@
       "args": [
         {
           "pageIndex": 2,
-          "fx": 0,
-          "fy": 1
+          "fractionX": 0,
+          "fractionY": 1
         },
         {
           "kind": "linear",
@@ -1031,8 +1031,8 @@
       "args": [
         {
           "pageIndex": 99,
-          "fx": 0.5,
-          "fy": 0.5
+          "fractionX": 0.5,
+          "fractionY": 0.5
         },
         {
           "kind": "linear",
@@ -1096,8 +1096,8 @@
       "args": [
         {
           "pageIndex": 40,
-          "fx": 0.5,
-          "fy": 0.5
+          "fractionX": 0.5,
+          "fractionY": 0.5
         },
         {
           "kind": "grid",
@@ -1192,8 +1192,8 @@
       "args": [
         {
           "pageIndex": 5,
-          "fx": 1,
-          "fy": 0
+          "fractionX": 1,
+          "fractionY": 0
         },
         {
           "kind": "grid",
@@ -1288,8 +1288,8 @@
       "args": [
         {
           "pageIndex": 0,
-          "fx": 0,
-          "fy": 0
+          "fractionX": 0,
+          "fractionY": 0
         },
         {
           "kind": "linear",
@@ -1352,8 +1352,8 @@
       "args": [
         {
           "pageIndex": 0,
-          "fx": 0,
-          "fy": 0
+          "fractionX": 0,
+          "fractionY": 0
         },
         {
           "kind": "linear",
@@ -1381,8 +1381,8 @@
       "args": [
         {
           "pageIndex": 0,
-          "fx": 0,
-          "fy": 0
+          "fractionX": 0,
+          "fractionY": 0
         },
         {
           "kind": "grid",
@@ -1410,8 +1410,8 @@
       "args": [
         {
           "pageIndex": 0,
-          "fx": 0,
-          "fy": 0
+          "fractionX": 0,
+          "fractionY": 0
         },
         {
           "kind": "linear",
@@ -1496,8 +1496,8 @@
       "outcome": {
         "returned": {
           "pageIndex": 1,
-          "fx": 0.641025641025641,
-          "fy": 0.4865384615384616
+          "fractionX": 0.641025641025641,
+          "fractionY": 0.4865384615384616
         }
       }
     },
@@ -1559,8 +1559,8 @@
       "outcome": {
         "returned": {
           "pageIndex": 0,
-          "fx": -0.16666666666666666,
-          "fy": 0.375
+          "fractionX": -0.16666666666666666,
+          "fractionY": 0.375
         }
       }
     },
@@ -1622,8 +1622,8 @@
       "outcome": {
         "returned": {
           "pageIndex": 0,
-          "fx": 0.7592592592592592,
-          "fy": 0.7152777777777777
+          "fractionX": 0.7592592592592592,
+          "fractionY": 0.7152777777777777
         }
       }
     },
@@ -1717,8 +1717,8 @@
       "outcome": {
         "returned": {
           "pageIndex": 1,
-          "fx": 0.5866666666666667,
-          "fy": 0.875
+          "fractionX": 0.5866666666666667,
+          "fractionY": 0.875
         }
       }
     },
@@ -1728,8 +1728,8 @@
       "args": [
         {
           "pageIndex": 1,
-          "fx": 0.5,
-          "fy": 0.3
+          "fractionX": 0.5,
+          "fractionY": 0.3
         },
         {
           "kind": "linear",
@@ -1788,8 +1788,8 @@
       "args": [
         {
           "pageIndex": 0,
-          "fx": 0.1,
-          "fy": 0.9
+          "fractionX": 0.1,
+          "fractionY": 0.9
         },
         {
           "kind": "linear",
@@ -1852,8 +1852,8 @@
       "args": [
         {
           "pageIndex": 3,
-          "fx": 0.5,
-          "fy": 0.5
+          "fractionX": 0.5,
+          "fractionY": 0.5
         },
         {
           "kind": "linear",
