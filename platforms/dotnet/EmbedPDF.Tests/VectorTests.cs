@@ -84,6 +84,15 @@ public class VectorTests
         var nullText = Wire.Read<PageTextSnapshot>(JsonDocument.Parse("{\"text\":\"\",\"charCount\":0}").RootElement); var emptyText = Wire.Read<PageTextSnapshot>(JsonDocument.Parse("{\"text\":\"\",\"charCount\":0,\"charMap\":[]}").RootElement); Assert.Null(nullText.CharMap); Assert.Empty(emptyText.CharMap!.Value);
     }
     [Fact]
+    public void CharMapAnchorsArePairsOnTheWire()
+    {
+        var text = new PageTextSnapshot { Text = "ab", CharCount = 3, CharMap = [new CharMapAnchor(new(2), new(1))] };
+        Assert.Equal("[[2,1]]", JsonSerializer.SerializeToElement(text, Wire.Json).GetProperty("charMap").GetRawText());
+        Assert.Equal(new CharMapAnchor(new(2), new(1)), Wire.Read<PageTextSnapshot>(JsonDocument.Parse("{\"text\":\"ab\",\"charCount\":3,\"charMap\":[[2,1]]}").RootElement).CharMap!.Value.Single());
+        foreach (var anchors in new[] { "[{\"char\":2,\"text\":1}]", "[[2]]", "[[2,1,0]]", "[[\"2\",1]]" })
+            Assert.Throws<JsonException>(() => Wire.Read<PageTextSnapshot>(JsonDocument.Parse("{\"text\":\"ab\",\"charCount\":3,\"charMap\":" + anchors + "}").RootElement));
+    }
+    [Fact]
     public void WireVectorsPinSupportedOperationFieldsAndSearchSliceDto()
     {
         var wire = Vector("wire/requests.json");

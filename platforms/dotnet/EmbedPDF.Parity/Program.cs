@@ -11,7 +11,7 @@ if (args is ["self-test"])
         ("exponent", "5e-5", "0.0001", true),
         ("crop-rotation-boundary", "{\"x\":-12.00005,\"rotation\":90}", "{\"x\":-12,\"rotation\":90}", false),
         ("rotation-mismatch", "{\"rotation\":90}", "{\"rotation\":270}", false),
-        ("surrogate-dropped-combining", "{\"text\":\"a😀é\",\"charMap\":[{\"char\":1,\"text\":1},{\"char\":2,\"text\":3},{\"char\":3,\"text\":3}]}", "{\"text\":\"a😀é\",\"charMap\":[{\"char\":1,\"text\":1},{\"char\":2,\"text\":3},{\"char\":3,\"text\":3}]}", true),
+        ("surrogate-dropped-combining", "{\"text\":\"a😀é\",\"charMap\":[[1,1],[2,3],[3,3]]}", "{\"text\":\"a😀é\",\"charMap\":[[1,1],[2,3],[3,3]]}", true),
         ("text-mismatch", "\"é\"", "\"é\"", false),
         ("empty-array-not-null", "[]", "null", false),
         ("dropped-map-mismatch", "{\"charCount\":3,\"text\":\"ab\"}", "{\"charCount\":2,\"text\":\"ab\"}", false),
