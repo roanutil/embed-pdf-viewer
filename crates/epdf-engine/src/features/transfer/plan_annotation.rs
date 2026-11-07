@@ -456,7 +456,7 @@ pub fn annotation_import_facts(annotations: &[Value], meta: &Value) -> Vec<Value
                     "cacheDelta": if index == last { meta["cacheDelta"].clone() } else { Value::Null },
                     "opId": meta["opId"],
                     "undoable": meta["undoable"],
-                    "changed": [annotation["ref"]],
+                    "changedRefs": [annotation["ref"]],
                 },
             })
         })

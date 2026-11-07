@@ -455,7 +455,7 @@ impl ChangeItem {
             // `deleted` is what the delete removed (`deletedAttachmentOf`).
             Self::AttachmentsDelete { meta } => (
                 "attachments.deleted",
-                serde_json::json!({ "deleted": to_value(&meta.changed.first())?,
+                serde_json::json!({ "deleted": to_value(&meta.changed_refs.first())?,
                     "meta": to_value(meta)? }),
             ),
             Self::AttachmentsRestore { attachment, meta } => (
@@ -476,7 +476,7 @@ impl ChangeItem {
             // `deletedAnnotationsOf`: the refs in `meta.changed`.
             Self::AnnotationsDelete { page, meta } => (
                 "annotations.deleted",
-                serde_json::json!({ "deleted": to_value(&meta.changed)?,
+                serde_json::json!({ "deleted": to_value(&meta.changed_refs)?,
                     "page": crate::identity::PageRef::new(*page), "meta": to_value(meta)? }),
             ),
             Self::AnnotationsReorder { page, order, meta } => (
@@ -583,7 +583,7 @@ impl ChangeItem {
             // `deletedOutlineItemsOf`: the refs in `meta.changed`.
             Self::OutlineDelete { meta } => (
                 "outline.deleted",
-                serde_json::json!({ "deleted": to_value(&meta.changed)?,
+                serde_json::json!({ "deleted": to_value(&meta.changed_refs)?,
                     "meta": to_value(meta)? }),
             ),
             Self::OutlineRestore { items, order, meta } => (

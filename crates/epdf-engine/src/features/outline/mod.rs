@@ -89,7 +89,7 @@ pub struct OutlineOrder {
 pub struct OutlineMutationMeta {
     #[serde(flatten)]
     pub meta: MutationMeta,
-    pub changed: Vec<OutlineItemRef>,
+    pub changed_refs: Vec<OutlineItemRef>,
 }
 
 /// Where an item goes, or was: under `parent` ([`TOP`] for the top level),

@@ -27,7 +27,7 @@ use crate::mutation::MutationMeta;
 pub struct AttachmentMutationMeta {
     #[serde(flatten)]
     pub meta: MutationMeta,
-    pub changed: Vec<AttachmentRef>,
+    pub changed_refs: Vec<AttachmentRef>,
 }
 
 /// `attachments.create`; its reverse deletes the file while it is still the
@@ -161,6 +161,6 @@ fn meta_of(
 ) -> Result<AttachmentMutationMeta, EngineError> {
     Ok(AttachmentMutationMeta {
         meta: MutationMeta::local(Vec::new(), &ctx.session.write_stamp()?),
-        changed: vec![reference.clone()],
+        changed_refs: vec![reference.clone()],
     })
 }

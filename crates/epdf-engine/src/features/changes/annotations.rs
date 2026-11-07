@@ -160,7 +160,7 @@ pub fn create_annotation(
     let reverse = ReverseStep::AnnotationRemove(AnnotationRemoveStep {
         reference: AnnotationRef::ObjectNumber {
             page,
-            annot: match result.meta.changed.first() {
+            annot: match result.meta.changed_refs.first() {
                 Some(AnnotationRef::ObjectNumber { annot, .. }) => *annot,
                 _ => {
                     return Err(EngineError::with_message(
@@ -422,7 +422,7 @@ fn write_delete(
     )?;
     let reverse = ReverseStep::AnnotationRestore(AnnotationRestoreStep {
         page,
-        members: result.meta.changed.clone(),
+        members: result.meta.changed_refs.clone(),
         capture,
         unlinked: super::objects::capture_after(document, pending)?,
         rights,

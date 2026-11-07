@@ -65,7 +65,7 @@ struct Case {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct ExpectedMeta {
-    changed: Value,
+    changed_refs: Value,
 }
 
 fn load() -> VectorFile {
@@ -234,8 +234,8 @@ fn a_create_is_append_only_and_says_so() {
         let result = created.outcome.unwrap_or_else(|e| panic!("{}: {e}", case.name));
         let meta = &result["meta"];
         assert_eq!(
-            test_support::canonical_numbers(&meta["changed"]),
-            test_support::canonical_numbers(&case.meta.as_ref().expect("a meta").changed),
+            test_support::canonical_numbers(&meta["changedRefs"]),
+            test_support::canonical_numbers(&case.meta.as_ref().expect("a meta").changed_refs),
             "{}: the changed list",
             case.name,
         );
@@ -782,7 +782,7 @@ fn a_reply_links_its_parent_and_a_group_member_says_so() {
     );
     assert_eq!(reply["annotation"]["reply"], json!({ "to": parent_ref, "type": "reply" }));
     // Only the reply was written.
-    assert_eq!(reply["meta"]["changed"], json!([reply["annotation"]["ref"]]));
+    assert_eq!(reply["meta"]["changedRefs"], json!([reply["annotation"]["ref"]]));
     let read = listed(&mut replay, &reply["annotation"]["ref"]);
     assert_eq!(read["reply"]["type"], "reply");
 
@@ -919,7 +919,7 @@ fn a_create_op_applies_in_page_space_and_its_undo_deletes_it() {
             "opId": "undo-1", "change": { "undoOf": "create-1" } }))
         .expect("undone");
     assert_eq!(undone["result"]["items"][0]["type"], "annotations.delete", "{undone}");
-    assert_eq!(undone["result"]["items"][0]["meta"]["changed"][0], item["annotation"]["ref"]);
+    assert_eq!(undone["result"]["items"][0]["meta"]["changedRefs"][0], item["annotation"]["ref"]);
     assert_eq!(undone["events"][0]["type"], "annotations.deleted");
     assert_eq!(listed_count(&mut replay), before);
 }
