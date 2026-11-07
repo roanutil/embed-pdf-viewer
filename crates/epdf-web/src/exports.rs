@@ -67,6 +67,7 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::*;
 
 use crate::adapters::adapters;
+use crate::clock::PageClock;
 use crate::engine::{EngineBridge, JsEngine};
 use crate::runtime::{self, entry, js_to_error, js_to_value, value_to_js};
 
@@ -303,6 +304,8 @@ impl WasmKernel {
     /// kernel holds it no more. Throws the canonical error if a plugin does
     /// not build or the kernel refuses the list. `settings_json` is the
     /// viewer settings the app registered (`createKernel`'s `settings`).
+    /// `next_frame` is `createKernel`'s `clock.nextFrame`, the frames
+    /// plugins animate on (`PageClock`); without it they skip animation.
     #[wasm_bindgen(constructor)]
     pub fn new(
         plugins_json: &str,
@@ -310,13 +313,21 @@ impl WasmKernel {
         call_js: js_sys::Function,
         release_js: js_sys::Function,
         settings_json: Option<String>,
+        next_frame: Option<js_sys::Function>,
     ) -> Result<WasmKernel, JsValue> {
         report_panics();
         // Before anything can schedule a timer.
         runtime::start_clock();
         entry(|| {
-            WasmKernel::build(plugins_json, engine, call_js, release_js, settings_json.as_deref())
-                .map_err(|e| thrown(&e))
+            WasmKernel::build(
+                plugins_json,
+                engine,
+                call_js,
+                release_js,
+                settings_json.as_deref(),
+                next_frame,
+            )
+            .map_err(|e| thrown(&e))
         })
     }
 
@@ -326,6 +337,7 @@ impl WasmKernel {
         call_js: js_sys::Function,
         release_js: js_sys::Function,
         settings_json: Option<&str>,
+        next_frame: Option<js_sys::Function>,
     ) -> Result<WasmKernel, Error> {
         let adapters = adapters();
         let mut tokens: HashMap<String, AnyToken> = HashMap::new();
@@ -371,10 +383,11 @@ impl WasmKernel {
             .map(serde_json::from_str::<Value>)
             .transpose()
             .map_err(|e| Error::named("TypeError", format!("malformed viewer settings: {e}")))?;
-        let kernel = Kernel::new_with_viewer_settings(
+        let kernel = Kernel::new_with_clock_and_settings(
             Rc::new(JsEngine::new(bridge)),
             plugins,
             options,
+            Rc::new(PageClock::new(next_frame)),
             registered,
         )?;
         // The capability `kernel.capability(DocumentsToken)` answers, so the

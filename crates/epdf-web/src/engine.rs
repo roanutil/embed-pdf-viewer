@@ -63,8 +63,8 @@ extern "C" {
     ) -> Result<String, JsValue>;
     #[wasm_bindgen(method, catch, js_name = pageIndex)]
     fn page_index(this: &EngineBridge, doc: &str, pon: u32) -> Result<f64, JsValue>;
-    #[wasm_bindgen(method, catch, js_name = lastServerId)]
-    fn last_server_id(this: &EngineBridge, doc: &str) -> Result<Option<String>, JsValue>;
+    #[wasm_bindgen(method, catch, js_name = lastServerSequence)]
+    fn last_server_sequence(this: &EngineBridge, doc: &str) -> Result<Option<String>, JsValue>;
     #[wasm_bindgen(method, catch)]
     fn subscribe(
         this: &EngineBridge,
@@ -428,7 +428,7 @@ impl DocumentHandle for JsDocumentHandle {
     }
 
     fn last_server_sequence(&self) -> Option<String> {
-        self.bridge.last_server_id(&self.id).ok().flatten()
+        self.bridge.last_server_sequence(&self.id).ok().flatten()
     }
 
     /// `doc.setWorkingSet(view, pages)`, through the bridge's `call`: a
