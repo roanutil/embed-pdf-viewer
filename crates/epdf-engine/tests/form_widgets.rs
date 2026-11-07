@@ -744,8 +744,8 @@ fn a_calculate_script_keeps_the_field_in_the_calculation_order() {
     let refused = doc.refused(json!({ "kind": "forms.createField", "draft": { "family": "text",
         "name": "sneaky", "actions": { "calculate": script("1") } },
         "authority": { "identity": {}, "grants": { "scope": ["doc.forms.modify", "doc.open"],
-            "pdfBits": { "bit3": true, "bit4": true, "bit5": true, "bit6": true, "bit9": true,
-                "bit10": true, "bit11": true, "bit12": true } },
+            "permissionFlags": { "print": true, "modifyContents": true, "copy": true, "modifyAnnotations": true, "fillForms": true,
+                "copyForAccessibility": true, "assemble": true, "printHighQuality": true } },
             "protection": { "enforced": null, "judged": null, "certification": null,
                 "fieldLocks": [], "policyVersion": 4 } } }));
     assert_eq!(code(&refused), "Forbidden", "{refused}");
@@ -758,8 +758,8 @@ fn designer() -> Value {
     json!({ "identity": { "userId": "lisa", "groupId": "legal" },
         "grants": { "scope": ["doc.open", "doc.render", "doc.forms.modify",
             "fields:set-group:group=buyer"],
-            "pdfBits": { "bit3": true, "bit4": true, "bit5": true, "bit6": true, "bit9": true,
-                "bit10": true, "bit11": true, "bit12": true } },
+            "permissionFlags": { "print": true, "modifyContents": true, "copy": true, "modifyAnnotations": true, "fillForms": true,
+                "copyForAccessibility": true, "assemble": true, "printHighQuality": true } },
         "protection": { "enforced": null, "judged": null, "certification": null,
             "fieldLocks": [], "policyVersion": 4 } })
 }

@@ -143,10 +143,11 @@ impl SessionAuthority {
             },
             "grants": {
                 "scope": self.granted,
-                "pdfBits": {
-                    "bit3": bits.bit3, "bit4": bits.bit4, "bit5": bits.bit5, "bit6": bits.bit6,
-                    "bit9": bits.bit9, "bit10": bits.bit10, "bit11": bits.bit11,
-                    "bit12": bits.bit12,
+                "permissionFlags": {
+                    "print": bits.bit3, "modifyContents": bits.bit4, "copy": bits.bit5,
+                    "modifyAnnotations": bits.bit6, "fillForms": bits.bit9,
+                    "copyForAccessibility": bits.bit10, "assemble": bits.bit11,
+                    "printHighQuality": bits.bit12,
                 },
             },
             "protection": self.protection,

@@ -594,8 +594,8 @@ fn comparable(bundle: &Exported, ref_map: Option<&Value>) -> Vec<Value> {
 
 /// Every `/P` bit allowed, as an authority's grants carry them.
 fn all_bits() -> Value {
-    json!({ "bit3": true, "bit4": true, "bit5": true, "bit6": true, "bit9": true,
-        "bit10": true, "bit11": true, "bit12": true })
+    json!({ "print": true, "modifyContents": true, "copy": true, "modifyAnnotations": true, "fillForms": true,
+        "copyForAccessibility": true, "assemble": true, "printHighQuality": true })
 }
 
 fn is_uuid_v7(text: &str) -> bool {
@@ -1011,7 +1011,7 @@ fn undoing_a_restoring_import_takes_the_imports_rights_not_the_per_annotation_on
         json!({ "scope": scope, "identity": { "user_id": "importer", "display_name": "Importer" } }));
     let page = engine.first_page("source");
     let authority = json!({ "identity": { "userId": "importer", "displayName": "Importer" },
-        "grants": { "scope": scope, "pdfBits": all_bits() } });
+        "grants": { "scope": scope, "permissionFlags": all_bits() } });
     engine.create("source", page, json!({ "subtype": "square", "box": at(20.0) }), &[]);
     let bundle = engine.export("source", json!({})).unwrap();
     let imported = engine

@@ -395,10 +395,10 @@ fn a_visual_fill_is_a_change_op_its_undo_takes_back_and_only_a_signer_may_undo()
     let mut host = Host::new();
     let (doc, _) = sig_open_fixture(&mut host, &format!("{FIX}/unsigned_sigfield.pdf"));
     let artwork = fixture("signature_artwork.pdf");
-    let bits = json!({ "bit3": true, "bit4": true, "bit5": true, "bit6": true, "bit9": true,
-        "bit10": true, "bit11": true, "bit12": true });
+    let bits = json!({ "print": true, "modifyContents": true, "copy": true, "modifyAnnotations": true, "fillForms": true,
+        "copyForAccessibility": true, "assemble": true, "printHighQuality": true });
     let authority = |scope: Value| {
-        json!({ "identity": { "userId": "ann" }, "grants": { "scope": scope, "pdfBits": bits },
+        json!({ "identity": { "userId": "ann" }, "grants": { "scope": scope, "permissionFlags": bits },
             "protection": null })
     };
     let read_widget = |host: &mut Host| {
@@ -666,8 +666,8 @@ fn a_request_authority_decides_who_signs() {
     let mut host = open_groups(json!(["*"]), json!({}));
     let seller = json!({ "identity": { "userId": "bob" }, "grants": {
         "scope": ["doc.open", "fields:*:group=seller"],
-        "pdfBits": { "bit3": true, "bit4": true, "bit5": true, "bit6": true, "bit9": true,
-            "bit10": true, "bit11": true, "bit12": true } }, "protection": null });
+        "permissionFlags": { "print": true, "modifyContents": true, "copy": true, "modifyAnnotations": true, "fillForms": true,
+            "copyForAccessibility": true, "assemble": true, "printHighQuality": true } }, "protection": null });
     let refused = envelope(
         &mut host,
         json!({ "kind": "signatures.prepare", "docId": "groups", "authority": seller,
@@ -683,8 +683,8 @@ fn a_request_authority_decides_who_signs() {
     // Its completion is checked again, under the authority it carries.
     let buyer = json!({ "identity": { "userId": "alice" }, "grants": {
         "scope": ["doc.open", "fields:*:group=buyer"],
-        "pdfBits": { "bit3": true, "bit4": true, "bit5": true, "bit6": true, "bit9": true,
-            "bit10": true, "bit11": true, "bit12": true } }, "protection": null });
+        "permissionFlags": { "print": true, "modifyContents": true, "copy": true, "modifyAnnotations": true, "fillForms": true,
+            "copyForAccessibility": true, "assemble": true, "printHighQuality": true } }, "protection": null });
     let complete = |authority: &Value| {
         json!({ "kind": "signatures.complete", "docId": "groups", "authority": authority,
             "input": { "signingId": prepared["signingId"],
