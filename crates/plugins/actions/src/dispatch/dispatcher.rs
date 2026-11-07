@@ -36,13 +36,10 @@ use crate::services::{DiagnosticPlace, get, str_of, truthy};
 /// diagnostics carry before a tree is found.
 fn source_of_trigger(trigger: &ActionTrigger) -> ActionSource {
     match trigger {
-        ActionTrigger::Activate { annotation_ref, page, source }
-        | ActionTrigger::Annotation { annotation_ref, page, source, .. } => {
-            source.clone().unwrap_or(ActionSource::Annotation {
-                annotation: annotation_ref.clone(),
-                page: *page,
-            })
-        }
+        ActionTrigger::Activate { annotation, page, source }
+        | ActionTrigger::Annotation { annotation, page, source, .. } => source
+            .clone()
+            .unwrap_or(ActionSource::Annotation { annotation: annotation.clone(), page: *page }),
         ActionTrigger::Page { page, .. } => ActionSource::Page { page: *page },
         ActionTrigger::Document { .. } => ActionSource::Document,
     }
@@ -209,7 +206,7 @@ impl ActionsCapability {
         };
         let attempt: Result<ActionTriggerResult, Error> = async {
             if !self.trigger_enabled(&trigger) {
-                let scope = match &trigger {
+                let kind = match &trigger {
                     ActionTrigger::Activate { .. } => "activate",
                     ActionTrigger::Annotation { .. } => "annotation",
                     ActionTrigger::Page { .. } => "page",
@@ -217,20 +214,20 @@ impl ActionsCapability {
                 };
                 diagnose(ActionDiagnostic::new(
                     ActionDiagnosticCode::TriggerDisabled,
-                    format!("{scope}: trigger family disabled by config"),
+                    format!("{kind}: trigger family disabled by config"),
                 ));
                 return Ok(inert(&diagnostics));
             }
             let origin = trigger_origin_of(&trigger);
             match &trigger {
-                ActionTrigger::Activate { annotation_ref, .. }
-                | ActionTrigger::Annotation { annotation_ref, .. } => {
+                ActionTrigger::Activate { annotation, .. }
+                | ActionTrigger::Annotation { annotation, .. } => {
                     let event = match &trigger {
                         ActionTrigger::Annotation { event, .. } => event.as_str(),
                         _ => "activate",
                     };
                     let annotation = rt::returned(
-                        self.clone().read_annotation(annotation_ref.clone(), signal.clone()),
+                        self.clone().read_annotation(annotation.clone(), signal.clone()),
                     )
                     .await?;
                     let actions = annotation.as_ref().and_then(|a| get(a, "actions"));
@@ -373,7 +370,7 @@ impl ActionsCapability {
 
     /// Run one Named verb (`NextPage`, `Print`, ...) as a user-origin action
     /// without building a tree. `context` overrides the default
-    /// `{origin: 'user', source: {kind: 'api'}, event: {scope: 'activate'}}`.
+    /// `{origin: 'user', source: {kind: 'api'}, event: {type: 'activate'}}`.
     pub fn execute_named(
         &self,
         name: &str,
@@ -392,7 +389,7 @@ impl ActionsCapability {
 
     /// The raw tree behind a source, read from the document (`null` when
     /// absent), with no dispatch rules applied.
-    async fn read_action_tree(self, source: ActionTreeSource) -> Result<Value, Error> {
+    async fn read_tree(self, source: ActionTreeSource) -> Result<Value, Error> {
         Ok(match source {
             ActionTreeSource::Annotation { annotation, event, .. } => {
                 let found = rt::returned(self.clone().read_annotation(annotation, None)).await?;
@@ -469,12 +466,12 @@ impl ActionsCapability {
     /// (`null` when absent). This is the raw tree: dispatch-time rules such
     /// as ISO 32000-2 Table 197's "/A shadows /AA U" are not applied.
     /// Rejects `operation-cancelled` when `signal` fires.
-    pub fn get_action_tree(
+    pub fn read_action_tree(
         &self,
         source: ActionTreeSource,
         signal: Option<AbortSignal>,
     ) -> Promise<Value> {
-        let read = Promise::spawn(self.clone().read_action_tree(source));
+        let read = Promise::spawn(self.clone().read_tree(source));
         self.read(signal.as_ref(), read)
     }
 }

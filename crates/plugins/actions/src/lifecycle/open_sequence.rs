@@ -33,7 +33,7 @@ impl ActionsCapability {
         let lifecycle_ctx = ActionContext {
             origin: ActionOrigin::Lifecycle,
             source: ActionSource::Document,
-            event: ActionTriggerEvent::Document { name: DocumentTriggerEvent::Open },
+            event: ActionTriggerEvent::Document { event: DocumentTriggerEvent::Open },
         };
         let attempt: Result<(), Error> = async {
             let snapshot = self.read_document_actions().await?.unwrap_or(Value::Null);

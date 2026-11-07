@@ -229,11 +229,11 @@ fn submit_tree() -> Arc<PdfActionTree> {
     tree(json!({
         "root": { "type": "submit-form", "subtype": "SubmitForm",
                   "payload": { "url": "https://home.test/submit", "fields": null,
-                               "flags": { "raw": 4, "exclude": false, "includeNoValueFields": false,
-                                          "format": "html", "method": "post", "submitCoordinates": false,
-                                          "includeAppendSaves": false, "includeAnnotations": false,
-                                          "canonicalFormat": false, "exclNonUserAnnots": false,
-                                          "exclFKey": false, "embedForm": false } },
+                               "exclude": false, "includeNoValueFields": false,
+                               "format": "html", "method": "post", "submitCoordinates": false,
+                               "includeAppendSaves": false, "includeAnnotations": false,
+                               "canonicalFormat": false, "exclNonUserAnnots": false,
+                               "exclFKey": false, "embedForm": false },
                   "next": [] },
         "incomplete": false, "warnings": []
     }))
@@ -252,7 +252,6 @@ fn with_resolver(thread: &KernelThread<TestKernel>) {
                     url: intent.url.clone(),
                     method: intent.method.clone(),
                     format: intent.format.clone(),
-                    flags_raw: intent.flags_raw,
                     char_set: None,
                     entries: vec![
                         FormSubmissionEntry { name: "name".into(), value: json!("Ana") },
@@ -283,7 +282,6 @@ fn a_submit_reaches_the_swift_handler_typed() {
     assert_eq!(result.nodes[0].status, ActionNodeStatus::Executed);
     let seen = handler.0.lock().unwrap();
     assert_eq!(seen[0].url.as_deref(), Some("https://home.test/submit"));
-    assert_eq!(seen[0].flags_raw, 4);
     assert_eq!(
         seen[0].entries.iter().map(|e| e.value.clone()).collect::<Vec<_>>(),
         [

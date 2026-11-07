@@ -397,7 +397,7 @@ const MEMBERS: &[&str] = &[
     "canExecute",
     "executeNamed",
     "canExecuteNamed",
-    "getActionTree",
+    "readActionTree",
     "dispatch",
     "canDispatch",
     "prepareClose",
@@ -457,7 +457,7 @@ fn call_actions(
             let name = arg(args, 0).and_then(Value::as_str).unwrap_or_default();
             Outcome::Returned(json!(cap.can_execute_named(name, partial_context(args, 1)?)))
         }
-        "getActionTree" => Outcome::Promise(cap.get_action_tree(decoded(args, 0)?, None)),
+        "readActionTree" => Outcome::Promise(cap.read_action_tree(decoded(args, 0)?, None)),
         "surfaceScriptCommit" => {
             match cap.surface_script_commit(&decoded(args, 0)?, &decoded(args, 1)?) {
                 Ok(()) => Outcome::undefined(),

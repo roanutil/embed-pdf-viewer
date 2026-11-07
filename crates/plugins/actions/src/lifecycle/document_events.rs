@@ -52,7 +52,7 @@ impl ActionsCapability {
             let ctx = ActionContext {
                 origin: ActionOrigin::Lifecycle,
                 source: ActionSource::Document,
-                event: ActionTriggerEvent::Document { name: event },
+                event: ActionTriggerEvent::Document { event },
             };
             let result = rt::returned(self.clone().run_and_emit(tree.clone(), ctx, None)).await?;
             Ok(Some(ActionStepResult { source: ActionSource::Document, tree, result }))

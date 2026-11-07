@@ -55,7 +55,6 @@ impl crate::controller::Core {
                 url: intent.url.clone(),
                 method: intent.method.clone(),
                 format: intent.format.clone(),
-                flags_raw: intent.flags_raw,
                 char_set: intent.char_set.clone(),
                 entries,
                 origin: action_context.origin,

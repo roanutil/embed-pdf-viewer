@@ -637,7 +637,7 @@ impl ActionsHandle {
         source: ActionTreeSource,
     ) -> Result<Option<Arc<PdfActionTree>>, ViewerError> {
         self.cap
-            .call_promise(move |c| Ok(open(c)?.get_action_tree(source.into(), None)), tree_or_none)
+            .call_promise(move |c| Ok(open(c)?.read_action_tree(source.into(), None)), tree_or_none)
             .await
     }
 
