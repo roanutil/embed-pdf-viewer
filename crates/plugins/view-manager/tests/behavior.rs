@@ -1,5 +1,5 @@
 //! The typed API beyond what the vectors print, against
-//! `packages/plugin/view-manager/src/{controller,model}.ts`: `removePane`
+//! `packages/plugin/view-manager/src/{controller,model}.ts`: `deletePane`
 //! hands its documents to the explicit, the focused or the last pane and
 //! moves nothing for itself or an unknown target, every intermediate
 //! `ctx.state.update` announces its own events in order, pane ids come from
@@ -87,7 +87,7 @@ fn log_events(vm: &ViewManagerCapability) -> Rc<RefCell<Vec<String>>> {
     };
     let (created, removed, focus, moved) = (push(&log), push(&log), push(&log), push(&log));
     vm.on_pane_created(move |e| created(format!("created {}", e.pane_id)));
-    vm.on_pane_removed(move |e| removed(format!("removed {}", e.pane_id)));
+    vm.on_pane_deleted(move |e| removed(format!("removed {}", e.pane_id)));
     vm.on_focus_changed(move |e| {
         focus(format!("focus {}", e.pane_id.as_deref().unwrap_or("null")))
     });
@@ -120,7 +120,7 @@ fn four_panes() -> (Rig, ViewManagerCapability) {
 fn removing_a_pane_moves_its_documents_to_the_explicit_target() {
     let (_rig, vm) = four_panes();
     vm.add_document("pane-4", "c", None);
-    vm.remove_pane("pane-4", Some("pane-1"));
+    vm.delete_pane("pane-4", Some("pane-1"));
     // Each document becomes the target's active one in turn.
     assert_eq!(layout(&vm), ["pane-1: a,d,c (c)", "pane-2: b (b)", "pane-3:  (-)"]);
     assert_eq!(vm.get_focused_pane_id().as_deref(), Some("pane-1"));
@@ -130,7 +130,7 @@ fn removing_a_pane_moves_its_documents_to_the_explicit_target() {
 fn removing_a_pane_moves_its_documents_to_the_focused_one() {
     let (_rig, vm) = four_panes();
     vm.set_focused_pane(Some("pane-2"));
-    vm.remove_pane("pane-3", None);
+    vm.delete_pane("pane-3", None);
     assert_eq!(layout(&vm), ["pane-1: a (a)", "pane-2: b,c (c)", "pane-4: d (d)"]);
     assert_eq!(vm.get_focused_pane_id().as_deref(), Some("pane-2"));
 }
@@ -139,7 +139,7 @@ fn removing_a_pane_moves_its_documents_to_the_focused_one() {
 fn removing_the_focused_pane_moves_its_documents_to_the_last_one() {
     let (_rig, vm) = four_panes();
     vm.set_focused_pane(Some("pane-2"));
-    vm.remove_pane("pane-2", None);
+    vm.delete_pane("pane-2", None);
     assert_eq!(layout(&vm), ["pane-1: a (a)", "pane-3: c (c)", "pane-4: d,b (b)"]);
     assert_eq!(vm.get_focused_pane_id().as_deref(), Some("pane-4"));
 }
@@ -149,7 +149,7 @@ fn a_stale_focus_falls_through_to_no_move() {
     let (_rig, vm) = four_panes();
     // `focused !== id ? focused : null` keeps a stale id, which is no pane.
     vm.set_focused_pane(Some("ghost"));
-    vm.remove_pane("pane-2", None);
+    vm.delete_pane("pane-2", None);
     assert_eq!(layout(&vm), ["pane-1: a (a)", "pane-3: c (c)", "pane-4: d (d)"]);
     assert_eq!(vm.get_pane_of_document("b"), None);
 }
@@ -157,15 +157,15 @@ fn a_stale_focus_falls_through_to_no_move() {
 #[test]
 fn a_self_or_unknown_target_moves_nothing() {
     let (_rig, vm) = four_panes();
-    vm.remove_pane("pane-2", Some("pane-2"));
+    vm.delete_pane("pane-2", Some("pane-2"));
     assert_eq!(layout(&vm), ["pane-1: a (a)", "pane-3: c (c)", "pane-4: d (d)"]);
     assert_eq!(vm.get_pane_of_document("b"), None);
     // An explicit target is never replaced by the focused or the last pane.
-    vm.remove_pane("pane-3", Some("ghost"));
+    vm.delete_pane("pane-3", Some("ghost"));
     assert_eq!(layout(&vm), ["pane-1: a (a)", "pane-4: d (d)"]);
     assert_eq!(vm.get_pane_of_document("c"), None);
     // Unknown panes are ignored.
-    vm.remove_pane("ghost", Some("pane-1"));
+    vm.delete_pane("ghost", Some("pane-1"));
     assert_eq!(layout(&vm), ["pane-1: a (a)", "pane-4: d (d)"]);
 }
 
@@ -188,8 +188,8 @@ fn every_intermediate_update_announces_its_own_events() {
         ]
     );
     log.borrow_mut().clear();
-    // `removePane` moves each document (focusing the target), then removes.
-    vm.remove_pane("pane-5", Some("pane-2"));
+    // `deletePane` moves each document (focusing the target), then removes.
+    vm.delete_pane("pane-5", Some("pane-2"));
     assert_eq!(
         *log.borrow(),
         [
@@ -239,7 +239,7 @@ fn pane_ids_come_from_the_counter_and_land_where_asked() {
     assert_eq!(vm.split_pane("b", Some("ghost")), "pane-5");
     assert_eq!(*vm.get_pane_order(), ["pane-1", "pane-4", "pane-2", "pane-3", "pane-5"]);
     // Removal never reuses an id.
-    vm.remove_pane("pane-5", None);
+    vm.delete_pane("pane-5", None);
     assert_eq!(vm.create_pane(&[]), "pane-6");
     vm.move_pane("pane-6", 0.0);
     vm.move_pane("pane-1", 2.9);

@@ -166,9 +166,9 @@ pub fn create_pane(state: &Rc<ViewManagerState>, index: Option<f64>) -> Rc<ViewM
     })
 }
 
-/// `removePane(state, id)`: a removed focused pane hands the focus to the
+/// `deletePane(state, id)`: a removed focused pane hands the focus to the
 /// last remaining one.
-pub fn remove_pane(state: &Rc<ViewManagerState>, id: &str) -> Rc<ViewManagerState> {
+pub fn delete_pane(state: &Rc<ViewManagerState>, id: &str) -> Rc<ViewManagerState> {
     if !state.panes.contains_key(id) {
         return state.clone();
     }

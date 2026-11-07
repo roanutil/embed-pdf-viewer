@@ -104,7 +104,7 @@ impl ViewManagerHandle {
     ) -> Result<(), ViewerError> {
         self.cap
             .call(move |c| {
-                open(c)?.remove_pane(&id, move_documents_to.as_deref());
+                open(c)?.delete_pane(&id, move_documents_to.as_deref());
                 Ok(())
             })
             .await
@@ -236,7 +236,7 @@ impl ViewManagerHandle {
                             created.on_event(ViewManagerEvent::PaneCreated { event: e.clone() });
                             Ok(())
                         }),
-                        c.on_pane_removed(move |e| {
+                        c.on_pane_deleted(move |e| {
                             removed.on_event(ViewManagerEvent::PaneRemoved { event: e.clone() });
                             Ok(())
                         }),

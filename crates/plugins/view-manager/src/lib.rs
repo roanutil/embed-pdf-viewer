@@ -29,10 +29,10 @@ pub use contract::{
 };
 pub use controller::{ViewManagerCapability, create_view_manager_controller};
 pub use model::{
-    Pane, Panes, ViewManagerState, add_document, create_pane, initial_view_manager_state,
-    move_document_between, move_document_within, move_pane, next_pane_id, pane_of_document,
-    reconcile, remove_document, remove_pane, rename_document, set_active_document,
-    set_focused_pane,
+    Pane, Panes, ViewManagerState, add_document, create_pane, delete_pane,
+    initial_view_manager_state, move_document_between, move_document_within, move_pane,
+    next_pane_id, pane_of_document, reconcile, remove_document, rename_document,
+    set_active_document, set_focused_pane,
 };
 pub use record::JsRecord;
 

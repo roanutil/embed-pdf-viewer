@@ -34,7 +34,7 @@ pub struct LayoutKnownIds {
 
 const FLOAT_POSITIONS: [&str; 8] =
     ["top-start", "top", "top-end", "start", "end", "bottom-start", "bottom", "bottom-end"];
-const SELECTION_TARGETS: [&str; 2] = ["selection", "annotation"];
+const SELECTION_TARGETS: [&str; 3] = ["selection", "annotation", "snapshot"];
 const PRESENTATIONS: [&str; 3] = ["dock", "overlay", "sheet"];
 const SIZES: [&str; 3] = ["compact", "medium", "expanded"];
 const WIDTH_FIELDS: [&str; 3] = ["initial", "min", "max"];
@@ -253,7 +253,10 @@ fn place_problems(
         if is_one_of(&at, &SELECTION_TARGETS) {
             return Vec::new();
         }
-        return vec![format!("{place_of}: \"{}\" is not selection or annotation", js_string(&at))];
+        return vec![format!(
+            "{place_of}: \"{}\" is not selection, annotation or snapshot",
+            js_string(&at)
+        )];
     }
     vec![not_a_place(json_stringify(place))]
 }

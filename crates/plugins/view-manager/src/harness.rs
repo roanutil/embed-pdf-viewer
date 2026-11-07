@@ -26,7 +26,7 @@ const MEMBERS: &[&str] = &[
     "getFocusedPaneId",
     "getPaneOfDocument",
     "createPane",
-    "removePane",
+    "deletePane",
     "movePane",
     "setFocusedPane",
     "splitPane",
@@ -36,7 +36,7 @@ const MEMBERS: &[&str] = &[
     "moveDocumentWithin",
     "moveDocumentBetween",
     "onPaneCreated",
-    "onPaneRemoved",
+    "onPaneDeleted",
     "onFocusChanged",
     "onDocumentMoved",
 ];
@@ -116,10 +116,10 @@ impl HarnessPlugin for ViewManager {
                     .unwrap_or_default();
                 returned(json!(cap.create_pane(&ids)))
             }
-            "removePane" => {
+            "deletePane" => {
                 let to =
                     arg(&args, 1).and_then(|o| o.get("moveDocumentsTo")).and_then(Value::as_str);
-                cap.remove_pane(text(0), to);
+                cap.delete_pane(text(0), to);
                 done()
             }
             "movePane" => {
@@ -155,7 +155,7 @@ impl HarnessPlugin for ViewManager {
                 done()
             }
             "onPaneCreated" => listen(h, arg(&args, 0), |f| cap.on_pane_created(f)),
-            "onPaneRemoved" => listen(h, arg(&args, 0), |f| cap.on_pane_removed(f)),
+            "onPaneDeleted" => listen(h, arg(&args, 0), |f| cap.on_pane_deleted(f)),
             "onFocusChanged" => listen(h, arg(&args, 0), |f| cap.on_focus_changed(f)),
             "onDocumentMoved" => listen(h, arg(&args, 0), |f| cap.on_document_moved(f)),
             other => {
@@ -206,8 +206,8 @@ fn f_create_pane(args: &[Value]) -> Result<Value, Error> {
     shown(&model::create_pane(&state(args)?, number(arg(args, 1))))
 }
 
-fn f_remove_pane(args: &[Value]) -> Result<Value, Error> {
-    shown(&model::remove_pane(&state(args)?, text(args, 1)))
+fn f_delete_pane(args: &[Value]) -> Result<Value, Error> {
+    shown(&model::delete_pane(&state(args)?, text(args, 1)))
 }
 
 fn f_move_pane(args: &[Value]) -> Result<Value, Error> {
@@ -263,7 +263,7 @@ pub fn functions() -> FunctionTable {
         ("nextPaneId", f_next_pane_id),
         ("paneOfDocument", f_pane_of_document),
         ("createPane", f_create_pane),
-        ("removePane", f_remove_pane),
+        ("deletePane", f_delete_pane),
         ("movePane", f_move_pane),
         ("setFocusedPane", f_set_focused_pane),
         ("setActiveDocument", f_set_active_document),
