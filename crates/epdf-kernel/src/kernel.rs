@@ -924,7 +924,7 @@ impl Inner {
         }
         self.events.pages_changed.emit(&serde_json::json!({
             "documentId": id,
-            "pagesSequence": revision,
+            "revision": revision,
             "pages": pages,
         }));
     }
