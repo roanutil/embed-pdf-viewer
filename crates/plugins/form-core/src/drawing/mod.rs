@@ -128,7 +128,7 @@ pub struct TextFieldFacts {
 /// What the painter reads of a form field (`FormFieldDTO`), by family.
 /// Deserializes from the DTO's JSON and ignores the rest of it.
 #[derive(Clone, Debug, PartialEq, Deserialize)]
-#[serde(tag = "family")]
+#[serde(tag = "kind")]
 pub enum FieldFacts {
     #[serde(rename = "text")]
     Text(TextFieldFacts),
