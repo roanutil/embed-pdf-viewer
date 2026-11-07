@@ -11,7 +11,7 @@ use serde::ser::SerializeSeq;
 use serde::{Deserialize, Serialize, Serializer};
 use serde_json::{Value, json};
 
-use crate::paint_plan::{FullPageOptions, PrefetchOptions, Quantize, RenderFormat, TilesOptions};
+use crate::paint_plan::{FullPageSettings, PrefetchOptions, Quantize, RenderFormat, TilesSettings};
 use crate::raster_store::PageImageHandle;
 
 // ── settings ──────────────────────────────────────────────────────────────────
@@ -30,29 +30,77 @@ use crate::raster_store::PageImageHandle;
 pub struct RenderConfig {
     /// Base plane: the pixel budget and render points.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub full_page: Option<FullPageOptions>,
+    pub full_page: Option<FullPageSettings>,
     /// Tile plane strategy; `Off` disables the plane.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tiles: Option<TilesSetting>,
-    /// Encode format for both planes; `None` is the engine default.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub format: Option<RenderFormat>,
+    /// Encode format for both planes; `Some(None)` (`null`) is the engine
+    /// default.
+    #[serde(default, deserialize_with = "nullable", skip_serializing_if = "Option::is_none")]
+    pub format: Option<Option<RenderFormat>>,
     /// WebP quality from 0 (smallest) to 1 (best); PNG and BMP ignore it.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub quality: Option<f64>,
+    /// `Some(None)` (`null`) is the engine's.
+    #[serde(default, deserialize_with = "nullable", skip_serializing_if = "Option::is_none")]
+    pub quality: Option<Option<f64>>,
     /// Diagnostic logging of tile scheduling and fetch outcomes.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub debug: Option<bool>,
+    /// The `snapshot` tool: how big its pictures are, and how its box looks.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub snapshot: Option<SnapshotConfig>,
 }
+
+/// A member present as `null` (`Some(None)`), apart from one left out
+/// (`None`, through `#[serde(default)]`).
+pub(crate) fn nullable<'de, D, T>(d: D) -> Result<Option<Option<T>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    Option::<T>::deserialize(d).map(Some)
+}
+
+/// `SnapshotSettings`, and the part of it a config or a change names: the
+/// snapshot tool's settings (see [`RenderConfig::snapshot`]).
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct SnapshotConfig {
+    /// A snapshot's pixels per point: 2 is 144 DPI. A picture that would
+    /// pass [`SNAPSHOT_MAX_PIXELS`], or the deployment's budget, is made
+    /// smaller to fit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scale: Option<f64>,
+    /// The look of the box you drag, one value: a change replaces it whole,
+    /// and a color it leaves out is `null` again.
+    #[serde(default, rename = "box", skip_serializing_if = "Option::is_none")]
+    pub box_look: Option<SnapshotBoxLook>,
+}
+
+/// `SnapshotBoxLook`: the colors of the snapshot tool's box. A color left
+/// `None` (`null`) follows the viewer's accent (the fill at 8%).
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct SnapshotBoxLook {
+    #[serde(default)]
+    pub fill: Option<String>,
+    #[serde(default)]
+    pub stroke: Option<String>,
+}
+
+/// `SNAPSHOT_MAX_PIXELS`: the most pixels a snapshot's picture has, 16
+/// million, safe within a phone's memory.
+pub const SNAPSHOT_MAX_PIXELS: f64 = 16_000_000.0;
+
+/// `SNAPSHOT_TOOL`: the tool that takes snapshots, a box dragged on a page
+/// or a click for the whole page.
+pub const SNAPSHOT_TOOL: &str = "snapshot";
 
 /// `RenderSettings`: the settings in effect.
 pub type RenderSettings = RenderConfig;
 
-/// `tiles?: TilesOptions | false`.
+/// `tiles?: TilesSettings | false`.
 #[derive(Clone, Debug, PartialEq)]
 pub enum TilesSetting {
     Off,
-    On(TilesOptions),
+    On(TilesSettings),
 }
 
 impl Serialize for TilesSetting {
@@ -70,11 +118,11 @@ impl<'de> Deserialize<'de> for TilesSetting {
         #[serde(untagged)]
         enum Raw {
             Flag(bool),
-            Options(TilesOptions),
+            Options(TilesSettings),
         }
         match Raw::deserialize(d)? {
             Raw::Flag(false) => Ok(TilesSetting::Off),
-            Raw::Flag(true) => Ok(TilesSetting::On(TilesOptions::default())),
+            Raw::Flag(true) => Ok(TilesSetting::On(TilesSettings::default())),
             Raw::Options(options) => Ok(TilesSetting::On(options)),
         }
     }
@@ -84,36 +132,32 @@ impl<'de> Deserialize<'de> for TilesSetting {
 /// none.
 pub fn render_defaults() -> RenderSettings {
     RenderConfig {
-        full_page: Some(FullPageOptions {
+        full_page: Some(FullPageSettings {
             max_width: Some(640.0),
             quantize: Some(Quantize::Exact),
         }),
-        tiles: Some(TilesSetting::On(TilesOptions {
+        tiles: Some(TilesSetting::On(TilesSettings {
             size: Some(512.0),
             quantize: Some(Quantize::Exact),
             max_scale: Some(128.0),
-            bleed: Some(1.0),
-            engage_at: None,
+            bleed_px: Some(1.0),
+            engage_ratio: None,
             prefetch: Some(PrefetchOptions { margin: Some(0.5), velocity_bias: Some(true) }),
             settle_ms: Some(150.0),
         })),
-        format: None,
-        quality: None,
+        format: Some(None),
+        quality: Some(None),
         debug: Some(false),
+        snapshot: Some(SnapshotConfig {
+            scale: Some(2.0),
+            box_look: Some(SnapshotBoxLook { fill: None, stroke: None }),
+        }),
     }
 }
 
-/// [`render_defaults`] as the kernel keeps settings: JSON, with the two
-/// members the TypeScript spells `undefined` present as undefined.
+/// [`render_defaults`] as the kernel keeps settings: JSON.
 pub(crate) fn render_defaults_json() -> Value {
-    let defaults = render_defaults();
-    json!({
-        "fullPage": defaults.full_page,
-        "tiles": defaults.tiles,
-        "format": epdf_kernel::undefined(),
-        "quality": epdf_kernel::undefined(),
-        "debug": defaults.debug,
-    })
+    json!(render_defaults())
 }
 
 /// The settings JSON as [`RenderConfig`] reads it: an undefined member is

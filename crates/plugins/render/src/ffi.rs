@@ -37,7 +37,7 @@ use crate::contract::{
     InvalidateOptions, InvalidateScope, PageArg, PageLayerOptions, RenderPagesOptions,
     RenderThumbnailOptions,
 };
-use crate::paint_plan::{FullPageOptions, Quantize};
+use crate::paint_plan::{FullPageSettings, Quantize};
 use crate::paint_plan::{PageViewDemand, TilePaintPlan, Velocity};
 use crate::policy::{EngineRenderPolicy, PageRenderViewport};
 use crate::raster_store::PageImageHandle;
@@ -105,7 +105,7 @@ pub enum RenderQuantize {
     Ladder { widths: Vec<f64> },
 }
 
-/// `FullPageOptions`: the base plane's pixel budget and render points.
+/// `FullPageSettings`: the base plane's pixel budget and render points.
 #[derive(Clone, Debug, Default, PartialEq, uniffi::Record)]
 pub struct RenderFullPageOptions {
     /// `None` is 640 device pixels.
@@ -133,7 +133,7 @@ pub struct RenderConfig {
 impl From<RenderConfig> for crate::RenderConfig {
     fn from(config: RenderConfig) -> Self {
         crate::RenderConfig {
-            full_page: config.full_page.map(|full_page| FullPageOptions {
+            full_page: config.full_page.map(|full_page| FullPageSettings {
                 max_width: full_page.max_width,
                 quantize: full_page.quantize.map(|quantize| match quantize {
                     RenderQuantize::Exact => Quantize::Exact,
@@ -961,7 +961,7 @@ impl RenderViewDemandHandle {
     pub async fn dispose(&self) -> Result<(), ViewerError> {
         self.bound
             .call(|b| {
-                b.open()?.dispose();
+                b.open()?.destroy();
                 Ok(())
             })
             .await
