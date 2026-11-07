@@ -184,7 +184,7 @@ impl ForeignSandbox {
 
     /// `poison()`: dispose, keep the output.
     fn poisoned(&self, output: ScriptOutput) -> ScriptOutput {
-        self.dispose();
+        self.destroy();
         output
     }
 
@@ -251,7 +251,7 @@ impl ForeignSandbox {
 }
 
 impl ScriptSandbox for ForeignSandbox {
-    fn disposed(&self) -> bool {
+    fn destroyed(&self) -> bool {
         self.disposed.get()
     }
 
@@ -280,7 +280,7 @@ impl ScriptSandbox for ForeignSandbox {
         self.invoke("__acrojsRun", source, input, budget)
     }
 
-    fn dispose(&self) {
+    fn destroy(&self) {
         if !self.disposed.replace(true) {
             self.engine.dispose();
         }
@@ -414,8 +414,8 @@ pub fn check_script_engine(
     let check = ScriptCheck {
         alerts,
         error: output.error.as_ref().map(Into::into),
-        disposed: sandbox.disposed(),
+        disposed: sandbox.destroyed(),
     };
-    sandbox.dispose();
+    sandbox.destroy();
     Ok(check)
 }

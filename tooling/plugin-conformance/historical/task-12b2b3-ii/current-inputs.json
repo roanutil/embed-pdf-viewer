@@ -3065,6 +3065,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 50,
@@ -3096,6 +3097,7 @@
                         "modifiedBy": null,
                         "importedBy": null,
                         "actions": null,
+                        "richText": null,
                         "color": "#e44234",
                         "opacity": 1,
                         "quadPoints": [
@@ -3154,7 +3156,7 @@
                         "cacheDelta": null,
                         "opId": "00000000-0000-7000-8000-000000000001",
                         "undoable": true,
-                        "changed": [
+                        "changedRefs": [
                           {
                             "kind": "objectNumber",
                             "page": {
@@ -3202,6 +3204,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -3233,6 +3236,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#e44234",
                       "opacity": 1,
                       "quadPoints": [
@@ -3291,7 +3295,7 @@
                       "cacheDelta": null,
                       "opId": "00000000-0000-7000-8000-000000000001",
                       "undoable": true,
-                      "changed": [
+                      "changedRefs": [
                         {
                           "kind": "objectNumber",
                           "page": {
@@ -3305,10 +3309,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -3344,6 +3348,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 30,
@@ -3375,6 +3380,7 @@
                         "modifiedBy": null,
                         "importedBy": null,
                         "actions": null,
+                        "richText": null,
                         "color": "#e44234",
                         "opacity": 1,
                         "quadPoints": [
@@ -3415,7 +3421,7 @@
                         "cacheDelta": null,
                         "opId": "00000000-0000-7000-8000-000000000002",
                         "undoable": true,
-                        "changed": [
+                        "changedRefs": [
                           {
                             "kind": "objectNumber",
                             "page": {
@@ -3463,6 +3469,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 30,
@@ -3494,6 +3501,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#e44234",
                       "opacity": 1,
                       "quadPoints": [
@@ -3534,7 +3542,7 @@
                       "cacheDelta": null,
                       "opId": "00000000-0000-7000-8000-000000000002",
                       "undoable": true,
-                      "changed": [
+                      "changedRefs": [
                         {
                           "kind": "objectNumber",
                           "page": {
@@ -3548,10 +3556,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
                         "count": 1
@@ -3692,7 +3700,7 @@
         }
       ]
     },
-    "inputSha256": "3774ba5bbf2d83da77452e594db5986d1f28ddddf6a2ff3b78e48c630789e2c9"
+    "inputSha256": "89a75f2822fe62d302c7548f7d0f1177e171c20b95960ccfc056cfe03be764a6"
   },
   {
     "file": "plugins/redaction.json",
@@ -5024,6 +5032,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 300,
@@ -5055,6 +5064,7 @@
                         "modifiedBy": null,
                         "importedBy": null,
                         "actions": null,
+                        "richText": null,
                         "color": "#e44234",
                         "opacity": 1,
                         "quadPoints": [],
@@ -5076,7 +5086,7 @@
                         "cacheDelta": null,
                         "opId": "00000000-0000-7000-8000-000000000001",
                         "undoable": true,
-                        "changed": [
+                        "changedRefs": [
                           {
                             "kind": "objectNumber",
                             "page": {
@@ -5124,6 +5134,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 300,
@@ -5155,6 +5166,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#e44234",
                       "opacity": 1,
                       "quadPoints": [],
@@ -5176,7 +5188,7 @@
                       "cacheDelta": null,
                       "opId": "00000000-0000-7000-8000-000000000001",
                       "undoable": true,
-                      "changed": [
+                      "changedRefs": [
                         {
                           "kind": "objectNumber",
                           "page": {
@@ -5190,10 +5202,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -5391,7 +5403,7 @@
         }
       ]
     },
-    "inputSha256": "958fad1d58d6a454b5c05fd469f8315decb8eaf2c6ffaf2f6da97f10c7271364"
+    "inputSha256": "b6dc7b10d49be629b1bb38cce14c8eec931f024277ed35a5be65e3e9c44e1c48"
   },
   {
     "file": "plugins/redaction.json",
@@ -6169,6 +6181,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -6200,6 +6213,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -6231,6 +6245,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 205,
@@ -6262,6 +6277,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#facc15",
                       "opacity": 1,
                       "icon": "comment",
@@ -6285,6 +6301,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 60,
@@ -6316,6 +6333,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -6355,6 +6373,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -6386,6 +6405,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -6413,6 +6433,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -6444,6 +6465,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -6508,6 +6530,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -6539,6 +6562,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -6570,6 +6594,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -6601,6 +6626,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -6628,6 +6654,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -6659,6 +6686,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -6737,7 +6765,7 @@
         }
       ]
     },
-    "inputSha256": "a07196ffb32c9e12fbf58ffee7217f7a39f75b742cb1dc4a0070dd68d94a73f3"
+    "inputSha256": "ad55590c2cf796f39e831d3cd2ebaa97661a4c824fdfd69d343d9f6a194ba06f"
   },
   {
     "file": "plugins/redaction.json",
@@ -7093,6 +7121,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -7124,6 +7153,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -7155,6 +7185,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 205,
@@ -7186,6 +7217,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#facc15",
                       "opacity": 1,
                       "icon": "comment",
@@ -7209,6 +7241,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 60,
@@ -7240,6 +7273,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -7279,6 +7313,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -7310,6 +7345,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -7337,6 +7373,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -7368,6 +7405,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -7432,6 +7470,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -7463,6 +7502,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -7494,6 +7534,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -7525,6 +7566,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -7552,6 +7594,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -7583,6 +7626,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -7742,7 +7786,7 @@
         }
       ]
     },
-    "inputSha256": "fc9e7b87415bd688208499843193dace37583775977da47f2e8d828d2f5de5ec"
+    "inputSha256": "c7a4a7ea3ee9af830f3e7feb2b4c826a240c75c618a01940843d949e514f4b4b"
   },
   {
     "file": "plugins/redaction.json",
@@ -8098,6 +8142,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -8129,6 +8174,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -8160,6 +8206,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 205,
@@ -8191,6 +8238,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#facc15",
                       "opacity": 1,
                       "icon": "comment",
@@ -8214,6 +8262,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 60,
@@ -8245,6 +8294,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -8284,6 +8334,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -8315,6 +8366,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -8342,6 +8394,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -8373,6 +8426,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -8437,6 +8491,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -8468,6 +8523,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -8499,6 +8555,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -8530,6 +8587,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -8557,6 +8615,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -8588,6 +8647,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -8747,10 +8807,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "redaction-apply",
                         "index": 0,
                         "count": 1
@@ -8795,6 +8855,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -8826,6 +8887,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -8969,10 +9031,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "redaction-2",
                         "index": 0,
                         "count": 1
@@ -9207,7 +9269,7 @@
         }
       ]
     },
-    "inputSha256": "7b73dcc1df12efea29d50ac074544d868e1aae402b2233ac53caabbd780db73f"
+    "inputSha256": "0f1977d73a26a2c32ded8d212a92483e59568d211a23317855b777430d6b5d63"
   },
   {
     "file": "plugins/redaction.json",
@@ -9563,6 +9625,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -9594,6 +9657,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -9625,6 +9689,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 205,
@@ -9656,6 +9721,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#facc15",
                       "opacity": 1,
                       "icon": "comment",
@@ -9679,6 +9745,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 60,
@@ -9710,6 +9777,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -9749,6 +9817,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -9780,6 +9849,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -9807,6 +9877,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -9838,6 +9909,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -9902,6 +9974,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -9933,6 +10006,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -9964,6 +10038,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -9995,6 +10070,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -10022,6 +10098,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -10053,6 +10130,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -10188,10 +10266,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "redaction-apply",
                         "index": 0,
                         "count": 1
@@ -10235,6 +10313,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -10266,6 +10345,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -10370,7 +10450,7 @@
         }
       ]
     },
-    "inputSha256": "936a051e6578161f207d925b8caa59ffcef004f433842d9d822bb704d91542ae"
+    "inputSha256": "b5b1aec0377b80a823d186aacb1d0c745035428195f805eecd9db6fdf255588b"
   },
   {
     "file": "plugins/redaction.json",
@@ -10726,6 +10806,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -10757,6 +10838,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -10788,6 +10870,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 205,
@@ -10819,6 +10902,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#facc15",
                       "opacity": 1,
                       "icon": "comment",
@@ -10842,6 +10926,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 60,
@@ -10873,6 +10958,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -10912,6 +10998,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -10943,6 +11030,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -10970,6 +11058,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -11001,6 +11090,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -11065,6 +11155,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -11096,6 +11187,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -11127,6 +11219,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -11158,6 +11251,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -11185,6 +11279,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -11216,6 +11311,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -11351,10 +11447,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "redaction-apply",
                         "index": 0,
                         "count": 1
@@ -11398,6 +11494,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -11429,6 +11526,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -11553,7 +11651,7 @@
         }
       ]
     },
-    "inputSha256": "76bcc90b4e196fb2ac114660446e64c63463dadf14fc42e578c5635c28ed27fd"
+    "inputSha256": "0f3c942784baa1946b102b9e5332d104337009b4d48b2b872a2435f444f3370b"
   },
   {
     "file": "plugins/redaction.json",
@@ -11909,6 +12007,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -11940,6 +12039,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -11971,6 +12071,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 205,
@@ -12002,6 +12103,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#facc15",
                       "opacity": 1,
                       "icon": "comment",
@@ -12025,6 +12127,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 60,
@@ -12056,6 +12159,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -12095,6 +12199,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -12126,6 +12231,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -12153,6 +12259,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -12184,6 +12291,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -12248,6 +12356,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -12279,6 +12388,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -12310,6 +12420,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -12341,6 +12452,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -12368,6 +12480,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -12399,6 +12512,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -12976,6 +13090,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -13007,6 +13122,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -13038,6 +13154,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 205,
@@ -13069,6 +13186,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#facc15",
                       "opacity": 1,
                       "icon": "comment",
@@ -13092,6 +13210,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 60,
@@ -13123,6 +13242,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -13162,6 +13282,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -13193,6 +13314,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -13220,6 +13342,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -13251,6 +13374,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -13315,6 +13439,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -13346,6 +13471,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -13377,6 +13503,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -13408,6 +13535,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -13435,6 +13563,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -13466,6 +13595,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -13610,10 +13740,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "recovered-apply",
                         "index": 0,
                         "count": 1
@@ -13818,7 +13948,7 @@
         }
       ]
     },
-    "inputSha256": "3adfc22c7c279d446de148cefc780cf802516bda0acb8f5aaa91b8e24c6eee95"
+    "inputSha256": "e0bc8eed38a1c08a9064adf328f86c5705a98a6760a10b124be4e8db0b34eae2"
   },
   {
     "file": "plugins/redaction.json",
@@ -14174,6 +14304,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -14205,6 +14336,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -14236,6 +14368,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 205,
@@ -14267,6 +14400,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#facc15",
                       "opacity": 1,
                       "icon": "comment",
@@ -14290,6 +14424,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 60,
@@ -14321,6 +14456,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -14360,6 +14496,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -14391,6 +14528,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -14418,6 +14556,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -14449,6 +14588,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -14513,6 +14653,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -14544,6 +14685,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -14575,6 +14717,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -14606,6 +14749,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -14633,6 +14777,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -14664,6 +14809,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -14801,10 +14947,10 @@
             "origin": {
               "kind": "local",
               "sessionId": "s1",
-              "sub": null,
-              "ts": 0,
-              "serverId": null,
-              "tx": {
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null,
+              "transaction": {
                 "id": "redaction-apply",
                 "index": 0,
                 "count": 1
@@ -14846,6 +14992,7 @@
               },
               "hasAppearance": true,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 100,
@@ -14877,6 +15024,7 @@
               "modifiedBy": null,
               "importedBy": null,
               "actions": null,
+              "richText": null,
               "color": "#ef4444",
               "opacity": 1,
               "strokeWidth": 2,
@@ -14895,9 +15043,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "s2",
-              "sub": "u-9",
-              "ts": 0,
-              "serverId": null
+              "subject": "u-9",
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             },
             "meta": {
               "affectedPages": [
@@ -14907,7 +15055,7 @@
                 }
               ],
               "cacheDelta": null,
-              "changed": [
+              "changedRefs": [
                 {
                   "kind": "objectNumber",
                   "page": {
@@ -14985,10 +15133,10 @@
             "origin": {
               "kind": "remote",
               "sessionId": "s2",
-              "sub": "u-9",
-              "ts": 0,
-              "serverId": null,
-              "tx": {
+              "subject": "u-9",
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null,
+              "transaction": {
                 "id": "remote-apply",
                 "index": 0,
                 "count": 1
@@ -15076,10 +15224,10 @@
             "origin": {
               "kind": "remote",
               "sessionId": "s2",
-              "sub": "u-9",
-              "ts": 0,
-              "serverId": null,
-              "tx": {
+              "subject": "u-9",
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null,
+              "transaction": {
                 "id": "redaction-apply",
                 "index": 0,
                 "count": 1
@@ -15089,7 +15237,7 @@
         }
       ]
     },
-    "inputSha256": "aa232e9e7ae33c0e64dcf8df8361d802794de0d2f9828d73edd4a8fb06ff9d58"
+    "inputSha256": "9a4056f79c4b7aef84bbed01f9e00fb8c1d028bdf2dabcc05a92cb639f8041da"
   },
   {
     "file": "plugins/redaction.json",
@@ -15445,6 +15593,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -15476,6 +15625,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -15507,6 +15657,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 205,
@@ -15538,6 +15689,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#facc15",
                       "opacity": 1,
                       "icon": "comment",
@@ -15561,6 +15713,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 60,
@@ -15592,6 +15745,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -15631,6 +15785,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -15662,6 +15817,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -15689,6 +15845,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -15720,6 +15877,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -15784,6 +15942,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -15815,6 +15974,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -15846,6 +16006,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -15877,6 +16038,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -15904,6 +16066,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -15935,6 +16098,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -16070,10 +16234,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "redaction-apply",
                         "index": 0,
                         "count": 1
@@ -16175,7 +16339,7 @@
         }
       ]
     },
-    "inputSha256": "c4d3b8a7d2da623cdf33af2f46603b73a738d3ff276ac062c0a6f55bcec7650f"
+    "inputSha256": "6c88f804b8043120e0a5467a248f4728bf223625ebd43061bd5b7293d1ac6d2b"
   },
   {
     "file": "plugins/redaction.json",
@@ -16531,6 +16695,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -16562,6 +16727,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -16593,6 +16759,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 205,
@@ -16624,6 +16791,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#facc15",
                       "opacity": 1,
                       "icon": "comment",
@@ -16647,6 +16815,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 60,
@@ -16678,6 +16847,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -16717,6 +16887,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -16748,6 +16919,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -16775,6 +16947,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -16806,6 +16979,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -16870,6 +17044,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -16901,6 +17076,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -16932,6 +17108,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -16963,6 +17140,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -16990,6 +17168,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -17021,6 +17200,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -17066,6 +17246,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 90,
@@ -17097,6 +17278,7 @@
                         "modifiedBy": null,
                         "importedBy": null,
                         "actions": null,
+                        "richText": null,
                         "color": "#ef4444",
                         "opacity": 1,
                         "quadPoints": [],
@@ -17122,7 +17304,7 @@
                         "cacheDelta": null,
                         "opId": "00000000-0000-7000-8000-000000000001",
                         "undoable": true,
-                        "changed": [
+                        "changedRefs": [
                           {
                             "kind": "objectNumber",
                             "page": {
@@ -17170,6 +17352,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -17201,6 +17384,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -17226,7 +17410,7 @@
                       "cacheDelta": null,
                       "opId": "00000000-0000-7000-8000-000000000001",
                       "undoable": true,
-                      "changed": [
+                      "changedRefs": [
                         {
                           "kind": "objectNumber",
                           "page": {
@@ -17240,10 +17424,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -17279,6 +17463,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 90,
@@ -17310,6 +17495,7 @@
                         "modifiedBy": null,
                         "importedBy": null,
                         "actions": null,
+                        "richText": null,
                         "color": "#ef4444",
                         "opacity": 1,
                         "quadPoints": [],
@@ -17335,7 +17521,7 @@
                         "cacheDelta": null,
                         "opId": "00000000-0000-7000-8000-000000000002",
                         "undoable": true,
-                        "changed": [
+                        "changedRefs": [
                           {
                             "kind": "objectNumber",
                             "page": {
@@ -17383,6 +17569,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -17414,6 +17601,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -17439,7 +17627,7 @@
                       "cacheDelta": null,
                       "opId": "00000000-0000-7000-8000-000000000002",
                       "undoable": true,
-                      "changed": [
+                      "changedRefs": [
                         {
                           "kind": "objectNumber",
                           "page": {
@@ -17453,10 +17641,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
                         "count": 1
@@ -17492,6 +17680,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 90,
@@ -17523,6 +17712,7 @@
                         "modifiedBy": null,
                         "importedBy": null,
                         "actions": null,
+                        "richText": null,
                         "color": "#ef4444",
                         "opacity": 1,
                         "quadPoints": [],
@@ -17548,7 +17738,7 @@
                         "cacheDelta": null,
                         "opId": "00000000-0000-7000-8000-000000000003",
                         "undoable": true,
-                        "changed": [
+                        "changedRefs": [
                           {
                             "kind": "objectNumber",
                             "page": {
@@ -17596,6 +17786,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -17627,6 +17818,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -17652,7 +17844,7 @@
                       "cacheDelta": null,
                       "opId": "00000000-0000-7000-8000-000000000003",
                       "undoable": true,
-                      "changed": [
+                      "changedRefs": [
                         {
                           "kind": "objectNumber",
                           "page": {
@@ -17666,10 +17858,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000003",
                         "index": 0,
                         "count": 1
@@ -17705,6 +17897,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 10,
@@ -17736,6 +17929,7 @@
                         "modifiedBy": null,
                         "importedBy": null,
                         "actions": null,
+                        "richText": null,
                         "color": "#ef4444",
                         "opacity": 1,
                         "quadPoints": [],
@@ -17761,7 +17955,7 @@
                         "cacheDelta": null,
                         "opId": "00000000-0000-7000-8000-000000000004",
                         "undoable": true,
-                        "changed": [
+                        "changedRefs": [
                           {
                             "kind": "baseIndex",
                             "page": {
@@ -17809,6 +18003,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -17840,6 +18035,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -17865,7 +18061,7 @@
                       "cacheDelta": null,
                       "opId": "00000000-0000-7000-8000-000000000004",
                       "undoable": true,
-                      "changed": [
+                      "changedRefs": [
                         {
                           "kind": "baseIndex",
                           "page": {
@@ -17879,10 +18075,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000004",
                         "index": 0,
                         "count": 1
@@ -18059,7 +18255,7 @@
         }
       ]
     },
-    "inputSha256": "9ec1107310bb3e71d1f37c1a1759ac8e8214a7c0cdd84c43dde26bcf67b3833f"
+    "inputSha256": "24507a36e26e331df7f5d0cef1914d01f9e85d3e08c7a643a2dd41a353612d55"
   },
   {
     "file": "plugins/redaction.json",
@@ -18438,6 +18634,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 10,
@@ -18469,6 +18666,7 @@
                         "modifiedBy": null,
                         "importedBy": null,
                         "actions": null,
+                        "richText": null,
                         "color": "#e44234",
                         "opacity": 1,
                         "quadPoints": [],
@@ -18490,7 +18688,7 @@
                         "cacheDelta": null,
                         "opId": "00000000-0000-7000-8000-000000000001",
                         "undoable": true,
-                        "changed": [
+                        "changedRefs": [
                           {
                             "kind": "objectNumber",
                             "page": {
@@ -18538,6 +18736,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -18569,6 +18768,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#e44234",
                       "opacity": 1,
                       "quadPoints": [],
@@ -18590,7 +18790,7 @@
                       "cacheDelta": null,
                       "opId": "00000000-0000-7000-8000-000000000001",
                       "undoable": true,
-                      "changed": [
+                      "changedRefs": [
                         {
                           "kind": "objectNumber",
                           "page": {
@@ -18604,10 +18804,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -18643,6 +18843,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 0,
@@ -18674,6 +18875,7 @@
                         "modifiedBy": null,
                         "importedBy": null,
                         "actions": null,
+                        "richText": null,
                         "color": "#e44234",
                         "opacity": 1,
                         "quadPoints": [],
@@ -18695,7 +18897,7 @@
                         "cacheDelta": null,
                         "opId": "00000000-0000-7000-8000-000000000002",
                         "undoable": true,
-                        "changed": [
+                        "changedRefs": [
                           {
                             "kind": "objectNumber",
                             "page": {
@@ -18743,6 +18945,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 0,
@@ -18774,6 +18977,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#e44234",
                       "opacity": 1,
                       "quadPoints": [],
@@ -18795,7 +18999,7 @@
                       "cacheDelta": null,
                       "opId": "00000000-0000-7000-8000-000000000002",
                       "undoable": true,
-                      "changed": [
+                      "changedRefs": [
                         {
                           "kind": "objectNumber",
                           "page": {
@@ -18809,10 +19013,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
                         "count": 1
@@ -18848,6 +19052,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 300,
@@ -18879,6 +19084,7 @@
                         "modifiedBy": null,
                         "importedBy": null,
                         "actions": null,
+                        "richText": null,
                         "color": "#ef4444",
                         "opacity": 1,
                         "strokeWidth": 2,
@@ -18904,7 +19110,7 @@
                         "cacheDelta": null,
                         "opId": "00000000-0000-7000-8000-000000000003",
                         "undoable": true,
-                        "changed": [
+                        "changedRefs": [
                           {
                             "kind": "objectNumber",
                             "page": {
@@ -18952,6 +19158,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 300,
@@ -18983,6 +19190,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -19008,7 +19216,7 @@
                       "cacheDelta": null,
                       "opId": "00000000-0000-7000-8000-000000000003",
                       "undoable": true,
-                      "changed": [
+                      "changedRefs": [
                         {
                           "kind": "objectNumber",
                           "page": {
@@ -19022,10 +19230,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000003",
                         "index": 0,
                         "count": 1
@@ -19548,7 +19756,7 @@
         }
       ]
     },
-    "inputSha256": "6aecc2977e8a4e4c6cdb0f1a2a7e44ed6005fb1136b7ea4a1d638c093510e544"
+    "inputSha256": "f3d90842ceec11d9692e55a20bd662ea97ac3090e91c0216c5789cd60e82d179"
   },
   {
     "file": "plugins/redaction.json",
@@ -19922,6 +20130,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 10,
@@ -19953,6 +20162,7 @@
                         "modifiedBy": null,
                         "importedBy": null,
                         "actions": null,
+                        "richText": null,
                         "color": "#e44234",
                         "opacity": 1,
                         "quadPoints": [],
@@ -19974,7 +20184,7 @@
                         "cacheDelta": null,
                         "opId": "00000000-0000-7000-8000-000000000001",
                         "undoable": true,
-                        "changed": [
+                        "changedRefs": [
                           {
                             "kind": "objectNumber",
                             "page": {
@@ -20022,6 +20232,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -20053,6 +20264,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#e44234",
                       "opacity": 1,
                       "quadPoints": [],
@@ -20074,7 +20286,7 @@
                       "cacheDelta": null,
                       "opId": "00000000-0000-7000-8000-000000000001",
                       "undoable": true,
-                      "changed": [
+                      "changedRefs": [
                         {
                           "kind": "objectNumber",
                           "page": {
@@ -20088,10 +20300,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -20171,7 +20383,7 @@
         }
       ]
     },
-    "inputSha256": "319f9babdca69f74d3d11c8a36c7bcd649e1ad74306f9349f23321bdc5918aa7"
+    "inputSha256": "5ba3563a40272632f969cdd3e497ca9f3813f4bf1e3f2fdeea2e8b27ea180cfe"
   },
   {
     "file": "plugins/redaction.json",
@@ -20663,6 +20875,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 50,
@@ -20694,6 +20907,7 @@
                         "modifiedBy": null,
                         "importedBy": null,
                         "actions": null,
+                        "richText": null,
                         "color": "#e44234",
                         "opacity": 1,
                         "quadPoints": [
@@ -20752,7 +20966,7 @@
                         "cacheDelta": null,
                         "opId": "00000000-0000-7000-8000-000000000001",
                         "undoable": true,
-                        "changed": [
+                        "changedRefs": [
                           {
                             "kind": "objectNumber",
                             "page": {
@@ -20800,6 +21014,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -20831,6 +21046,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#e44234",
                       "opacity": 1,
                       "quadPoints": [
@@ -20889,7 +21105,7 @@
                       "cacheDelta": null,
                       "opId": "00000000-0000-7000-8000-000000000001",
                       "undoable": true,
-                      "changed": [
+                      "changedRefs": [
                         {
                           "kind": "objectNumber",
                           "page": {
@@ -20903,10 +21119,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -20942,6 +21158,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 30,
@@ -20973,6 +21190,7 @@
                         "modifiedBy": null,
                         "importedBy": null,
                         "actions": null,
+                        "richText": null,
                         "color": "#e44234",
                         "opacity": 1,
                         "quadPoints": [
@@ -21013,7 +21231,7 @@
                         "cacheDelta": null,
                         "opId": "00000000-0000-7000-8000-000000000002",
                         "undoable": true,
-                        "changed": [
+                        "changedRefs": [
                           {
                             "kind": "objectNumber",
                             "page": {
@@ -21061,6 +21279,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 30,
@@ -21092,6 +21311,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#e44234",
                       "opacity": 1,
                       "quadPoints": [
@@ -21132,7 +21352,7 @@
                       "cacheDelta": null,
                       "opId": "00000000-0000-7000-8000-000000000002",
                       "undoable": true,
-                      "changed": [
+                      "changedRefs": [
                         {
                           "kind": "objectNumber",
                           "page": {
@@ -21146,10 +21366,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
                         "count": 1
@@ -21185,6 +21405,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 30,
@@ -21216,6 +21437,7 @@
                         "modifiedBy": null,
                         "importedBy": null,
                         "actions": null,
+                        "richText": null,
                         "color": "#e44234",
                         "opacity": 1,
                         "quadPoints": [
@@ -21256,7 +21478,7 @@
                         "cacheDelta": null,
                         "opId": "00000000-0000-7000-8000-000000000003",
                         "undoable": true,
-                        "changed": [
+                        "changedRefs": [
                           {
                             "kind": "objectNumber",
                             "page": {
@@ -21304,6 +21526,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 30,
@@ -21335,6 +21558,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#e44234",
                       "opacity": 1,
                       "quadPoints": [
@@ -21375,7 +21599,7 @@
                       "cacheDelta": null,
                       "opId": "00000000-0000-7000-8000-000000000003",
                       "undoable": true,
-                      "changed": [
+                      "changedRefs": [
                         {
                           "kind": "objectNumber",
                           "page": {
@@ -21389,10 +21613,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000003",
                         "index": 0,
                         "count": 1
@@ -21477,7 +21701,7 @@
         }
       ]
     },
-    "inputSha256": "2340b44545ee7e0270df026795cd248cd1afa27435f2e1bd71e6415721ca1350"
+    "inputSha256": "849f77787abe4c0ecae292097f4377f2a4a4277fa9c873068d181bb2a6025947"
   },
   {
     "file": "plugins/redaction.json",
@@ -22594,6 +22818,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -22625,6 +22850,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -22656,6 +22882,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 205,
@@ -22687,6 +22914,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#facc15",
                       "opacity": 1,
                       "icon": "comment",
@@ -22710,6 +22938,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 60,
@@ -22741,6 +22970,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -22780,6 +23010,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -22811,6 +23042,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -22838,6 +23070,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -22869,6 +23102,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -22933,6 +23167,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -22964,6 +23199,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -22995,6 +23231,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -23026,6 +23263,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -23053,6 +23291,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -23084,6 +23323,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -23123,7 +23363,7 @@
                         "cacheDelta": null,
                         "opId": "00000000-0000-7000-8000-000000000001",
                         "undoable": true,
-                        "changed": [
+                        "changedRefs": [
                           {
                             "kind": "objectNumber",
                             "page": {
@@ -23175,7 +23415,7 @@
                       "cacheDelta": null,
                       "opId": "00000000-0000-7000-8000-000000000001",
                       "undoable": true,
-                      "changed": [
+                      "changedRefs": [
                         {
                           "kind": "objectNumber",
                           "page": {
@@ -23189,10 +23429,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -23231,7 +23471,7 @@
                         "cacheDelta": null,
                         "opId": "00000000-0000-7000-8000-000000000003",
                         "undoable": true,
-                        "changed": [
+                        "changedRefs": [
                           {
                             "kind": "baseIndex",
                             "page": {
@@ -23283,7 +23523,7 @@
                       "cacheDelta": null,
                       "opId": "00000000-0000-7000-8000-000000000003",
                       "undoable": true,
-                      "changed": [
+                      "changedRefs": [
                         {
                           "kind": "baseIndex",
                           "page": {
@@ -23297,10 +23537,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000003",
                         "index": 0,
                         "count": 1
@@ -23429,7 +23669,7 @@
         }
       ]
     },
-    "inputSha256": "f99da39277dc66d66ad7a3709bba9f71a6119571a68a836ffecf88632ebe056a"
+    "inputSha256": "7775268eb5aa3dc61ffd66f9404f294f13145a05bc3232493e66f93e5e07cbc0"
   },
   {
     "file": "plugins/redaction.json",
@@ -23785,6 +24025,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -23816,6 +24057,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -23847,6 +24089,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 205,
@@ -23878,6 +24121,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#facc15",
                       "opacity": 1,
                       "icon": "comment",
@@ -23901,6 +24145,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 60,
@@ -23932,6 +24177,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -23971,6 +24217,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -24002,6 +24249,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -24029,6 +24277,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -24060,6 +24309,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -24124,6 +24374,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -24155,6 +24406,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -24186,6 +24438,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -24217,6 +24470,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -24244,6 +24498,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -24275,6 +24530,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -24374,10 +24630,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "redaction-apply",
                         "index": 0,
                         "count": 1
@@ -24481,7 +24737,7 @@
         }
       ]
     },
-    "inputSha256": "b1b841b193bc07acba6d0b2bdecfce85a3bd2c7c7dd22d618b8b59753ec6a9c9"
+    "inputSha256": "65fe6e666d08b287ca9be4a0dbed14ba1b619e158f930d238bfe17677c38e2ad"
   },
   {
     "file": "plugins/redaction.json",
@@ -24837,6 +25093,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -24868,6 +25125,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -24899,6 +25157,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 205,
@@ -24930,6 +25189,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#facc15",
                       "opacity": 1,
                       "icon": "comment",
@@ -24953,6 +25213,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 60,
@@ -24984,6 +25245,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -25023,6 +25285,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -25054,6 +25317,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -25081,6 +25345,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -25112,6 +25377,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -25176,6 +25442,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -25207,6 +25474,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -25238,6 +25506,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -25269,6 +25538,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -25296,6 +25566,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -25327,6 +25598,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -25537,7 +25809,7 @@
         }
       ]
     },
-    "inputSha256": "4c962c87771918e8198ec46dfbe71bed6a62773b619dc8e2712bb6f3f3004b32"
+    "inputSha256": "7a37a15e2db34b5d849a97be1893b48efb54c2932533b6c829361a0d731f9977"
   },
   {
     "file": "plugins/redaction.json",
@@ -25893,6 +26165,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -25924,6 +26197,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -25955,6 +26229,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 205,
@@ -25986,6 +26261,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#facc15",
                       "opacity": 1,
                       "icon": "comment",
@@ -26009,6 +26285,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 60,
@@ -26040,6 +26317,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -26079,6 +26357,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -26110,6 +26389,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -26137,6 +26417,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -26168,6 +26449,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -26232,6 +26514,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -26263,6 +26546,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -26294,6 +26578,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -26325,6 +26610,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -26352,6 +26638,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -26383,6 +26670,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -26437,6 +26725,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 90,
@@ -26468,6 +26757,7 @@
                         "modifiedBy": null,
                         "importedBy": null,
                         "actions": null,
+                        "richText": null,
                         "color": "#ef4444",
                         "opacity": 1,
                         "quadPoints": [],
@@ -26493,7 +26783,7 @@
                         "cacheDelta": null,
                         "opId": "00000000-0000-7000-8000-000000000002",
                         "undoable": true,
-                        "changed": [
+                        "changedRefs": [
                           {
                             "kind": "objectNumber",
                             "page": {
@@ -26541,6 +26831,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -26572,6 +26863,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -26597,7 +26889,7 @@
                       "cacheDelta": null,
                       "opId": "00000000-0000-7000-8000-000000000002",
                       "undoable": true,
-                      "changed": [
+                      "changedRefs": [
                         {
                           "kind": "objectNumber",
                           "page": {
@@ -26611,10 +26903,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
                         "count": 1
@@ -26747,7 +27039,7 @@
         }
       ]
     },
-    "inputSha256": "c81cbd50e58a20fc5e62c3f25e0832a7c2f479cd58e4b31fe0f423fc76ea5ff3"
+    "inputSha256": "d8d97cfb3252c9f62c217fbde5ed493b67074e31625caad46a8f726860f1cdb2"
   },
   {
     "file": "plugins/redaction.json",
@@ -27111,6 +27403,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -27142,6 +27435,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -27169,6 +27463,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -27200,6 +27495,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -27227,6 +27523,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -27258,6 +27555,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -27285,6 +27583,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -27316,6 +27615,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -27357,6 +27657,7 @@
                         },
                         "hasAppearance": true,
                         "appearanceState": null,
+                        "structurePosition": null,
                         "nm": null,
                         "rect": {
                           "x": 100,
@@ -27388,6 +27689,7 @@
                         "modifiedBy": null,
                         "importedBy": null,
                         "actions": null,
+                        "richText": null,
                         "color": "#ef4444",
                         "opacity": 1,
                         "quadPoints": [],
@@ -27413,7 +27715,7 @@
                         "cacheDelta": null,
                         "opId": "00000000-0000-7000-8000-000000000001",
                         "undoable": true,
-                        "changed": [
+                        "changedRefs": [
                           {
                             "kind": "objectNumber",
                             "page": {
@@ -27461,6 +27763,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -27492,6 +27795,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -27517,7 +27821,7 @@
                       "cacheDelta": null,
                       "opId": "00000000-0000-7000-8000-000000000001",
                       "undoable": true,
-                      "changed": [
+                      "changedRefs": [
                         {
                           "kind": "objectNumber",
                           "page": {
@@ -27531,10 +27835,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000001",
                         "index": 0,
                         "count": 1
@@ -27564,7 +27868,7 @@
                         "cacheDelta": null,
                         "opId": "00000000-0000-7000-8000-000000000002",
                         "undoable": true,
-                        "changed": [
+                        "changedRefs": [
                           {
                             "kind": "objectNumber",
                             "page": {
@@ -27616,7 +27920,7 @@
                       "cacheDelta": null,
                       "opId": "00000000-0000-7000-8000-000000000002",
                       "undoable": true,
-                      "changed": [
+                      "changedRefs": [
                         {
                           "kind": "objectNumber",
                           "page": {
@@ -27630,10 +27934,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
                         "count": 1
@@ -27878,7 +28182,7 @@
         }
       ]
     },
-    "inputSha256": "4acb0ffe4d8bf9e0aa8b8bc0cba947642b670daa9d991d94fd08cea687ab75a3"
+    "inputSha256": "fa6383946fd268f87f04a26ffef06af6052d7cb7a35f0dbf0bfbaf1114abed11"
   },
   {
     "file": "plugins/redaction.json",
@@ -28234,6 +28538,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -28265,6 +28570,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -28296,6 +28602,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 205,
@@ -28327,6 +28634,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#facc15",
                       "opacity": 1,
                       "icon": "comment",
@@ -28350,6 +28658,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 60,
@@ -28381,6 +28690,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -28420,6 +28730,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -28451,6 +28762,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -28478,6 +28790,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -28509,6 +28822,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -28573,6 +28887,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -28604,6 +28919,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -28635,6 +28951,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -28666,6 +28983,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -28693,6 +29011,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -28724,6 +29043,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -28835,10 +29155,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "first",
                         "index": 0,
                         "count": 1
@@ -28879,6 +29199,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -28910,6 +29231,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -29054,10 +29376,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "second",
                         "index": 0,
                         "count": 1
@@ -29245,7 +29567,7 @@
         }
       ]
     },
-    "inputSha256": "387d5871d4d28b852a8ceacbb1d3f734915677f774044bae823b8d0f0984e1fa"
+    "inputSha256": "59b61e856e1742abbd4475446b3c4ed2296f81714271ea9fcc299ed223128dc1"
   },
   {
     "file": "plugins/redaction.json",
@@ -29601,6 +29923,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -29632,6 +29955,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -29663,6 +29987,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 205,
@@ -29694,6 +30019,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#facc15",
                       "opacity": 1,
                       "icon": "comment",
@@ -29717,6 +30043,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 60,
@@ -29748,6 +30075,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -29787,6 +30115,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 90,
@@ -29818,6 +30147,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -29845,6 +30175,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -29876,6 +30207,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [
@@ -29940,6 +30272,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 400,
@@ -29971,6 +30304,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -30002,6 +30336,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 10,
@@ -30033,6 +30368,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "quadPoints": [],
@@ -30060,6 +30396,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 50,
@@ -30091,6 +30428,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -30225,10 +30563,10 @@
                     "origin": {
                       "kind": "local",
                       "sessionId": "s1",
-                      "sub": null,
-                      "ts": 0,
-                      "serverId": null,
-                      "tx": {
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
                         "id": "redaction-apply",
                         "index": 0,
                         "count": 1
@@ -30721,7 +31059,7 @@
         }
       ]
     },
-    "inputSha256": "d7dd67c8a6162c7ce498fc1fb0955a19837705717dd2589da525eecf78c6d7e7"
+    "inputSha256": "131f9d6f43fab778218ee52b60c9f581be72d5a4124cb536cf57d502cbb276e3"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -31116,6 +31454,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -31147,6 +31486,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -31174,6 +31514,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -31205,6 +31546,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -31223,7 +31565,7 @@
         ]
       ]
     },
-    "inputSha256": "6c217e9b09fc5a0816331141429081c87aa3867aec953b42332d53b8b340885f"
+    "inputSha256": "18ff902d920290a2d6ab25885183ad49c2091a27a7be77ecb3dec8b947069960"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -31250,6 +31592,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -31281,6 +31624,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -31295,7 +31639,7 @@
         ]
       ]
     },
-    "inputSha256": "f9a12b06320caa09e0c77e5892b006d2e3eca4b87aba518eec63dbd1b03321bb"
+    "inputSha256": "31ca8655bb7edf58812a445f13f39536c73a4193730857951b6dd476f340cf6d"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -31376,6 +31720,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 0,
@@ -31407,6 +31752,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -31438,6 +31784,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 0,
@@ -31469,6 +31816,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -31487,7 +31835,7 @@
         ]
       ]
     },
-    "inputSha256": "b959008771338b5a63a4d5f30584bb4115f98fec12d3bc0973d439859f193d61"
+    "inputSha256": "78d95c76a15e4c7810e2dd9ddafcce79097ed717fa2a3851dc189df5f6561494"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -31568,6 +31916,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -31599,6 +31948,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -31626,6 +31976,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 150,
@@ -31657,6 +32008,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -31688,6 +32040,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 300,
@@ -31719,6 +32072,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -31737,7 +32091,7 @@
         ]
       ]
     },
-    "inputSha256": "d57251434ce3b8c402cd0581c67c042dd0b4a73709ed2a70b8126ad81f3ac147"
+    "inputSha256": "65dc1523235d5f74e69a7fab87213759fa1406bd4bb3f196ec7b13dc079fe0e8"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -31818,6 +32172,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -31849,6 +32204,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -31876,6 +32232,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 200,
@@ -31907,6 +32264,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -31938,6 +32296,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -31969,6 +32328,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -32000,6 +32360,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 0,
@@ -32031,6 +32392,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -32049,7 +32411,7 @@
         ]
       ]
     },
-    "inputSha256": "00381c271335dad096e9fe155c0325344232ab1e97086063950555706a95b985"
+    "inputSha256": "8d6c0ea907d8e26772c9e4f4d92c0f571722ff8aceb92bfe3d851798739684c3"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -32130,6 +32492,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -32161,6 +32524,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -32188,6 +32552,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 120,
@@ -32219,6 +32584,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -32250,6 +32616,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 0,
@@ -32281,6 +32648,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -32299,7 +32667,7 @@
         ]
       ]
     },
-    "inputSha256": "f038b36df2f83fc0c08c00fce4470da60367ed58948d300ee437dd92ffefe038"
+    "inputSha256": "ab38c7ea65d2a0b5a3bee97b559388b2b3ba873bb4eb144f5fccb184702e974e"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -32380,6 +32748,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -32411,6 +32780,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -32438,6 +32808,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 199.999,
@@ -32469,6 +32840,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -32500,6 +32872,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -32531,6 +32904,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -32549,7 +32923,7 @@
         ]
       ]
     },
-    "inputSha256": "d7585e9d7a414809258c12d7e16d642fc45b96d96c262fc653af413e538bca7a"
+    "inputSha256": "50cd2cfd67b327862b75de8b54a53293579ccc96f1a7fb915cfe569ecb47100d"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -32630,6 +33004,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 0,
@@ -32661,6 +33036,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [
@@ -32725,6 +33101,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 120,
@@ -32756,6 +33133,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -32787,6 +33165,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 200,
@@ -32818,6 +33197,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -32849,6 +33229,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 340,
@@ -32880,6 +33261,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -32898,7 +33280,7 @@
         ]
       ]
     },
-    "inputSha256": "3db49c42e65dbc0a55d7ee303c4303c0fa89cbc5ce565d2251358ce17831eac1"
+    "inputSha256": "663a5d651e80404cf40ad49e2265b3a06bfa01a4926caf30f4a58da02ecc4a64"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -32979,6 +33361,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -33010,6 +33393,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [
@@ -33056,6 +33440,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 195,
@@ -33087,6 +33472,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -33118,6 +33504,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -33149,6 +33536,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -33180,6 +33568,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 201,
@@ -33211,6 +33600,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -33229,7 +33619,7 @@
         ]
       ]
     },
-    "inputSha256": "c52b82ad2c899a7a5a75f887a6b2c731c05f13716e51005daa1035341cdc8bc6"
+    "inputSha256": "01a82490f50088d29fd013a1340424a42817ac9bb23138ef98baf302626e032c"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -33310,6 +33700,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -33341,6 +33732,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -33368,6 +33760,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 150,
@@ -33399,6 +33792,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -33426,6 +33820,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 140,
@@ -33457,6 +33852,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -33475,7 +33871,7 @@
         ]
       ]
     },
-    "inputSha256": "8d4234290cb2d02217f73726172e63fc0fa3b155622f2a1fc1ae00ecfd8ac21c"
+    "inputSha256": "edc71b1ef20415cda243539df390388d50a96f239cfb290bf2d189f2bf8b1057"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -33556,6 +33952,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -33587,6 +33984,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -33614,6 +34012,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 150,
@@ -33645,6 +34044,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -33659,7 +34059,7 @@
         ]
       ]
     },
-    "inputSha256": "642c0aa32e2d4088d85496fe7c46c766a063f6b0f7035faabc2c688c9963922d"
+    "inputSha256": "da029ce94cd8d6a10402dc709548561a857a5054e773cc47f0cd84ea408d4652"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -33740,6 +34140,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -33771,6 +34172,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -33798,6 +34200,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 300,
@@ -33829,6 +34232,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -33856,6 +34260,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 150,
@@ -33887,6 +34292,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -33918,6 +34324,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 350,
@@ -33949,6 +34356,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -33977,7 +34385,7 @@
         ]
       ]
     },
-    "inputSha256": "d94c42abacb8eacf38c61ccc3744f9405d4f29d12fb5d9de6698dd9c69c085c8"
+    "inputSha256": "19389543716c49cb79dd2598df4d7b287f6546aaddc35671187da8d78cfb15ed"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -34058,6 +34466,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -34089,6 +34498,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -34116,6 +34526,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 150,
@@ -34147,6 +34558,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -34183,7 +34595,7 @@
         ]
       ]
     },
-    "inputSha256": "8f26bac6bcadfcfc81e30eaf3214c924962ef727a92d81fea2140187a53181fc"
+    "inputSha256": "7965f71fbb37ba2ff84cff3e01ccf9ccc7a211a48524ee2fc0ab7cb70c560751"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -34264,6 +34676,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -34295,6 +34708,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -34322,6 +34736,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 150,
@@ -34353,6 +34768,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -34372,7 +34788,7 @@
         []
       ]
     },
-    "inputSha256": "e84b7edee6aebfdd8618932b57c900b6da2d46cca4ac020fbfe06b2a8c1472ec"
+    "inputSha256": "cdc8d948dcf3def75f5c97a55fa69caaed00ecfdee09971ba15b728eafad169f"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -34453,6 +34869,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -34484,6 +34901,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -34511,6 +34929,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 150,
@@ -34542,6 +34961,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -34561,7 +34981,7 @@
       ],
       "covers": "The current optional refs contract records omitted refs; null is outside the public contract."
     },
-    "inputSha256": "6fc88ec155964c38e3671e3bb0be08fd03ba1205c9ae0f1160c5129d88ca5d99"
+    "inputSha256": "581d490fa4188f4c50b8eb60e5d12c95150b2be0c4c949960349084d826ba2a5"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -34642,6 +35062,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -34673,6 +35094,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -34700,6 +35122,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 300,
@@ -34731,6 +35154,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -34758,6 +35182,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 150,
@@ -34789,6 +35214,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -34820,6 +35246,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 350,
@@ -34851,6 +35278,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -34880,7 +35308,7 @@
       ],
       "covers": "Current baseIndex refs replace removed nm/index revision refs; exact originals remain archived."
     },
-    "inputSha256": "444047d92c8c334aa0dc0bb511b61722d0eb735e0e1cd62fd35f28555b70e70c"
+    "inputSha256": "b8d7dd8e381a4dddf43e292f4e04e98ee6050ec05dea1363b5e19f90352e3083"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -35014,6 +35442,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -35045,6 +35474,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -35072,6 +35502,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 150,
@@ -35103,6 +35534,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -35134,6 +35566,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -35165,6 +35598,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -35192,6 +35626,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 150,
@@ -35223,6 +35658,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -35254,6 +35690,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 0,
@@ -35285,6 +35722,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -35316,6 +35754,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -35347,6 +35786,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -35374,6 +35814,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 150,
@@ -35405,6 +35846,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -35423,7 +35865,7 @@
         ]
       ]
     },
-    "inputSha256": "70776716ae661f8abd34311d8ae117c40da19749d34bd8acbef3caf70072620f"
+    "inputSha256": "137cba374f4835bb31cd8bb77a74004c1edfb286b4dbbd6d3c6953dc1e262497"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -35504,6 +35946,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -35535,6 +35978,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -35562,6 +36006,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": {
@@ -35595,6 +36040,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -35626,6 +36072,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -35657,6 +36104,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [
@@ -35705,6 +36153,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": 100,
@@ -35736,6 +36185,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -35754,7 +36204,7 @@
         ]
       ]
     },
-    "inputSha256": "d374595c4f73c18766348d8b56069630418b4dcfcdb08b125dde9bd36baaacae"
+    "inputSha256": "71cfd0749ed88ae948a7abf6e83155e992feaf4e9b0b152a32d2eed69ecf8c79"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -35835,6 +36285,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": -50.5,
@@ -35866,6 +36317,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "quadPoints": [],
@@ -35893,6 +36345,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": -20,
@@ -35924,6 +36377,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -35955,6 +36409,7 @@
             },
             "hasAppearance": true,
             "appearanceState": null,
+            "structurePosition": null,
             "nm": null,
             "rect": {
               "x": -10.25,
@@ -35986,6 +36441,7 @@
             "modifiedBy": null,
             "importedBy": null,
             "actions": null,
+            "richText": null,
             "color": "#ef4444",
             "opacity": 1,
             "strokeWidth": 2,
@@ -36004,7 +36460,7 @@
         ]
       ]
     },
-    "inputSha256": "eb587937592200a7e3409a725d55db9eb0865b33418272036fe03a8ae18a024f"
+    "inputSha256": "5c8dac1716ea21727d0bdd349fc12a27b961a43d494c20634b868f31a5ce3016"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -36202,6 +36658,7 @@
           },
           "hasAppearance": true,
           "appearanceState": null,
+          "structurePosition": null,
           "nm": null,
           "rect": {
             "x": 50,
@@ -36233,6 +36690,7 @@
           "modifiedBy": null,
           "importedBy": null,
           "actions": null,
+          "richText": null,
           "color": "#ef4444",
           "opacity": 1,
           "quadPoints": [
@@ -36284,7 +36742,7 @@
         0
       ]
     },
-    "inputSha256": "4f100c973849e805b6224987b0ea3425da316772075af2551fcf49d3fbe1076a"
+    "inputSha256": "d7bf8db01f6429affbfe9f38ffbd504e83e5df91eea879821440a76f0e0bb228"
   },
   {
     "file": "plugins/redaction-functions.json",
@@ -36309,6 +36767,7 @@
           },
           "hasAppearance": true,
           "appearanceState": null,
+          "structurePosition": null,
           "nm": null,
           "rect": {
             "x": 90,
@@ -36340,6 +36799,7 @@
           "modifiedBy": null,
           "importedBy": null,
           "actions": null,
+          "richText": null,
           "color": "#ef4444",
           "opacity": 1,
           "quadPoints": [],
@@ -36354,6 +36814,6 @@
         0
       ]
     },
-    "inputSha256": "94486535878eca3b7898151fd31c776559ff1313f5a99bdfc9b279e2e87e0462"
+    "inputSha256": "ffe6ddb8036df89ebddf5ab420d9c12c1e49c54752b90ecfb73870c739e77f75"
   }
 ]

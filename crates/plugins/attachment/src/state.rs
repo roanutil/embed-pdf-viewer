@@ -17,7 +17,7 @@ pub struct AttachmentStateView {
     pub files: Rc<Vec<AttachedFile>>,
     pub selected: Rc<Vec<AttachedFile>>,
     pub status: ResourceStatus,
-    pub can_add: bool,
+    pub can_create: bool,
     pub can_download: bool,
 }
 
@@ -28,7 +28,7 @@ impl Default for AttachmentStateView {
             files: Rc::default(),
             selected: Rc::default(),
             status: ResourceStatus::Idle,
-            can_add: false,
+            can_create: false,
             can_download: false,
         }
     }
@@ -42,7 +42,7 @@ pub fn attachment_state(attachment: Option<&AttachmentCapability>) -> Attachment
         files: attachment.list(),
         selected: attachment.get_selected(),
         status: attachment.get_status(),
-        can_add: attachment.can_add(),
+        can_create: attachment.can_create(),
         can_download: attachment.can_download(),
     }
 }

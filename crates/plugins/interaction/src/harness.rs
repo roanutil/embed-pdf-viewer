@@ -407,10 +407,10 @@ impl ScriptedHandler {
             id: spec.get("id").and_then(Value::as_str).unwrap_or_default().to_string(),
             priority: spec.get("priority").and_then(number).unwrap_or(f64::NAN),
             enabled_for: member("enabledFor"),
-            on_down: member("onDown"),
-            on_move: member("onMove"),
-            on_up: member("onUp"),
-            on_cancel: member("onCancel"),
+            on_down: member("onPointerDown"),
+            on_move: member("onPointerMove"),
+            on_up: member("onPointerUp"),
+            on_cancel: member("onPointerCancel"),
             on_hover: member("onHover"),
             claims_touch: member("claimsTouch"),
             live: h.is_live(),
@@ -442,16 +442,16 @@ impl InteractionHandler for ScriptedHandler {
     fn enabled_for(&self, tool: &Tool) -> bool {
         ask(&self.enabled_for, tool_json(tool))
     }
-    fn on_down(&self, sample: &PointerSample) -> bool {
+    fn on_pointer_down(&self, sample: &PointerSample) -> bool {
         ask(&self.on_down, self.sample(sample))
     }
-    fn on_move(&self, sample: &PointerSample) {
+    fn on_pointer_move(&self, sample: &PointerSample) {
         self.tell(&self.on_move, sample);
     }
-    fn on_up(&self, sample: &PointerSample) {
+    fn on_pointer_up(&self, sample: &PointerSample) {
         self.tell(&self.on_up, sample);
     }
-    fn on_cancel(&self, sample: &PointerSample) {
+    fn on_pointer_cancel(&self, sample: &PointerSample) {
         match &self.on_cancel {
             Some(_) => self.tell(&self.on_cancel, sample),
             None => self.tell(&self.on_up, sample),
@@ -558,7 +558,7 @@ pub fn tool_changed_json(event: &ToolChangedEvent) -> Value {
 }
 
 fn settings_changed_json(event: &InteractionSettingsChanged) -> Value {
-    json!({ "settings": settings_json(&event.settings), "changed": event.changed })
+    json!({ "settings": settings_json(&event.settings), "changedKeys": event.changed_keys })
 }
 
 /// Subscribe a scripted callback to an event hook; the unsubscribe is a ref.

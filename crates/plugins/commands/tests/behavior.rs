@@ -116,7 +116,7 @@ fn settings_events(rig: &Rig) -> (Rc<RefCell<Vec<Vec<String>>>>, Unsubscribe) {
     let events: Rc<RefCell<Vec<Vec<String>>>> = Rc::default();
     let log = events.clone();
     let off = rig.commands.on_settings_changed(move |event| {
-        log.borrow_mut().push(event.changed.clone());
+        log.borrow_mut().push(event.changed_keys.clone());
         Ok(())
     });
     (events, off)

@@ -87,7 +87,7 @@ fn home_ref(file: &Value) -> Value {
 /// reports, `None` for any other event.
 fn fact_of(event: &Value, previous: &Value) -> Option<(&'static str, Vec<Value>)> {
     Some(match event.get("type").and_then(Value::as_str)? {
-        "attachments.created" => ("added", vec![document_file_of(&member(event, "attachment"))]),
+        "attachments.created" => ("created", vec![document_file_of(&member(event, "attachment"))]),
         "attachments.restored" => {
             ("restored", vec![document_file_of(&member(event, "attachment"))])
         }
@@ -101,7 +101,7 @@ fn fact_of(event: &Value, previous: &Value) -> Option<(&'static str, Vec<Value>)
                 .as_array()
                 .and_then(|files| files.iter().find(|file| strict_equals(&key_of(file), &key)))
                 .map(document_file_of);
-            ("removed", gone.into_iter().collect())
+            ("deleted", gone.into_iter().collect())
         }
         _ => return None,
     })
@@ -363,14 +363,14 @@ impl AttachmentCapability {
 
     /// Whether this session may add and remove attachments
     /// (`doc.attachments.modify`).
-    pub fn can_add(&self) -> bool {
+    pub fn can_create(&self) -> bool {
         self.0.cx.allows(MODIFY)
     }
 
-    /// Whether this session may remove this file: [`can_add`](Self::can_add)
+    /// Whether this session may remove this file: [`can_create`](Self::can_create)
     /// for an attachment, the annotation plugin's `can_delete` for a page's
     /// file (`false` without the annotation plugin).
-    pub fn can_remove(&self, file: &AttachedFile) -> bool {
+    pub fn can_delete(&self, file: &AttachedFile) -> bool {
         if is_page_file(file) {
             return self.0.annotations().is_some_and(|a| a.can_delete(&home_ref(file)));
         }
@@ -384,7 +384,7 @@ impl AttachmentCapability {
     /// in order. Fires `on_changed`. Rejects `permission-denied`,
     /// `invalid-input` for bytes without a name, `operation-cancelled` or
     /// `instance-closed`.
-    pub fn add(
+    pub fn create(
         &self,
         sources: Vec<AttachmentFileSource>,
         options: OperationOptions,
@@ -432,7 +432,7 @@ impl AttachmentCapability {
     /// It goes at once; an undo brings it back. Rejects `permission-denied`,
     /// `not-found` for a file the document doesn't have,
     /// `operation-cancelled` or `instance-closed`.
-    pub fn remove(&self, file: AttachedFile, options: OperationOptions) -> Promise<()> {
+    pub fn delete(&self, file: AttachedFile, options: OperationOptions) -> Promise<()> {
         let this = self.0.clone();
         Promise::spawn(async move {
             if is_page_file(&file) {

@@ -9,8 +9,8 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "activate",
-          "ref": {
+          "type": "activate",
+          "annotation": {
             "kind": "objectNumber",
             "page": {
               "kind": "objectNumber",
@@ -25,10 +25,10 @@
         }
       ]
     },
-    "inputSha256": "4fdaf413efa85eb159bb6619249f0a7764168a0afcbf944c4d63ad901e309302",
+    "inputSha256": "63ab2e63d3000b26337a6faae047ab8e6cd07fb7b8d38c9da0d58d36be86592d",
     "outcome": {
       "returned": {
-        "scope": "activate"
+        "type": "activate"
       }
     }
   },
@@ -42,9 +42,9 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "cursorEnter",
-          "ref": {
+          "annotation": {
             "kind": "objectNumber",
             "page": {
               "kind": "objectNumber",
@@ -59,11 +59,11 @@
         }
       ]
     },
-    "inputSha256": "72a8eb27d6a63345c753aa24ecd66f5e35b6c109e05216b415e8acb46d0c6e18",
+    "inputSha256": "70a0240a44445bb56a80ffeaf1a37d3ad9b00bf0272cda36b6e8bb5b181716ad",
     "outcome": {
       "returned": {
-        "scope": "annotation",
-        "name": "cursorEnter"
+        "type": "annotation",
+        "event": "cursorEnter"
       }
     }
   },
@@ -77,9 +77,9 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "cursorExit",
-          "ref": {
+          "annotation": {
             "kind": "objectNumber",
             "page": {
               "kind": "objectNumber",
@@ -94,11 +94,11 @@
         }
       ]
     },
-    "inputSha256": "5f44a4a1110a3fd6fcdd42fc89fdff3925d64960aa171c95bb4305d5e5ffdb40",
+    "inputSha256": "02be9bb6778319dfd544fbe129ac112dfa6732a48fce9fc9572ebe269dc08bc1",
     "outcome": {
       "returned": {
-        "scope": "annotation",
-        "name": "cursorExit"
+        "type": "annotation",
+        "event": "cursorExit"
       }
     }
   },
@@ -112,9 +112,9 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "mouseDown",
-          "ref": {
+          "annotation": {
             "kind": "objectNumber",
             "page": {
               "kind": "objectNumber",
@@ -129,11 +129,11 @@
         }
       ]
     },
-    "inputSha256": "a85d9a7a69f6a5ad0947ddfa02546e5ee7748f0470cdb9eda940949648678885",
+    "inputSha256": "0c74554d509d64defbf03cab7c5f297672089b9bdf18d3c4e856b3dc71711c6c",
     "outcome": {
       "returned": {
-        "scope": "annotation",
-        "name": "mouseDown"
+        "type": "annotation",
+        "event": "mouseDown"
       }
     }
   },
@@ -147,9 +147,9 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "mouseUp",
-          "ref": {
+          "annotation": {
             "kind": "objectNumber",
             "page": {
               "kind": "objectNumber",
@@ -164,11 +164,11 @@
         }
       ]
     },
-    "inputSha256": "b8db404cfe53ebf68494e528f4e7a4faf51fb4388a4090685c4a761fb69e9a1c",
+    "inputSha256": "799d5dd47bffb1c012bf52852ea04ffdc900e5d9acd5600e42ff2e684e337470",
     "outcome": {
       "returned": {
-        "scope": "annotation",
-        "name": "mouseUp"
+        "type": "annotation",
+        "event": "mouseUp"
       }
     }
   },
@@ -182,9 +182,9 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "focus",
-          "ref": {
+          "annotation": {
             "kind": "objectNumber",
             "page": {
               "kind": "objectNumber",
@@ -199,11 +199,11 @@
         }
       ]
     },
-    "inputSha256": "50608e1f1f95c28660a43e4fae6fcc3950da3f4b40afc42a550f9659fab530d6",
+    "inputSha256": "df6466e1f1012e7c2f494cae3f0eba3420b75e6baa70b182a3986ba0d5273ac9",
     "outcome": {
       "returned": {
-        "scope": "annotation",
-        "name": "focus"
+        "type": "annotation",
+        "event": "focus"
       }
     }
   },
@@ -217,9 +217,9 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "blur",
-          "ref": {
+          "annotation": {
             "kind": "objectNumber",
             "page": {
               "kind": "objectNumber",
@@ -234,11 +234,11 @@
         }
       ]
     },
-    "inputSha256": "e7ea46ad0f7454b7c07289c1001cb20a37f871ad769039022620dd603adae796",
+    "inputSha256": "b6d4e889836a939522a7909876ddd40e562cb4a49dc46751c976f4b897cda9a0",
     "outcome": {
       "returned": {
-        "scope": "annotation",
-        "name": "blur"
+        "type": "annotation",
+        "event": "blur"
       }
     }
   },
@@ -252,7 +252,7 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "page",
+          "type": "page",
           "event": "open",
           "page": {
             "kind": "objectNumber",
@@ -261,11 +261,11 @@
         }
       ]
     },
-    "inputSha256": "be35617854f4d6b66614faa051e731475b9a55bb37dcfda4e8b43176837ce89f",
+    "inputSha256": "ff0db0359ced7b12d726a7711000ffa7a2d0596613aae8f8521f90f933a5c45c",
     "outcome": {
       "returned": {
-        "scope": "page",
-        "name": "open"
+        "type": "page",
+        "event": "open"
       }
     }
   },
@@ -279,7 +279,7 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "page",
+          "type": "page",
           "event": "close",
           "page": {
             "kind": "objectNumber",
@@ -288,11 +288,11 @@
         }
       ]
     },
-    "inputSha256": "5361a60345bd495d121ccb196506ae54d3a94bbea641397c244fed7cd550e197",
+    "inputSha256": "ada92e43ff942b9d9909855083858356d553815af24bab4bc60cb010b0a8a814",
     "outcome": {
       "returned": {
-        "scope": "page",
-        "name": "close"
+        "type": "page",
+        "event": "close"
       }
     }
   },
@@ -306,7 +306,7 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "page",
+          "type": "page",
           "event": "visible",
           "page": {
             "kind": "objectNumber",
@@ -315,11 +315,11 @@
         }
       ]
     },
-    "inputSha256": "195e699da7a2f14f5d9325c8f2726d2d9b5af5817041efe8c2d5eaced98b4955",
+    "inputSha256": "91e6d1ab198ebec0cf1beb23fb4b10b885a43c3c433ec3812cbcac82d98fbd9b",
     "outcome": {
       "returned": {
-        "scope": "page",
-        "name": "visible"
+        "type": "page",
+        "event": "visible"
       }
     }
   },
@@ -333,7 +333,7 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "page",
+          "type": "page",
           "event": "invisible",
           "page": {
             "kind": "objectNumber",
@@ -342,11 +342,11 @@
         }
       ]
     },
-    "inputSha256": "72613df6ab607575b5b916117b825d266e76b470cee3df87ef0a8b32b1795312",
+    "inputSha256": "9e3b59833d6d74ff599f72d5e06bfb4088bb5928a766fa0952d7ec1789a1ec33",
     "outcome": {
       "returned": {
-        "scope": "page",
-        "name": "invisible"
+        "type": "page",
+        "event": "invisible"
       }
     }
   },
@@ -360,16 +360,16 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "open"
         }
       ]
     },
-    "inputSha256": "694007a425ccedfc412cf6baf8101ad4a8affbaa0510236513866f48a6b659a0",
+    "inputSha256": "ad5746ab6d74e9cd7a81fec88e79d15c08726bd22a9aa0163d9f6602cae05a9c",
     "outcome": {
       "returned": {
-        "scope": "document",
-        "name": "open"
+        "type": "document",
+        "event": "open"
       }
     }
   },
@@ -383,16 +383,16 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "will-save"
         }
       ]
     },
-    "inputSha256": "e4ded93253616a86899154ab570e4397b655ee6605d7cd9f6683b57fdf58038f",
+    "inputSha256": "9dcbce453174325c2ce9d7283ec4909b0190054ab471ac293c4b189dc46054c5",
     "outcome": {
       "returned": {
-        "scope": "document",
-        "name": "will-save"
+        "type": "document",
+        "event": "will-save"
       }
     }
   },
@@ -406,16 +406,16 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "did-save"
         }
       ]
     },
-    "inputSha256": "9c5f97e369dc2f0c6d72016c6a79651f5e7ae79152015542b00c8daf16a59914",
+    "inputSha256": "6a6beb8ebad50641cccf6ceaa542938885c593d1b31b18b899a09c0cb48e0448",
     "outcome": {
       "returned": {
-        "scope": "document",
-        "name": "did-save"
+        "type": "document",
+        "event": "did-save"
       }
     }
   },
@@ -429,16 +429,16 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "will-print"
         }
       ]
     },
-    "inputSha256": "78cad45c1fcc87a8b556f753a6dcbe8df9a9f11986f48c46565f31ff17c75103",
+    "inputSha256": "13d9bb9de072cfdbb2d0d0fee4ecbc2353fa9fe5ef957efa9786c75d07c3eda8",
     "outcome": {
       "returned": {
-        "scope": "document",
-        "name": "will-print"
+        "type": "document",
+        "event": "will-print"
       }
     }
   },
@@ -452,16 +452,16 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "did-print"
         }
       ]
     },
-    "inputSha256": "df2b0b361af0cc3cc1f4e0f8c9a88414dfc7f891f060495fb1167edff29af637",
+    "inputSha256": "23a839b6aeac7efe53aea3bb2787993f9767c738a65ab4594e200e9769c7aa9a",
     "outcome": {
       "returned": {
-        "scope": "document",
-        "name": "did-print"
+        "type": "document",
+        "event": "did-print"
       }
     }
   },
@@ -475,16 +475,16 @@
       "fn": "eventOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "will-close"
         }
       ]
     },
-    "inputSha256": "028b9fe410eca1b634c06d4a858320407d972818850df7b18ab43d7a5e0d66c5",
+    "inputSha256": "0379ca692e468ad61a873f7182942ce6a5680e835c81fca64f2b6b44c5d165bf",
     "outcome": {
       "returned": {
-        "scope": "document",
-        "name": "will-close"
+        "type": "document",
+        "event": "will-close"
       }
     }
   },
@@ -498,8 +498,8 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "activate",
-          "ref": {
+          "type": "activate",
+          "annotation": {
             "kind": "objectNumber",
             "page": {
               "kind": "objectNumber",
@@ -514,7 +514,7 @@
         }
       ]
     },
-    "inputSha256": "78cf6af87a257cadf2ad288de71d9a5687215e6f05c320d5a90c3d1c4addca3b",
+    "inputSha256": "c070fd09265d5694e97179f04012c33493960db49e96dfa9cd5d93b3a9d5b76e",
     "outcome": {
       "returned": "user"
     }
@@ -529,9 +529,9 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "cursorEnter",
-          "ref": {
+          "annotation": {
             "kind": "objectNumber",
             "page": {
               "kind": "objectNumber",
@@ -546,7 +546,7 @@
         }
       ]
     },
-    "inputSha256": "e9fda861c9cdf62e94ba37248a1f776708fbfd523c304e89e7f293c41f9fcaf2",
+    "inputSha256": "a00e52013d8a9f7c88da3654bddd4f06d989a807d82663c511ae2c8c2edf16ee",
     "outcome": {
       "returned": "hover"
     }
@@ -561,9 +561,9 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "cursorExit",
-          "ref": {
+          "annotation": {
             "kind": "objectNumber",
             "page": {
               "kind": "objectNumber",
@@ -578,7 +578,7 @@
         }
       ]
     },
-    "inputSha256": "594919a4fabbaa9f20ac5bc753b0c95b58acd316c6009c593e089cd89129958c",
+    "inputSha256": "a5bfa2226b8b74438ff66a4f0a072162a47556ba529aaea4e273b1299bafa9eb",
     "outcome": {
       "returned": "hover"
     }
@@ -593,9 +593,9 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "mouseDown",
-          "ref": {
+          "annotation": {
             "kind": "objectNumber",
             "page": {
               "kind": "objectNumber",
@@ -610,7 +610,7 @@
         }
       ]
     },
-    "inputSha256": "c0521c46535c295bd1146f8696b7a4b7834e282feb14a24416ba8e4c57f4ead4",
+    "inputSha256": "33a544845b05d133d9d7b6da912bbd52beb1d47581481a03f5173aae8fa60453",
     "outcome": {
       "returned": "user"
     }
@@ -625,9 +625,9 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "mouseUp",
-          "ref": {
+          "annotation": {
             "kind": "objectNumber",
             "page": {
               "kind": "objectNumber",
@@ -642,7 +642,7 @@
         }
       ]
     },
-    "inputSha256": "bcb61171cc12208c0490a06e674ab88c0c8fb7537575e85ea433ae98fa9d1077",
+    "inputSha256": "a5d749dcae856be197aa8578705411d4e7311ef9be70e165c52cd16b7eb05522",
     "outcome": {
       "returned": "user"
     }
@@ -657,9 +657,9 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "focus",
-          "ref": {
+          "annotation": {
             "kind": "objectNumber",
             "page": {
               "kind": "objectNumber",
@@ -674,7 +674,7 @@
         }
       ]
     },
-    "inputSha256": "3601fbc3ea0cd6d09e61bd23e558aa3f14eabd374be0462621ae074dab5e8e1f",
+    "inputSha256": "ecf3f0f44b2ace5119b3a4fe08e3634bcf4d3877ae3a06fdf506adb6b92de1e8",
     "outcome": {
       "returned": "user"
     }
@@ -689,9 +689,9 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "annotation",
+          "type": "annotation",
           "event": "blur",
-          "ref": {
+          "annotation": {
             "kind": "objectNumber",
             "page": {
               "kind": "objectNumber",
@@ -706,7 +706,7 @@
         }
       ]
     },
-    "inputSha256": "3b6fd1331db5b639cb1750c58d9216f847e5c8766c5c2c063bab85c82b53d42f",
+    "inputSha256": "2a9a387ed6443aa0516cb6f8822ae23789c21b7c2b88f7325e74ab3c6d7749cc",
     "outcome": {
       "returned": "user"
     }
@@ -721,7 +721,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "page",
+          "type": "page",
           "event": "open",
           "page": {
             "kind": "objectNumber",
@@ -730,7 +730,7 @@
         }
       ]
     },
-    "inputSha256": "23d9cda290ed83fcca1167d13f6808e8b3c5f3d8e3373da7753c5cd8219c1a12",
+    "inputSha256": "770c0b48f02a29b66340808a0a661ccca7424785f0d3b8c870043e89d552f4b8",
     "outcome": {
       "returned": "lifecycle"
     }
@@ -745,7 +745,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "page",
+          "type": "page",
           "event": "close",
           "page": {
             "kind": "objectNumber",
@@ -754,7 +754,7 @@
         }
       ]
     },
-    "inputSha256": "0d7f473d71a00fad2389860966b5149c36e6a17f8a5a7bf5d5051f8179f0395c",
+    "inputSha256": "7366fd129f12a3e71ef205cc8ba8f8e8bdfb7047e6c5e16ab69c52ae08d25999",
     "outcome": {
       "returned": "lifecycle"
     }
@@ -769,7 +769,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "page",
+          "type": "page",
           "event": "visible",
           "page": {
             "kind": "objectNumber",
@@ -778,7 +778,7 @@
         }
       ]
     },
-    "inputSha256": "8d0a4c365d13e28bde6a5b4eb69bd1585c0470ace710b8aa71debe8e60b459fe",
+    "inputSha256": "bfc68c6bf14e317182626c087772ec32a61d07c7c5c12e1e58f91a7d8ef8e1aa",
     "outcome": {
       "returned": "lifecycle"
     }
@@ -793,7 +793,7 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "page",
+          "type": "page",
           "event": "invisible",
           "page": {
             "kind": "objectNumber",
@@ -802,7 +802,7 @@
         }
       ]
     },
-    "inputSha256": "47f7a13f54fd8d54cdf669ba5b9f0c4044f3b969972f9e550d62e8ad1f96721b",
+    "inputSha256": "886e81bb5a89b24a0ca1788bdcfecf8b30db7f57d132aacfe28a88db054f5335",
     "outcome": {
       "returned": "lifecycle"
     }
@@ -817,12 +817,12 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "open"
         }
       ]
     },
-    "inputSha256": "0c6f430f9d5e3057343e61831018d115a371f400d26370e721a8f175acbe63cb",
+    "inputSha256": "f8d650af86c47b447394d0e43b86d82e951d598624dd54e550dc3c293eea5f9d",
     "outcome": {
       "returned": "lifecycle"
     }
@@ -837,12 +837,12 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "will-save"
         }
       ]
     },
-    "inputSha256": "dbe79be4fe979ec29ff7410244b7e4914ea87ae80d2b26f24afa670c9fe474f6",
+    "inputSha256": "46b2526ecd676baca49db052f340ef9a7be4c508b431884d58fa2257f2b56906",
     "outcome": {
       "returned": "lifecycle"
     }
@@ -857,12 +857,12 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "did-save"
         }
       ]
     },
-    "inputSha256": "262cf3aa913b97a0a3fe231b464186fde7716c5a07d3cfc31f4dd4062cda91e0",
+    "inputSha256": "6656443e4502331614608b200aafe1ba0fd2c3421ded9c6a0cbc3ba0cc07b86f",
     "outcome": {
       "returned": "lifecycle"
     }
@@ -877,12 +877,12 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "will-print"
         }
       ]
     },
-    "inputSha256": "8b04c200316e0a51290eecae025a52c0c736047e521e799e084ca6043e8bba82",
+    "inputSha256": "225ca4c0080741772926d8df7855923e43628b035e182df3bc8e424a0b6f1620",
     "outcome": {
       "returned": "lifecycle"
     }
@@ -897,12 +897,12 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "did-print"
         }
       ]
     },
-    "inputSha256": "fe123f354e69e65b026ee56ae21a04a6b17f5dac6376afe9103badffe86805b5",
+    "inputSha256": "bc228b781c4e390883fa23fc2ad184bb05f227f100d791b1aca620e210b12d2d",
     "outcome": {
       "returned": "lifecycle"
     }
@@ -917,12 +917,12 @@
       "fn": "triggerOriginOf",
       "args": [
         {
-          "scope": "document",
+          "type": "document",
           "event": "will-close"
         }
       ]
     },
-    "inputSha256": "f4bf4135d7d1bb4d9089851f2639065f019291a80376664b477a572aae753646",
+    "inputSha256": "ee47f800e28a0bc7b52fe8649da19f8760c4c636f1a582ce257f018cb3ee286f",
     "outcome": {
       "returned": "lifecycle"
     }
@@ -1212,7 +1212,6 @@
                 "next": []
               },
               "incomplete": true,
-              "warningFlags": 0,
               "warnings": [
                 "incomplete"
               ]
@@ -1223,7 +1222,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -1244,7 +1243,6 @@
                 "next": []
               },
               "incomplete": true,
-              "warningFlags": 0,
               "warnings": [
                 "incomplete"
               ]
@@ -1255,7 +1253,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -1265,7 +1263,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "b0431d7d3325e98a728b85b8a567c00b66ca20490cc9f65f7c56c129c1760001",
+    "inputSha256": "05f65c13f5eec4edb83d63ff993ac0dd81b86eb0ec4cd0f1e4dc5719731ce8de",
     "result": {
       "trace": [
         {
@@ -1673,7 +1671,6 @@
             {
               "root": null,
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -1682,7 +1679,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -1698,7 +1695,6 @@
             {
               "root": null,
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -1707,7 +1703,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -1717,7 +1713,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "99b1ee1c9da11f1193309b5a27d6694621b9aa1b6407ade67b8878f13444b2c1",
+    "inputSha256": "def9ba4db37d1e66a3e08918c0ec2f657ea2d284ed3fe14ee0d8ee562e78b969",
     "result": {
       "trace": [
         {
@@ -2105,7 +2101,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -2114,7 +2109,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -2124,7 +2119,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "1707cba44f12a1210e4cfe86619b3525d5ad6585455d66c2b545dd33d40ad242",
+    "inputSha256": "b8fb26c2f704bdf983ccded3d3489c5c8042a014d73ed1c88f079aa4560e90bc",
     "result": {
       "trace": [
         {
@@ -2327,7 +2322,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -2354,7 +2349,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -2374,7 +2369,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -2394,7 +2389,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -2647,7 +2642,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -2656,7 +2650,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -2666,7 +2660,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "13fd9c0828b37cfd30490a31e791d6d934c7b73f0c4d46ee72395b9fdd53fd9f",
+    "inputSha256": "9882af4fe0a28fe3180705a34d95df5710d6e99776efdec4f802aff54bfa5813",
     "result": {
       "trace": [
         {
@@ -2847,7 +2841,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -2867,7 +2861,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -3159,7 +3153,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3168,7 +3161,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3178,7 +3171,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "445d32ffeb7630eed9efa8138ce12d71c0063d4070ce480287ea604ecec20be9",
+    "inputSha256": "6e74ba8499b0c089bcabdb7118c753dbf23a742dfc1d3c7adf412752c1001094",
     "result": {
       "trace": [
         {
@@ -3406,7 +3399,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -3447,7 +3440,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -3814,7 +3807,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -3823,7 +3815,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -3833,7 +3825,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "ec74796d1832030b2b7962de94548f693d62544fba3e9949df78db9463272f60",
+    "inputSha256": "68dd795fa4c57731a4733819392d651592a96f067bce3dfc001d2ec65922875f",
     "result": {
       "trace": [
         {
@@ -4160,7 +4152,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -4423,7 +4415,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4432,8 +4423,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -4455,7 +4446,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4464,8 +4454,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -4487,7 +4477,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4496,7 +4485,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -4516,25 +4505,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4543,8 +4528,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -4565,7 +4550,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4574,8 +4558,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -4596,7 +4580,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4605,7 +4588,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -4684,7 +4667,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4693,7 +4675,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -4714,7 +4696,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4723,7 +4704,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -4743,7 +4724,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4752,7 +4732,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -4772,7 +4752,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4781,7 +4760,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -4808,7 +4787,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -4817,8 +4795,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -4828,7 +4806,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "780616013ec3b55af6775ae993292e512a394f361f6bcfc44d55865066c0992a",
+    "inputSha256": "0ef5720218191644907a2d70b0bca3aed058322f186c9cd96166cf97666d9f78",
     "result": {
       "trace": [
         {
@@ -5674,7 +5652,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5683,7 +5660,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -5703,7 +5680,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -5712,7 +5688,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -5722,7 +5698,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "6514702d208c10fe78bbe36662a233bac26c9708c198269c7339372144153beb",
+    "inputSha256": "11a8a665ed7e2bf101cec71ba8db36e43ab7f938769fcde6890096ad7e8d3e9e",
     "result": {
       "trace": [
         {
@@ -6180,7 +6156,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -6189,7 +6164,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -6211,7 +6186,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -6220,8 +6194,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -6243,7 +6217,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -6252,8 +6225,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -6280,7 +6253,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -6289,7 +6261,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -6311,7 +6283,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -6320,8 +6291,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -6331,7 +6302,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "7d28bf2ae2ff02be2b78a28ce7ae8d633f5b9c5d12f53b2dccfdb934357d9e0d",
+    "inputSha256": "f333c8e3dae439f7031858a59b3eab9d71440bc1ed60263722a04c9ebdf3d89c",
     "result": {
       "trace": [
         {
@@ -6969,7 +6940,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -6978,8 +6948,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -7030,7 +7000,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -7039,7 +7008,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -7066,7 +7035,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -7075,8 +7043,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -7103,7 +7071,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -7112,8 +7079,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -7143,7 +7110,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "7e81df82d2945bcab236489e641b0c81bf0f6258b82dcd9a9a43e015fe42f935",
+    "inputSha256": "7646bc88a1beafaeb92c9f145cb65b08d90774635404d2d43d14aeebe62a3528",
     "result": {
       "trace": [
         {
@@ -7962,8 +7929,8 @@
                 "kind": "link"
               },
               "event": {
-                "scope": "annotation",
-                "name": "mouseUp"
+                "type": "annotation",
+                "event": "mouseUp"
               }
             }
           ]
@@ -8027,7 +7994,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "7c798e04b2d35e53274c77a7db2ef936812ac7258352c80d10207e4b12f00dfe",
+    "inputSha256": "d582d18ca231b1e3e8a45cd32307d4025d74f818747736dc4a5347feb2b1879b",
     "result": {
       "trace": [
         {
@@ -8232,7 +8199,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -8249,7 +8216,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -8320,8 +8286,8 @@
                     "kind": "link"
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "mouseUp"
+                    "type": "annotation",
+                    "event": "mouseUp"
                   }
                 }
               ]
@@ -8338,7 +8304,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -8424,7 +8389,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -8530,7 +8494,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -8598,7 +8561,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -8644,7 +8606,7 @@
     "index": 11,
     "input": {
       "name": "get-action-tree",
-      "covers": "getActionTree reads the raw tree behind each source kind: an annotation (activate by default, or the named /AA event; the /A-shadows-U rule is not applied), a field by object number (not the first numbered field) or by name, a page (open by default or close), and the catalog (OpenAction by default, or the Table-200 tree for a verb). Anything absent is null; the required actions service returns an empty catalog for the second document.",
+      "covers": "readActionTree reads the raw tree behind each source kind: an annotation (activate by default, or the named /AA event; the /A-shadows-U rule is not applied), a field by object number (not the first numbered field) or by name, a page (open by default or close), and the catalog (OpenAction by default, or the Table-200 tree for a verb). Anything absent is null; the required actions service returns an empty catalog for the second document.",
       "plugins": [
         {
           "factory": "actions-current",
@@ -8718,7 +8680,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "close": {
@@ -8729,7 +8690,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -8813,6 +8773,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -8852,7 +8813,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "mouseUp": {
@@ -8863,7 +8823,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "cursorEnter": {
@@ -8874,10 +8833,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -8929,7 +8888,7 @@
                       "filledAt": null,
                       "importedBy": null,
                       "widgets": [],
-                      "family": "text",
+                      "kind": "text",
                       "value": "f-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -8945,7 +8904,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       }
@@ -8977,7 +8935,7 @@
                       "filledAt": null,
                       "importedBy": null,
                       "widgets": [],
-                      "family": "text",
+                      "kind": "text",
                       "value": "g-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -9002,7 +8960,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "openDestination": null,
@@ -9014,7 +8971,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -9226,7 +9182,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "annotation",
@@ -9251,7 +9207,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "annotation",
@@ -9277,7 +9233,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "annotation",
@@ -9303,7 +9259,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "annotation",
@@ -9329,7 +9285,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "annotation",
@@ -9354,7 +9310,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "field",
@@ -9372,7 +9328,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "field",
@@ -9390,7 +9346,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "field",
@@ -9408,7 +9364,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "field",
@@ -9426,7 +9382,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "field",
@@ -9444,7 +9400,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "page",
@@ -9461,7 +9417,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "page",
@@ -9479,7 +9435,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "page",
@@ -9496,7 +9452,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "page",
@@ -9513,7 +9469,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "document"
@@ -9526,7 +9482,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "document",
@@ -9540,7 +9496,7 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "document",
@@ -9554,7 +9510,7 @@
             "token": "actions",
             "doc": "b"
           },
-          "method": "getActionTree",
+          "method": "readActionTree",
           "args": [
             {
               "kind": "document"
@@ -9565,7 +9521,7 @@
       "snapshot": "none",
       "reason": "Pins what the dispatcher answers: read trees, refusals, and which installed sink or resolver is current, through call outcomes, adapter callbacks and engine calls. Its dispatched actions are compared; the state they build is not."
     },
-    "inputSha256": "c3bb4bbdf78080e71ec5cffeb23055cd3da21e281d6ac0149445fbe297c194ea",
+    "inputSha256": "be402f46a173e2fc73026d6104e4a4e6209536fd65845e48931fbcfd9b54f44d",
     "result": {
       "trace": [
         {
@@ -9751,7 +9707,6 @@
                   "next": []
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               }
             }
@@ -9798,7 +9753,6 @@
                   "next": []
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               }
             }
@@ -9845,7 +9799,6 @@
                   "next": []
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               }
             }
@@ -9966,7 +9919,6 @@
                   "next": []
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               }
             }
@@ -10007,7 +9959,6 @@
                   "next": []
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               }
             }
@@ -10141,7 +10092,6 @@
                   "next": []
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               }
             }
@@ -10176,7 +10126,6 @@
                   "next": []
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               }
             }
@@ -10261,7 +10210,6 @@
                   "next": []
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               }
             }
@@ -10302,7 +10250,6 @@
                   "next": []
                 },
                 "incomplete": false,
-                "warningFlags": 0,
                 "warnings": []
               }
             }
@@ -10594,7 +10541,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -10603,7 +10549,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -10613,7 +10559,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "8c73f29e4cdbd644b138b571ad460fd61252ff361c638c6c2b3af8152e59d561",
+    "inputSha256": "07ddfeb7b23bd57702cf9ce8ce31ee9239e76d9d95f045fb4c9b7b55bca18bde",
     "result": {
       "trace": [
         {
@@ -11032,7 +10978,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -11041,7 +10986,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -11051,7 +10996,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "d49004ffe98899391c6c53280dc8367473b77e51b78983aaca4c316b3e082e8f",
+    "inputSha256": "02fafd24e7de9b195ad97a72350b694fae516ee7c521ed06f443d67ac0c65296",
     "result": {
       "trace": [
         {
@@ -11251,7 +11196,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -11651,7 +11596,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -11660,7 +11604,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -11699,7 +11643,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -11708,7 +11651,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -11717,7 +11660,7 @@
       "snapshot": "none",
       "reason": "Pins what the dispatcher answers: read trees, refusals, and which installed sink or resolver is current, through call outcomes, adapter callbacks and engine calls. Its dispatched actions are compared; the state they build is not."
     },
-    "inputSha256": "5ddb00b752a4ff6c3106247a7d37d023e045f4838293a61f7ba3f925f4940096",
+    "inputSha256": "1c0d46e16ee45a464728fbbc2e355888767cc4427e9dd9cf95863f262419b227",
     "result": {
       "trace": [
         {
@@ -12264,7 +12207,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "note1-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -12315,7 +12258,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "other-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -12456,7 +12399,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -12465,7 +12407,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -12492,7 +12434,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -12501,7 +12442,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -12511,7 +12452,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "03edc0ab2abc33dd9811e72f431ade94b9e5dfc0ea08278d3f2abc74647d2665",
+    "inputSha256": "dca37aa5319626c0fe0d5fd98cd3cf9c754dd88aa64e6438bd26bd058d6b770d",
     "result": {
       "trace": [
         {
@@ -13083,7 +13024,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -13092,7 +13032,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -13127,7 +13067,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -13136,7 +13075,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -13146,7 +13085,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "c896af2dfbee4e6c3e358a8ec177c3bce7b7580e30a8daf6771bfd2d4d5c6c94",
+    "inputSha256": "9a3e0ed2dfc2d625f0926e0af75c54dbca4cb0c0702d6334745fa2683ee29fd3",
     "result": {
       "trace": [
         {
@@ -13358,7 +13297,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -13648,7 +13587,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -13657,7 +13595,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -13667,7 +13605,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "885bb7920ee1f8771ef1b787c32ca4628bd9d1a838bb73366eee31d671b6ad5e",
+    "inputSha256": "3d9495c105dcd3f89bc9767c2b3d1fcdeea8c72436d7ca2a648a70d9051dec18",
     "result": {
       "trace": [
         {
@@ -13989,7 +13927,7 @@
                           }
                         }
                       ],
-                      "family": "text",
+                      "kind": "text",
                       "value": "note1-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -14085,7 +14023,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -14094,7 +14031,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -14121,7 +14058,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -14130,7 +14066,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -14157,7 +14093,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -14166,7 +14101,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -14254,7 +14189,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -14263,7 +14197,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -14294,7 +14228,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -14303,7 +14236,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -14334,7 +14267,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -14343,7 +14275,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -14370,7 +14302,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -14379,7 +14310,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -14389,7 +14320,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "dbda126dfd1e07f1b04504bb19a9926d804a2f8b7adfcedcc4eefeb0180b1a73",
+    "inputSha256": "d3f60e33f349b260142797277afe91803433bd00bc708796bd259145bb8fcb32",
     "result": {
       "trace": [
         {
@@ -15193,7 +15124,7 @@
                       "filledAt": null,
                       "importedBy": null,
                       "widgets": [],
-                      "family": "text",
+                      "kind": "text",
                       "value": "note1-value",
                       "defaultValue": "",
                       "maxLength": null,
@@ -15345,7 +15276,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15354,7 +15284,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15385,7 +15315,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15394,7 +15323,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15421,7 +15350,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -15430,7 +15358,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -15440,7 +15368,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "908624386992de8a4d0cf7cde3d5b1b2f623dbda2e560952b71b865a5ae859cd",
+    "inputSha256": "78606dd8283ae9895fab4bc9b29827699634e41b0ac19457bbaa608a2f56e789",
     "result": {
       "trace": [
         {
@@ -16037,7 +15965,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -16046,7 +15973,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -16068,7 +15995,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -16077,7 +16003,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -16087,7 +16013,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "5adda3c2abe664de039cded2c986947643e4b72a7fcd7b78070fea8652c00b07",
+    "inputSha256": "a4cc915af66a95255c1ef950d00e20aa2d732cbaafbb9b3d599d66d2a8a75a2f",
     "result": {
       "trace": [
         {
@@ -16512,7 +16438,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -16521,7 +16446,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -16531,7 +16456,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "c6f88f8097213f54b6372502972103387424379345ee88baaf308f73ebc42fe8",
+    "inputSha256": "3dd7bc26e61da809386b116870f8836edbc6ad0137bee60c5413c3d55a6d394f",
     "result": {
       "trace": [
         {
@@ -16893,7 +16818,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -16902,7 +16826,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -16923,7 +16847,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -16932,7 +16855,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -17005,7 +16928,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -17014,7 +16936,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -17036,7 +16958,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -17045,7 +16966,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -17067,7 +16988,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -17076,7 +16996,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -17098,7 +17018,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -17107,7 +17026,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -17129,7 +17048,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -17138,7 +17056,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -17167,7 +17085,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -17176,7 +17093,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -17186,7 +17103,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "7d5d2851802bc454f9e3d8da0a58e2f1d303472dcde53fbf0b28b73a23673d21",
+    "inputSha256": "86ecb788aa7864f0be3403e0465f7333a2193398a350515e64c4929cc6466a87",
     "result": {
       "trace": [
         {
@@ -17487,7 +17404,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -17562,7 +17479,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -17637,7 +17554,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -17712,7 +17629,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -17766,7 +17683,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -17855,7 +17772,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -18100,7 +18017,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -18109,7 +18025,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -18173,7 +18089,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -18182,7 +18097,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -18209,7 +18124,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -18218,7 +18132,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -18245,7 +18159,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -18254,7 +18167,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -18281,7 +18194,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -18290,7 +18202,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -18300,7 +18212,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "37987ec2166bd59d5d13d026a34e31dbddeaf9661b9f7c892e001b1c4f7f04c1",
+    "inputSha256": "46c0567ed166c7a286191c0757949b92c170f71f945a7494fcffe26eece03f89",
     "result": {
       "trace": [
         {
@@ -18571,7 +18483,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -18651,7 +18563,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -18731,7 +18643,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -18805,7 +18717,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -19078,7 +18990,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -19087,7 +18998,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -19115,7 +19026,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -19124,7 +19034,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -19134,7 +19044,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "dbaea3577dd87516625c26b53e852992dafc2449a7794e3f54596e7599f0d3cc",
+    "inputSha256": "5f81b84e5e986a9852298e31dce8d77b9e2c509b0099881e99384800c98d289a",
     "result": {
       "trace": [
         {
@@ -19372,7 +19282,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -19710,7 +19620,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -19719,7 +19628,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -19748,7 +19657,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -19757,7 +19665,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -19808,7 +19716,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -19817,7 +19724,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -19841,7 +19748,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "1b013d84c01ebb3f3148ac497a2d45e25d4f16a3fe3d7c26f15b9c40d3de601b",
+    "inputSha256": "7ffcb21fceec7ec14d62993769493d76c548597aefbcdd30e38ad71a633d8ece",
     "result": {
       "trace": [
         {
@@ -20523,7 +20430,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -20532,7 +20438,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -20566,7 +20472,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -20575,7 +20480,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -20640,7 +20545,6 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [
                   {
                     "name": "plain",
@@ -20649,7 +20553,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -20669,7 +20573,6 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [
                   {
                     "name": "plain",
@@ -20678,7 +20581,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -20739,25 +20642,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -20766,7 +20665,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -20793,25 +20692,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -20820,7 +20715,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -20847,25 +20742,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -20874,7 +20765,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -20883,7 +20774,7 @@
       "snapshot": "none",
       "reason": "Pins what the dispatcher answers: read trees, refusals, and which installed sink or resolver is current, through call outcomes, adapter callbacks and engine calls. Its dispatched actions are compared; the state they build is not."
     },
-    "inputSha256": "3fb4e9bed413b91b6a2f0879c84107e845aaad35640d6945775e767e35a960f9",
+    "inputSha256": "3a32c11769962b86526f05be67b164387688a149da0a34f4656c1619116f6042",
     "result": {
       "trace": [
         {
@@ -21405,8 +21296,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -21414,7 +21304,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -21429,7 +21319,6 @@
                   "url": "https://home.test/submit",
                   "method": "post",
                   "format": "fdf",
-                  "flagsRaw": 0,
                   "entries": [
                     {
                       "name": "plain",
@@ -21438,7 +21327,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -21513,8 +21402,7 @@
                   "intent": {
                     "url": "https://home.test/submit",
                     "format": "fdf",
-                    "method": "post",
-                    "flagsRaw": 0
+                    "method": "post"
                   },
                   "origin": "user",
                   "sentAt": "1970-01-01T00:00:00.000Z"
@@ -21532,8 +21420,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -21541,7 +21428,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -21854,7 +21741,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -21863,7 +21749,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -21884,7 +21770,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -21893,7 +21778,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -21910,7 +21795,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "5548c00bc87e207d0cc10922059669c0dbfd619ffd2ee2eb6c2be5973aee29a2",
+    "inputSha256": "9155541b821bf8e0af533ff7e06337a4adf99664496cc320f841ae19c25aca08",
     "result": {
       "trace": [
         {
@@ -22056,7 +21941,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -22146,7 +22031,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -22420,7 +22305,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -22429,7 +22313,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -22464,7 +22348,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -22473,7 +22356,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -22483,7 +22366,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "9204907ff38d08aa965ad729f577a1b1945fc882392ef791952a3fe8d1cb6b0e",
+    "inputSha256": "b5453a122767553e7f61c24d5663a4e19a67b7fc4118b040699a8b2661b61405",
     "result": {
       "trace": [
         {
@@ -22736,7 +22619,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -22773,7 +22655,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -22920,7 +22801,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -23117,7 +22997,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "openDestination": null
@@ -23204,7 +23083,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -23213,8 +23091,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -23235,7 +23113,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -23244,7 +23121,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -23265,7 +23142,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -23274,7 +23150,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -23284,7 +23160,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "5a5e542079628a4dba388ff682c4f507932d3a8972fe72dbf3277078fa7890fb",
+    "inputSha256": "806451b63fef4a22f96ea7c9a9f6fca186aab518cd3bce365fe47c2940384999",
     "result": {
       "trace": [
         {
@@ -23445,8 +23321,8 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "cursorEnter"
+                    "type": "annotation",
+                    "event": "cursorEnter"
                   }
                 }
               ]
@@ -23508,8 +23384,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "open"
+                    "type": "document",
+                    "event": "open"
                   }
                 }
               ]
@@ -23529,7 +23405,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -23585,7 +23461,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -23816,7 +23692,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -23825,7 +23700,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -23835,7 +23710,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "50291da2794f159730a807115f6c9e4b70486a705ac17819f2429923b9b1a48d",
+    "inputSha256": "3cee7e682d81940169551a85fd874cc67edeedc6561f234c674851dd81400ee4",
     "result": {
       "trace": [
         {
@@ -24225,25 +24100,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -24252,7 +24123,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -24262,7 +24133,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "334be53add53caa7e70da4fdfea3f3eab7449e2239018f3ba8685d7c8912bcf8",
+    "inputSha256": "f782ab560186a4e851db50f5b67556c76472e8f1931535672bf6a9157744b51d",
     "result": {
       "trace": [
         {
@@ -24677,25 +24548,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -24704,7 +24571,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -24724,25 +24591,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -24751,7 +24614,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -24761,7 +24624,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "95b2e6b6f1a7f6fbf93870160cac2a1a78dbdedeb925a815ca69ac11f2f2af3d",
+    "inputSha256": "b9a265e0fbfad011d90264ca317a49c6674d3e1894e741b6972ee6d4860b14f1",
     "result": {
       "trace": [
         {
@@ -24944,8 +24807,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -24953,7 +24815,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -25024,8 +24886,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -25033,7 +24894,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -25278,7 +25139,6 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [
                   {
                     "name": "plain",
@@ -25287,7 +25147,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -25317,26 +25177,22 @@
                       "objectNumber": 9
                     }
                   ],
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  },
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false,
                   "charSet": "utf-8"
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -25345,7 +25201,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -25355,7 +25211,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "ca48fdc4897ac81c2ec977971a2756c4e623cf45164b353178ac943c8468d0b6",
+    "inputSha256": "e2ecdfb7197a56854c1bd8cc106dc5cc4cc31d952b2d760cbfd85d3a6e8d8d49",
     "result": {
       "trace": [
         {
@@ -25548,7 +25404,6 @@
                   "includeNoValueFields": false,
                   "format": "fdf",
                   "method": "post",
-                  "flagsRaw": 0,
                   "charSet": "utf-8"
                 },
                 {
@@ -25557,7 +25412,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -25823,7 +25678,6 @@
                     "url": "https://home.test/submit",
                     "method": "post",
                     "format": "fdf",
-                    "flagsRaw": 0,
                     "entries": [
                       {
                         "name": "plain",
@@ -25832,7 +25686,7 @@
                     ],
                     "origin": "user",
                     "event": {
-                      "scope": "activate"
+                      "type": "activate"
                     }
                   }
                 },
@@ -25850,7 +25704,7 @@
                     ],
                     "origin": "user",
                     "event": {
-                      "scope": "activate"
+                      "type": "activate"
                     },
                     "charSet": "latin1"
                   }
@@ -25878,25 +25732,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -25905,7 +25755,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -25925,25 +25775,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -25952,7 +25798,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -25962,7 +25808,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "23963042390ec9f2dda268f7780d2c528119bc550ab4fd131f414f6c59c2bc9d",
+    "inputSha256": "eeec046000d7925171f7965a1a58783db0b25c7d0d26527219868e7049949eb6",
     "result": {
       "trace": [
         {
@@ -26160,8 +26006,7 @@
                   "intent": {
                     "url": "https://home.test/submit",
                     "format": "fdf",
-                    "method": "post",
-                    "flagsRaw": 0
+                    "method": "post"
                   },
                   "origin": "user",
                   "sentAt": "1970-01-01T00:00:01.500Z"
@@ -26179,8 +26024,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -26188,7 +26032,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -26252,7 +26096,6 @@
                     "url": "https://home.test/submit",
                     "format": "fdf",
                     "method": "post",
-                    "flagsRaw": 0,
                     "charSet": "latin1"
                   },
                   "origin": "user",
@@ -26271,8 +26114,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -26280,7 +26122,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -26529,7 +26371,6 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [
                   {
                     "name": "plain",
@@ -26538,7 +26379,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -26559,25 +26400,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -26586,7 +26423,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -26596,7 +26433,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "a1767eda62e564c465fbaa5a9673c8ffd714a131642c9199d152c9eca7c8648a",
+    "inputSha256": "1308c4bce8d82f0c8576bfe80a6f4dc9392f5ee8672851bf66a8008401a1fef5",
     "result": {
       "trace": [
         {
@@ -26755,8 +26592,7 @@
                   "intent": {
                     "url": "https://home.test/submit",
                     "format": "fdf",
-                    "method": "post",
-                    "flagsRaw": 0
+                    "method": "post"
                   },
                   "origin": "user",
                   "sentAt": "1970-01-01T00:00:01.234Z"
@@ -26774,8 +26610,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -26783,7 +26618,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -27163,11 +26998,10 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 },
                 "charSet": "utf-8"
               }
@@ -27205,25 +27039,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -27232,7 +27062,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -27251,7 +27081,6 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [
                   {
                     "name": "plain",
@@ -27260,7 +27089,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -27294,25 +27123,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -27321,7 +27146,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -27330,7 +27155,7 @@
       "snapshot": "none",
       "reason": "Pins the handoff between an installed submit handler and the home, through the handler callbacks and the engine calls. Its dispatched actions are compared; the state they build is not."
     },
-    "inputSha256": "50c4cce6e8b2ed049ed1b9ba72f5d23d0ec14dd363e66c0d7878e41d7a492b62",
+    "inputSha256": "740dd8e23505f9dafd42bdf2d5541839314163e51147c81eededfb80386af4f0",
     "result": {
       "trace": [
         {
@@ -27578,8 +27403,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -27587,7 +27411,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -27602,11 +27426,10 @@
                   "url": "https://home.test/submit",
                   "method": "post",
                   "format": "fdf",
-                  "flagsRaw": 0,
                   "entries": [],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   },
                   "charSet": "utf-8"
                 },
@@ -27706,8 +27529,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -27715,7 +27537,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -27730,7 +27552,6 @@
                   "url": "https://home.test/submit",
                   "method": "post",
                   "format": "fdf",
-                  "flagsRaw": 0,
                   "entries": [
                     {
                       "name": "plain",
@@ -27739,7 +27560,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -27972,7 +27793,6 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [
                   {
                     "name": "plain",
@@ -27981,7 +27801,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -28028,25 +27848,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -28055,7 +27871,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -28075,25 +27891,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -28102,7 +27914,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -28122,25 +27934,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -28149,7 +27957,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -28166,7 +27974,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "3f2bcfd19177cd71c96c5f2de0896252082d43edc51b92ada83af46d9b5a2805",
+    "inputSha256": "b67c337fcdfe1556aac5f9a6957afe5307b3cf2e61b000c5c10f1bf6e9372183",
     "result": {
       "trace": [
         {
@@ -28371,8 +28179,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -28380,7 +28187,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -28395,7 +28202,6 @@
                   "url": "https://home.test/submit",
                   "method": "post",
                   "format": "fdf",
-                  "flagsRaw": 0,
                   "entries": [
                     {
                       "name": "plain",
@@ -28404,7 +28210,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -28469,8 +28275,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -28478,7 +28283,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -28493,7 +28298,6 @@
                   "url": "https://home.test/submit",
                   "method": "post",
                   "format": "fdf",
-                  "flagsRaw": 0,
                   "entries": [
                     {
                       "name": "plain",
@@ -28502,7 +28306,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -28555,8 +28359,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "user",
@@ -28564,7 +28367,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -28579,7 +28382,6 @@
                   "url": "https://home.test/submit",
                   "method": "post",
                   "format": "fdf",
-                  "flagsRaw": 0,
                   "entries": [
                     {
                       "name": "plain",
@@ -28588,7 +28390,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -28858,7 +28660,6 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [
                   {
                     "name": "plain",
@@ -28867,7 +28668,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -28901,25 +28702,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -28928,7 +28725,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -28948,25 +28745,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -28975,8 +28768,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "annotation",
-                "name": "cursorEnter"
+                "type": "annotation",
+                "event": "cursorEnter"
               }
             }
           ]
@@ -28996,25 +28789,21 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -29023,8 +28812,8 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "document",
-                "name": "open"
+                "type": "document",
+                "event": "open"
               }
             }
           ]
@@ -29034,7 +28823,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "0ceb3dc1353b01680ebd37c1eba7db2f8e436d6bfa2a1aefe58420cb1b284616",
+    "inputSha256": "a0952fc10b053967d74379b1a755d83af5cbfb92e330756d51c1332aea492c46",
     "result": {
       "trace": [
         {
@@ -29286,8 +29075,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "hover",
@@ -29295,8 +29083,8 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "cursorEnter"
+                    "type": "annotation",
+                    "event": "cursorEnter"
                   }
                 },
                 {
@@ -29311,7 +29099,6 @@
                   "url": "https://home.test/submit",
                   "method": "post",
                   "format": "fdf",
-                  "flagsRaw": 0,
                   "entries": [
                     {
                       "name": "plain",
@@ -29320,7 +29107,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -29373,8 +29160,7 @@
                   "exclude": false,
                   "includeNoValueFields": false,
                   "format": "fdf",
-                  "method": "post",
-                  "flagsRaw": 0
+                  "method": "post"
                 },
                 {
                   "origin": "lifecycle",
@@ -29382,8 +29168,8 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "open"
+                    "type": "document",
+                    "event": "open"
                   }
                 },
                 {
@@ -29398,7 +29184,6 @@
                   "url": "https://home.test/submit",
                   "method": "post",
                   "format": "fdf",
-                  "flagsRaw": 0,
                   "entries": [
                     {
                       "name": "plain",
@@ -29407,7 +29192,7 @@
                   ],
                   "origin": "user",
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 },
                 {
@@ -29627,7 +29412,6 @@
                 "url": "https://home.test/submit",
                 "method": "post",
                 "format": "fdf",
-                "flagsRaw": 0,
                 "entries": [
                   {
                     "name": "plain",
@@ -29636,7 +29420,7 @@
                 ],
                 "origin": "user",
                 "event": {
-                  "scope": "activate"
+                  "type": "activate"
                 }
               }
             }
@@ -29688,20 +29472,17 @@
                 "payload": {
                   "url": "https://home.test/submit",
                   "fields": null,
-                  "flags": {
-                    "raw": 0,
-                    "exclude": false,
-                    "includeNoValueFields": false,
-                    "format": "fdf",
-                    "method": "post",
-                    "submitCoordinates": false,
-                    "includeAppendSaves": false,
-                    "includeAnnotations": false,
-                    "canonicalFormat": false,
-                    "exclNonUserAnnots": false,
-                    "exclFKey": false,
-                    "embedForm": false
-                  }
+                  "exclude": false,
+                  "includeNoValueFields": false,
+                  "format": "fdf",
+                  "method": "post",
+                  "submitCoordinates": false,
+                  "includeAppendSaves": false,
+                  "includeAnnotations": false,
+                  "canonicalFormat": false,
+                  "exclNonUserAnnots": false,
+                  "exclFKey": false,
+                  "embedForm": false
                 },
                 "next": [
                   {
@@ -29713,7 +29494,6 @@
                 ]
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -29722,7 +29502,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -29732,7 +29512,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "b401df28248a8a08f8a3b653fc4e1951c5e60a4e21d4a33871ca5a5e0321b53d",
+    "inputSha256": "a0372c835deee72b1090e1df234f646a81582d2a5e14b8b1b2e6a19e96722d26",
     "result": {
       "trace": [
         {
@@ -29950,7 +29730,7 @@
                     "kind": "api"
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]

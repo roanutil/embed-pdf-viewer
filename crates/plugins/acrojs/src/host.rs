@@ -26,7 +26,7 @@ use crate::types::{
 /// implementation would throw.
 pub trait ScriptSandbox {
     /// True after explicit disposal or a resource/runtime fault.
-    fn disposed(&self) -> bool;
+    fn destroyed(&self) -> bool;
     /// Evaluate the document's name-tree sources once.
     fn boot(
         &self,
@@ -42,7 +42,7 @@ pub trait ScriptSandbox {
         budget: Option<&ScriptBudget>,
     ) -> Result<ScriptOutput, Error>;
     /// Release the realm. Idempotent.
-    fn dispose(&self);
+    fn destroy(&self);
 }
 
 /// `() => Promise<ScriptSandbox>`.
@@ -158,7 +158,7 @@ impl Drop for Inner {
         if let Some(dying) = self.sandbox.get_mut().take() {
             dying.on_settle(|built| {
                 if let Ok(sandbox) = built {
-                    sandbox.dispose();
+                    sandbox.destroy();
                 }
             });
         }
@@ -209,7 +209,7 @@ fn input_for(inner: &Inner, world: &ScriptWorldInput) -> ScriptInput {
 }
 
 fn note_fault(inner: &Inner, sandbox: &Rc<dyn ScriptSandbox>) {
-    if !sandbox.disposed() {
+    if !sandbox.destroyed() {
         return;
     }
     *inner.sandbox.borrow_mut() = None;
@@ -358,7 +358,7 @@ impl ScriptHost {
         result
     }
 
-    pub fn dispose(&self) {
+    pub fn destroy(&self) {
         self.0.disposed.set(true);
         release_sandbox(&self.0);
     }
@@ -381,7 +381,7 @@ fn release_sandbox(inner: &Inner) {
     if let Some(dying) = dying {
         rt::spawn(async move {
             if let Ok(sandbox) = dying.await {
-                sandbox.dispose();
+                sandbox.destroy();
             }
         });
     }
@@ -402,7 +402,7 @@ mod tests {
     }
 
     impl ScriptSandbox for CountingSandbox {
-        fn disposed(&self) -> bool {
+        fn destroyed(&self) -> bool {
             self.disposed.get()
         }
         fn boot(
@@ -421,7 +421,7 @@ mod tests {
         ) -> Result<ScriptOutput, Error> {
             Ok(ScriptOutput::empty())
         }
-        fn dispose(&self) {
+        fn destroy(&self) {
             self.disposed.set(true);
             self.disposals.set(self.disposals.get() + 1);
         }
@@ -477,7 +477,7 @@ mod tests {
         let host = counting_host(built.clone(), disposals.clone());
         let _ = host.transaction(|txn| Ok(txn.run("a", world(), None).map(|_| Ok(()))));
         rt::run_until_stalled();
-        host.dispose();
+        host.destroy();
         rt::run_until_stalled();
         drop(host);
         assert_eq!((built.get(), disposals.get()), (1, 1));
@@ -532,7 +532,7 @@ mod tests {
             }))
         });
         let second = host.transaction(|txn| Ok(txn.run("b", world(), None).map(|_| Ok(()))));
-        host.dispose();
+        host.destroy();
         rt::run_until_stalled();
         assert_eq!(built.get(), 0);
         open.resolve(());
@@ -552,7 +552,7 @@ mod tests {
     }
 
     impl ScriptSandbox for LoggingSandbox {
-        fn disposed(&self) -> bool {
+        fn destroyed(&self) -> bool {
             self.disposed.get()
         }
         fn boot(
@@ -573,7 +573,7 @@ mod tests {
             self.log.borrow_mut().push(format!("run {} {program}", self.id));
             Ok(ScriptOutput::empty())
         }
-        fn dispose(&self) {
+        fn destroy(&self) {
             self.log.borrow_mut().push(format!("dispose {}", self.id));
             self.disposed.set(true);
         }
@@ -613,7 +613,7 @@ mod tests {
             host.transaction(|txn| Ok(txn.run("admitted()", world(), None).map(|_| Ok(()))));
         rt::run_until_stalled();
         assert_eq!(*log.borrow(), ["factory 0"]);
-        host.dispose();
+        host.destroy();
         rt::run_until_stalled();
         assert_eq!(*log.borrow(), ["factory 0"], "the pending build is released when it settles");
         let refused = host.transaction(|txn| Ok(txn.run("late()", world(), None).map(|_| Ok(()))));
@@ -627,7 +627,7 @@ mod tests {
         assert!(admitted.peek().is_some_and(|r| r.is_ok()), "the admitted run still finishes");
         assert_eq!(log.borrow()[..4], ["factory 0", "dispose 0", "factory 1", "run 1 admitted()"]);
         let before_repeat = log.borrow().len();
-        host.dispose();
+        host.destroy();
         rt::run_until_stalled();
         let log = log.borrow();
         assert_eq!(log.iter().filter(|e| *e == "dispose 0").count(), 1);

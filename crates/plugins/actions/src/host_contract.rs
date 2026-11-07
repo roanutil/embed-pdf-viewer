@@ -235,8 +235,8 @@ impl DetachedScriptRealm {
         &self.port.budget
     }
 
-    pub fn dispose(&self) {
-        self.port.host.dispose();
+    pub fn destroy(&self) {
+        self.port.host.destroy();
     }
 }
 

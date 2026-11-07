@@ -165,7 +165,7 @@ impl RedactionConfig {
 #[derive(Clone, Debug, PartialEq)]
 pub struct RedactionSettingsChanged {
     pub settings: RedactionSettings,
-    pub changed: Vec<String>,
+    pub changed_keys: Vec<String>,
 }
 
 /// `area` is a rect-only mark (marquee); `text` has per-line quads

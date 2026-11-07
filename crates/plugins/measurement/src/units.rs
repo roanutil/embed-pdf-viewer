@@ -180,7 +180,6 @@ pub fn viewport_for_point(viewports: &[Value], point: Point) -> Option<&Value> {
 /// `AbortError`.
 pub fn serialize_error(error: &Error) -> Value {
     let mut out = Map::new();
-    out.insert("name".into(), json!("EngineError"));
     if error.name == "EngineError" {
         out.insert("code".into(), error.member("code").cloned().unwrap_or(Value::Null));
         out.insert("message".into(), json!(error.message));

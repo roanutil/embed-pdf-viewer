@@ -36,7 +36,7 @@ struct SlowSandbox {
 }
 
 impl ScriptSandbox for SlowSandbox {
-    fn disposed(&self) -> bool {
+    fn destroyed(&self) -> bool {
         false
     }
     fn boot(
@@ -57,7 +57,7 @@ impl ScriptSandbox for SlowSandbox {
         self.wall.set(self.wall.get() + 30.0);
         Ok(ScriptOutput::empty())
     }
-    fn dispose(&self) {}
+    fn destroy(&self) {}
 }
 
 fn field_ref(n: u32) -> Value {

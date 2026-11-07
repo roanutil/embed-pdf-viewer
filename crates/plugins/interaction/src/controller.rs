@@ -412,7 +412,7 @@ impl InteractionCapability {
             let Some(table) = table.upgrade() else { return Ok(()) };
             listener(&InteractionSettingsChanged {
                 settings: table.decode(&event.settings),
-                changed: event.changed.clone(),
+                changed_keys: event.changed.clone(),
             })
         })
     }
@@ -622,7 +622,7 @@ impl InteractionCapability {
                 self.0.owner.borrow_mut().take();
                 self.0.gesture.borrow_mut().take();
                 for handler in self.eligible(sample.source.as_deref()) {
-                    if handler.on_down(sample) {
+                    if handler.on_pointer_down(sample) {
                         let gesture = GestureEvent {
                             tool_id: self.state().active_tool_id.clone(),
                             page: sample.page.map(|hit| hit.page),
@@ -638,7 +638,7 @@ impl InteractionCapability {
             Phase::Move => {
                 let owner = self.0.owner.borrow().clone();
                 match owner {
-                    Some(owner) => owner.on_move(sample),
+                    Some(owner) => owner.on_pointer_move(sample),
                     None => {
                         for handler in self.eligible(sample.source.as_deref()) {
                             handler.on_hover(sample);
@@ -651,11 +651,11 @@ impl InteractionCapability {
                 let taken = self.0.gesture.borrow_mut().take();
                 let (Some(captured), Some(taken)) = (captured, taken) else { return };
                 if sample.phase == Phase::Cancel {
-                    // Abort, don't commit: on_cancel falls back to on_up.
-                    captured.on_cancel(sample);
+                    // Abort, don't commit: on_pointer_cancel falls back to on_pointer_up.
+                    captured.on_pointer_cancel(sample);
                     self.0.gesture_cancelled.emit(&taken);
                 } else {
-                    captured.on_up(sample);
+                    captured.on_pointer_up(sample);
                     self.0.gesture_ended.emit(&taken);
                 }
             }
@@ -741,7 +741,7 @@ impl InteractionHandler for OwnPointerHandler {
     fn enabled_for(&self, active: &Tool) -> bool {
         std::ptr::eq(active, Rc::as_ptr(&self.tool))
     }
-    fn on_down(&self, sample: &PointerSample) -> bool {
+    fn on_pointer_down(&self, sample: &PointerSample) -> bool {
         let (Some(hit), Some(down)) = (&sample.page, &self.tool.on_pointer_down) else {
             return false;
         };
@@ -753,15 +753,15 @@ impl InteractionHandler for OwnPointerHandler {
         self.last.set(Some(event));
         true
     }
-    fn on_move(&self, sample: &PointerSample) {
+    fn on_pointer_move(&self, sample: &PointerSample) {
         if let (Some(event), Some(on_move)) = (self.follow(sample), &self.tool.on_pointer_move) {
             on_move(&event);
         }
     }
-    fn on_up(&self, sample: &PointerSample) {
+    fn on_pointer_up(&self, sample: &PointerSample) {
         self.end(sample);
     }
-    fn on_cancel(&self, sample: &PointerSample) {
+    fn on_pointer_cancel(&self, sample: &PointerSample) {
         self.end(sample);
     }
     fn on_hover(&self, sample: &PointerSample) {

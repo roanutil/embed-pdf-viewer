@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 import { suites } from '../src/suites/page-edit';
+import '../src/suites/history';
 import { canonical, canonicalError, snapshotHooks } from '../src/canonical';
 import { runScenario } from '../src/scenario';
 import { emit } from '../src/vectors';

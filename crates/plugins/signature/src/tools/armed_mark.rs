@@ -53,7 +53,7 @@ impl InteractionHandler for ArmedMarkHandler {
         tool.id == ARMED_STAMP_TOOL_ID
     }
 
-    fn on_down(&self, sample: &PointerSample) -> bool {
+    fn on_pointer_down(&self, sample: &PointerSample) -> bool {
         let Some(page) = &sample.page else { return false };
         let Some(armed) = self.stamp.get_armed_asset(Some(&self.document_id)) else {
             return false;

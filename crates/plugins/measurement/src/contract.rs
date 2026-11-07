@@ -413,5 +413,5 @@ impl CalibrationDismissedEvent {
 #[derive(Clone, Debug, PartialEq)]
 pub struct MeasurementSettingsChanged {
     pub settings: MeasurementSettings,
-    pub changed: Vec<String>,
+    pub changed_keys: Vec<String>,
 }

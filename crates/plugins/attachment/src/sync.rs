@@ -128,8 +128,8 @@ fn predicted_file(op: &Value) -> Value {
         "name": member(&file, "name"),
         "mimeType": or_null("mimeType"),
         "description": or_null("description"),
-        "size": size,
-        "checksum": null,
+        "sizeBytes": size,
+        "md5": null,
         "createdAt": null,
         "modifiedAt": null,
     })
@@ -252,7 +252,7 @@ mod tests {
         assert_eq!(
             next[0],
             json!({ "ref": { "kind": "key", "key": "n" }, "index": 0, "name": "n", "mimeType": "text/plain",
-                    "description": null, "size": 5, "checksum": null, "createdAt": null, "modifiedAt": null })
+                    "description": null, "sizeBytes": 5, "md5": null, "createdAt": null, "modifiedAt": null })
         );
     }
 

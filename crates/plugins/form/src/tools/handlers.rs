@@ -207,7 +207,7 @@ impl InteractionHandler for PlaceHandler {
         }
     }
 
-    fn on_down(&self, sample: &PointerSample) -> bool {
+    fn on_pointer_down(&self, sample: &PointerSample) -> bool {
         // No capture without a page, a known palette tool, or design
         // permission: declining lets editing, panning or selection take it.
         let Some(hit) = &sample.page else { return false };
@@ -222,7 +222,7 @@ impl InteractionHandler for PlaceHandler {
         true
     }
 
-    fn on_move(&self, sample: &PointerSample) {
+    fn on_pointer_move(&self, sample: &PointerSample) {
         let (page, start) = {
             let mut origin = self.origin.borrow_mut();
             let Some(gesture) = origin.as_mut() else { return };
@@ -241,7 +241,7 @@ impl InteractionHandler for PlaceHandler {
         }
     }
 
-    fn on_up(&self, sample: &PointerSample) {
+    fn on_pointer_up(&self, sample: &PointerSample) {
         let Some(gesture) = self.origin.borrow_mut().take() else { return };
         self.end_gesture();
         let Some(tool) = form_tool_by_id(&self.interaction.get_active_tool_id()) else { return };
@@ -279,7 +279,7 @@ impl InteractionHandler for PlaceHandler {
     }
 
     /// Aborted (a second finger, a system cancel): nothing is placed.
-    fn on_cancel(&self, _sample: &PointerSample) {
+    fn on_pointer_cancel(&self, _sample: &PointerSample) {
         self.end_gesture();
     }
 }

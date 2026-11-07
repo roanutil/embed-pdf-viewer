@@ -84,7 +84,7 @@ impl InteractionHandler for TextSelectHandler {
         tool.enables("text-select")
     }
 
-    fn on_down(&self, s: &PointerSample) -> bool {
+    fn on_pointer_down(&self, s: &PointerSample) -> bool {
         *self.anchor.borrow_mut() = None;
         self.dragging.set(false);
         let Some(hit) = &s.page else { return false }; // over a gap: let a lower handler try
@@ -122,7 +122,7 @@ impl InteractionHandler for TextSelectHandler {
         true
     }
 
-    fn on_move(&self, s: &PointerSample) {
+    fn on_pointer_move(&self, s: &PointerSample) {
         let Some(hit) = &s.page else { return };
         let Some(anchor) = *self.anchor.borrow() else { return };
         if !self.dragging.get() {
@@ -137,7 +137,7 @@ impl InteractionHandler for TextSelectHandler {
         let _ = self.selection.extend_to(hit.page, hit.point);
     }
 
-    fn on_up(&self, _: &PointerSample) {
+    fn on_pointer_up(&self, _: &PointerSample) {
         *self.anchor.borrow_mut() = None;
         self.dragging.set(false);
         self.selection.end_gesture();
@@ -145,7 +145,7 @@ impl InteractionHandler for TextSelectHandler {
 
     /// Aborted: drop the in-flight selection instead of committing a sliver;
     /// `end_gesture` after `clear` settles the gesture with nothing to commit.
-    fn on_cancel(&self, _: &PointerSample) {
+    fn on_pointer_cancel(&self, _: &PointerSample) {
         *self.anchor.borrow_mut() = None;
         self.dragging.set(false);
         self.selection.clear();

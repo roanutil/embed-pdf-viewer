@@ -122,7 +122,7 @@ struct PrintingSandbox {
 }
 
 impl ScriptSandbox for PrintingSandbox {
-    fn disposed(&self) -> bool {
+    fn destroyed(&self) -> bool {
         false
     }
 
@@ -147,7 +147,7 @@ impl ScriptSandbox for PrintingSandbox {
         Ok(output)
     }
 
-    fn dispose(&self) {
+    fn destroy(&self) {
         self.log.borrow_mut().push("dispose".into());
     }
 }
@@ -190,7 +190,7 @@ fn context(origin: &str) -> ActionContext {
     serde_json::from_value(json!({
         "origin": origin,
         "source": { "kind": "api" },
-        "event": { "scope": "activate" },
+        "event": { "type": "activate" },
     }))
     .expect("context")
 }
@@ -198,7 +198,7 @@ fn context(origin: &str) -> ActionContext {
 fn script(source: &str) -> Value {
     json!({
         "root": { "type": "javascript", "subtype": "JavaScript", "script": source, "next": [] },
-        "incomplete": false, "warningFlags": 0, "warnings": [],
+        "incomplete": false, "warnings": [],
     })
 }
 

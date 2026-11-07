@@ -155,7 +155,7 @@ pub(crate) fn script_event_for(ctx: &ActionContext, snapshot: &Value) -> ScriptE
     };
     let name = match &ctx.event {
         ActionTriggerEvent::Activate => "Mouse Up",
-        ActionTriggerEvent::Annotation { name } => match name {
+        ActionTriggerEvent::Annotation { event } => match event {
             PdfAnnotationEventKind::CursorEnter => "Mouse Enter",
             PdfAnnotationEventKind::CursorExit => "Mouse Exit",
             PdfAnnotationEventKind::MouseDown => "Mouse Down",
@@ -163,14 +163,14 @@ pub(crate) fn script_event_for(ctx: &ActionContext, snapshot: &Value) -> ScriptE
             PdfAnnotationEventKind::Focus => "Focus",
             PdfAnnotationEventKind::Blur => "Blur",
         },
-        ActionTriggerEvent::Page { name } => match name {
+        ActionTriggerEvent::Page { event } => match event {
             PageEventKind::Open => "Open",
             PageEventKind::Close => "Close",
             // No Acrobat equivalent for these two: an EmbedPDF extension.
             PageEventKind::Visible => "Visible",
             PageEventKind::Invisible => "Invisible",
         },
-        ActionTriggerEvent::Document { name } => match name {
+        ActionTriggerEvent::Document { event } => match event {
             DocumentTriggerEvent::Open => "Open",
             DocumentTriggerEvent::WillSave => "WillSave",
             DocumentTriggerEvent::DidSave => "DidSave",

@@ -9,19 +9,19 @@
   "currentOwners": [
     {
       "path": "packages/plugin/page-edit/src/controller.ts",
-      "sha256": "39bf49fa96d6908751083f3368f6843f8766214baa6bc6bb006382e2aab34b31"
+      "sha256": "9122edaa9d3320b6fcece3c438d123f93a7afda14c5130f0390b2845b8eb946b"
     },
     {
       "path": "packages/plugin/page-edit/src/contract.ts",
-      "sha256": "8f69dbe9c572d93aefd29d9dec932044c372dedbe98d621613f4e54e2b03887c"
+      "sha256": "289d2e141a3c80ca6ccc2c12e82c31605ebf479ac0d37aaee9948cedec16e8af"
     },
     {
       "path": "packages/plugin/page-edit/src/model.ts",
-      "sha256": "c44258e49c59e24ba5bb383a6d69912d41542e562286108c7eac6efd894ead29"
+      "sha256": "3a47bfc6c81be6c6a849bc18f6e3a6c9cc4a209780e8af03d43357e04234bc12"
     },
     {
       "path": "packages/core/main/src/changes.ts",
-      "sha256": "686a67ac92baed42efd7aa7c4885f41418a5595957395a9cdddaac2ffcbbc866"
+      "sha256": "80afb6e91f78537e26cc7a9540bbc8a756b04748689b4416683a4e8120595d4a"
     },
     {
       "path": "packages/core/main/src/page-of.ts",
@@ -29,11 +29,11 @@
     },
     {
       "path": "packages/core/main/src/errors.ts",
-      "sha256": "bc7012fde188e512fc7e24cf8e9aa828e9c5aff37171300b57c67d508b13b0fe"
+      "sha256": "2c6b331933d794c17c83e7342bebbb0fc2fca0ff4fd2c6c223b91707c96f09b1"
     },
     {
       "path": "packages/engine/core/src/mutation/Change.ts",
-      "sha256": "0b8fcb5edd0a2b2b360b86994b6944fff036e16cbba116309430994229adc09c"
+      "sha256": "18ad383168baedea6919c22f53c101738da8fe7547cb640daea1f0fe31700cfe"
     },
     {
       "path": "packages/engine/core/src/mutation/ListPosition.ts",
@@ -41,11 +41,11 @@
     },
     {
       "path": "packages/engine/core/src/engine/DocumentPagesService.ts",
-      "sha256": "2b16e4344fe7eb70bf15f720ec395d127ef320639b0d61554959651891df8c98"
+      "sha256": "c03100c1a135171f65a95f3643198fee8f1931b935ac10495246a908c770a531"
     },
     {
       "path": "packages/engine/core/src/events/DocumentEvent.ts",
-      "sha256": "9972d85381c4688bde882f7d14063bf26a228c287c3a685dcfc112fcb0d1cf57"
+      "sha256": "012b5fa5705bc9f5eeaa093edd4800d445d8813a274af1c21706791917386fba"
     },
     {
       "path": "packages/engine/core/src/mutation/PageInsertResult.ts",

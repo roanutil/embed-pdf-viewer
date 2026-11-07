@@ -244,12 +244,12 @@ impl PdfFieldEventKind {
 /// Trigger provenance: which event fired.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
-#[serde(tag = "scope", rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase")]
 pub enum ActionTriggerEvent {
     Activate,
-    Annotation { name: PdfAnnotationEventKind },
-    Page { name: PageEventKind },
-    Document { name: DocumentTriggerEvent },
+    Annotation { event: PdfAnnotationEventKind },
+    Page { event: PageEventKind },
+    Document { event: DocumentTriggerEvent },
 }
 
 /// `ActionTreeSource`'s annotation event: the /A click tree or one /AA key.
@@ -277,7 +277,7 @@ impl AnnotationTreeEvent {
     }
 }
 
-/// Where an action tree lives, for [`ActionsCapability::get_action_tree`].
+/// Where an action tree lives, for [`ActionsCapability::read_action_tree`].
 /// The annotation arm defaults to the /A click tree, the page and document
 /// arms to their open trees.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -338,11 +338,10 @@ pub struct PartialActionContext {
 /// What a feed reports. The dispatcher resolves trees and derives the
 /// origin; `source` is a provenance hint that cannot change it.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "scope", rename_all = "camelCase")]
+#[serde(tag = "type", rename_all = "camelCase")]
 pub enum ActionTrigger {
     Activate {
-        #[serde(rename = "ref")]
-        annotation_ref: AnnotationRef,
+        annotation: AnnotationRef,
         #[serde(with = "page_ref_json")]
         page: PageRef,
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -350,8 +349,7 @@ pub enum ActionTrigger {
     },
     Annotation {
         event: PdfAnnotationEventKind,
-        #[serde(rename = "ref")]
-        annotation_ref: AnnotationRef,
+        annotation: AnnotationRef,
         #[serde(with = "page_ref_json")]
         page: PageRef,
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -371,9 +369,9 @@ pub enum ActionTrigger {
 pub fn event_of(trigger: &ActionTrigger) -> ActionTriggerEvent {
     match trigger {
         ActionTrigger::Activate { .. } => ActionTriggerEvent::Activate,
-        ActionTrigger::Annotation { event, .. } => ActionTriggerEvent::Annotation { name: *event },
-        ActionTrigger::Page { event, .. } => ActionTriggerEvent::Page { name: *event },
-        ActionTrigger::Document { event } => ActionTriggerEvent::Document { name: *event },
+        ActionTrigger::Annotation { event, .. } => ActionTriggerEvent::Annotation { event: *event },
+        ActionTrigger::Page { event, .. } => ActionTriggerEvent::Page { event: *event },
+        ActionTrigger::Document { event } => ActionTriggerEvent::Document { event: *event },
     }
 }
 
@@ -892,7 +890,6 @@ pub struct SubmitIntent {
     pub include_no_value_fields: bool,
     pub format: String,
     pub method: String,
-    pub flags_raw: f64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub char_set: Option<String>,
 }
@@ -912,7 +909,6 @@ pub struct ActionSubmitRequest {
     pub url: Option<String>,
     pub method: String,
     pub format: String,
-    pub flags_raw: f64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub char_set: Option<String>,
     pub entries: Vec<FormSubmissionEntry>,

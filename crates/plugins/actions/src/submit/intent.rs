@@ -11,17 +11,15 @@ use crate::services::{get, str_of};
 
 /// `intentOfPayload(payload)`.
 pub fn intent_of_payload(payload: &Value) -> SubmitIntent {
-    let flags = get(payload, "flags").cloned().unwrap_or(Value::Null);
     SubmitIntent {
         url: get(payload, "url").and_then(Value::as_str).map(str::to_string),
         fields: get(payload, "fields").and_then(Value::as_array).cloned(),
-        exclude: get(&flags, "exclude").and_then(Value::as_bool).unwrap_or(false),
-        include_no_value_fields: get(&flags, "includeNoValueFields")
+        exclude: get(payload, "exclude").and_then(Value::as_bool).unwrap_or(false),
+        include_no_value_fields: get(payload, "includeNoValueFields")
             .and_then(Value::as_bool)
             .unwrap_or(false),
-        format: str_of(&flags, "format").to_string(),
-        method: str_of(&flags, "method").to_string(),
-        flags_raw: get(&flags, "raw").and_then(Value::as_f64).unwrap_or(0.0),
+        format: str_of(payload, "format").to_string(),
+        method: str_of(payload, "method").to_string(),
         char_set: get(payload, "charSet").and_then(Value::as_str).map(str::to_string),
     }
 }
@@ -65,7 +63,6 @@ pub fn to_form_submission_request(request: &ActionSubmitRequest, sent_at: &str) 
         "url": request.url,
         "format": request.format,
         "method": request.method,
-        "flagsRaw": request.flags_raw,
     });
     if let Some(char_set) = &request.char_set {
         intent["charSet"] = json!(char_set);
@@ -94,7 +91,6 @@ pub fn intent_of_submit_effect(effect: &ScriptUiEffect) -> Option<SubmitIntent> 
         include_no_value_fields: *include_empty,
         format: format.clone().unwrap_or_else(|| "fdf".into()),
         method: method.clone().unwrap_or_else(|| "post".into()),
-        flags_raw: 0.0,
         char_set: None,
     })
 }

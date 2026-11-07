@@ -51,8 +51,8 @@ pub enum LinkActivation {
 }
 
 impl LinkActivation {
-    /// The `outcome` tag.
-    pub fn outcome(&self) -> &'static str {
+    /// The `status` tag.
+    pub fn status(&self) -> &'static str {
         match self {
             LinkActivation::Revealed => "revealed",
             LinkActivation::Destination { .. } => "destination",
@@ -70,17 +70,17 @@ impl LinkActivation {
         &self,
         promise: impl FnOnce(&Promise<ActionDispatchResult>) -> Value,
     ) -> Value {
-        let outcome = self.outcome();
+        let status = self.status();
         match self {
-            LinkActivation::Revealed | LinkActivation::None => json!({ "outcome": outcome }),
+            LinkActivation::Revealed | LinkActivation::None => json!({ "status": status }),
             LinkActivation::Destination { destination } => {
-                json!({ "outcome": outcome, "destination": destination })
+                json!({ "status": status, "destination": destination })
             }
-            LinkActivation::Uri { uri } => json!({ "outcome": outcome, "uri": uri }),
-            LinkActivation::Named { name } => json!({ "outcome": outcome, "name": name }),
-            LinkActivation::Reported { target } => json!({ "outcome": outcome, "target": target }),
+            LinkActivation::Uri { uri } => json!({ "status": status, "uri": uri }),
+            LinkActivation::Named { name } => json!({ "status": status, "name": name }),
+            LinkActivation::Reported { target } => json!({ "status": status, "target": target }),
             LinkActivation::Dispatched { dispatch } => {
-                json!({ "outcome": outcome, "dispatch": promise(dispatch) })
+                json!({ "status": status, "dispatch": promise(dispatch) })
             }
         }
     }

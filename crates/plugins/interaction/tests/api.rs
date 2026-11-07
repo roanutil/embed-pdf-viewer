@@ -75,11 +75,11 @@ impl InteractionHandler for UpOnly {
     fn enabled_for(&self, tool: &Tool) -> bool {
         tool.enables("text-select")
     }
-    fn on_down(&self, _: &PointerSample) -> bool {
+    fn on_pointer_down(&self, _: &PointerSample) -> bool {
         self.0.borrow_mut().push("down".into());
         true
     }
-    fn on_up(&self, _: &PointerSample) {
+    fn on_pointer_up(&self, _: &PointerSample) {
         self.0.borrow_mut().push("up".into());
     }
 }
@@ -164,7 +164,7 @@ fn a_tools_own_pointer_members_route_in_page_space() {
         fn enabled_for(&self, _: &Tool) -> bool {
             true
         }
-        fn on_down(&self, _: &PointerSample) -> bool {
+        fn on_pointer_down(&self, _: &PointerSample) -> bool {
             self.0.borrow_mut().push("greedy down".into());
             true
         }
@@ -348,7 +348,7 @@ fn settings_tools_are_registered_and_swapped_for_every_document() {
     let changes = Log::default();
     let c = changes.clone();
     b.on_settings_changed(move |e| {
-        c.borrow_mut().push(format!("{:?} {}", e.changed, e.settings.default_tool));
+        c.borrow_mut().push(format!("{:?} {}", e.changed_keys, e.settings.default_tool));
         Ok(())
     });
 
@@ -389,7 +389,7 @@ fn distinct_equal_settings_tools_count_as_a_change() {
     let changes = Log::default();
     let c = changes.clone();
     a.on_settings_changed(move |e| {
-        c.borrow_mut().push(format!("{:?}", e.changed));
+        c.borrow_mut().push(format!("{:?}", e.changed_keys));
         Ok(())
     });
     let tool = || Rc::new(Tool::new("note", "cell", []));

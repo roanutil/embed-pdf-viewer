@@ -2,6 +2,7 @@ process.env.TZ = 'UTC';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { suites } from '../src/suites/i18n';
+import '../src/suites/history';
 import { runScenario } from '../src/scenario';
 test('every i18n occurrence has a unique name including repeated plural tag sources', () => {
   for (const s of suites)
@@ -21,7 +22,10 @@ test('Arabic direction uses the current Locale direction field', async () => {
   const s = suites[2];
   assert.ok(s.kind === 'scenario');
   const r = await runScenario(s.cases.find((c) => c.name === 'dir-and-locales')!);
-  assert.deepEqual(r.trace[1].outcome, { returned: 'rtl' });
+  // Since 58435c49a a language in both locales and loaders waits for its
+  // loader, so the start shows en (ltr); the he switch shows rtl.
+  assert.deepEqual(r.trace[1].outcome, { returned: 'ltr' });
+  assert.deepEqual(r.trace[11].outcome, { returned: 'rtl' });
 });
 import { canonical, snapshotHooks } from '../src/canonical';
 import type { TraceEntry } from '../src/scenario';
@@ -129,6 +133,8 @@ test('transitions preserve identity for ignored calls and expose exact waiting, 
     locale: 'en',
     locales: {},
     loading: null,
+    loadingFallback: null,
+    fetched: {},
     waitingTranslations: {},
   });
   const startup = pure('initial-lazy-startup-seeds-loading') as model.I18nModel;
@@ -249,13 +255,12 @@ test('startup fallback, immediate loads, mismatch codes and unregister replaceme
   const immediate = await run('lazy-resolves-immediately');
   assert.deepEqual(immediate.trace.slice(2, 5).map(value), ['he', 'rtl', null]);
   const mismatch = await run('lazy-pack-with-a-different-code');
-  assert.deepEqual(callbacks(mismatch, 'load-ar'), [
-    { fn: 'load-ar', args: [] },
-    { fn: 'load-ar', args: [] },
-  ]);
+  // Since 58435c49a the switch waits for a pack under the code it asked
+  // for: one fetch, and the language stays en with ar on its way.
+  assert.deepEqual(callbacks(mismatch, 'load-ar'), [{ fn: 'load-ar', args: [] }]);
   assert.deepEqual(
     [2, 3, 4, 7, 8, 9].map((i) => value(mismatch.trace[i])),
-    ['ar-EG', 'rtl', null, 'ar-EG', 'rtl', null],
+    ['en', 'ltr', 'ar', 'en', 'ltr', 'ar'],
   );
   const registration = await run('register-at-runtime');
   assert.deepEqual(
@@ -278,6 +283,15 @@ const unknown = (code: string) =>
   pluginError('not-found', `unknown locale '${code}': not loaded and not in loaders`);
 const cancelled = (code: string) =>
   pluginError('operation-cancelled', `switching to '${code}' was replaced`);
+const failedCallback = (locale: string, message: string) => ({
+  fn: 'failed',
+  args: [
+    {
+      locale,
+      error: { code: 'operation-failed', message, capability: 'i18n', permission: null },
+    },
+  ],
+});
 const failed = (code: string, message: string) =>
   pluginError('operation-failed', `locale '${code}' failed to load`, {
     code: 'operation-failed',
@@ -348,6 +362,9 @@ test('every intentional negative channel is exact and all other diagnostics are 
       [10, 3, cancelled('he')],
     ],
     'lazy-two-in-flight': [[2, 1, cancelled('ar')]],
+    'dir-and-locales': [[6, 0, cancelled('en')]],
+    'switch-waits-for-the-lazy-fallback': [[6, 1, cancelled('ar')]],
+    'lazy-pack-with-a-different-code': [[6, 1, cancelled('ar')]],
     'lazy-failure': [
       [1, 1, failed('ar', 'offline')],
       [7, 2, cancelled('he')],
@@ -395,23 +412,10 @@ test('every intentional negative channel is exact and all other diagnostics are 
     assert.deepEqual(
       callbacks(r, 'failed'),
       c.name === 'locale-events'
-        ? [
-            {
-              fn: 'failed',
-              args: [
-                {
-                  locale: 'he',
-                  error: {
-                    code: 'operation-failed',
-                    message: 'offline',
-                    capability: 'i18n',
-                    permission: null,
-                  },
-                },
-              ],
-            },
-          ]
-        : [],
+        ? [failedCallback('he', 'offline')]
+        : c.name === 'lazy-fallback-fails-at-startup'
+          ? [failedCallback('en', 'fetch failed')]
+          : [],
       c.name + ' failure callbacks',
     );
 
@@ -489,6 +493,9 @@ test('immutable settings follow locale, fallback, loader replacement and reset w
     h.api.updateSettings({ locales: [english, dutch] });
     assert.notEqual(h.api.listLocales(), list);
     h.api.updateSettings({ locale: 'nl' });
+    // Since 58435c49a nl, in locales and loaders, shows once its loader ran.
+    assert.equal(h.api.getLocale(), 'en');
+    await new Promise((settle) => setImmediate(settle));
     assert.equal(h.api.getLocale(), 'nl');
     assert.equal(h.api.t('hi'), 'Hallo');
     assert.equal(h.api.t('only'), 'English only');
@@ -595,7 +602,7 @@ type Saved = {
 const history = new URL('../historical/task-12b2c9/', import.meta.url);
 const saved = (p: string): unknown => JSON.parse(readFileSync(new URL(p, history), 'utf8'));
 const hash = (v: unknown) => createHash('sha256').update(JSON.stringify(v)).digest('hex');
-test('prior actions160 commands79 link37 metadata17 and page-edit19 retain all inputs and every output channel', async () => {
+test('prior actions160 commands83 link37 metadata17 and page-edit20 retain all inputs and every output channel', async () => {
   const available = [
     ...(await import('../src/suites/actions')).suites,
     ...(await import('../src/suites/commands')).suites,
@@ -642,11 +649,11 @@ test('prior actions160 commands79 link37 metadata17 and page-edit19 retain all i
       }
     }
   }
-  assert.equal(count, 312);
+  assert.equal(count, 317);
 });
 test('all current i18n inputs and complete outcomes remain independently replayable', async () => {
   const rows = saved('current-inputs-runtime.json') as Saved[];
-  assert.equal(rows.length, 642);
+  assert.equal(rows.length, 676);
   for (const row of rows) {
     const s = suites.find((s) => s.file === row.file)!;
     const c = s.cases.find((c) => c.name === row.name)!;
@@ -712,19 +719,19 @@ test('all 635 immutable original occurrences retain full definitions and outcome
     original: 635,
     originalPure: 611,
     originalLive: 24,
-    current: 642,
-    currentPure: 618,
-    currentLive: 24,
+    current: 676,
+    currentPure: 647,
+    currentLive: 29,
     mapped: 635,
     pluralRows: 532,
     duplicateExtras: 4,
     wholeRetirements: 1,
     survivingOriginals: 634,
     replacementRows: 1,
-    totalNewRows: 8,
+    totalNewRows: 42,
     partialRetirements: 32,
-    additions: 7,
-    changedInputs: 83,
+    additions: 41,
+    changedInputs: 84,
   });
   const rows = saved('current-inputs-runtime.json') as Saved[];
   const mapped = new Set<string>();
@@ -765,7 +772,13 @@ test('only explicitly adversarial synchronous-throw and empty-code switches rema
     const done = r.trace.flatMap((t) => t.settled.map((s) => s.promise));
     assert.deepEqual(
       started.filter((p) => !done.includes(p)),
-      c.name === 'loader-throws-in-the-watch' ? [1] : c.name === 'empty-code-loader' ? [2] : [],
+      c.name === 'loader-throws-in-the-watch'
+        ? [1]
+        : c.name === 'empty-code-loader' || c.name === 'lazy-pack-with-a-different-code'
+          ? [2]
+          : c.name === 'destroy-releases-the-watch'
+            ? [1]
+            : [],
       c.name,
     );
   }

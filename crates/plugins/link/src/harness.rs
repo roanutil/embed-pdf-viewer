@@ -30,7 +30,7 @@ pub const MEMBERS: &[&str] = &[
     "listLinks",
     "getLink",
     "getLinkAt",
-    "listAllLinks",
+    "readAllLinks",
     "ensureLoaded",
     "isLoaded",
     "getStatus",
@@ -121,7 +121,7 @@ fn call_capability(
         "getLinkAt" => {
             Outcome::Returned(or_null(cap.get_link_at(page_arg(args, 0), point_arg(args, 1)?)))
         }
-        "listAllLinks" => Outcome::Promise(cap.list_all_links(options())),
+        "readAllLinks" => Outcome::Promise(cap.read_all_links(options())),
         "ensureLoaded" => Outcome::promise_unit(cap.ensure_loaded(page_arg(args, 0), options())),
         "isLoaded" => Outcome::Returned(json!(cap.is_loaded(page_arg(args, 0)))),
         "getStatus" => Outcome::Returned(json!(cap.get_status(page_arg(args, 0)).as_str())),

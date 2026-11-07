@@ -47,14 +47,14 @@ fn only_allowed_schemes_reach_open_uri() {
     })));
 
     let ctx: ActionContext = serde_json::from_value(json!({
-        "origin": "user", "source": { "kind": "api" }, "event": { "scope": "activate" }
+        "origin": "user", "source": { "kind": "api" }, "event": { "type": "activate" }
     }))
     .expect("context");
     let mut statuses = Vec::new();
     for uri in ["javascript:alert(1)", "file:///etc/passwd", " https://a.test/ "] {
         let tree = json!({
             "root": { "type": "uri", "subtype": "URI", "uri": uri, "isMap": false, "next": [] },
-            "incomplete": false, "warningFlags": 0, "warnings": []
+            "incomplete": false, "warnings": []
         });
         let result = actions.execute(tree, ctx.clone(), None);
         rt::run_until_stalled();

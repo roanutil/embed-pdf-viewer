@@ -2,7 +2,7 @@
 //!
 //! Files, refs and sources are the engine's records as JSON (`Value`), as
 //! the plugin carries them. An [`AttachedFile`] is the file's info (`name`,
-//! `mimeType`, `description`, `size`, `checksum`, `createdAt`,
+//! `mimeType`, `description`, `sizeBytes`, `md5`, `createdAt`,
 //! `modifiedAt`), then `id` and `home`: `{kind: 'document', ref: {kind:
 //! 'key', key}}` for one of the document's attachments, `{kind: 'page',
 //! ref}` with an annotation ref for a page's file attachment annotation.

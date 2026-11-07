@@ -85,7 +85,7 @@ fn all_settled<T: Clone + 'static>(promises: Vec<Promise<T>>) -> Promise<()> {
 fn hover_trigger(event: PdfAnnotationEventKind, target: &HoverTarget) -> ActionTrigger {
     ActionTrigger::Annotation {
         event,
-        annotation_ref: target.annotation_ref.clone(),
+        annotation: target.annotation_ref.clone(),
         page: target.page,
         source: target.source.clone(),
     }

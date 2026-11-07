@@ -151,6 +151,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -190,10 +191,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -233,6 +234,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -272,10 +274,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -307,6 +309,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -346,10 +349,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -381,6 +384,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -420,10 +424,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -516,12 +520,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -541,12 +545,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -566,12 +570,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
@@ -591,12 +595,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
@@ -616,12 +620,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
@@ -641,12 +645,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
@@ -666,12 +670,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
@@ -691,12 +695,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
@@ -716,12 +720,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -741,12 +745,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -766,12 +770,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 2
               },
-              "ref": {
+              "annotation": {
                 "kind": "baseIndex",
                 "page": {
                   "kind": "objectNumber",
@@ -787,7 +791,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "5149e1b1fc240422e76b2ff0ccbebe69e8c8ecc5b6410589cdccbe75f6c35b83",
+    "inputSha256": "c33bef61e491e3faa544a28a16d0bdf65f81a47abb0b0aff40d9b927a8e30dcb",
     "result": {
       "trace": [
         {
@@ -943,7 +947,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -1006,7 +1009,7 @@
                     }
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -1103,7 +1106,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -1166,7 +1168,7 @@
                     }
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -1299,7 +1301,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -1362,7 +1363,7 @@
                     }
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -1577,7 +1578,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -1640,7 +1640,7 @@
                     }
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -1763,6 +1763,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -1802,7 +1803,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "cursorExit": {
@@ -1813,7 +1813,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "mouseDown": {
@@ -1824,7 +1823,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "mouseUp": {
@@ -1835,7 +1833,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "focus": {
@@ -1846,7 +1843,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "blur": {
@@ -1857,10 +1853,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -1892,6 +1888,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -1923,6 +1920,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -2028,13 +2026,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "cursorEnter",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 4
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -2054,13 +2052,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "cursorExit",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 4
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -2080,13 +2078,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "mouseDown",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 4
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -2106,13 +2104,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "mouseUp",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 4
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -2132,13 +2130,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "focus",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 4
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -2158,13 +2156,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "blur",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 4
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -2184,13 +2182,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "cursorEnter",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 4
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -2206,7 +2204,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "5796a7fe1de62d2db731b7939173c365aa9a81ad49d8da0a2ef4041d2c448781",
+    "inputSha256": "e368e869da2764991aaa2a45e518a690139889b61e7405039d316e31f07d32f7",
     "result": {
       "trace": [
         {
@@ -2384,7 +2382,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -2447,8 +2444,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "cursorEnter"
+                    "type": "annotation",
+                    "event": "cursorEnter"
                   }
                 }
               ]
@@ -2465,7 +2462,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -2543,7 +2539,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -2606,8 +2601,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "cursorExit"
+                    "type": "annotation",
+                    "event": "cursorExit"
                   }
                 }
               ]
@@ -2624,7 +2619,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -2702,7 +2696,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -2765,8 +2758,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "mouseDown"
+                    "type": "annotation",
+                    "event": "mouseDown"
                   }
                 }
               ]
@@ -2783,7 +2776,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -2861,7 +2853,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -2924,8 +2915,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "mouseUp"
+                    "type": "annotation",
+                    "event": "mouseUp"
                   }
                 }
               ]
@@ -2942,7 +2933,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -3020,7 +3010,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -3083,8 +3072,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "focus"
+                    "type": "annotation",
+                    "event": "focus"
                   }
                 }
               ]
@@ -3101,7 +3090,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -3179,7 +3167,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -3242,8 +3229,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "blur"
+                    "type": "annotation",
+                    "event": "blur"
                   }
                 }
               ]
@@ -3260,7 +3247,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -3504,6 +3490,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -3543,10 +3530,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -3652,13 +3639,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "cursorEnter",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -3689,7 +3676,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "6a529ad216ff76abd5bad79af7e427e40dda177a025f8652378160b8d984c0da",
+    "inputSha256": "fa4b2dd30e72978ffb7ab570d37fa67eda7cd9c952c516b129da6f26142e7454",
     "result": {
       "trace": [
         {
@@ -3867,7 +3854,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -3930,8 +3916,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "cursorEnter"
+                    "type": "annotation",
+                    "event": "cursorEnter"
                   }
                 }
               ]
@@ -3948,7 +3934,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -4151,6 +4136,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -4190,7 +4176,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "mouseUp": {
@@ -4201,10 +4186,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -4236,6 +4221,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -4275,10 +4261,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -4371,13 +4357,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "mouseUp",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -4397,13 +4383,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "mouseUp",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -4419,7 +4405,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "8d4518b0d3b2cf63c0c85c49dd751174bb1b54385ad50bc77e6a1310154d0aa4",
+    "inputSha256": "fba554dd8ce6201b71c191f940ab78d631673daeba40f65f0ce18b85b9fe9758",
     "result": {
       "trace": [
         {
@@ -4616,7 +4602,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -4679,8 +4664,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "mouseUp"
+                    "type": "annotation",
+                    "event": "mouseUp"
                   }
                 }
               ]
@@ -4856,6 +4841,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -4890,12 +4876,12 @@
                         "activate": {
                           "root": null,
                           "incomplete": true,
-                          "warningFlags": 0,
                           "warnings": [
                             "incomplete"
                           ]
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -4984,12 +4970,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -5005,7 +4991,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "70854525e83c9cea9a0ef241ae75e258b07bcf32850ce9e5ffbb0ba54bf474fb",
+    "inputSha256": "7da3e1685eb79b1874b7349ae9b2763a771a9ad32bf1aeeaa14d69291006c7f9",
     "result": {
       "trace": [
         {
@@ -5156,7 +5142,6 @@
                     "tree": {
                       "root": null,
                       "incomplete": true,
-                      "warningFlags": 0,
                       "warnings": [
                         "incomplete"
                       ]
@@ -5446,13 +5431,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "cursorEnter",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -5472,12 +5457,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 77
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -5497,7 +5482,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "open",
               "page": {
                 "kind": "objectNumber",
@@ -5511,7 +5496,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "e573f4ff3a8427d447a618fd846ed75576416e8849d23c0aad5b23ad80d11299",
+    "inputSha256": "f4df7a3a344b50cb01f3e77c6c3822dd302e00d7a31067855325d9b826ce0372",
     "result": {
       "trace": [
         {
@@ -5926,7 +5911,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -5992,7 +5976,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -6084,7 +6067,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "close",
               "page": {
                 "kind": "objectNumber",
@@ -6102,7 +6085,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "open",
               "page": {
                 "kind": "objectNumber",
@@ -6123,7 +6106,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "c14061745b2e6de6bc5e531002430fa4c4514a66406ac3b06039bfcf2c61a4d0",
+    "inputSha256": "387541da3f1068371a43f28679e3d97e09811d2f1e263c48dbc6e94d37a97703",
     "result": {
       "trace": [
         {
@@ -6323,7 +6306,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -6363,7 +6345,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -6418,8 +6399,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "close"
+                    "type": "page",
+                    "event": "close"
                   }
                 }
               ]
@@ -6443,8 +6424,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -6546,7 +6527,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "close": {
@@ -6557,7 +6537,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -6618,7 +6597,6 @@
                   "open": {
                     "root": null,
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -6649,6 +6627,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -6688,7 +6667,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "pageClose": {
@@ -6699,7 +6677,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "pageVisible": {
@@ -6710,7 +6687,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "pageInvisible": {
@@ -6721,10 +6697,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -6756,6 +6732,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -6795,10 +6772,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -6830,6 +6807,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -6861,6 +6839,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -6892,6 +6871,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -6926,7 +6906,6 @@
                         "pageOpen": {
                           "root": null,
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "cursorEnter": {
@@ -6937,10 +6916,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -7046,7 +7025,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "open",
               "page": {
                 "kind": "objectNumber",
@@ -7064,7 +7043,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "close",
               "page": {
                 "kind": "objectNumber",
@@ -7082,7 +7061,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "visible",
               "page": {
                 "kind": "objectNumber",
@@ -7100,7 +7079,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "invisible",
               "page": {
                 "kind": "objectNumber",
@@ -7118,7 +7097,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "open",
               "page": {
                 "kind": "objectNumber",
@@ -7132,7 +7111,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "62cffc099f9b614b323566408a73c52f0fc8a15be05b197796e9b02f698a4893",
+    "inputSha256": "f4045db2d47c70e366ff090fcff337687ab42fba39abcba31b39787638f1b91f",
     "result": {
       "trace": [
         {
@@ -7302,7 +7281,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -7341,7 +7319,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -7380,7 +7357,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -7435,8 +7411,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -7453,7 +7429,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7504,8 +7479,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -7522,7 +7497,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7581,8 +7555,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -7599,7 +7573,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7677,7 +7650,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -7708,7 +7680,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -7759,8 +7730,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "close"
+                    "type": "page",
+                    "event": "close"
                   }
                 }
               ]
@@ -7777,7 +7748,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7828,8 +7798,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "close"
+                    "type": "page",
+                    "event": "close"
                   }
                 }
               ]
@@ -7846,7 +7816,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -7916,7 +7885,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -7967,8 +7935,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "visible"
+                    "type": "page",
+                    "event": "visible"
                   }
                 }
               ]
@@ -7985,7 +7953,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -8063,7 +8030,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -8114,8 +8080,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "invisible"
+                    "type": "page",
+                    "event": "invisible"
                   }
                 }
               ]
@@ -8132,7 +8098,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "result": {
@@ -8305,7 +8270,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -8336,6 +8300,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -8375,10 +8340,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -8489,7 +8454,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "close",
               "page": {
                 "kind": "objectNumber",
@@ -8503,7 +8468,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "b232ab946f8e50114cf241617f566eb6c4a0bab4c05d7834315aed55fbdc80fe",
+    "inputSha256": "61f441e5a371f954da3a5067052eb9d09eb94e35a1b876f0cea2c8e3febc6318",
     "result": {
       "trace": [
         {
@@ -8681,7 +8646,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -8718,7 +8682,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -8781,8 +8744,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "close"
+                    "type": "page",
+                    "event": "close"
                   }
                 }
               ]
@@ -8806,8 +8769,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "close"
+                    "type": "page",
+                    "event": "close"
                   }
                 }
               ]
@@ -8930,6 +8893,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -8969,10 +8933,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -9004,6 +8968,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -9043,10 +9008,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -9078,6 +9043,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -9117,10 +9083,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -9213,7 +9179,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "close",
               "page": {
                 "kind": "objectNumber",
@@ -9231,7 +9197,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "visible",
               "page": {
                 "kind": "objectNumber",
@@ -9249,7 +9215,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "invisible",
               "page": {
                 "kind": "objectNumber",
@@ -9263,7 +9229,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "6b3d9a06125d58068fcce4ba7218cc455469f853aa5aab94cbea9f595c892823",
+    "inputSha256": "4a2d173214954476ab3814ec7129c3aca6283fd22d70e779958e1154d0246a42",
     "result": {
       "trace": [
         {
@@ -9419,7 +9385,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -9482,8 +9447,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "close"
+                    "type": "page",
+                    "event": "close"
                   }
                 }
               ]
@@ -9534,7 +9499,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -9585,8 +9549,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "visible"
+                    "type": "page",
+                    "event": "visible"
                   }
                 }
               ]
@@ -9637,7 +9601,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -9688,8 +9651,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "invisible"
+                    "type": "page",
+                    "event": "invisible"
                   }
                 }
               ]
@@ -9794,7 +9757,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -9825,6 +9787,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -9864,10 +9827,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -9943,7 +9906,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "open",
               "page": {
                 "kind": "objectNumber",
@@ -9957,7 +9920,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "a385adc3711b776c373394c05eefffd97a1b982aa9b88faecdf439218e2df8ea",
+    "inputSha256": "e70e49279e30addbd78058aa464e0d5d197ef2a13c75e3580fba173fb7e29860",
     "result": {
       "trace": [
         {
@@ -10083,7 +10046,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -10127,7 +10089,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -10268,7 +10229,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -10299,6 +10259,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -10338,10 +10299,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -10451,7 +10412,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "open",
               "page": {
                 "kind": "objectNumber",
@@ -10465,7 +10426,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "0c573c71b5825b9784b973d3ac4fa98820af63a8080253bffddf459aadaad311",
+    "inputSha256": "97902c0235f7985963235889eb577f715ba1857c939ead7809ec035c508e1684",
     "result": {
       "trace": [
         {
@@ -10641,7 +10602,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -10680,7 +10640,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -10741,8 +10700,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -10774,8 +10733,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -10880,7 +10839,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "close": {
@@ -10891,7 +10849,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -10952,7 +10909,6 @@
                   "open": {
                     "root": null,
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -10983,6 +10939,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -11022,7 +10979,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "pageClose": {
@@ -11033,7 +10989,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "pageVisible": {
@@ -11044,7 +10999,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "pageInvisible": {
@@ -11055,10 +11009,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -11090,6 +11044,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -11129,10 +11084,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -11164,6 +11119,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -11195,6 +11151,7 @@
                       "modifiedBy": null,
                       "importedBy": null,
                       "actions": null,
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -11226,6 +11183,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -11260,7 +11218,6 @@
                         "pageOpen": {
                           "root": null,
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "cursorEnter": {
@@ -11271,10 +11228,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -11367,7 +11324,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "visible",
               "page": {
                 "kind": "objectNumber",
@@ -11385,7 +11342,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "invisible",
               "page": {
                 "kind": "objectNumber",
@@ -11402,9 +11359,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "peer",
-              "sub": null,
-              "ts": 0,
-              "serverId": null
+              "subject": null,
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             },
             "metadata": {
               "title": "Changed",
@@ -11434,7 +11391,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "visible",
               "page": {
                 "kind": "objectNumber",
@@ -11468,6 +11425,7 @@
               },
               "hasAppearance": true,
               "appearanceState": null,
+              "structurePosition": null,
               "nm": null,
               "rect": {
                 "x": 100,
@@ -11499,6 +11457,7 @@
               "modifiedBy": null,
               "importedBy": null,
               "actions": null,
+              "richText": null,
               "color": "#ef4444",
               "opacity": 1,
               "strokeWidth": 2,
@@ -11521,9 +11480,9 @@
             "origin": {
               "kind": "remote",
               "sessionId": "s2",
-              "sub": "u-9",
-              "ts": 0,
-              "serverId": null
+              "subject": "u-9",
+              "at": "1970-01-01T00:00:00.000Z",
+              "serverSequence": null
             },
             "meta": {
               "affectedPages": [
@@ -11533,7 +11492,7 @@
                 }
               ],
               "cacheDelta": null,
-              "changed": [
+              "changedRefs": [
                 {
                   "kind": "objectNumber",
                   "page": {
@@ -11557,7 +11516,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "visible",
               "page": {
                 "kind": "objectNumber",
@@ -11572,7 +11531,7 @@
           "event": {
             "type": "stream.desynced",
             "reason": "backlog-overflow",
-            "ts": 0
+            "at": "1970-01-01T00:00:00.000Z"
           }
         },
         {
@@ -11584,7 +11543,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "visible",
               "page": {
                 "kind": "objectNumber",
@@ -11641,7 +11600,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "visible",
               "page": {
                 "kind": "objectNumber",
@@ -11662,7 +11621,7 @@
       "snapshot": "none",
       "reason": "Pins when lifecycle trees are read and which trigger families fire, through the engine reads and the dispatch outcomes. Its dispatched actions are compared; the state they build is not."
     },
-    "inputSha256": "94786c78a19e24b3bf8ca48673c3984dc35e3e66cd18067f4367d8af0af0f94c",
+    "inputSha256": "2e1a2b02fefa835c7a270d97ff0a10c2fa68f8bb52694cd9aa7f2c0a1e799c1b",
     "result": {
       "trace": [
         {
@@ -11809,7 +11768,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -11872,8 +11830,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "visible"
+                    "type": "page",
+                    "event": "visible"
                   }
                 }
               ]
@@ -11921,7 +11879,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -11972,8 +11929,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "invisible"
+                    "type": "page",
+                    "event": "invisible"
                   }
                 }
               ]
@@ -12035,7 +11992,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -12086,8 +12042,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "visible"
+                    "type": "page",
+                    "event": "visible"
                   }
                 }
               ]
@@ -12149,7 +12105,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -12212,8 +12167,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "visible"
+                    "type": "page",
+                    "event": "visible"
                   }
                 }
               ]
@@ -12275,7 +12230,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -12338,8 +12292,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "visible"
+                    "type": "page",
+                    "event": "visible"
                   }
                 }
               ]
@@ -12524,7 +12478,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -12587,8 +12540,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "visible"
+                    "type": "page",
+                    "event": "visible"
                   }
                 }
               ]
@@ -12739,7 +12692,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -12836,7 +12788,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "open",
               "page": {
                 "kind": "objectNumber",
@@ -12854,13 +12806,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "cursorEnter",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -12880,7 +12832,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "open"
             }
           ]
@@ -12894,7 +12846,7 @@
           "method": "canDispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "open",
               "page": {
                 "kind": "objectNumber",
@@ -12912,13 +12864,13 @@
           "method": "canDispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "cursorEnter",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -12938,7 +12890,7 @@
           "method": "canDispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "will-save"
             }
           ]
@@ -12952,12 +12904,12 @@
           "method": "canDispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -12977,12 +12929,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -12998,7 +12950,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "9f7c468a8195797d8e97121aae2de0b4eddf9f4ad522464ec1ebd59392e74738",
+    "inputSha256": "808234a54a883a82485a98c9c5f32d3180153c7102c24b600e9f599f84265767",
     "result": {
       "trace": [
         {
@@ -13616,7 +13568,7 @@
           "method": "canDispatch",
           "args": [
             {
-              "scope": "page",
+              "type": "page",
               "event": "open",
               "page": {
                 "kind": "objectNumber",
@@ -13634,13 +13586,13 @@
           "method": "canDispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "focus",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -13660,7 +13612,7 @@
           "method": "canDispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "open"
             }
           ]
@@ -13669,7 +13621,7 @@
       "snapshot": "none",
       "reason": "Pins when lifecycle trees are read and which trigger families fire, through the engine reads and the dispatch outcomes. Its dispatched actions are compared; the state they build is not."
     },
-    "inputSha256": "9a4b9bec776348ced108d040dc9a4b9382a15d753ca940e366540d2423481245",
+    "inputSha256": "7d629152db170a9aa14d014dcc75e97ae21f60ecb745ecf1c2cf1ae52a08286d",
     "result": {
       "trace": [
         {
@@ -13899,7 +13851,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -13965,7 +13916,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -13990,7 +13940,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "openDestination": {
@@ -14159,7 +14108,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "did-save"
             }
           ]
@@ -14191,7 +14140,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "did-save"
             }
           ]
@@ -14201,7 +14150,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "fb3a37154ac420973b0b70d5d85cf57b601d8ef13e8f88a15f85f543c2fbbcf4",
+    "inputSha256": "baadcc1795e3b11690ae0b8195aefc61fe2d1c26230fffacf0312561b7d70c28",
     "result": {
       "trace": [
         {
@@ -14436,8 +14385,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "open"
+                    "type": "document",
+                    "event": "open"
                   }
                 }
               ]
@@ -14457,8 +14406,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "open"
+                    "type": "document",
+                    "event": "open"
                   }
                 }
               ]
@@ -14482,8 +14431,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -14679,7 +14628,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "openDestination": null
@@ -14706,6 +14654,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -14745,10 +14694,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -14841,12 +14790,12 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "activate",
+              "type": "activate",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 2
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -14862,7 +14811,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "d1da751f58ee0b2d8bc3ba501247e0ec85b7b10c1079390ae5c02e152aa9efb2",
+    "inputSha256": "b42eea6021d56a1c6fefd7fcff4adf5e253f6a96d3795ea4067ae540135be16d",
     "result": {
       "trace": [
         {
@@ -15018,7 +14967,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -15074,8 +15022,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "open"
+                    "type": "document",
+                    "event": "open"
                   }
                 }
               ]
@@ -15107,7 +15055,7 @@
                     }
                   },
                   "event": {
-                    "scope": "activate"
+                    "type": "activate"
                   }
                 }
               ]
@@ -15209,7 +15157,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -15275,7 +15222,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -15300,7 +15246,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "openDestination": {
@@ -15450,7 +15395,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "did-save"
             }
           ]
@@ -15482,7 +15427,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "did-save"
             }
           ]
@@ -15492,7 +15437,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "cc33b0f26832ae085bb16b65764c45155f6742ba0ddeaefc4fcbd68a0e415520",
+    "inputSha256": "c239da37c416da4462664e3ebd823c9eb405616642f0209395aab83a77081a8a",
     "result": {
       "trace": [
         {
@@ -15716,8 +15661,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "open"
+                    "type": "document",
+                    "event": "open"
                   }
                 }
               ]
@@ -15737,8 +15682,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "open"
+                    "type": "document",
+                    "event": "open"
                   }
                 }
               ]
@@ -15768,7 +15713,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "result": {
@@ -15795,7 +15739,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "result": {
@@ -15841,7 +15784,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "result": {
@@ -15868,7 +15810,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "result": {
@@ -16140,7 +16081,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "openDestination": null
@@ -16258,7 +16198,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "1c6938b87cf4093ca54d3315938221458efdc6df537dfb52223245b08e4a93e4",
+    "inputSha256": "d4c4187550c424bd7f3002e58bfc1addf125783eab5b67c5c8e33c50ac9c13ae",
     "result": {
       "trace": [
         {
@@ -16454,8 +16394,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "open"
+                    "type": "document",
+                    "event": "open"
                   }
                 }
               ]
@@ -16562,7 +16502,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -16667,7 +16606,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "did-save"
             }
           ]
@@ -16677,7 +16616,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "c534a5d9d7a94e5dc5600f9b5115d7e0b00929d079ffe9c1fe9b32fa0ef846f4",
+    "inputSha256": "7c3e8c6bcaaa767d2c83b2c559b6f388248fb15eca47acadef4f15b92fa1435b",
     "result": {
       "trace": [
         {
@@ -16844,8 +16783,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -16976,7 +16915,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -17042,7 +16980,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -17175,7 +17112,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "did-save"
             }
           ]
@@ -17185,7 +17122,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "0ca85b04e3bc77aaacff7bd291771981e82778752088f17c294a5a90086064e7",
+    "inputSha256": "f55404e6fc7875fe68a10d70df609a15c12c0630b68f78c30cfae1d1a86798be",
     "result": {
       "trace": [
         {
@@ -17385,8 +17322,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -17534,7 +17471,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "did-save"
             }
           ]
@@ -17544,7 +17481,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "37b5da28df733a371835719995266d0225d996781a4f56f1e88264dac7070db3",
+    "inputSha256": "c62bece611e4a15f7fed2fd028bd1d52c4fc10d06a7ec6bf1e7a89f209654e9b",
     "result": {
       "trace": [
         {
@@ -17788,7 +17725,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -17813,7 +17749,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "openDestination": {
@@ -17936,7 +17871,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "21d7535507e24405f8a03d5f5024643c821d34b7b3a4f84490b0fc884d214409",
+    "inputSha256": "4153168ec823ee95dd4a03e5dd3fe564fdcf6497205f02971e5d7df37457979c",
     "result": {
       "trace": [
         {
@@ -18120,8 +18055,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -18285,7 +18220,6 @@
                   "openAction": {
                     "root": null,
                     "incomplete": true,
-                    "warningFlags": 0,
                     "warnings": [
                       "incomplete"
                     ]
@@ -18363,7 +18297,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "open"
             }
           ]
@@ -18377,7 +18311,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "open"
             }
           ]
@@ -18387,7 +18321,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "68bc3f766ff9bb38bbc858957a10d2f1ad8b947437778e7bdf02119161d3bb88",
+    "inputSha256": "909e1e2f5c471c8402c06e89eac8a479d1f90e9d13ec6007fe5376c7a36058ae",
     "result": {
       "trace": [
         {
@@ -18526,7 +18460,6 @@
                     "tree": {
                       "root": null,
                       "incomplete": true,
-                      "warningFlags": 0,
                       "warnings": [
                         "incomplete"
                       ]
@@ -18716,7 +18649,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -18782,7 +18714,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -18902,7 +18833,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "did-save"
             }
           ]
@@ -18936,7 +18867,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "cb2d5c5e81a3d3162a14f2f53d9273b866a6e398546f29495651156f6888ed2f",
+    "inputSha256": "789a5dbc0f27218e144db1eeebefdbeed6dd078c51da7dc36bf5601fd9837069",
     "result": {
       "trace": [
         {
@@ -19137,8 +19068,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -19227,8 +19158,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -19389,7 +19320,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "will-save"
             }
           ]
@@ -19403,7 +19334,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "open"
             }
           ]
@@ -19413,7 +19344,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "7c5efeb26c592cbb4d7acaaa74f5d4f89d1ec6a67f4daada045367fde29f943d",
+    "inputSha256": "c1f88dedcfcff09aa53476d5fc6483bfbcf421bc0e5f1f099f7593ee89aec839",
     "result": {
       "trace": [
         {
@@ -19680,7 +19611,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "open": {
@@ -19691,7 +19621,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -19757,7 +19686,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "close": {
@@ -19768,7 +19696,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -19799,6 +19726,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -19838,7 +19766,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "pageVisible": {
@@ -19849,10 +19776,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -19892,6 +19819,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -19931,7 +19859,6 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         },
                         "pageInvisible": {
@@ -19942,10 +19869,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -20174,7 +20101,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "15e46cf3ea2b8e623ee53cd609ee568327d66bd6ebbe1cbf49147ec4f421061c",
+    "inputSha256": "2a6de5a3bbd706901f17ed6ee2e2b314d9a99c9d7b881c58cc2b40bd8d0f1e3d",
     "result": {
       "trace": [
         {
@@ -20366,8 +20293,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "visible"
+                    "type": "page",
+                    "event": "visible"
                   }
                 }
               ]
@@ -20391,8 +20318,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -20451,8 +20378,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "close"
+                    "type": "page",
+                    "event": "close"
                   }
                 }
               ]
@@ -20484,8 +20411,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "invisible"
+                    "type": "page",
+                    "event": "invisible"
                   }
                 }
               ]
@@ -20517,8 +20444,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "visible"
+                    "type": "page",
+                    "event": "visible"
                   }
                 }
               ]
@@ -20542,8 +20469,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -20620,8 +20547,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "visible"
+                    "type": "page",
+                    "event": "visible"
                   }
                 }
               ]
@@ -20668,8 +20595,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "close"
+                    "type": "page",
+                    "event": "close"
                   }
                 }
               ]
@@ -20701,8 +20628,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "invisible"
+                    "type": "page",
+                    "event": "invisible"
                   }
                 }
               ]
@@ -20734,8 +20661,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "invisible"
+                    "type": "page",
+                    "event": "invisible"
                   }
                 }
               ]
@@ -20842,7 +20769,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -20908,7 +20834,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -21248,7 +21173,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "2116a6a2d68455a683b964027ab351fee179c57a61926d1410d928e406af3cea",
+    "inputSha256": "0a98c4710ed17c50b0107a66e00a3f806e9d0cfb1dbc4e1a4fd4c145174089f8",
     "result": {
       "trace": [
         {
@@ -21432,8 +21357,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -21492,8 +21417,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -21540,8 +21465,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -21588,8 +21513,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -21636,8 +21561,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -21684,8 +21609,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -21732,8 +21657,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -21780,8 +21705,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -21828,8 +21753,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -21942,8 +21867,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -21990,8 +21915,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -22095,7 +22020,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -22161,7 +22085,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -22192,6 +22115,7 @@
                       },
                       "hasAppearance": true,
                       "appearanceState": null,
+                      "structurePosition": null,
                       "nm": null,
                       "rect": {
                         "x": 100,
@@ -22231,10 +22155,10 @@
                             "next": []
                           },
                           "incomplete": false,
-                          "warningFlags": 0,
                           "warnings": []
                         }
                       },
+                      "richText": null,
                       "color": "#ef4444",
                       "opacity": 1,
                       "strokeWidth": 2,
@@ -22529,13 +22453,13 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "annotation",
+              "type": "annotation",
               "event": "focus",
               "page": {
                 "kind": "objectNumber",
                 "objectNumber": 1
               },
-              "ref": {
+              "annotation": {
                 "kind": "objectNumber",
                 "page": {
                   "kind": "objectNumber",
@@ -22589,7 +22513,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "99fb778e269b5e2006f3dc96b7c80ad1b6577ddf299e7bb265dbd0df4d8ce82e",
+    "inputSha256": "535980797155026220da2a785b2ec478f23995dbc8a91aaac1495af01d7b5ab8",
     "result": {
       "trace": [
         {
@@ -22800,8 +22724,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -22860,8 +22784,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -22908,8 +22832,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -22956,8 +22880,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -23004,8 +22928,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -23052,8 +22976,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -23100,8 +23024,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -23148,8 +23072,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -23196,8 +23120,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -23250,7 +23174,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -23313,8 +23236,8 @@
                     }
                   },
                   "event": {
-                    "scope": "annotation",
-                    "name": "focus"
+                    "type": "annotation",
+                    "event": "focus"
                   }
                 }
               ]
@@ -23359,8 +23282,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -23407,8 +23330,8 @@
                     }
                   },
                   "event": {
-                    "scope": "page",
-                    "name": "open"
+                    "type": "page",
+                    "event": "open"
                   }
                 }
               ]
@@ -23582,7 +23505,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "didSave": {
@@ -23593,7 +23515,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "willPrint": {
@@ -23604,7 +23525,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "didPrint": {
@@ -23615,7 +23535,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "willClose": {
@@ -23626,7 +23545,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -23705,7 +23623,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "will-save"
             }
           ]
@@ -23719,7 +23637,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "did-save"
             }
           ]
@@ -23733,7 +23651,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "will-print"
             }
           ]
@@ -23747,7 +23665,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "did-print"
             }
           ]
@@ -23761,7 +23679,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "will-close"
             }
           ]
@@ -23771,7 +23689,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "162524466c31f9b2a165989df24e01c7f3accd359a2cebec7ccdec11f574acf0",
+    "inputSha256": "099652cafe7f0d87ce4214a49a0083d1b174cc2b81cc2b2a910404f34b158bcc",
     "result": {
       "trace": [
         {
@@ -23915,7 +23833,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -23960,8 +23877,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "will-save"
+                    "type": "document",
+                    "event": "will-save"
                   }
                 }
               ]
@@ -24000,7 +23917,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -24039,8 +23955,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "did-save"
+                    "type": "document",
+                    "event": "did-save"
                   }
                 }
               ]
@@ -24079,7 +23995,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -24118,8 +24033,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "will-print"
+                    "type": "document",
+                    "event": "will-print"
                   }
                 }
               ]
@@ -24158,7 +24073,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -24197,8 +24111,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "did-print"
+                    "type": "document",
+                    "event": "did-print"
                   }
                 }
               ]
@@ -24237,7 +24151,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -24276,8 +24189,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "will-close"
+                    "type": "document",
+                    "event": "will-close"
                   }
                 }
               ]
@@ -24444,7 +24357,6 @@
                   "willSave": {
                     "root": null,
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -24506,7 +24418,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "will-save"
             }
           ]
@@ -24520,7 +24432,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "did-save"
             }
           ]
@@ -24530,7 +24442,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "c672b7d28af350df26a20229af45dda7da3f3ff04607a252ffa698615d445544",
+    "inputSha256": "843569599bd9d0e96eada87177f6e07ae6cff184d20e102f3ac16e19d612a204",
     "result": {
       "trace": [
         {
@@ -24844,7 +24756,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "openDestination": null,
@@ -24856,7 +24767,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -24948,7 +24858,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "will-save"
             }
           ]
@@ -24962,7 +24872,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "open"
             }
           ]
@@ -24976,7 +24886,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "will-save"
             }
           ]
@@ -24986,7 +24896,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "12e93403c86571400ef563ba0e49b5a1b64c946d967dac66b86d6a1cfa33b30f",
+    "inputSha256": "90a2aeef153bbd056fa5b0bed01442740bcf3c0d0cb79aee2493df8e80603c1e",
     "result": {
       "trace": [
         {
@@ -25152,7 +25062,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -25197,8 +25106,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "open"
+                    "type": "document",
+                    "event": "open"
                   }
                 }
               ]
@@ -25218,8 +25127,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "will-save"
+                    "type": "document",
+                    "event": "will-save"
                   }
                 }
               ]
@@ -25305,7 +25214,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -25344,8 +25252,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "will-save"
+                    "type": "document",
+                    "event": "will-save"
                   }
                 }
               ]
@@ -25524,7 +25432,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -25616,7 +25523,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "will-save"
             }
           ]
@@ -25630,7 +25537,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "will-save"
             }
           ]
@@ -25644,7 +25551,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "did-save"
             }
           ]
@@ -25654,7 +25561,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "e0a34fd885c0e43fff20a441427a87b09f458ebeb1941ec77c597b97a95fbdf7",
+    "inputSha256": "9c0cbfa84d9189c885beff08a4b0cb7fdb08a19ee55becbf325d48632f53455a",
     "result": {
       "trace": [
         {
@@ -25873,7 +25780,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -25918,8 +25824,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "will-save"
+                    "type": "document",
+                    "event": "will-save"
                   }
                 }
               ]
@@ -26123,7 +26029,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "didSave": {
@@ -26134,7 +26039,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "willPrint": {
@@ -26145,7 +26049,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "didPrint": {
@@ -26156,7 +26059,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "willClose": {
@@ -26167,7 +26069,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -26261,7 +26162,7 @@
           "method": "dispatch",
           "args": [
             {
-              "scope": "document",
+              "type": "document",
               "event": "will-save"
             }
           ]
@@ -26280,7 +26181,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "987574e39df130ada347e3fcdbe1f450e8e01bbfc6a6fd28ac24a05b619acc93",
+    "inputSha256": "036b6a3e566a93984643632b36abc28b538f7372d58080e549e2f03cb6076b52",
     "result": {
       "trace": [
         {
@@ -26655,7 +26556,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -26739,7 +26639,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "772f36c2f8de74db99bfbe5995f3abe9b67258666e1ae2e62d68e061c5f68444",
+    "inputSha256": "8b164bc14f51bcbbde4825f01abfdb8dd7ff2b2319a844e45a918400d484811f",
     "result": {
       "trace": [
         {
@@ -26883,7 +26783,6 @@
                         "next": []
                       },
                       "incomplete": false,
-                      "warningFlags": 0,
                       "warnings": []
                     },
                     "result": {
@@ -26928,8 +26827,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "will-close"
+                    "type": "document",
+                    "event": "will-close"
                   }
                 }
               ]
@@ -27101,7 +27000,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "didSave": {
@@ -27112,7 +27010,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -27222,7 +27119,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "f178b6b921df50a4b845cbbbbfd89cd9dc0cfddc9f57948ba7417f5cac7e9ac4",
+    "inputSha256": "b6d88c5c4cd185edcdc6e79fec45474374db7a949a375b55430bf4113cfdfe89",
     "result": {
       "trace": [
         {
@@ -27374,8 +27271,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "will-save"
+                    "type": "document",
+                    "event": "will-save"
                   }
                 }
               ]
@@ -27449,8 +27346,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "did-save"
+                    "type": "document",
+                    "event": "did-save"
                   }
                 }
               ]
@@ -27470,8 +27367,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "will-save"
+                    "type": "document",
+                    "event": "will-save"
                   }
                 }
               ]
@@ -27495,8 +27392,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "did-save"
+                    "type": "document",
+                    "event": "did-save"
                   }
                 }
               ]
@@ -27665,7 +27562,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "didSave": {
@@ -27676,7 +27572,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -27823,7 +27718,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "5dc762d00fb510c3f2af89cfc9f74c0a3940c38af37891a864271485960fc3cf",
+    "inputSha256": "a1eed77c01de9dae2d1a62c064cf1100e5516048e44d65fd9c3da9d62391a4d6",
     "result": {
       "trace": [
         {
@@ -28002,8 +27897,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "will-save"
+                    "type": "document",
+                    "event": "will-save"
                   }
                 }
               ]
@@ -28039,8 +27934,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "did-save"
+                    "type": "document",
+                    "event": "did-save"
                   }
                 }
               ]
@@ -28091,8 +27986,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "will-save"
+                    "type": "document",
+                    "event": "will-save"
                   }
                 }
               ]
@@ -28147,8 +28042,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "will-save"
+                    "type": "document",
+                    "event": "will-save"
                   }
                 }
               ]
@@ -28338,7 +28233,6 @@
                       ]
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "didPrint": {
@@ -28349,7 +28243,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -28498,7 +28391,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -28507,7 +28399,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -28517,7 +28409,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "1e2a1ed21c84c02962a54d6340cea8417daeea4b7421e928faf366391f5aa2f9",
+    "inputSha256": "ff92768d21e0a7841be11fc065bd5e85baad92cd7ee6e83e4b3765badcb7e204",
     "result": {
       "trace": [
         {
@@ -28725,8 +28617,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "will-print"
+                    "type": "document",
+                    "event": "will-print"
                   }
                 }
               ]
@@ -28762,8 +28654,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "did-print"
+                    "type": "document",
+                    "event": "did-print"
                   }
                 }
               ]
@@ -28821,8 +28713,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "will-print"
+                    "type": "document",
+                    "event": "will-print"
                   }
                 }
               ]
@@ -28901,8 +28793,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "will-print"
+                    "type": "document",
+                    "event": "will-print"
                   }
                 }
               ]
@@ -28938,8 +28830,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "did-print"
+                    "type": "document",
+                    "event": "did-print"
                   }
                 }
               ]
@@ -29125,7 +29017,6 @@
                       ]
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "didPrint": {
@@ -29136,7 +29027,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -29253,7 +29143,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -29262,7 +29151,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -29272,7 +29161,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "a21d37d047cd4f33f98b7a84015cac0d6b336c64c86329052c981543451392d6",
+    "inputSha256": "54df83cda5b287c07c798b13a83c41374c25d7ea6b14365a7b6c816d1b27b734",
     "result": {
       "trace": [
         {
@@ -29490,8 +29379,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "will-print"
+                    "type": "document",
+                    "event": "will-print"
                   }
                 }
               ]
@@ -29527,8 +29416,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "did-print"
+                    "type": "document",
+                    "event": "did-print"
                   }
                 }
               ]
@@ -29700,7 +29589,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "didPrint": {
@@ -29711,7 +29599,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -29818,7 +29705,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -29827,7 +29713,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -29866,7 +29752,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -29875,7 +29760,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -29885,7 +29770,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "bfed62713069c26cc7f7251e0ee8ba9fdc3db390e2298ce26b8e4e49440ae8aa",
+    "inputSha256": "fca49701ea373d3d6acde5be8ac85e7e20fe47cfc9537c2314017d3fc6ec2e9f",
     "result": {
       "trace": [
         {
@@ -30069,8 +29954,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "will-print"
+                    "type": "document",
+                    "event": "will-print"
                   }
                 }
               ]
@@ -30152,8 +30037,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "will-print"
+                    "type": "document",
+                    "event": "will-print"
                   }
                 }
               ]
@@ -30177,8 +30062,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "did-print"
+                    "type": "document",
+                    "event": "did-print"
                   }
                 }
               ]
@@ -30350,7 +30235,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   },
                   "didPrint": {
@@ -30361,7 +30245,6 @@
                       "next": []
                     },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": []
                   }
                 }
@@ -30463,7 +30346,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -30472,7 +30354,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -30496,7 +30378,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "82a8e0a468871588b4006307d9c405481c477072cf6cd57d1b56d81a84fc4f7e",
+    "inputSha256": "d3565a5fd17a1cfae0cf093bf2ba7ba7bb2766c3b8254efa1833bf7426fc506a",
     "result": {
       "trace": [
         {
@@ -30670,8 +30552,8 @@
                     "kind": "document"
                   },
                   "event": {
-                    "scope": "document",
-                    "name": "will-print"
+                    "type": "document",
+                    "event": "will-print"
                   }
                 }
               ]
@@ -30967,7 +30849,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             },
             {
@@ -30976,7 +30857,7 @@
                 "kind": "api"
               },
               "event": {
-                "scope": "activate"
+                "type": "activate"
               }
             }
           ]
@@ -30986,7 +30867,7 @@
         "actions::a"
       ]
     },
-    "inputSha256": "d032df9991c875102251e5282269b1d91cea869f177edb7069b6c27072cd5f3e",
+    "inputSha256": "d7fbeb97a1129dd6487525b9185b5d7c3c0b8c72e54a88abc868839d4bcc3110",
     "result": {
       "trace": [
         {

@@ -28,8 +28,8 @@ use serde_json::{Map, Value, json};
 
 use crate::contract::{
     AccentDerivation, CommandCtx, CommandDef, CommandItem, CommandsConfig, CommandsSettings,
-    Derivation, ExecuteOptions, IconAccent, MatchStrokeOptions, NotAllowedMode, Panel,
-    RegisterCommandOptions, ResolvedCommand, RunFn, Shortcut,
+    Derivation, ExecuteOptions, IconAccent, LabelParamsFn, MatchStrokeOptions, NotAllowedMode,
+    Panel, RegisterCommandOptions, ResolvedCommand, RunFn, Shortcut,
 };
 use crate::registry::registered_command;
 use crate::{COMMANDS, CommandsCapability, plugin_parts, resolved_commands_equal};
@@ -355,6 +355,15 @@ fn accent(spec: &Value, h: &Harness) -> AccentDerivation {
     })
 }
 
+fn label_params(spec: &Value, h: &Harness) -> LabelParamsFn {
+    let f = scripted(spec, h);
+    Rc::new(move |c| match f(c) {
+        Answer::Returns(value) => epdf_plugin_i18n::harness::params(&value),
+        Answer::Throws(error) => Err(error),
+        Answer::Promise(_) => Ok(epdf_plugin_i18n::Params::new()),
+    })
+}
+
 fn run(spec: &Value, h: &Harness) -> RunFn {
     let f = scripted(spec, h);
     Rc::new(move |c| match f(c) {
@@ -412,6 +421,7 @@ pub fn decode_def(value: &Value, h: Option<&Harness>) -> Result<Rc<CommandDef>, 
         enabled: func("enabled").map(|(spec, h)| derivation(spec, h)),
         active: func("active").map(|(spec, h)| derivation(spec, h)),
         visible: func("visible").map(|(spec, h)| derivation(spec, h)),
+        label_params: func("labelParams").map(|(spec, h)| label_params(spec, h)),
         run: func("run").map(|(spec, h)| run(spec, h)),
     });
     PRINTED.with(|p| p.borrow_mut().push((def.clone(), printed_from_vector(value))));
@@ -541,7 +551,7 @@ impl HarnessPlugin for Commands {
             "onSettingsChanged" => listen(
                 h,
                 arg(&args, 0),
-                |event: &crate::CommandsSettingsChanged| json!({ "settings": print_settings(&event.settings), "changed": event.changed }),
+                |event: &crate::CommandsSettingsChanged| json!({ "settings": print_settings(&event.settings), "changedKeys": event.changed_keys }),
                 |f| cap.on_settings_changed(f),
             ),
             "registerCommand" => match decode_def(arg(&args, 0).unwrap_or(&Value::Null), Some(h)) {

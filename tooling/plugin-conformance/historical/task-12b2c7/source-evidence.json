@@ -9,7 +9,7 @@
   "currentOwners": [
     {
       "path": "packages/plugin/metadata/src/controller.ts",
-      "sha256": "d62ffdd8d6ae538a8f6744ebd74e5a62ffa30d403d763276e5854b9b7b85a443"
+      "sha256": "266ab60657d532386f3f0a0e79cf44b28662d2a6186265ff69f35f544b4851f4"
     },
     {
       "path": "packages/plugin/metadata/src/contract.ts",
@@ -37,15 +37,15 @@
     },
     {
       "path": "packages/engine/core/src/events/DocumentEvent.ts",
-      "sha256": "9972d85381c4688bde882f7d14063bf26a228c287c3a685dcfc112fcb0d1cf57"
+      "sha256": "012b5fa5705bc9f5eeaa093edd4800d445d8813a274af1c21706791917386fba"
     },
     {
       "path": "packages/core/main/src/mirror.ts",
-      "sha256": "eb1dc941fb0fc5907a845a635437038e50608fcca50d96610c05ab08b4f8e8f8"
+      "sha256": "b8836bf057409ab03df87a4523730f2d05688c8b1faef2cc6b33aa29c030c181"
     },
     {
       "path": "packages/core/main/src/errors.ts",
-      "sha256": "bc7012fde188e512fc7e24cf8e9aa828e9c5aff37171300b57c67d508b13b0fe"
+      "sha256": "2c6b331933d794c17c83e7342bebbb0fc2fca0ff4fd2c6c223b91707c96f09b1"
     },
     {
       "path": "packages/engine/core/src/auth/scope/errors.ts",

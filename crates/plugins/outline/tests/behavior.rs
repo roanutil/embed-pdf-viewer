@@ -44,7 +44,7 @@ fn op(n: u32) -> String {
 
 fn meta(op_id: &str, changed: &[u32]) -> Value {
     json!({ "affectedPages": [], "cacheDelta": null, "opId": op_id, "undoable": true,
-            "changed": changed.iter().map(|n| r(*n)).collect::<Vec<_>>() })
+            "changedRefs": changed.iter().map(|n| r(*n)).collect::<Vec<_>>() })
 }
 
 /// The engine's answer to change `n`: its event, then its result.
@@ -207,7 +207,7 @@ fn no_optional_plugin_is_needed() {
     assert_eq!(rig.outline.get_current_item(), None);
     assert_eq!(rig.outline.get_current_view_target(), None);
     // No link, stage or actions: a target is handed back, an /A alone is none.
-    assert_eq!(rig.outline.activate(&r(10)).unwrap().outcome(), "none");
+    assert_eq!(rig.outline.activate(&r(10)).unwrap().status(), "none");
     // No selection, no i18n: "Untitled".
     settled(&rig.outline.create(json!({}), OutlineCreateOptions::default())).unwrap().unwrap();
     let apply = rig.fake.log_since(0).into_iter().find(|e| e["path"] == "apply").unwrap();

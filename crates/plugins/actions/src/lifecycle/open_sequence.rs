@@ -33,7 +33,7 @@ impl ActionsCapability {
         let lifecycle_ctx = ActionContext {
             origin: ActionOrigin::Lifecycle,
             source: ActionSource::Document,
-            event: ActionTriggerEvent::Document { name: DocumentTriggerEvent::Open },
+            event: ActionTriggerEvent::Document { event: DocumentTriggerEvent::Open },
         };
         let attempt: Result<(), Error> = async {
             let snapshot = self.read_document_actions().await?.unwrap_or(Value::Null);
@@ -44,7 +44,6 @@ impl ActionsCapability {
                 let tree = json!({
                     "root": { "type": "goto", "subtype": "GoTo", "destination": destination, "next": [] },
                     "incomplete": false,
-                    "warningFlags": 0,
                     "warnings": [],
                 });
                 let result =

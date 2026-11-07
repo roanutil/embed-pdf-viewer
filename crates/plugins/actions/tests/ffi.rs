@@ -32,7 +32,7 @@ impl ActionsEventListener for Events {
 pub fn named(name: &str) -> Value {
     json!({
         "root": { "type": "named", "subtype": "Named", "name": name, "next": [] },
-        "incomplete": false, "warningFlags": 0, "warnings": []
+        "incomplete": false, "warnings": []
     })
 }
 
@@ -147,7 +147,7 @@ fn a_goto_tree_is_allowed_for_a_user() {
         "root": { "type": "goto", "subtype": "GoTo",
                   "destination": { "kind": "fit", "page": { "kind": "objectNumber", "objectNumber": 1 } },
                   "next": [] },
-        "incomplete": false, "warningFlags": 0, "warnings": []
+        "incomplete": false, "warnings": []
     }));
     assert!(block_on(actions.can_execute(goto, user())).unwrap());
 }

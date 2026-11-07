@@ -191,7 +191,7 @@ impl StampCapability {
                 scripting.destroy();
             }
             if let Some(realm) = realm.borrow_mut().take() {
-                realm.dispose();
+                realm.destroy();
             }
             close(&doc, body).await
         })

@@ -154,8 +154,7 @@ fn page_scale_of_projects_its_three_read_states() {
         "owned": true,
         "name": null,
     }]);
-    let offline =
-        json!({ "name": "EngineError", "code": "RuntimeUnavailable", "message": "offline" });
+    let offline = json!({ "code": "RuntimeUnavailable", "message": "offline" });
     let fallback = metres();
     let size = Some(PageSize { width: 600.0, height: 800.0 });
 
@@ -305,7 +304,6 @@ fn closing_mid_change_reports_each_page_and_refuses_the_queued_write() {
         other => panic!("the all-pages change resolves: {:?}", other.map(|r| r.map(|_| ()))),
     };
     let closed = json!({
-        "name": "EngineError",
         "code": "Unknown",
         "message": "document instance a#1 was closed",
     });

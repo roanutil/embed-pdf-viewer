@@ -17,7 +17,7 @@
       "after": {
         "file": "plugins/measurement.json",
         "name": "reads-without-a-measure-service",
-        "inputSha256": "493a871089c446acefc3874a4e8e7cb631ff3cbc6007472bc48956fbe1d4b8eb",
+        "inputSha256": "ec737e164f8960d654409e3f252829a307190cfcae48c87566dc342410428263",
         "fn": null
       },
       "disposition": "mapped",
@@ -44,7 +44,7 @@
       "after": {
         "file": "plugins/measurement.json",
         "name": "imperial-default-and-custom-presets",
-        "inputSha256": "e3d901c84ae1ad9a1c61b4d4f7731c515a5ea7488cf79ec19ce53ba5e0bfb3b3",
+        "inputSha256": "69274a373d9037e7b33613c2fd5390de4d616412fc006ca60b786e7ffeb53c1a",
         "fn": null
       },
       "disposition": "mapped",
@@ -71,7 +71,7 @@
       "after": {
         "file": "plugins/measurement.json",
         "name": "custom-default-measure",
-        "inputSha256": "dff4beb4612b2c71864b260daffa77c9dd1c4e8e7ce66b090c33d82e7a850afc",
+        "inputSha256": "6811ae8609dd9d3a44cc604fb6e607300b6a9b7b74fad8a7794cea2f613bbef5",
         "fn": null
       },
       "disposition": "mapped",
@@ -96,7 +96,7 @@
       "after": {
         "file": "plugins/measurement.json",
         "name": "measure-service-viewports",
-        "inputSha256": "9537815119f29cc2992ec7e89b867feaafdf93003656d222bd17009a0eb606fa",
+        "inputSha256": "d82ee9121ab3b84367b5beab2ec9764364acc871297dc0eb1702fb6e67b2b19f",
         "fn": null
       },
       "disposition": "mapped",
@@ -123,7 +123,7 @@
       "after": {
         "file": "plugins/measurement.json",
         "name": "viewport-reads-fail-refresh-and-rehydrate",
-        "inputSha256": "2abe3769b1c535f4d5e4b917567dd835e003e17251d0007d2c2bcf0ad3f426f1",
+        "inputSha256": "31ce288f28a4c35f7deb2785f0d79611ca80be8b9dfd10f97fe58bf53a905cbd",
         "fn": null
       },
       "disposition": "mapped",
@@ -149,7 +149,7 @@
       "after": {
         "file": "plugins/measurement.json",
         "name": "refresh-epochs",
-        "inputSha256": "39177e51ce088ce58ced585bb41010aa8550e7bb0419fbf915d92e4622ca503b",
+        "inputSha256": "714ff521a1224a57b65441e9c538397227f680e0a677130da578017afecb2f12",
         "fn": null
       },
       "disposition": "mapped",
@@ -175,7 +175,7 @@
       "after": {
         "file": "plugins/measurement.json",
         "name": "set-scale-on-one-page",
-        "inputSha256": "f1d0a183b1d5dfff9a14fad46cd936c11c0592ac9e05e606641b0e0c7180b17f",
+        "inputSha256": "6f2c497f708893d61b726ff3f0e85d98ac26272fab634a4e0a205eb82876a4e6",
         "fn": null
       },
       "disposition": "mapped",
@@ -201,7 +201,7 @@
       "after": {
         "file": "plugins/measurement.json",
         "name": "set-scale-on-several-pages",
-        "inputSha256": "9637fa9bb16226e3c453ed16cdeed8b6bf8cc775ebdbb5e4a69a79ec30c948cc",
+        "inputSha256": "6f16287257e638f7ed35731abe4c844decda97cddca5366dd03b80cb117eb975",
         "fn": null
       },
       "disposition": "mapped",
@@ -227,7 +227,7 @@
       "after": {
         "file": "plugins/measurement.json",
         "name": "set-scale-preflight",
-        "inputSha256": "ebe4c52f5efc5e09289279857da05a86c6216f5989a130cdcaec0fe5e7a699b5",
+        "inputSha256": "e362e8028fc5735b2211e1bc4608fa0e95338ec5aa561dd00ea17cf0dd683f74",
         "fn": null
       },
       "disposition": "mapped",
@@ -253,7 +253,7 @@
       "after": {
         "file": "plugins/measurement.json",
         "name": "units-precision-and-presets",
-        "inputSha256": "2b0c7c75c007bd7ad0634e38d76853cdba403ca7b7d8f974c70e4d8f21f798cc",
+        "inputSha256": "254ac1ea317b4b8a25a6c63f4b99a35bba754fe0d56f1f72661cd0e5077bbbce",
         "fn": null
       },
       "disposition": "mapped",
@@ -279,7 +279,7 @@
       "after": {
         "file": "plugins/measurement.json",
         "name": "service-writes-and-foreign-scales",
-        "inputSha256": "b2bc49596842b40ccbb9090050f55d619b0caa28ea2f4a1009f81881c2b318c3",
+        "inputSha256": "0cbe6ef7867bcfb819313f02c2ede649cb5d0ba5d6060399ce175d10669765ad",
         "fn": null
       },
       "disposition": "mapped",
@@ -305,7 +305,7 @@
       "after": {
         "file": "plugins/measurement.json",
         "name": "calibration-flow",
-        "inputSha256": "f27c08a03ecc2dcb4b1516f8c27ae394b57e9d1d14d2536b744fc1af82065fc7",
+        "inputSha256": "ddc78ce0a7612398ae4255383566887df99b734178b54550d25b4cee1b45bc92",
         "fn": null
       },
       "disposition": "mapped",
@@ -388,7 +388,7 @@
       "after": {
         "file": "plugins/measurement.json",
         "name": "create-measurement",
-        "inputSha256": "33e33f07f887c040656445cfa4535cb4475f10c400654fead0dbccbcda8be8c3",
+        "inputSha256": "1d6fdf187fd02e32efd23ab24e4d6c8c6fbf98dbc1319c23ea8165f7f38abf18",
         "fn": null
       },
       "disposition": "mapped",
@@ -415,7 +415,7 @@
       "after": {
         "file": "plugins/measurement.json",
         "name": "listener-throws",
-        "inputSha256": "5da2e566c42ef02d9027adc95cd44be01354777124c25f28bc987ee25edbb6c5",
+        "inputSha256": "ab7c3a785d324cc13f33e7d5847c0529eb9ddd80f89c0be353f0f0efd65ce86f",
         "fn": null
       },
       "disposition": "mapped",
@@ -442,7 +442,7 @@
       "after": {
         "file": "plugins/measurement.json",
         "name": "pages-inserted-and-removed",
-        "inputSha256": "977bb49f679a7cc76a9c6cbc9499d8c6077f79376f66b9c8cfd5970c953c195a",
+        "inputSha256": "55a0cfa1df9847247fcf158918775d3e3fe6b303e2ebc2f96829dc99c0bddcb6",
         "fn": null
       },
       "disposition": "mapped",
@@ -468,7 +468,7 @@
       "after": {
         "file": "plugins/measurement.json",
         "name": "page-removed-while-a-change-waits",
-        "inputSha256": "f442b301f80714f911443f244c99c6a3adc0fa52946bdc5c4f7ac7dd68964dc8",
+        "inputSha256": "13cce4ad310759459dc9944e91de2d1ed6c768c6f2a612949c292732785f349e",
         "fn": null
       },
       "disposition": "mapped",
@@ -494,7 +494,7 @@
       "after": {
         "file": "plugins/measurement.json",
         "name": "close-mid-flight",
-        "inputSha256": "a6766054d2f6e1df0526903f38b6a22a95d6c0c52d618575470780375447c3fc",
+        "inputSha256": "802bbadc3fd345cb7a887fbf98fa1d5fcd1dd306b81740176d905695a4ab53c3",
         "fn": null
       },
       "disposition": "mapped",
@@ -645,7 +645,7 @@
       "after": {
         "file": "plugins/measurement-functions.json",
         "name": "reduce-reports",
-        "inputSha256": "4e353f15bdc18850664f6179e3e1be566ff8bf9702e539db9d0da0ef7845c98e",
+        "inputSha256": "2916fd338f8c73621652b8d6682068d00ce6156d2aa275beb7847941e4a6cad6",
         "fn": "setReports"
       },
       "disposition": "mapped",
@@ -1594,7 +1594,7 @@
               ],
               "area": [
                 {
-                  "unit": "m\u00b2",
+                  "unit": "m²",
                   "conversion": 1,
                   "precision": 100
                 }
@@ -1606,7 +1606,9 @@
       },
       "inputSha256": "fa9b6f059968f7db59e8a1803e9aa78dcdbb73e9d6c2b82a98cdc55e2369bfb9",
       "reason": "Additional independent current pageScaleOf projection: complete readiness/persistence/source/error/known-data fields.",
-      "evidence": ["packages/plugin/measurement/src/model.ts:126-147"]
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts:126-147"
+      ]
     },
     {
       "file": "plugins/measurement-functions.json",
@@ -1643,7 +1645,7 @@
                   ],
                   "area": [
                     {
-                      "unit": "ft\u00b2",
+                      "unit": "ft²",
                       "conversion": 1,
                       "precision": 100
                     }
@@ -1682,7 +1684,7 @@
               ],
               "area": [
                 {
-                  "unit": "m\u00b2",
+                  "unit": "m²",
                   "conversion": 1,
                   "precision": 100
                 }
@@ -1692,9 +1694,11 @@
           }
         ]
       },
-      "inputSha256": "8010b2c3dca90d4a51566163a56bb3156037f97ac0bbdd7f6b15bd0e3f55fd66",
+      "inputSha256": "64447c49058908ace391a8b0ec052f07c024e44526cf4e0cd9b9b274795e2f3c",
       "reason": "Additional independent current pageScaleOf projection: complete readiness/persistence/source/error/known-data fields.",
-      "evidence": ["packages/plugin/measurement/src/model.ts:126-147"]
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts:126-147"
+      ]
     },
     {
       "file": "plugins/measurement-functions.json",
@@ -1729,7 +1733,7 @@
               ],
               "area": [
                 {
-                  "unit": "m\u00b2",
+                  "unit": "m²",
                   "conversion": 1,
                   "precision": 100
                 }
@@ -1739,9 +1743,11 @@
           }
         ]
       },
-      "inputSha256": "9e1635f284275703cd2f853e8ef58e045236a517b476acef90b9ee0e54c356ec",
+      "inputSha256": "73a875817278a68c4d1efaed0ddcaab9fd2682b34de6b73a7d2b46612b20ce61",
       "reason": "Additional independent current pageScaleOf projection: complete readiness/persistence/source/error/known-data fields.",
-      "evidence": ["packages/plugin/measurement/src/model.ts:126-147"]
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts:126-147"
+      ]
     }
   ]
 }

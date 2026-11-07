@@ -84,7 +84,7 @@ impl InteractionHandler for PlaceHandler {
     fn enabled_for(&self, tool: &Tool) -> bool {
         tool.enables("annotation-place") || tool.enables("annotation-stamp")
     }
-    fn on_down(&self, sample: &PointerSample) -> bool {
+    fn on_pointer_down(&self, sample: &PointerSample) -> bool {
         let (Some(core), Some(hit)) = (self.core.upgrade(), sample.page.as_ref()) else {
             return false;
         };
@@ -95,12 +95,12 @@ impl InteractionHandler for PlaceHandler {
             hit.zoom,
         )
     }
-    fn on_up(&self, _sample: &PointerSample) {
+    fn on_pointer_up(&self, _sample: &PointerSample) {
         if let Some(core) = self.core.upgrade() {
             core.clear_ghost();
         }
     }
-    fn on_cancel(&self, _sample: &PointerSample) {
+    fn on_pointer_cancel(&self, _sample: &PointerSample) {
         if let Some(core) = self.core.upgrade() {
             core.clear_ghost();
         }
@@ -143,7 +143,7 @@ impl InteractionHandler for EditHandler {
         };
         core.claims_touch_at(&hit.page.to_json(), hit.point, view_of(sample))
     }
-    fn on_down(&self, sample: &PointerSample) -> bool {
+    fn on_pointer_down(&self, sample: &PointerSample) -> bool {
         let (Some(core), Some(hit)) = (self.core.upgrade(), sample.page.as_ref()) else {
             return false;
         };
@@ -182,7 +182,7 @@ impl InteractionHandler for EditHandler {
             Some(EditOrigin { page, point: hit.point, down_point: hit.point, touch });
         true
     }
-    fn on_move(&self, sample: &PointerSample) {
+    fn on_pointer_move(&self, sample: &PointerSample) {
         let Some(core) = self.core.upgrade() else { return };
         let (page, touch) = {
             let origin = self.origin.borrow();
@@ -205,7 +205,7 @@ impl InteractionHandler for EditHandler {
             Some(touch),
         );
     }
-    fn on_up(&self, sample: &PointerSample) {
+    fn on_pointer_up(&self, sample: &PointerSample) {
         let Some(core) = self.core.upgrade() else { return };
         let Some(origin) = self.origin.borrow_mut().take() else { return };
         let point = point_on(sample, &origin.page).unwrap_or(origin.point);
@@ -220,7 +220,7 @@ impl InteractionHandler for EditHandler {
             Some(origin.touch),
         );
     }
-    fn on_cancel(&self, _sample: &PointerSample) {
+    fn on_pointer_cancel(&self, _sample: &PointerSample) {
         let Some(core) = self.core.upgrade() else { return };
         let Some(origin) = self.origin.borrow_mut().take() else { return };
         let _ = core.edit_pointer(
@@ -284,7 +284,7 @@ impl InteractionHandler for MarqueeHandler {
     fn enabled_for(&self, tool: &Tool) -> bool {
         tool.enables("annotation-marquee")
     }
-    fn on_down(&self, sample: &PointerSample) -> bool {
+    fn on_pointer_down(&self, sample: &PointerSample) -> bool {
         let Some(hit) = sample.page.as_ref() else { return false };
         *self.anchor.borrow_mut() = Some(MarqueeAnchor {
             page: hit.page.to_json(),
@@ -298,7 +298,7 @@ impl InteractionHandler for MarqueeHandler {
         self.dragging.set(false);
         true
     }
-    fn on_move(&self, sample: &PointerSample) {
+    fn on_pointer_move(&self, sample: &PointerSample) {
         let Some(core) = self.core.upgrade() else { return };
         let (page, start, vx, vy, shift) = {
             let anchor = self.anchor.borrow();
@@ -319,7 +319,7 @@ impl InteractionHandler for MarqueeHandler {
         }
         let _ = core.marquee_pointer("move", &page, point, shift, view.rotation, view.zoom);
     }
-    fn on_up(&self, _sample: &PointerSample) {
+    fn on_pointer_up(&self, _sample: &PointerSample) {
         let anchor = self.anchor.borrow_mut().take();
         let last = self.last.borrow_mut().take();
         let dragging = self.dragging.replace(false);
@@ -337,7 +337,7 @@ impl InteractionHandler for MarqueeHandler {
             );
         }
     }
-    fn on_cancel(&self, _sample: &PointerSample) {
+    fn on_pointer_cancel(&self, _sample: &PointerSample) {
         *self.anchor.borrow_mut() = None;
         *self.last.borrow_mut() = None;
         self.dragging.set(false);
@@ -406,7 +406,7 @@ impl InteractionHandler for DrawHandler {
     fn enabled_for(&self, tool: &Tool) -> bool {
         tool.enables("annotation-draw")
     }
-    fn on_down(&self, sample: &PointerSample) -> bool {
+    fn on_pointer_down(&self, sample: &PointerSample) -> bool {
         let Some(core) = self.core.upgrade() else { return false };
         let tool = self.tool_id();
         let subtype = core.get_tool_subtype(&tool);
@@ -451,7 +451,7 @@ impl InteractionHandler for DrawHandler {
         let _ = core.create_pointer(&tool, "down", &page, hit.point, false, rotation_of(sample));
         true
     }
-    fn on_move(&self, sample: &PointerSample) {
+    fn on_pointer_move(&self, sample: &PointerSample) {
         let Some(core) = self.core.upgrade() else { return };
         let tool = self.tool_id();
         let subtype = core.get_tool_subtype(&tool);
@@ -468,7 +468,7 @@ impl InteractionHandler for DrawHandler {
         }
         let _ = core.create_pointer(&tool, "move", &page, point, false, None);
     }
-    fn on_up(&self, sample: &PointerSample) {
+    fn on_pointer_up(&self, sample: &PointerSample) {
         let Some(core) = self.core.upgrade() else { return };
         let tool = self.tool_id();
         let subtype = core.get_tool_subtype(&tool);
@@ -500,7 +500,7 @@ impl InteractionHandler for DrawHandler {
         *self.origin.borrow_mut() = None;
         core.clear_ghost();
     }
-    fn on_cancel(&self, _sample: &PointerSample) {
+    fn on_pointer_cancel(&self, _sample: &PointerSample) {
         if let Some(pending) = self.pending_ink.borrow_mut().take() {
             pending.cancel_wait.call();
         }

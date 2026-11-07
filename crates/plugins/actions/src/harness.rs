@@ -149,7 +149,7 @@ impl LiveSandbox {
 }
 
 impl ScriptSandbox for LiveSandbox {
-    fn disposed(&self) -> bool {
+    fn destroyed(&self) -> bool {
         matches!(self.disposed.call(Vec::new()), Answer::Returns(Value::Bool(true)))
     }
 
@@ -171,7 +171,7 @@ impl ScriptSandbox for LiveSandbox {
         LiveSandbox::output("run", &self.run, vec![json!(source), to_json(input)], budget)
     }
 
-    fn dispose(&self) {
+    fn destroy(&self) {
         let _ = self.dispose.call(Vec::new());
     }
 }
@@ -313,7 +313,7 @@ fn ui_adapter(spec: &Value, h: &Harness) -> Option<Rc<ActionUiAdapter>> {
     let open_uri = member("openUri");
     let print = member("print");
     let alert = member("alert");
-    let goto_page = member("gotoPage");
+    let goto_page = member("goToPage");
     Some(Rc::new(ActionUiAdapter {
         open_uri: Rc::new(move |uri: &str, options: &UriOptions| match &open_uri {
             Some(callback) => ignored(callback.call(vec![json!(uri), to_json(options)])),
@@ -397,7 +397,7 @@ const MEMBERS: &[&str] = &[
     "canExecute",
     "executeNamed",
     "canExecuteNamed",
-    "getActionTree",
+    "readActionTree",
     "dispatch",
     "canDispatch",
     "prepareClose",
@@ -457,7 +457,7 @@ fn call_actions(
             let name = arg(args, 0).and_then(Value::as_str).unwrap_or_default();
             Outcome::Returned(json!(cap.can_execute_named(name, partial_context(args, 1)?)))
         }
-        "getActionTree" => Outcome::Promise(cap.get_action_tree(decoded(args, 0)?, None)),
+        "readActionTree" => Outcome::Promise(cap.read_action_tree(decoded(args, 0)?, None)),
         "surfaceScriptCommit" => {
             match cap.surface_script_commit(&decoded(args, 0)?, &decoded(args, 1)?) {
                 Ok(()) => Outcome::undefined(),
@@ -689,7 +689,7 @@ impl HarnessPlugin for Actions {
     }
 }
 
-/// A realm port as the TypeScript prints it: `transaction` (and `dispose`
+/// A realm port as the TypeScript prints it: `transaction` (and `destroy`
 /// for a detached realm) are refs, `budget` a value. A transaction body is a
 /// scripted callback, handed the transaction's two functions.
 fn realm_json(
@@ -712,9 +712,9 @@ fn realm_json(
     out.insert("budget".into(), to_json(&budget));
     if let Some(realm) = dispose {
         out.insert(
-            "dispose".into(),
+            "destroy".into(),
             h.register_fn(Rc::new(move |_| {
-                realm.dispose();
+                realm.destroy();
                 Outcome::undefined()
             })),
         );
@@ -779,7 +779,7 @@ impl DetachedRealmDriver {
             }),
             "dispose" => {
                 if let Some(realm) = detached() {
-                    realm.dispose();
+                    realm.destroy();
                 }
                 Outcome::undefined()
             }
@@ -801,7 +801,7 @@ impl DetachedRealmDriver {
             return Ok(Value::Null);
         };
         if let Some(previous) = self.realm.borrow_mut().take() {
-            previous.dispose();
+            previous.destroy();
         }
         let doc = self.cx.doc()?;
         let document: Rc<dyn Fn() -> Option<ScriptDocument>> = match &self.meta {
@@ -876,7 +876,7 @@ fn detached_realm_plugin(config: &Value, h: &Harness) -> Result<AnyPlugin, Error
             let realm = driver.realm.clone();
             cx.cleanup_fn(move || {
                 if let Some(realm) = realm.borrow().clone() {
-                    realm.dispose();
+                    realm.destroy();
                 }
             });
             Ok((driver, None))

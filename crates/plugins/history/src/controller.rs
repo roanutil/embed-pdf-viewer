@@ -387,7 +387,7 @@ impl HistoryCapability {
         self.0.settings.events.on(move |event| {
             listener(&HistorySettingsChanged {
                 settings: settings_of(&event.settings),
-                changed: event.changed.clone(),
+                changed_keys: event.changed.clone(),
             })
         })
     }

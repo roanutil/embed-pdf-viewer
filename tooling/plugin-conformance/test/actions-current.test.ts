@@ -1240,7 +1240,10 @@ test('named execution events carry the current source/tree/result and preserve l
 });
 
 test('legacy registrations, builders and deferred scenario source sections remain byte exact', () => {
-  const original = readFileSync(new URL('original-actions.ts.txt', historical), 'utf8');
+  // The sections as the upstream 074a190c9 catch-up left them: triggers tagged
+  // `type` (2ce3f7bc5) and no flagsRaw (26a686502). original-actions.ts.txt
+  // keeps the task's own authority.
+  const original = readFileSync(new URL('catchup-074a190c9-actions.ts.txt', historical), 'utf8');
   const current = readFileSync(new URL('../src/suites/actions.ts', import.meta.url), 'utf8');
   for (const [start, end] of [
     ['// ── the observer-error host input', 'interface HoverPumpConfig'],

@@ -27,7 +27,7 @@ use serde_json::{Value, json};
 pub fn named(name: &str) -> Value {
     json!({
         "root": { "type": "named", "subtype": "Named", "name": name, "next": [] },
-        "incomplete": false, "warningFlags": 0, "warnings": []
+        "incomplete": false, "warnings": []
     })
 }
 
@@ -175,7 +175,7 @@ fn a_timed_out_evaluation_is_a_budget_failure_and_poisons() {
     let out = sandbox.run("while (true) {}", &input(), None).unwrap();
     assert!(!out.event.rc);
     assert_eq!(out.error.unwrap().kind, ScriptExecutionErrorKind::Budget);
-    assert!(sandbox.disposed());
+    assert!(sandbox.destroyed());
     assert!(*engine.disposed.lock().unwrap());
     assert!(sandbox.run("1", &input(), None).is_err());
 }
@@ -191,7 +191,7 @@ fn malformed_output_is_invalid_output() {
         let sandbox = sandbox(engine(move |_| answer.lock().unwrap().take().unwrap()));
         let out = sandbox.run("x", &input(), None).unwrap();
         assert_eq!(out.error.unwrap().kind, ScriptExecutionErrorKind::InvalidOutput);
-        assert!(sandbox.disposed());
+        assert!(sandbox.destroyed());
     }
 }
 
@@ -302,7 +302,7 @@ fn a_javascript_node_runs_in_the_foreign_engine_and_alerts() {
     let script = PdfActionTree::from_json(
         json!({
             "root": { "type": "javascript", "subtype": "JavaScript", "script": "app.alert('hi')", "next": [] },
-            "incomplete": false, "warningFlags": 0, "warnings": []
+            "incomplete": false, "warnings": []
         })
         .to_string(),
     )

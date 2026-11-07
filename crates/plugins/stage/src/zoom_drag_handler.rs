@@ -34,7 +34,7 @@ impl InteractionHandler for ZoomDragHandler {
         tool.enables("zoom-box")
     }
 
-    fn on_down(&self, s: &PointerSample) -> bool {
+    fn on_pointer_down(&self, s: &PointerSample) -> bool {
         if s.source.as_deref() != Some(self.stage.get_lens_id().as_str()) {
             return false;
         }
@@ -42,11 +42,11 @@ impl InteractionHandler for ZoomDragHandler {
         true
     }
 
-    fn on_move(&self, s: &PointerSample) {
+    fn on_pointer_move(&self, s: &PointerSample) {
         self.stage.move_zoom_drag(s.viewport);
     }
 
-    fn on_up(&self, s: &PointerSample) {
+    fn on_pointer_up(&self, s: &PointerSample) {
         // Handler members are infallible (see epdf-plugin-interaction). A
         // zoom fails only where the camera write does, in paged flow over a
         // document with no pages, where the TypeScript's throw would reach
@@ -56,7 +56,7 @@ impl InteractionHandler for ZoomDragHandler {
             .end_zoom_drag(Some(crate::EndZoomDragOptions { zoom_out: Some(s.modifiers.alt) }));
     }
 
-    fn on_cancel(&self, _s: &PointerSample) {
+    fn on_pointer_cancel(&self, _s: &PointerSample) {
         self.stage.cancel_zoom_drag();
     }
 

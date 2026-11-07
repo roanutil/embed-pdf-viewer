@@ -36,7 +36,7 @@ fn parse(json: &str, what: &str) -> Result<Value, Error> {
     serde_json::from_str(json).map_err(|e| invalid(format!("{what} is not JSON: {e}")))
 }
 
-/// `PdfActionTree`: `{root, incomplete, warningFlags, warnings}` as the
+/// `PdfActionTree`: `{root, incomplete, warnings}` as the
 /// engine extracted it. Echoed back exactly; never reshaped here.
 #[derive(Debug, PartialEq, uniffi::Object)]
 pub struct PdfActionTree(pub(crate) Value);
@@ -258,7 +258,7 @@ impl From<ActionTrigger> for plugin::ActionTrigger {
         match trigger {
             ActionTrigger::Activate { annotation, page, source } => {
                 plugin::ActionTrigger::Activate {
-                    annotation_ref: annotation.0.clone(),
+                    annotation: annotation.0.clone(),
                     page: page.into(),
                     source: source.map(Into::into),
                 }
@@ -266,7 +266,7 @@ impl From<ActionTrigger> for plugin::ActionTrigger {
             ActionTrigger::Annotation { event, annotation, page, source } => {
                 plugin::ActionTrigger::Annotation {
                     event,
-                    annotation_ref: annotation.0.clone(),
+                    annotation: annotation.0.clone(),
                     page: page.into(),
                     source: source.map(Into::into),
                 }
@@ -637,7 +637,7 @@ impl ActionsHandle {
         source: ActionTreeSource,
     ) -> Result<Option<Arc<PdfActionTree>>, ViewerError> {
         self.cap
-            .call_promise(move |c| Ok(open(c)?.get_action_tree(source.into(), None)), tree_or_none)
+            .call_promise(move |c| Ok(open(c)?.read_action_tree(source.into(), None)), tree_or_none)
             .await
     }
 

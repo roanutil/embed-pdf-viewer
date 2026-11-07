@@ -59,6 +59,12 @@ fn panel_target(def: &CommandDef) -> Option<(&str, Option<&str>, Option<bool>)> 
 }
 
 /// A `menu` or `modal` id as a condition: absent and empty are both falsy.
+/// `pressableOf`: a toggle has an `active` of its own, or opens a panel. A
+/// menu's button says it's expanded instead.
+fn pressable_of(def: &CommandDef) -> bool {
+    truthy(&def.menu).is_none() && (def.active.is_some() || def.panel.is_some())
+}
+
 fn truthy(value: &Option<String>) -> Option<&str> {
     value.as_deref().filter(|v| !v.is_empty())
 }
@@ -154,6 +160,7 @@ impl Derivations {
             menu: def.menu.clone(),
             enabled: self.enabled,
             active: self.active,
+            pressable: pressable_of(def),
             visible: self.visible,
             categories: def.categories.clone().unwrap_or_default(),
             disabled_reason: self.disabled_reason.clone(),
@@ -323,7 +330,7 @@ impl CommandsCapability {
             let Some(this) = this.upgrade() else { return Ok(()) };
             listener(&CommandsSettingsChanged {
                 settings: this.settings_of(event.settings.clone()),
-                changed: event.changed.clone(),
+                changed_keys: event.changed.clone(),
             })
         })
     }
@@ -876,9 +883,10 @@ impl CommandsCapability {
     // ── host lens ──
 
     /// `matchStroke`: the command whose shortcut a keystroke matches, for
-    /// the active document. Of several with the same keys, one that isn't
-    /// refused wins; a refused one counts only while its `visible` says it
-    /// would show. With `in_text_field`, only a command whose
+    /// the active document. Of several with the same keys, one that can run
+    /// now wins, then one that isn't refused (it only can't run right now);
+    /// a refused one counts only while its `visible` says it would show.
+    /// With `in_text_field`, only a command whose
     /// `shortcut_in_text_fields` says so matches.
     pub fn match_stroke(
         &self,
@@ -886,6 +894,7 @@ impl CommandsCapability {
         options: MatchStrokeOptions,
     ) -> Result<Option<ShortcutMatch>, Error> {
         let platform = ShortcutOptions { is_mac: options.is_mac };
+        let mut waiting = None;
         let mut refused = None;
         for entry in self.defined_commands()?.iter() {
             let def = &entry.def;
@@ -896,11 +905,21 @@ impl CommandsCapability {
                 continue;
             }
             let context = self.command_context(None, None, None)?;
-            let Some(refusal) = refusal_of(def, &context, &self.current_settings()) else {
-                return Ok(Some(ShortcutMatch { command_id: def.id.clone(), refusal: None }));
+            let refusal = refusal_of(def, &context, &self.current_settings());
+            let visible = derive(def.visible.as_ref(), &context, true);
+            let Some(refusal) = refusal else {
+                // Commands that share keys take turns: Escape cancels a
+                // drawing while there is one, and lets a snapshot go while
+                // there is one.
+                let matched = ShortcutMatch { command_id: def.id.clone(), refusal: None };
+                if visible && derive(def.enabled.as_ref(), &context, true) {
+                    return Ok(Some(matched));
+                }
+                waiting.get_or_insert(matched);
+                continue;
             };
             // A refused command takes its keys only where it would show.
-            if !derive(def.visible.as_ref(), &context, true) {
+            if !visible {
                 continue;
             }
             if refused.is_none() {
@@ -908,7 +927,7 @@ impl CommandsCapability {
                     Some(ShortcutMatch { command_id: def.id.clone(), refusal: Some(refusal) });
             }
         }
-        Ok(refused)
+        Ok(waiting.or(refused))
     }
 
     /// `getMenuTarget`: the menu a command opens, for the "More" menu's
