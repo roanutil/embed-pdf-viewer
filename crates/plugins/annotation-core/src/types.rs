@@ -1179,6 +1179,7 @@ js_object! {
         "text" => pub text: String,
         "fontSize" => pub font_size: f64,
         "fontFamily" => pub font_family: Option<String>,
+        "program" => pub program: Option<FontProgramRef>,
         "rotation" => pub rotation: Option<f64>,
         "paint" => pub paint: Paint,
         "clip" => pub clip: Option<Rect>,

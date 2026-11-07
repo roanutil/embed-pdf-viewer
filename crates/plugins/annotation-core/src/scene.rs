@@ -255,6 +255,7 @@ pub fn layout_redact_label(
             text: label.text.clone(),
             font_size,
             font_family: font_family.clone(),
+            program: None,
             rotation: None,
             paint: paint.clone(),
             clip: None,

@@ -627,11 +627,14 @@ pub fn measurement_caption_scene(caption: Option<&CaptionLayout>, style: &Style)
     let Some(caption) = caption else { return Vec::new() };
     let baseline = offset_point(caption.center, caption.normal, -DISTANCE_CAPTION_SIZE * 0.33);
     let at = offset_point(baseline, caption.along, -caption.width / 2.0);
+    // Laid out in Helvetica's widths: drawn in the engine's own Helvetica.
+    let helvetica = crate::font_css::standard_paint_font(epdf_fonts::StandardFont::Helvetica);
     vec![SceneNode::Text(TextScene {
         at,
         text: caption.text.clone(),
         font_size: DISTANCE_CAPTION_SIZE,
-        font_family: Some("Helvetica, Arial, sans-serif".into()),
+        font_family: Some(helvetica.font_family),
+        program: Some(helvetica.program),
         rotation: Some((caption.along.y.atan2(caption.along.x) * 180.0) / std::f64::consts::PI),
         paint: Paint {
             fill: Some(Value::String("#000000".into())),
