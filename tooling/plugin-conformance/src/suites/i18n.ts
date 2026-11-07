@@ -167,16 +167,17 @@ const sources = (over: Partial<TranslationSources> = {}): TranslationSources => 
   ...over,
 });
 
-type PureFunctions = typeof transitions & {
-  translate: typeof translate;
-  interpolate: typeof interpolate;
-  negotiateLocale: typeof negotiateLocale;
-  initialI18nState: typeof initialI18nState;
-  seedFromSettings: typeof seedFromSettings;
-  plurals: typeof plurals;
-  mergeTranslations: typeof model.mergeTranslations;
-  nestKeys: typeof model.nestKeys;
-};
+type PureFunctions = typeof transitions &
+  typeof predicates & {
+    translate: typeof translate;
+    interpolate: typeof interpolate;
+    negotiateLocale: typeof negotiateLocale;
+    initialI18nState: typeof initialI18nState;
+    seedFromSettings: typeof seedFromSettings;
+    plurals: typeof plurals;
+    mergeTranslations: typeof model.mergeTranslations;
+    nestKeys: typeof model.nestKeys;
+  };
 const fnCase = <K extends keyof PureFunctions>(
   name: string,
   fn: K,
@@ -201,6 +202,15 @@ const transitions = {
   addTranslations: model.addTranslations,
   startLocaleLoad: model.startLocaleLoad,
   endLocaleLoad: model.endLocaleLoad,
+  followFallback: model.followFallback,
+  arriveLocale: model.arriveLocale,
+  endFallbackLoad: model.endFallbackLoad,
+};
+/** Questions over the state and the loaders: a loader is any value but `undefined`. */
+const predicates = {
+  needsFetch: model.needsFetch,
+  isLoaded: model.isLoaded,
+  isReady: model.isReady,
 };
 const transition = <K extends keyof typeof transitions>(
   name: string,
@@ -485,6 +495,133 @@ const coreCases: FunctionCase[] = [
     'Branches merge key by key, a leaf replaces whatever was there (string or branch), and a branch replaces a leaf.',
   ),
   transition('add-translations-unknown-is-ignored', 'addTranslations', [state(), 'ar', { a: 'b' }]),
+
+  // the fallback language and loaders that have run (58435c49a)
+  fnCase('needs-fetch-without-a-loader', 'needsFetch', [state(), {}, 'es']),
+  fnCase('needs-fetch-loader-not-run', 'needsFetch', [state(), { ar: true }, 'ar']),
+  fnCase(
+    'needs-fetch-null-loader-counts',
+    'needsFetch',
+    [state(), { ar: null }, 'ar'],
+    'A loader is any value but undefined, so null still has to run.',
+  ),
+  fnCase('needs-fetch-loader-ran', 'needsFetch', [
+    state({ fetched: { ar: true } }),
+    { ar: true },
+    'ar',
+  ]),
+  fnCase(
+    'needs-fetch-loader-of-a-registered-pack',
+    'needsFetch',
+    [state(), { es: true }, 'es'],
+    'A language in locales with a loader that has not run still needs its fetch.',
+  ),
+  fnCase('is-loaded-registered-without-a-loader', 'isLoaded', [state(), {}, 'es']),
+  fnCase(
+    'is-loaded-registered-loader-not-run',
+    'isLoaded',
+    [state(), { es: true }, 'es'],
+    'A language in locales whose loader has not run is not loaded yet: its loader replaces those strings.',
+  ),
+  fnCase('is-loaded-registered-loader-ran', 'isLoaded', [
+    state({ fetched: { es: true } }),
+    { es: true },
+    'es',
+  ]),
+  fnCase('is-loaded-unknown', 'isLoaded', [state(), { ar: true }, 'ar']),
+  fnCase(
+    'is-loaded-proto-member',
+    'isLoaded',
+    [state(), {}, 'toString'],
+    'An Object.prototype member reads as registered and as fetched.',
+  ),
+  fnCase('is-ready-loaded-and-idle', 'isReady', [state(), {}, 'es']),
+  fnCase(
+    'is-ready-waits-for-the-fallback',
+    'isReady',
+    [state({ loadingFallback: 'en' }), { en: true }, 'es'],
+    'A loaded language does not show while the fallback language is on its way.',
+  ),
+  fnCase('is-ready-not-loaded', 'isReady', [state(), { es: true }, 'es']),
+  transition(
+    'follow-fallback-starts-the-wait',
+    'followFallback',
+    [state(), { fallbackLocale: 'en', loaders: { en: true } }],
+    'A fallback language with a loader that has not run is waited for.',
+  ),
+  transition('follow-fallback-already-fetched', 'followFallback', [
+    state({ fetched: { en: true } }),
+    { fallbackLocale: 'en', loaders: { en: true } },
+  ]),
+  transition('follow-fallback-without-a-loader-ends-the-wait', 'followFallback', [
+    state({ loadingFallback: 'en' }),
+    { fallbackLocale: 'en', loaders: {} },
+  ]),
+  transition('follow-fallback-switches-the-wait', 'followFallback', [
+    state({ loadingFallback: 'en' }),
+    { fallbackLocale: 'ar', loaders: { en: true, ar: true } },
+  ]),
+  transition('follow-fallback-unchanged-keeps-the-state', 'followFallback', [
+    state(),
+    { fallbackLocale: 'en', loaders: {} },
+  ]),
+  transition(
+    'arrive-registers-and-marks-fetched',
+    'arriveLocale',
+    [state(), 'ar', ar],
+    'The pack registers and its code counts as fetched; no fallback wait to end.',
+  ),
+  transition(
+    'arrive-replaces-the-strings-and-ends-the-fallback-wait',
+    'arriveLocale',
+    [state({ loadingFallback: 'en' }), 'en', { ...en, name: 'English (loaded)' }],
+    'The loader’s pack takes the place of the strings the language had, and the wait for it as the fallback ends.',
+  ),
+  transition(
+    'arrive-under-another-code',
+    'arriveLocale',
+    [
+      state({ loadingFallback: 'ar', waitingTranslations: { 'ar-EG': { x: 'y' } } }),
+      'ar',
+      { ...ar, code: 'ar-EG' },
+    ],
+    'The pack registers under its own code with the strings waiting for that code; the loader’s code counts as fetched and its fallback wait ends.',
+  ),
+  transition('arrive-keeps-another-fallback-wait', 'arriveLocale', [
+    state({ loadingFallback: 'en' }),
+    'ar',
+    ar,
+  ]),
+  transition('fallback-load-failed-clears', 'endFallbackLoad', [
+    state({ loadingFallback: 'en' }),
+    'en',
+  ]),
+  transition('fallback-load-failed-other-code-is-ignored', 'endFallbackLoad', [
+    state({ loadingFallback: 'en' }),
+    'ar',
+  ]),
+  transition(
+    'unregister-forgets-the-fetch',
+    'unregisterLocale',
+    [state({ fetched: { es: true, en: true } }), 'es'],
+    'Removing a language forgets that its loader ran.',
+  ),
+  seeded('initial-lazy-fallback-shows-the-locale-meanwhile', {
+    locales: [es],
+    locale: 'es',
+    loaders: { en: true },
+  }),
+  seeded('initial-lazy-fallback-registered-shows-meanwhile', {
+    locales: [en, es],
+    locale: 'es',
+    loaders: { en: true },
+  }),
+  seeded('initial-lazy-fallback-is-the-locale', { locale: null, loaders: { en: true } }),
+  seeded('initial-lazy-locale-and-fallback', {
+    locales: [es],
+    locale: 'ar',
+    loaders: { en: true, ar: true },
+  }),
 ];
 
 // ── function cases: plural categories, as translate reaches them ──────────────
@@ -977,6 +1114,112 @@ const scenarios: ScenarioCase[] = [
     steps: [start, ...reads, t('commands.save')],
   },
   {
+    name: 'lazy-fallback-at-startup',
+    covers:
+      'A fallback language in loaders loads at the start (58435c49a): the start language waits for it, showing itself meanwhile when the fallback is not in locales, and becomes current with no announcement once the fallback lands.',
+    plugins: plugin({
+      locales: [es],
+      locale: 'es',
+      loaders: { en: loader('load-en', { defer: 'en' }) },
+    }),
+    steps: [
+      {
+        op: 'call',
+        target: { token: 'i18n' },
+        method: 'onLocaleChanged',
+        args: [{ $fn: 'changed', returns: null }],
+      },
+      ...reads,
+      start,
+      ...reads,
+      t('commands.zoom.in'),
+      settle('en', en),
+      ...reads,
+      t('commands.zoom.in'),
+    ],
+  },
+  {
+    name: 'lazy-fallback-fails-at-startup',
+    covers:
+      'A fallback language whose loader fails ends the wait: onLocaleLoadFailed fires, and the language on its way shows with what it has.',
+    plugins: plugin({
+      locales: [es],
+      locale: 'es',
+      loaders: {
+        en: loader('load-en', { rejects: { name: 'TypeError', message: 'fetch failed' } }),
+      },
+    }),
+    steps: [
+      {
+        op: 'call',
+        target: { token: 'i18n' },
+        method: 'onLocaleLoadFailed',
+        args: [{ $fn: 'failed', returns: null }],
+      },
+      start,
+      ...reads,
+      t('commands.zoom.in'),
+    ],
+  },
+  {
+    name: 'switch-waits-for-the-lazy-fallback',
+    covers:
+      'setLocale to a lazy language while the fallback language loads: the language arrives first and waits; the switch resolves once the fallback is in. One fetch per code.',
+    plugins: plugin({
+      locales: [es],
+      locale: 'es',
+      loaders: {
+        ar: loader('load-ar', { resolves: ar }),
+        en: loader('load-en', { defer: 'en' }),
+      },
+    }),
+    steps: [
+      start,
+      i18n('setLocale', 'ar'),
+      ...reads,
+      i18n('setLocale', 'ar'),
+      settle('en', en),
+      ...reads,
+    ],
+  },
+  {
+    name: 'fallback-changed-at-runtime',
+    covers:
+      'updateSettings with a new fallbackLocale in loaders starts its fetch (followFallback), and a switch to a loaded language waits for it.',
+    plugins: plugin({ locales: [en, es], locale: 'es' }),
+    steps: [
+      start,
+      i18n('updateSettings', {
+        fallbackLocale: 'ar',
+        loaders: { ar: loader('load-ar', { defer: 'ar' }) } as unknown as I18nConfig['loaders'],
+      }),
+      ...reads,
+      i18n('setLocale', 'en'),
+      ...reads,
+      settle('ar', ar),
+      ...reads,
+    ],
+  },
+  {
+    name: 'locale-in-locales-and-loaders',
+    covers:
+      'A language in both locales and loaders shows its locales strings until its loader has run, and the loader’s pack replaces them; listLocales reports it not loaded until then.',
+    plugins: plugin({
+      locales: [en, es],
+      locale: 'es',
+      loaders: { es: loader('load-es', { defer: 'es' }) },
+    }),
+    steps: [
+      ...reads,
+      start,
+      ...reads,
+      t('commands.save'),
+      settle('es', { ...es, name: 'Español (cargado)' }),
+      ...reads,
+      t('commands.save'),
+    ],
+  },
+  {
     name: 'lazy-resolves-immediately',
     covers:
       'A loader whose promise is already resolved still lands a turn later: LOAD_STARTED, then REGISTER and SET within the same step.',
@@ -1213,6 +1456,7 @@ export const suites: Suite[] = [
       mergeTranslations: model.mergeTranslations,
       nestKeys: model.nestKeys,
       ...transitions,
+      ...predicates,
     },
     cases: coreCases,
   },
