@@ -261,7 +261,7 @@ impl LinkCapability {
 
     /// Every link in the document; loads pages as needed. Rejects when a
     /// page's read fails, and `operation-cancelled` when the signal fires.
-    pub fn list_all_links(&self, options: OperationOptions) -> Promise<Value> {
+    pub fn read_all_links(&self, options: OperationOptions) -> Promise<Value> {
         let this = self.clone();
         Promise::spawn(async move {
             let pages: Vec<PageRef> = this

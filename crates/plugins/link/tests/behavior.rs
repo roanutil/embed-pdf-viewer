@@ -197,7 +197,7 @@ fn a_signal_already_aborted_rejects_while_the_read_still_fills_the_cache() {
 }
 
 #[test]
-fn list_all_links_rejects_cancelled_and_keeps_what_landed() {
+fn read_all_links_rejects_cancelled_and_keeps_what_landed() {
     let rig = Rig::new(
         vec![
             list(1, vec![link(1, 1, json!({}))]),
@@ -207,7 +207,7 @@ fn list_all_links_rejects_cancelled_and_keeps_what_landed() {
         false,
     );
     let signal = AbortSignal::new();
-    let all = rig.link.list_all_links(with_signal(&signal));
+    let all = rig.link.read_all_links(with_signal(&signal));
     rt::run_until_stalled();
     assert!(all.peek().is_none());
     signal.abort_value(Error::abort(None), json!("stop"));
@@ -219,7 +219,7 @@ fn list_all_links_rejects_cancelled_and_keeps_what_landed() {
     rt::run_until_stalled();
     assert!(rig.link.is_loaded(PageRef::new(2)));
 
-    let whole = rig.link.list_all_links(OperationOptions::default());
+    let whole = rig.link.read_all_links(OperationOptions::default());
     assert_eq!(ids(&settled(&whole).unwrap().unwrap()), ["obj:1", "obj:7"]);
     assert_eq!(rig.reads(), 2);
 }
@@ -314,12 +314,12 @@ fn a_goto_reveals_through_the_stage_or_hands_back_its_destination() {
     let heard: Rc<RefCell<Vec<&'static str>>> = Rc::default();
     let log = heard.clone();
     let _ = bare.link.on_activated(move |event| {
-        log.borrow_mut().push(event.activation.outcome());
+        log.borrow_mut().push(event.activation.status());
         Ok(())
     });
     match bare.link.activate(&goto, None) {
         LinkActivation::Destination { destination: d } => assert_eq!(d, destination),
-        other => panic!("expected a destination, got {}", other.outcome()),
+        other => panic!("expected a destination, got {}", other.status()),
     }
     assert_eq!(
         bare.link.resolve(&goto),
@@ -330,7 +330,7 @@ fn a_goto_reveals_through_the_stage_or_hands_back_its_destination() {
     let missing = json!({ "kind": "goto", "destination": { "kind": "fit", "page": pr(77) } });
     match bare.link.activate(&missing, None) {
         LinkActivation::Reported { target } => assert_eq!(target, missing),
-        other => panic!("expected a report, got {}", other.outcome()),
+        other => panic!("expected a report, got {}", other.status()),
     }
     // A destination naming its page by index resolves through `getPage`.
     let by_index = json!({ "kind": "goto", "destination": { "kind": "fit", "page": 1 } });
@@ -342,17 +342,17 @@ fn a_goto_reveals_through_the_stage_or_hands_back_its_destination() {
     stage.set_viewport_size(epdf_geometry::Size { width: 1000.0, height: 700.0 }).unwrap();
     rt::run_until_stalled();
     assert_eq!(stage.get_current_page_index(), 0);
-    assert_eq!(staged.link.activate(&goto, None).outcome(), "revealed");
+    assert_eq!(staged.link.activate(&goto, None).status(), "revealed");
     rt::run_until_stalled();
     assert_eq!(stage.get_current_page_index(), 1);
-    assert_eq!(staged.link.activate(&missing, None).outcome(), "reported");
+    assert_eq!(staged.link.activate(&missing, None).status(), "reported");
 }
 
 #[test]
 fn a_website_goes_through_the_latest_opener() {
     let rig = Rig::new(Vec::new(), false);
     let uri = json!({ "kind": "uri", "uri": "javascript:alert(1)" });
-    assert_eq!(rig.link.activate(&uri, None).outcome(), "uri");
+    assert_eq!(rig.link.activate(&uri, None).status(), "uri");
     let opened: Rc<RefCell<Vec<Value>>> = Rc::default();
     let seen = opened.clone();
     let accept = rig.link.register_uri_opener(Rc::new(move |uri: &Value| {
@@ -362,18 +362,18 @@ fn a_website_goes_through_the_latest_opener() {
     let refuse = rig.link.register_uri_opener(Rc::new(|_: &Value| false));
     match rig.link.activate(&uri, None) {
         LinkActivation::Reported { target } => assert_eq!(target, uri),
-        other => panic!("expected a report, got {}", other.outcome()),
+        other => panic!("expected a report, got {}", other.status()),
     }
     refuse.call();
     match rig.link.activate(&uri, None) {
         LinkActivation::Uri { uri: opened_uri } => {
             assert_eq!(opened_uri, json!("javascript:alert(1)"))
         }
-        other => panic!("expected uri, got {}", other.outcome()),
+        other => panic!("expected uri, got {}", other.status()),
     }
     assert_eq!(*opened.borrow(), vec![json!("javascript:alert(1)")]);
     accept.call();
-    assert_eq!(rig.link.activate(&uri, None).outcome(), "uri");
+    assert_eq!(rig.link.activate(&uri, None).status(), "uri");
     assert_eq!(opened.borrow().len(), 1);
 }
 
@@ -407,7 +407,7 @@ fn reacts_on<T: Clone + 'static>(promise: Promise<T>, turn: &Rc<Cell<u32>>) -> R
 /// already settled `AbortablePromise`), with the counter above and
 /// `promise.then(() => at = turn)`: a fresh `ensureLoaded` reacts on 10,
 /// with a signal on 11 (`cancellable.ts` settles its own promise one turn
-/// after the mirror's), `listAllLinks` over two fresh pages on 12, a cached
+/// after the mirror's), `readAllLinks` over two fresh pages on 12, a cached
 /// page on 2 (the `async` function's `await` of a settled promise), a page
 /// not in the document on 1 (an `async` function that throws before its
 /// first `await`), and `onLoaded` fires on 5, as the mirror stores the
@@ -433,7 +433,7 @@ fn loads_settle_on_the_typescripts_turns() {
 
     let rig = Rig::new(responses(), false);
     let turn = turn_counter();
-    let all = reacts_on(rig.link.list_all_links(none()), &turn);
+    let all = reacts_on(rig.link.read_all_links(none()), &turn);
     rt::run_until_stalled();
     assert_eq!(all.get(), 12);
 
@@ -481,7 +481,7 @@ fn an_undecodable_destination_still_reveals_its_page() {
         rt::run_until_stalled();
         let before = stage.get_camera();
         let goto = json!({ "kind": "goto", "destination": destination });
-        assert_eq!(rig.link.activate(&goto, None).outcome(), "revealed");
+        assert_eq!(rig.link.activate(&goto, None).status(), "revealed");
         rt::run_until_stalled();
         // A bare reveal (`revealAt` with no rect, anchor or zoom) scrolls the
         // page into view and leaves the current page alone.

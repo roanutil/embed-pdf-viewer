@@ -100,7 +100,7 @@ fn item(page: PageRef, link: &Value) -> Result<LinkItem, Error> {
     })
 }
 
-/// The page a link's annotation ref names, for a link of `listAllLinks`.
+/// The page a link's annotation ref names, for a link of `readAllLinks`.
 fn page_of_link(link: &Value) -> Option<PageRef> {
     let pon = link.pointer("/ref/page/objectNumber")?.as_u64()?;
     Some(PageRef { page_object_number: u32::try_from(pon).ok()? })
@@ -392,7 +392,7 @@ impl LinkHandle {
     pub async fn all_links(&self) -> Result<Vec<LinkItem>, ViewerError> {
         self.bound
             .call_promise(
-                |b| Ok(open(&b.cap)?.list_all_links(OperationOptions::default())),
+                |b| Ok(open(&b.cap)?.read_all_links(OperationOptions::default())),
                 |links: Value| {
                     links
                         .as_array()
