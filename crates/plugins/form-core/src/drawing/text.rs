@@ -6,12 +6,12 @@
 //! writes, in the same order, its text laid out by [`crate::text`].
 
 use epdf_geometry::js;
+use epdf_text_core::{Alignment, FieldText, FieldTextOptions, PaintFonts, layout_field};
 
 use super::border::{
     BLACK, BorderStyleInfo, border_ops, box_ops, deflate, field_box_ops, rect_path,
 };
 use super::{DrawOp, FieldOption, PathSegment, Rgb, TextFieldFacts, TextRun};
-use crate::text::{Alignment, FieldText, FieldTextOptions, PaintFonts, layout_field};
 use crate::{PdfRect, fround};
 
 fn is_float_zero(value: f64) -> bool {

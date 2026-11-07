@@ -1,11 +1,11 @@
 {
   "base": "bbbdb2678",
   "before": 66,
-  "after": 67,
+  "after": 68,
   "mapped": 66,
   "retired": 0,
   "renamed": 6,
-  "added": 1,
+  "added": 2,
   "legacyFixturesChanged": false,
   "evidence": {
     "public": "packages/plugin/annotation/src/contract.ts:550-940; host-contract.ts:214-371; upstream cabdb0c7b/cdf4586c7",
@@ -460,7 +460,7 @@
     {
       "file": "plugins/annotation-tools.json",
       "before": 33,
-      "after": 34,
+      "after": 35,
       "renamed": 0,
       "retired": [],
       "added": [
@@ -471,6 +471,14 @@
           "replacementFor": null,
           "notes": "Additional isolated malformed BinarySource coverage, moved from both original armed-stamp definitions under the controller explicit protocol-negative ruling. All six exact TypeErrors plus successful PNG arm/preview/disarm and exact global cleanup are independently asserted.",
           "upstreamEvidence": "packages/engine/core/src/resource/BinarySource.ts:66-95; packages/plugin/annotation/src/tools/handlers.ts:425-535; tools/definitions.ts:508-526; write/stamps.ts:171-175"
+        },
+        {
+          "name": "text-items-draw-each-face",
+          "currentCanonicalInputSha256": "e581ecfdc0536c07f0610000212605813152837a99a0178adfd558288d46b0c9",
+          "covers": "595fa2bd5, read/text-fonts.ts without the fonts plugin: a box whose body face is its font's draws in that font's standard program, one whose body face differs draws in the standard font for the face, and each face a run names adds its standard program to the box's programs.",
+          "replacementFor": null,
+          "notes": "Added in the 2026-11-07 catch-up: no vector reached the text fonts of a box whose body face differs from its font, or the programs a run face adds, which the Rust port lacked.",
+          "upstreamEvidence": "packages/plugin/annotation/src/read/text-fonts.ts; packages/plugin/annotation/src/text-item.ts:72-129"
         }
       ],
       "originalSourceSha256": "697c7b37f3f53e1fe1cf1758371472ae512d1589f44c26250cff5ca8e3ffd969",

@@ -6,7 +6,7 @@
 use serde::Serialize;
 use unicode_properties::{GeneralCategory, UnicodeGeneralCategory};
 
-use super::graphemes::code_points_of;
+use crate::graphemes::code_points_of;
 
 /// Unicode's Joining_Type: `D` joins on both sides, `R` only the character
 /// before it (in typing order), `L` only the one after, `C` causes joining on

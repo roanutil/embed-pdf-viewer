@@ -2,8 +2,6 @@
 //! with. A standard font gets a web stack with its metrics; any other font
 //! is a registered key, drawn in the face mounted for it.
 
-use crate::engine::text::standard_face;
-
 /// `STANDARD_FONT_STACKS[family]`.
 pub fn standard_font_stack(family: &str) -> Option<&'static str> {
     Some(match family {
@@ -18,14 +16,6 @@ pub fn standard_font_stack(family: &str) -> Option<&'static str> {
 /// `mountedFontFamily(key)`: the family a registered font's key is mounted under.
 pub fn mounted_font_family(key: &str) -> String {
     format!("\"epdf-{key}\"")
-}
-
-/// `cssFontFamilyForFont(font)`.
-pub fn css_font_family_for_font(font: &str) -> String {
-    match standard_face(font).and_then(|face| standard_font_stack(face.family)) {
-        Some(stack) => stack.into(),
-        None => format!("{}, sans-serif", mounted_font_family(font)),
-    }
 }
 
 /// A standard face's program as a scene's font program (`standardFontProgram`):
@@ -56,6 +46,36 @@ impl crate::types::SceneFontProgram for StandardSceneProgram {
     }
     fn load(&self) -> &[u8] {
         self.0.load()
+    }
+}
+
+/// A mountable program (`core-fonts`) as a scene's font program: its members
+/// print as the TypeScript object does, `load` a function. A program the host
+/// has draws no bytes here; whatever mounts it reads them through
+/// [`epdf_fonts::MountableFontProgram::load`].
+impl crate::types::SceneFontProgram for epdf_fonts::MountableFontProgram {
+    fn members(&self) -> crate::json::Object {
+        let mut members = match serde_json::to_value(self) {
+            Ok(serde_json::Value::Object(members)) => members,
+            _ => crate::json::Object::new(),
+        };
+        members.insert("load".into(), serde_json::json!({ "$function": true }));
+        members
+    }
+    fn family(&self) -> &str {
+        &self.family
+    }
+    fn weight(&self) -> f64 {
+        f64::from(self.weight)
+    }
+    fn style(&self) -> &str {
+        match self.style {
+            epdf_fonts::FontStyle::Normal => "normal",
+            epdf_fonts::FontStyle::Italic => "italic",
+        }
+    }
+    fn load(&self) -> &[u8] {
+        self.built_in_bytes().unwrap_or_default()
     }
 }
 

@@ -16,12 +16,16 @@
 //! | `standardFontCss(font)` | [`standard_font_css`] |
 //! | `StandardFont`, `STANDARD_FONTS` (`engine-core`) | [`StandardFont`], [`StandardFont::ALL`] |
 //! | `STANDARD_FACES` (`engine-core`) | [`StandardFont::face`] |
+//! | `MountableFontProgram` | [`MountableFontProgram`] |
+//! | `LAST_RESORT_HASH`, `LAST_RESORT_METRICS` | [`LAST_RESORT_HASH`], [`LAST_RESORT_METRICS`] |
+//! | `lastResortFontProgram()`, `lastResortFontBytes()` | [`last_resort_font_program`], [`last_resort_font_bytes`] |
 
 #[cfg(any(feature = "harness", test))]
 mod base64;
 mod css;
 mod font;
 mod metrics;
+mod mountable;
 mod programs;
 
 #[cfg(feature = "harness")]
@@ -30,6 +34,10 @@ pub mod harness;
 pub use css::{StandardFontCss, standard_font_css};
 pub use font::{FontStyle, StandardFace, StandardFamily, StandardFont, UnknownStandardFont};
 pub use metrics::{StandardFontMetrics, standard_font_metrics};
+pub use mountable::{
+    LAST_RESORT_HASH, LAST_RESORT_METRICS, LastResortMetrics, MountableFontProgram,
+    last_resort_font_bytes, last_resort_font_program,
+};
 pub use programs::{FontProgram, font_program_family, standard_font_program};
 
 /// One standard face's generated layout numbers (`faces.generated.ts`). Its

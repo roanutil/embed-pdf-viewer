@@ -14,121 +14,15 @@
 use std::cell::OnceCell;
 use std::rc::Rc;
 
-use epdf_annotation_core::SceneFontProgram;
-use epdf_annotation_core::json::Object;
 use epdf_fonts::{
-    FontStyle, StandardFamily, StandardFont, StandardFontMetrics, font_program_family,
-    standard_font_css, standard_font_metrics, standard_font_program,
+    FontStyle, LAST_RESORT_HASH, LAST_RESORT_METRICS, MountableFontProgram, StandardFamily,
+    StandardFont, StandardFontMetrics, font_program_family, last_resort_font_program,
+    standard_font_css, standard_font_metrics,
 };
 use serde::Serialize;
-use serde_json::Value;
 
-use super::bidi::mirror_of;
-use super::graphemes::{code_points_of, is_invisible_grapheme, needs_glyph};
-
-include!(concat!(env!("OUT_DIR"), "/last_resort.rs"));
-
-/// What the engine lays text out with in the last-resort program, in
-/// thousandths of an em: its box's advance, and its ascent and descent
-/// (`LAST_RESORT_METRICS`).
-pub const LAST_RESORT_ADVANCE: f64 = 700.0;
-pub const LAST_RESORT_ASCENT: f64 = 800.0;
-pub const LAST_RESORT_DESCENT: f64 = -200.0;
-
-/// Where a program's bytes come from.
-#[derive(Clone)]
-enum ProgramBytes {
-    Standard(StandardFont),
-    LastResort,
-    Given(Rc<dyn Fn() -> Vec<u8>>),
-}
-
-/// `MountableFontProgram`: a font program a browser mounts under its own
-/// family, in its own weight and style. Serializes to its data members, as the
-/// TypeScript object minus `load`.
-#[derive(Clone, Serialize)]
-pub struct MountableFontProgram {
-    /// The program's display hash.
-    pub hash: String,
-    pub family: String,
-    pub weight: u32,
-    pub style: FontStyle,
-    #[serde(skip)]
-    bytes: ProgramBytes,
-}
-
-impl std::fmt::Debug for MountableFontProgram {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("MountableFontProgram")
-            .field("hash", &self.hash)
-            .field("family", &self.family)
-            .field("weight", &self.weight)
-            .field("style", &self.style)
-            .finish()
-    }
-}
-
-impl MountableFontProgram {
-    /// A program the host has, its bytes from `load`.
-    pub fn new(
-        hash: impl Into<String>,
-        weight: u32,
-        style: FontStyle,
-        load: Rc<dyn Fn() -> Vec<u8>>,
-    ) -> MountableFontProgram {
-        let hash = hash.into();
-        MountableFontProgram {
-            family: font_program_family(&hash),
-            hash,
-            weight,
-            style,
-            bytes: ProgramBytes::Given(load),
-        }
-    }
-
-    /// `load()`: the program's bytes.
-    pub fn load(&self) -> Vec<u8> {
-        match &self.bytes {
-            ProgramBytes::Standard(font) => standard_font_program(*font).load().to_vec(),
-            ProgramBytes::LastResort => LAST_RESORT_PROGRAM.to_vec(),
-            ProgramBytes::Given(load) => load(),
-        }
-    }
-}
-
-fn style_name(style: FontStyle) -> &'static str {
-    match style {
-        FontStyle::Normal => "normal",
-        FontStyle::Italic => "italic",
-    }
-}
-
-impl SceneFontProgram for MountableFontProgram {
-    fn members(&self) -> Object {
-        match serde_json::to_value(self) {
-            Ok(Value::Object(members)) => members,
-            _ => Object::new(),
-        }
-    }
-    fn family(&self) -> &str {
-        &self.family
-    }
-    fn weight(&self) -> f64 {
-        f64::from(self.weight)
-    }
-    fn style(&self) -> &str {
-        style_name(self.style)
-    }
-    fn load(&self) -> &[u8] {
-        match &self.bytes {
-            ProgramBytes::Standard(font) => standard_font_program(*font).load(),
-            ProgramBytes::LastResort => LAST_RESORT_PROGRAM,
-            // A scene's program is a standard face or the last resort; a
-            // host's program is read through `MountableFontProgram::load`.
-            ProgramBytes::Given(_) => &[],
-        }
-    }
-}
+use crate::bidi::mirror_of;
+use crate::graphemes::{code_points_of, is_invisible_grapheme, needs_glyph};
 
 /// A program's measure: how wide a text is in it, in thousandths of the
 /// font size, shaped right to left when the flag says.
@@ -216,7 +110,7 @@ impl PaintFont {
             Measure::LastResort => code_points_of(text)
                 .into_iter()
                 .filter(|&cp| cp != 0x200d && !is_variation_selector(cp))
-                .map(|_| LAST_RESORT_ADVANCE)
+                .map(|_| LAST_RESORT_METRICS.advance)
                 .sum(),
             Measure::Program { measure, .. } => measure(text, rtl),
         }
@@ -279,7 +173,6 @@ pub fn standard_paint_font(font: StandardFont) -> Rc<PaintFont> {
             .get_or_init(|| {
                 let metrics = standard_font_metrics(font);
                 let css = standard_font_css(font);
-                let program = standard_font_program(font);
                 Rc::new(PaintFont {
                     key: font.as_str().to_string(),
                     ascent: f64::from(metrics.ascent),
@@ -288,13 +181,7 @@ pub fn standard_paint_font(font: StandardFont) -> Rc<PaintFont> {
                     font_family: css.font_family,
                     font_weight: css.font_weight,
                     font_style: css.font_style,
-                    program: Rc::new(MountableFontProgram {
-                        hash: program.hash.to_string(),
-                        family: program.family.clone(),
-                        weight: program.weight,
-                        style: program.style,
-                        bytes: ProgramBytes::Standard(font),
-                    }),
+                    program: Rc::new(MountableFontProgram::standard(font)),
                     measure: Measure::Standard(metrics),
                 })
             })
@@ -339,19 +226,13 @@ pub fn last_resort_paint_font() -> Rc<PaintFont> {
                 let family = font_program_family(LAST_RESORT_HASH);
                 Rc::new(PaintFont {
                     key: LAST_RESORT_HASH.to_string(),
-                    ascent: LAST_RESORT_ASCENT,
-                    descent: LAST_RESORT_DESCENT,
+                    ascent: LAST_RESORT_METRICS.ascent,
+                    descent: LAST_RESORT_METRICS.descent,
                     standard: false,
                     font_family: format!("\"{family}\""),
                     font_weight: 400,
                     font_style: FontStyle::Normal,
-                    program: Rc::new(MountableFontProgram {
-                        hash: LAST_RESORT_HASH.to_string(),
-                        family,
-                        weight: 400,
-                        style: FontStyle::Normal,
-                        bytes: ProgramBytes::LastResort,
-                    }),
+                    program: Rc::new(last_resort_font_program()),
                     measure: Measure::LastResort,
                 })
             })

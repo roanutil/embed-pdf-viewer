@@ -1389,6 +1389,53 @@ js_object! {
     pub struct RedactLabel {
         "text" => pub text: String,
         "repeat" => pub repeat: Option<Value>,
+        "fonts" => pub fonts: LabelFonts,
+    }
+}
+
+/// The fonts a redaction label's preview draws in (`label.fonts`): the fonts
+/// plugin's, as the engine picks them for the label's font. Fonts hold
+/// closures, so they don't read from JSON; they print as their data members.
+#[derive(Clone, Debug, Default)]
+pub struct LabelFonts(pub Option<epdf_text_core::PaintFonts>);
+
+impl PartialEq for LabelFonts {
+    fn eq(&self, other: &Self) -> bool {
+        match (&self.0, &other.0) {
+            (Some(a), Some(b)) => {
+                Rc::ptr_eq(&a.face, &b.face)
+                    && a.fallbacks.len() == b.fallbacks.len()
+                    && a.fallbacks.iter().zip(&b.fallbacks).all(|(x, y)| Rc::ptr_eq(x, y))
+                    && match (&a.last_resort, &b.last_resort) {
+                        (Some(x), Some(y)) => Rc::ptr_eq(x, y),
+                        (None, None) => true,
+                        _ => false,
+                    }
+            }
+            (None, None) => true,
+            _ => false,
+        }
+    }
+}
+
+impl Json for LabelFonts {
+    fn from_json(_: Option<&Value>) -> Result<Self, JsonError> {
+        Ok(LabelFonts(None))
+    }
+    fn to_json(&self) -> Option<Value> {
+        let fonts = self.0.as_ref()?;
+        let font = |font: &epdf_text_core::PaintFont| serde_json::to_value(font).ok();
+        let mut members = Object::new();
+        members.insert("face".into(), font(&fonts.face)?);
+        members.insert(
+            "fallbacks".into(),
+            Value::Array(fonts.fallbacks.iter().filter_map(|f| font(f)).collect()),
+        );
+        members.insert(
+            "lastResort".into(),
+            fonts.last_resort.as_ref().and_then(|f| font(f)).unwrap_or(Value::Null),
+        );
+        Some(Value::Object(members))
     }
 }
 

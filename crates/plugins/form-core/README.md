@@ -2,10 +2,9 @@
 
 `packages/core/form` in Rust: the form widget painter. Given a widget row and its field, it says
 what the engine's appearance generator would draw (`widget_drawing`), places a drawing on the page
-(`widget_scene`), and tells an HTML editor where typed text will land (`text_editor_layout`). Its
-`text` module ports `packages/core/text`, the layout the painter draws text with since upstream
-e40c9c236: fonts with fallbacks and a last resort, bidi order, graphemes, joins (`layout_field`).
-It's pure: no PDFium, no DOM, and it builds for `wasm32-unknown-unknown` with
+(`widget_scene`), and tells an HTML editor where typed text will land (`text_editor_layout`). It
+draws text in the layout of `epdf-text-core` (`crates/plugins/text-core`), the port of
+`packages/core/text`, as upstream e40c9c236 does. It's pure: no PDFium, no DOM, and it builds for `wasm32-unknown-unknown` with
 `--no-default-features`. All 514 cases replay identically (`cargo test -p epdf-form-core`):
 
 | File | Cases | Covers |
@@ -31,15 +30,6 @@ precision wherever PDFium computes in `float` (`Math.fround`), and the port roun
 places, so a line that only just fits breaks in the same spot.
 
 ## Where the port differs
-
-Text is UTF-16 inside the layout, as the TypeScript reads a string, and becomes a `String` only in
-a run. A run is whole graphemes, so it never splits a surrogate pair.
-
-Bidi levels come from `unicode-bidi`, not `bidi-js`. Both pass Unicode's conformance tests, which
-leave open the levels of characters rule X9 removes; `src/text/bidi.rs` assigns those, and applies
-rule L1, the way `bidi-js` does. Scripts, marks and mirrors come from `unicode-script`,
-`unicode-properties` and `unicode-bidi-mirroring` (Unicode 16 to 18, where Node 22 has 17), so a
-character assigned in the newest versions can classify differently. No vector reaches one.
 
 The inputs are typed. `WidgetRow` and `FieldFacts` deserialize from the engine's widget and field
 DTOs and keep only what the painter reads. Colours are parsed as `parseInt(pair, 16)` would parse

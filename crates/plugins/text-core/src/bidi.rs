@@ -14,7 +14,7 @@
 
 use unicode_bidi::{BidiClass, Level, bidi_class};
 
-use super::graphemes::{code_point_at, units_of};
+use crate::graphemes::{code_point_at, units_of};
 
 /// A code point's bidi class; a lone surrogate reads as `L`, as `bidi-js`
 /// reads one.

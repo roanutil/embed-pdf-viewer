@@ -25,12 +25,6 @@ fn extra_advance(c: char) -> Option<f64> {
     })
 }
 
-/// From a line's top to its baseline, in em.
-pub const HELVETICA_ASCENT: f64 = 0.962;
-
-/// From one line's top to the next, in em.
-pub const HELVETICA_LINE_HEIGHT: f64 = 1.169;
-
 /// `helveticaAdvance(text)`: how far `text` advances, in em. A character
 /// without a width here counts as wide as a digit.
 pub fn helvetica_advance(text: &str) -> f64 {

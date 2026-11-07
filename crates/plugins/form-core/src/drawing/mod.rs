@@ -14,6 +14,7 @@ use epdf_fonts::StandardFont;
 use epdf_geometry::Rect;
 use serde::Deserialize;
 
+use epdf_text_core::{Alignment, PaintFonts, default_paint_fonts};
 pub(crate) use text::{TextLook, text_field_layout};
 pub use types::{Approximation, DrawOp, PathSegment, Rgb, TextRun, WidgetDrawing};
 
@@ -21,7 +22,6 @@ use self::border::{border_style_info, field_box_ops, rgb_of};
 use self::text::{combo_box_ops, list_box_ops, push_button_ops, text_field_ops};
 use self::toggle::{ToggleLook, checkbox_ops, radio_ops};
 use crate::PdfRect;
-use crate::text::{Alignment, PaintFonts, default_paint_fonts};
 
 /// A form widget's border (`/BS /S`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]

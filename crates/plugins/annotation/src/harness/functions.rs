@@ -132,7 +132,7 @@ fn build_text_items_fn(args: &[Value]) -> Result<Value, Error> {
     let page =
         PageRef::read(arg(args, 1).unwrap_or(&Value::Null)).map_err(|e| malformed("page", e.0))?;
     let view = arg(args, 2).and_then(|v| ViewEnv::read(v).ok());
-    Ok(Value::Array(build_text_items(&model, &page, view.as_ref())))
+    Ok(Value::Array(build_text_items(&model, &page, view.as_ref(), None)))
 }
 
 fn icon_placement_fn(args: &[Value]) -> Result<Value, Error> {

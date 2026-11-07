@@ -807,7 +807,7 @@ import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { canonical } from '../src/canonical';
 const digest = (value: string | Uint8Array) => createHash('sha256').update(value).digest('hex');
-test('every original66 definition and canonical input maps exactly to the current67 cases', async () => {
+test('every original66 definition and canonical input maps exactly to the current68 cases', async () => {
   const root = new URL('../historical/task-12b2b1b-ii/', import.meta.url);
   const manifest = JSON.parse(await readFile(new URL('accounting.json', root), 'utf8')) as {
     base: string;
@@ -843,7 +843,7 @@ test('every original66 definition and canonical input maps exactly to the curren
       manifest.renamed,
       manifest.added,
     ],
-    [66, 67, 66, 0, 6, 1],
+    [66, 68, 66, 0, 6, 2],
   );
   let original = 0,
     current = 0,
@@ -893,7 +893,7 @@ test('every original66 definition and canonical input maps exactly to the curren
     original += row.before;
     current += row.after;
   }
-  assert.deepEqual([original, current, renamed, drifts, added], [66, 67, 6, 1, 1]);
+  assert.deepEqual([original, current, renamed, drifts, added], [66, 68, 6, 1, 2]);
 });
 test('the whole original115 family and all reviewed H3, entropy, resolver and27 mappings stay pinned', async () => {
   const root = new URL('../', import.meta.url);

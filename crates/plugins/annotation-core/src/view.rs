@@ -62,6 +62,7 @@ fn redaction_label_of(annotation: &Object) -> Option<RedactLabel> {
     Some(RedactLabel {
         text: text.as_str().unwrap_or("").into(),
         repeat: annotation.get("repeat").filter(|v| !json::undefined(Some(v))).cloned(),
+        fonts: Default::default(),
         order: Default::default(),
     })
 }
