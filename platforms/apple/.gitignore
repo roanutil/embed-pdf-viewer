@@ -11,3 +11,6 @@ EmbedPDFDemo/Derived/
 NutrientDemo/NutrientDemo.xcodeproj/
 NutrientDemo/NutrientDemo.xcworkspace/
 NutrientDemo/Derived/
+
+# Xcode user-specific workspace and scheme state.
+xcuserdata/
