@@ -43,11 +43,11 @@ pub struct HistoryConfig {
     pub limit: Option<f64>,
 }
 
-/// `{settings, changed}`, as `onSettingsChanged` hands it over.
+/// `{settings, changedKeys}`, as `onSettingsChanged` hands it over.
 #[derive(Clone, Debug, PartialEq)]
 pub struct HistorySettingsChanged {
     pub settings: HistorySettings,
-    pub changed: Vec<String>,
+    pub changed_keys: Vec<String>,
 }
 
 /// `HistoryUndoneEvent`: an undo or a redo the engine answered.

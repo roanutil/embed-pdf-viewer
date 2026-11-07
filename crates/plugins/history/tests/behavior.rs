@@ -61,7 +61,7 @@ fn typed_settings_merge_over_the_defaults_and_reset() {
     let seen = Rc::new(RefCell::new(Vec::new()));
     let log = seen.clone();
     let _off = history.on_settings_changed(move |event| {
-        log.borrow_mut().push((event.settings.limit, event.changed.clone()));
+        log.borrow_mut().push((event.settings.limit, event.changed_keys.clone()));
         Ok(())
     });
     history.update_settings(&HistoryConfig { limit: Some(1.0) });
