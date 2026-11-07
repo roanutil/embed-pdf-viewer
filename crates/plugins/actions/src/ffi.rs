@@ -258,7 +258,7 @@ impl From<ActionTrigger> for plugin::ActionTrigger {
         match trigger {
             ActionTrigger::Activate { annotation, page, source } => {
                 plugin::ActionTrigger::Activate {
-                    annotation_ref: annotation.0.clone(),
+                    annotation: annotation.0.clone(),
                     page: page.into(),
                     source: source.map(Into::into),
                 }
@@ -266,7 +266,7 @@ impl From<ActionTrigger> for plugin::ActionTrigger {
             ActionTrigger::Annotation { event, annotation, page, source } => {
                 plugin::ActionTrigger::Annotation {
                     event,
-                    annotation_ref: annotation.0.clone(),
+                    annotation: annotation.0.clone(),
                     page: page.into(),
                     source: source.map(Into::into),
                 }

@@ -92,7 +92,7 @@ impl crate::controller::Core {
             if let Some(actions) = me.actions() {
                 let page = page_of_ref(&annotation)?;
                 let trigger = ActionTrigger::Activate {
-                    annotation_ref: annotation.clone(),
+                    annotation: annotation.clone(),
                     page,
                     source: Some(widget_source(&field_ref, &annotation, page)),
                 };
@@ -182,7 +182,7 @@ impl crate::controller::Core {
                     .dispatch(
                         ActionTrigger::Annotation {
                             event,
-                            annotation_ref: annotation.clone(),
+                            annotation: annotation.clone(),
                             page,
                             source: Some(source),
                         },
