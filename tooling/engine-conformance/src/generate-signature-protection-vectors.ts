@@ -20,7 +20,7 @@ import {
 import type {
   DocMdpPermission,
   FieldLockSpec,
-  SignatureDTO,
+  Signature,
 } from '../../../packages/engine/core/src/signature/types';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -44,7 +44,7 @@ interface SignatureShape {
  * since fd175ba50 ("One date type IsoDateTime"). Neither is read by
  * `deriveProtection`.
  */
-function signature(index: number, shape: SignatureShape): SignatureDTO {
+function signature(index: number, shape: SignatureShape): Signature {
   return {
     index,
     field: { kind: 'objectNumber', objectNumber: 10 + index },
@@ -55,7 +55,7 @@ function signature(index: number, shape: SignatureShape): SignatureDTO {
     filter: shape.signed ? 'Adobe.PPKLite' : null,
     subFilter: shape.signed ? 'ETSI.CAdES.detached' : null,
     byteRange: shape.signed ? [0, 100, 200, 50] : null,
-    contentsSize: shape.signed ? 8192 : 0,
+    contentsSizeBytes: shape.signed ? 8192 : 0,
     coverage: shape.signed ? 'whole-revision' : null,
     revisionIndex: shape.signed ? index : null,
     signer: { name: null, reason: null, location: null, contactInfo: null, signedAt: null },
