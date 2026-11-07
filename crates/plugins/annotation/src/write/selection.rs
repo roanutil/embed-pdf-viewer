@@ -59,7 +59,7 @@ impl Core {
     /// `restyle(patch)`: the selection's fields, a patch per member.
     fn restyle(&self, patch: &SelectionPatch) -> Result<Vec<Commit>, Error> {
         let model = self.model();
-        let range = self.active_text_range(&model);
+        let range = self.active_text_range(&model).or_else(|| self.active_caret(&model));
         let mut commits = Vec::new();
         let mut patches = Map::new();
         for id in model.selected.iter() {
@@ -74,7 +74,10 @@ impl Core {
             }
             let range = range.as_ref().expect("a range");
             let (delta, rest) = run_delta_for_fields(&own, self.fonts().as_deref());
-            if !delta.is_empty() {
+            if !delta.is_empty() && range.start == range.end {
+                // At the caret the style is the text typed next: nothing is written.
+                self.style_typing(id, &delta);
+            } else if !delta.is_empty() {
                 let doc = rich_doc_of(&record.annotation, self.fonts().as_deref());
                 let typed_delta: RichTextStyleDelta =
                     serde_json::from_value(Value::Object(delta.clone())).unwrap_or_default();
@@ -108,8 +111,13 @@ impl Core {
 
     /// `toggleFormat(format, options)`.
     pub fn toggle_format(&self, format: &str, signal: Option<AbortSignal>) -> Promise<()> {
-        let on = self.selection_properties()["values"][format] != json!(true);
-        let range = self.active_text_range(&self.model());
+        let properties = self.selection_properties();
+        let on = properties["values"][format] != json!(true)
+            || properties["mixed"]
+                .as_array()
+                .is_some_and(|m| m.iter().any(|k| k.as_str() == Some(format)));
+        let model = self.model();
+        let range = self.active_text_range(&model).or_else(|| self.active_caret(&model));
         let commits = if range.is_some() {
             let mut fields = Map::new();
             fields.insert(format.to_string(), json!(on));

@@ -23,18 +23,29 @@ use crate::js::{Object, num, number};
 /// `TextFormat`: `'bold' | 'italic' | 'underline'`.
 pub const TEXT_FORMATS: [&str; 3] = ["bold", "italic", "underline"];
 
-/// `TextSelection`: the editor's range inside one free-text annotation, flat
-/// offsets over its plain projection.
+/// `EditorSelection`: the editor's range inside one free-text annotation,
+/// flat offsets over its plain projection, and at a caret the style chosen
+/// there for the text typed next (`typing`). A selection that moves is a
+/// new one, without it.
 #[derive(Clone, Debug, PartialEq)]
 pub struct TextSelection {
     pub id: String,
     pub start: f64,
     pub end: f64,
+    pub typing: Option<Object>,
 }
 
 impl TextSelection {
+    pub fn new(id: String, start: f64, end: f64) -> Self {
+        TextSelection { id, start, end, typing: None }
+    }
+
     pub fn to_json(&self) -> Value {
-        json!({ "id": self.id, "start": num(self.start), "end": num(self.end) })
+        let mut out = json!({ "id": self.id, "start": num(self.start), "end": num(self.end) });
+        if let Some(typing) = &self.typing {
+            out["typing"] = Value::Object(typing.clone());
+        }
+        out
     }
 }
 
@@ -477,14 +488,42 @@ pub fn runs_in_range(paragraphs: &[Value], range: RichTextRange) -> Vec<Value> {
 }
 
 /// `rangeProps(doc, range, fonts)`: the values a range reads back for the
-/// range keys, resolved against the body, `mixed` where the runs disagree.
+/// range keys, the runs it covers (`runProps`).
 pub fn range_props(
     doc: &RichTextDocument,
     range: RichTextRange,
     fonts: FontLookup,
 ) -> Result<(Object, Vec<String>), Error> {
-    let body = &doc.body;
-    let runs = runs_in_range(&doc.paragraphs, range);
+    run_props(&doc.body, runs_in_range(&doc.paragraphs, range), fonts)
+}
+
+/// `caretProps(doc, at, typing, fonts)`: the values a caret reads back for
+/// the range keys: the text typed there next, in the style of the text before
+/// it (`styleAt`) with the style chosen at the caret over it.
+pub fn caret_props(
+    doc: &RichTextDocument,
+    at: f64,
+    typing: Option<&Object>,
+    fonts: FontLookup,
+) -> Result<(Object, Vec<String>), Error> {
+    let before = epdf_annotation_core::richtext::style_at(&doc.typed(), at).unwrap_or_default();
+    let mut style = match serde_json::to_value(before) {
+        Ok(Value::Object(style)) => style,
+        _ => Map::new(),
+    };
+    for (key, value) in typing.into_iter().flatten() {
+        style.insert(key.clone(), value.clone());
+    }
+    run_props(&doc.body, vec![Value::Object(style)], fonts)
+}
+
+/// `runProps(body, runs, fonts)`: the values runs read back for the range
+/// keys, resolved against the body, `mixed` where they disagree.
+fn run_props(
+    body: &Object,
+    runs: Vec<Value>,
+    fonts: FontLookup,
+) -> Result<(Object, Vec<String>), Error> {
     let runs = if runs.is_empty() { vec![json!({})] } else { runs };
     let pick = |delta: &Value, key: &str| -> Option<Value> {
         delta

@@ -198,6 +198,7 @@ fn set_text_selection_fn(args: &[Value]) -> Result<Value, Error> {
             id: s.get("id").and_then(Value::as_str).unwrap_or_default().to_string(),
             start: s.get("start").and_then(Value::as_f64).unwrap_or(f64::NAN),
             end: s.get("end").and_then(Value::as_f64).unwrap_or(f64::NAN),
+            typing: s.get("typing").and_then(Value::as_object).cloned(),
         })
     });
     Ok(set_text_selection(&state, selection).to_json())

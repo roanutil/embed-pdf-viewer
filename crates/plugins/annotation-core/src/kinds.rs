@@ -1033,3 +1033,24 @@ pub fn field_kind_of(kind: &str) -> Option<&'static str> {
         _ => return None,
     })
 }
+
+/// `KIND_OPTIONS`: the kinds an annotation can become, in the order a kind
+/// choice lists them, each named as the comment list names it.
+const KIND_OPTIONS: [(&str, &str); 6] = [
+    ("highlight", "Highlight"),
+    ("underline", "Underline"),
+    ("squiggly", "Squiggly"),
+    ("strikeout", "Strikethrough"),
+    ("square", "Square"),
+    ("circle", "Circle"),
+];
+
+/// `kindChoice(kinds)`: the `subtype` choice over `kinds`.
+pub fn kind_choice(kinds: &[&str]) -> Value {
+    let options = KIND_OPTIONS
+        .iter()
+        .filter(|(value, _)| kinds.contains(value))
+        .map(|(value, label)| option(value, label, &format!("annotation.{value}")))
+        .collect();
+    choice("subtype", "Type", "annotation.style.kind", options)
+}

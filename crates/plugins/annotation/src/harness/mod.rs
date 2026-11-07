@@ -830,10 +830,13 @@ fn call_capability(a: &AnnotationCapability, method: &str, args: &[Value], h: &H
         }
         "getEditingId" => Outcome::Returned(a.get_editing_id().map_or(Value::Null, Value::String)),
         "draftContents" => unit(a.draft_contents(&value(args, 0), &text(args, 1))),
-        "draftRichText" => unit(a.draft_rich_text(
+        "draftRichText" => match a.draft_rich_text(
             &value(args, 0),
             value(args, 1).get("paragraphs").cloned().unwrap_or(json!([])),
-        )),
+        ) {
+            Ok(kept) => Outcome::Returned(kept),
+            Err(error) => Outcome::Threw(error),
+        },
         "setTextSelection" => {
             let range = arg(args, 1).filter(|r| !r.is_null()).map(|r| {
                 (
