@@ -356,6 +356,12 @@ export const ICON_PATHS = {
     'M8 13h6',
     'M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12',
   ],
+  // One page between a step back and a step on: one page at a time.
+  pageByPage: [
+    'M8 4m0 1a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-6a1 1 0 0 1 -1 -1z',
+    'M5 9l-3 3l3 3',
+    'M19 9l3 3l-3 3',
+  ],
   // Turning a page in the file: a page under the arrow, apart from the view's rotation.
   pageRotateClockwise: [
     'M5 9h7a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-7a1 1 0 0 1 -1 -1v-10a1 1 0 0 1 1 -1z',
@@ -619,6 +625,16 @@ export interface IconProps {
 
 /** One SVG renderer for every icon. Unknown names render nothing (caller shows
  *  a text fallback), so a missing glyph never throws. */
+/** The icons that point along the reading direction: a chevron to the next or previous page. */
+const READING_DIRECTION_ICONS: ReadonlySet<string> = new Set(['chevronLeft', 'chevronRight']);
+
+/**
+ * The class that turns a command's icon `name` the other way in a right-to-left language, where
+ * the bar it sits in mirrors, when it points along the reading direction; empty otherwise.
+ */
+export const readingDirectionClass = (name: string): string =>
+  READING_DIRECTION_ICONS.has(name) ? 'rtl:-scale-x-100' : '';
+
 export function Icon({ name, size = 20, strokeWidth = 2, className, title, accent }: IconProps) {
   // Registry semantics: user icons are additive and a colliding name wins —
   // re-skinning a built-in glyph is a supported move, not an accident.

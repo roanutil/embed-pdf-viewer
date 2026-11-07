@@ -24,6 +24,12 @@ export type DocumentPdfOpenedAs = 'none' | 'user' | 'owner';
 
 export type TenantStatus = 'active' | 'suspended';
 
+/** A server module the tenant may use, by the module's id; `stopped` keeps it listed but stops its routes. */
+export interface TenantFeature {
+  id: string;
+  stopped?: 'cap';
+}
+
 export interface TenantsTable {
   id: string;
   name: string;
@@ -38,6 +44,12 @@ export interface TenantsTable {
    */
   status: TenantStatus;
   suspended_at: number | null;
+  /**
+   * JSON array of `{ id, stopped? }`: the server modules the tenant may
+   * use. A module's routes refuse a tenant without its feature (403) and
+   * one whose feature is stopped (402). `'[]'` until the operator sets it.
+   */
+  features_json: string;
 }
 
 /** A folder stores only its parent; see migration 046 for the tree model. */
@@ -173,6 +185,12 @@ export interface LayersTable {
    * (migration 049): bumps on a write that changes the fonts the list shows.
    */
   fonts_version: number;
+  /**
+   * Document contents pointer epoch, for a read across every page's content
+   * (search) (migration 052): bumps with every write that moves a page's
+   * `content_version`, inserts a page or deletes one.
+   */
+  contents_version: number;
   /** Audit-log head at this layer's current state — advanced in the same
    *  transaction as every audit append. Published as the manifest's
    *  `auditHead` (the gapless subscribe cursor). */
@@ -435,10 +453,20 @@ export interface DocumentImportsTable {
 
 export interface TenantUsageCounterTable {
   tenant_id: string;
-  metric: 'pdf.uploads' | 'pdf.views';
-  period_start: string;
+  /** A core meter (`pdf.views`) or a module's (`protected-display.views`). */
+  metric: string;
+  /** The UTC day, `YYYY-MM-DD`. Rows from before days hold a month on its first day. */
+  day: string;
   value: number;
   updated_at: number;
+}
+
+/** The keys a meter counted once on a day (`oncePerDay`), as sha-256 hex. */
+export interface TenantUsageOnceTable {
+  tenant_id: string;
+  metric: string;
+  day: string;
+  key_hash: string;
 }
 
 export interface SchemaMigrationsTable {
@@ -612,6 +640,7 @@ export interface BaseVersionsTable {
   forms_version: number;
   outline_version: number;
   fonts_version: number;
+  contents_version: number;
   created_at: number;
 }
 
@@ -723,6 +752,7 @@ export interface Database {
     auto_provisioned: Generated<number>;
     status: Generated<TenantStatus>;
     suspended_at: Generated<number | null>;
+    features_json: Generated<string>;
   };
   documents: DocumentsTable & {
     created_at: Generated<number>;
@@ -747,6 +777,7 @@ export interface Database {
   grant_visitors: GrantVisitorsTable;
   document_imports: DocumentImportsTable;
   tenant_usage_counter: TenantUsageCounterTable;
+  tenant_usage_once: TenantUsageOnceTable;
   engine_crashes: EngineCrashesTable;
   engine_crash_suspects: EngineCrashSuspectsTable;
   engine_quarantine: EngineQuarantineTable;

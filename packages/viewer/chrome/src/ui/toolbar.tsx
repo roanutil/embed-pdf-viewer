@@ -16,7 +16,7 @@ import { Toolbar } from '@embedpdf/react/toolbar';
 import type {
   BarSchema,
   CollapsedGroupView,
-  CustomSlotCtx,
+  CustomSlotContext,
   GroupDisclosureView,
   OverflowMenuView,
 } from '@embedpdf/react/toolbar';
@@ -31,7 +31,7 @@ import { ViewOnlyLabel } from './view-only';
 import { ShellToken } from '@embedpdf/react/shell';
 import { useT } from '@embedpdf/react/i18n';
 import { StageToken } from '@embedpdf/react/stage';
-import { Icon } from './icons';
+import { Icon, readingDirectionClass } from './icons';
 import { ItemSocket } from './item-socket';
 import { MenuAnchor, ToolbarMenu } from './menu';
 import { useTooltip, type TooltipContent } from './tooltip';
@@ -115,7 +115,8 @@ export function CommandButton({
 
   // Buttons carry no caret — a menu command is a plain icon button; the
   // `menu:` declaration still drives aria-haspopup and the anchored popover.
-  // A menu command is active while its menu is open at this button: it says it's expanded.
+  // A toggle says whether it's pressed. A menu command is active while its menu is open at this
+  // button: it says it's expanded.
   const draw = (active: boolean) => (
     <>
       <button
@@ -123,7 +124,7 @@ export function CommandButton({
         type="button"
         onClick={run}
         disabled={!cmd.enabled}
-        aria-pressed={cmd.menu ? undefined : active || undefined}
+        aria-pressed={cmd.pressable ? active : undefined}
         aria-haspopup={cmd.menu ? 'menu' : undefined}
         aria-expanded={cmd.menu ? active : undefined}
         aria-label={cmd.label}
@@ -141,12 +142,22 @@ export function CommandButton({
         ) : variant === 'icon+label' ? (
           <span className="flex items-center whitespace-nowrap text-sm">
             {cmd.icon && (
-              <Icon name={cmd.icon} size={20} accent={cmd.iconAccent} className="me-1.5 shrink-0" />
+              <Icon
+                name={cmd.icon}
+                size={20}
+                accent={cmd.iconAccent}
+                className={`me-1.5 shrink-0 ${readingDirectionClass(cmd.icon)}`}
+              />
             )}
             <span>{cmd.label}</span>
           </span>
         ) : cmd.icon ? (
-          <Icon name={cmd.icon} size={20} accent={cmd.iconAccent} />
+          <Icon
+            name={cmd.icon}
+            size={20}
+            accent={cmd.iconAccent}
+            className={readingDirectionClass(cmd.icon)}
+          />
         ) : (
           <span className="text-sm">{cmd.label}</span>
         )}
@@ -373,7 +384,12 @@ function CollapsedMenu({ view }: { view: CollapsedGroupView }) {
         className={buttonClass(open)}
       >
         {shown?.icon ? (
-          <Icon name={shown.icon} size={20} accent={shown.iconAccent} />
+          <Icon
+            name={shown.icon}
+            size={20}
+            accent={shown.iconAccent}
+            className={readingDirectionClass(shown.icon)}
+          />
         ) : (
           <span className="whitespace-nowrap px-1 text-sm">{label}</span>
         )}
@@ -485,7 +501,7 @@ export function AppToolbar({
       .filter((item) => !Object.prototype.hasOwnProperty.call(builtIn, item.slot))
       .map((item) => [
         item.slot,
-        (variant: string, ctx: CustomSlotCtx) =>
+        (variant: string, ctx: CustomSlotContext) =>
           ctx.layer === 'measure' ? null : (
             <ItemSocket
               id={item.slot}

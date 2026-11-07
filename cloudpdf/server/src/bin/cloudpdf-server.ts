@@ -24,6 +24,7 @@ import { loadImportConnectionsFromEnv } from '../import/config/loadImportConnect
 import { loadImportPolicyFromEnv } from '../import/config/loadImportPolicyFromEnv';
 import { ConnectedUsageReporter } from '../licensing/ConnectedUsageReporter';
 import { LicenseRuntime } from '../licensing/LicenseRuntime';
+import { createLicenseRuntime, licenseRuntimeOf } from '../licensing/public';
 import { UsageMeters } from '../licensing/UsageMeters';
 import { loadModules } from '../modules/load';
 import { PostgresRealtimeBus } from '../realtime/PostgresRealtimeBus';
@@ -151,7 +152,13 @@ function readDbConfig(): {
     }
     return {
       dialect: 'postgres',
-      pgOpts: { connectionString: url! },
+      pgOpts: {
+        connectionString: url!,
+        // The message only: pg-pool hangs the client, with its
+        // connection parameters (password included), on the error.
+        onIdleConnectionError: (err) =>
+          console.warn(`[cloudpdf] idle database connection closed: ${err.message}`),
+      },
       describe: `postgres ${redact(url!)}`,
     };
   }
@@ -907,10 +914,9 @@ async function cmdServe(): Promise<void> {
   // adapters. This keeps secret:// license keys out of environment values
   // while preserving the same provider/cache behavior as every other secret.
   const resolver = buildSecretResolver();
-  const licenseRuntime = await LicenseRuntime.create({
-    db: dbCtx.db,
-    secretResolver: resolver,
-  });
+  // The license as any embedder makes it; its runtime also feeds usage reporting.
+  const license = await createLicenseRuntime({ db: dbCtx.db, secretResolver: resolver });
+  const licenseRuntime = licenseRuntimeOf(license);
   const initialLicense = licenseRuntime.getStatus();
   if (initialLicense.access === 'none') {
     await licenseRuntime.close();
@@ -1019,7 +1025,7 @@ async function cmdServe(): Promise<void> {
       encodeInEngine:
         process.env.CLOUDPDF_ENCODE_IN_ENGINE !== '0' &&
         process.env.CLOUDPDF_ENCODE_IN_ENGINE !== 'false',
-      licenseGate: licenseRuntime,
+      license,
       ...(usageReporter ? { usageReporter } : {}),
       verifier: { mode: 'hs256', secret: JWT_SECRET },
       ...(API_AUTH_TOKENS.length > 0 ? { apiAuthTokens: API_AUTH_TOKENS } : {}),
