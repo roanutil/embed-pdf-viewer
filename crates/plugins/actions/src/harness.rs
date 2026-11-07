@@ -313,7 +313,7 @@ fn ui_adapter(spec: &Value, h: &Harness) -> Option<Rc<ActionUiAdapter>> {
     let open_uri = member("openUri");
     let print = member("print");
     let alert = member("alert");
-    let goto_page = member("gotoPage");
+    let goto_page = member("goToPage");
     Some(Rc::new(ActionUiAdapter {
         open_uri: Rc::new(move |uri: &str, options: &UriOptions| match &open_uri {
             Some(callback) => ignored(callback.call(vec![json!(uri), to_json(options)])),
@@ -689,7 +689,7 @@ impl HarnessPlugin for Actions {
     }
 }
 
-/// A realm port as the TypeScript prints it: `transaction` (and `dispose`
+/// A realm port as the TypeScript prints it: `transaction` (and `destroy`
 /// for a detached realm) are refs, `budget` a value. A transaction body is a
 /// scripted callback, handed the transaction's two functions.
 fn realm_json(
@@ -712,7 +712,7 @@ fn realm_json(
     out.insert("budget".into(), to_json(&budget));
     if let Some(realm) = dispose {
         out.insert(
-            "dispose".into(),
+            "destroy".into(),
             h.register_fn(Rc::new(move |_| {
                 realm.dispose();
                 Outcome::undefined()
