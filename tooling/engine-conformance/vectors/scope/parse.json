@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "scope.parse",
   "cases": [
   {"name":"wildcard","covers":"The global escape hatch.","scope":"*","valid":true,"parsed":{"kind":"wildcard"}},
@@ -32,7 +32,7 @@
   {"name":"shape-trailing-dot","covers":"A trailing dot leaves an empty segment.","scope":"doc.","valid":false,"issue":"invalid scope \"doc.\": invalid capability name shape"},
   {"name":"shape-leading-dot","covers":"A leading dot leaves an empty segment.","scope":".doc","valid":false,"issue":"invalid scope \".doc\": invalid capability name shape"},
   {"name":"shape-double-dot","covers":"An empty middle segment.","scope":"doc..open","valid":false,"issue":"invalid scope \"doc..open\": invalid capability name shape"},
-  {"name":"shape-uppercase","covers":"The shape is lowercase, so case is not normalized away.","scope":"Doc.Open","valid":false,"issue":"invalid scope \"Doc.Open\": invalid capability name shape"},
+  {"name":"shape-uppercase","covers":"The shape is lowercase, so case is not normalized away.","scope":"Doc.Open","valid":false,"issue":"invalid scope \"Doc.Open\": invalid plugin permission shape (expected <plugin id>.<action>)"},
   {"name":"shape-digit-leading","covers":"A segment starts with a letter.","scope":"doc.1open","valid":false,"issue":"invalid scope \"doc.1open\": invalid capability name shape"},
   {"name":"shape-hyphen","covers":"Hyphens are not in the segment alphabet.","scope":"doc.open-now","valid":false,"issue":"invalid scope \"doc.open-now\": invalid capability name shape"},
   {"name":"shape-underscore","covers":"Underscores are, which is why the hyphen case exists next to it.","scope":"doc.open_now","valid":false,"issue":"invalid scope \"doc.open_now\": unknown capability: doc.open_now"},

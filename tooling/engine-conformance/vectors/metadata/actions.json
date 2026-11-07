@@ -45,7 +45,6 @@
             "next": []
           },
           "incomplete": false,
-          "warningFlags": 0,
           "warnings": []
         },
         "willSave": {
@@ -56,7 +55,6 @@
             "next": []
           },
           "incomplete": false,
-          "warningFlags": 0,
           "warnings": []
         },
         "didSave": {
@@ -67,7 +65,6 @@
             "next": []
           },
           "incomplete": false,
-          "warningFlags": 0,
           "warnings": []
         },
         "willPrint": {
@@ -78,7 +75,6 @@
             "next": []
           },
           "incomplete": false,
-          "warningFlags": 0,
           "warnings": []
         },
         "didPrint": {
@@ -89,7 +85,6 @@
             "next": []
           },
           "incomplete": false,
-          "warningFlags": 0,
           "warnings": []
         },
         "nameTreeScripts": [
@@ -103,7 +98,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             }
           },
@@ -117,7 +111,6 @@
                 "next": []
               },
               "incomplete": false,
-              "warningFlags": 0,
               "warnings": []
             }
           }
@@ -130,7 +123,6 @@
             "next": []
           },
           "incomplete": false,
-          "warningFlags": 0,
           "warnings": []
         },
         "openDestination": null
