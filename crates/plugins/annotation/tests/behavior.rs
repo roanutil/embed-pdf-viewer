@@ -98,7 +98,13 @@ fn kernel_over(
     let kernel = Kernel::new(
         engine(fake.clone()),
         vec![interaction_plugin(InteractionConfig::default()), annotation_plugin(None)],
-        KernelOptions { report, on_dispatch: None, release_closed_sessions: false, printer: None },
+        KernelOptions {
+            report,
+            on_dispatch: None,
+            release_closed_sessions: false,
+            printer: None,
+            fetch: None,
+        },
     )
     .unwrap();
     let _ = kernel.start();
