@@ -340,6 +340,9 @@ pub struct Snapshot {
     pub page: PageRef,
     /// The box, in page space: from the page's top-left, y down, in points.
     pub rect: Rect,
+    /// Capture-time geometry; independent of later page or display changes.
+    #[cfg(feature = "uniffi")]
+    pub(crate) display_width: f64,
     /// Its picture, as PNG, turned as the page was shown. Rejects when it
     /// can't be rendered, and with `operation-cancelled` once the snapshot is
     /// let go first.

@@ -62,8 +62,7 @@ pub struct RenderedImage {
     pub height: u32,
     /// Bytes per row. At least `width * 4`; address rows by it.
     pub stride: u32,
-    /// Device pixels per PDF point across the page's width: `width` over
-    /// the page's width in points.
+    /// Device pixels per PDF point across the rendered region's rotated width.
     pub scale: f64,
     pub format: RenderPixelFormat,
     /// `stride * height` bytes.
@@ -74,6 +73,12 @@ pub struct RenderedImage {
 /// a native raster is raw pixels, never encoded.
 #[derive(Clone, Copy, Debug, Default, PartialEq, uniffi::Record)]
 pub struct RenderPageOptions {
+    /// Page-space crop, clipped to the page bounds.
+    #[uniffi(default = None)]
+    pub rect: Option<Rect>,
+    /// Absolute clockwise rotation; omitted is unrotated page space.
+    #[uniffi(default = None)]
+    pub rotation: Option<RenderRotation>,
     /// Exact output width in device pixels; the height keeps the aspect.
     #[uniffi(default = None)]
     pub width: Option<f64>,
@@ -89,6 +94,25 @@ pub struct RenderPageOptions {
     /// them (`doc.forms.read`) and annotations are not turned off.
     #[uniffi(default = None)]
     pub include_form_fields: Option<bool>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
+pub enum RenderRotation {
+    None,
+    Clockwise90,
+    Clockwise180,
+    Clockwise270,
+}
+
+impl From<RenderRotation> for epdf_geometry::PageRotation {
+    fn from(value: RenderRotation) -> Self {
+        Self(match value {
+            RenderRotation::None => 0.0,
+            RenderRotation::Clockwise90 => 90.0,
+            RenderRotation::Clockwise180 => 180.0,
+            RenderRotation::Clockwise270 => 270.0,
+        })
+    }
 }
 
 fn layers(
@@ -371,7 +395,18 @@ fn positive(value: Option<f64>, what: &str) -> Result<Option<f64>, Error> {
 
 impl RenderPageOptions {
     fn validated(self) -> Result<crate::RenderPageOptions, Error> {
+        if let Some(rect) = self.rect
+            && (![rect.x, rect.y, rect.width, rect.height].iter().all(|v| v.is_finite())
+                || rect.width <= 0.0
+                || rect.height <= 0.0)
+        {
+            return Err(invalid_input(
+                "rect must have finite coordinates and positive area".into(),
+            ));
+        }
         Ok(crate::RenderPageOptions {
+            rect: self.rect.map(Into::into),
+            rotation: self.rotation.map(Into::into),
             width: positive(self.width, "width")?,
             scale: positive(self.scale, "scale")?,
             layers: layers(self.include_annotations, self.include_form_fields),
@@ -518,8 +553,10 @@ pub fn start_render_page(
     let mut options = options.validated()?;
     let (signal, abort) = abortable();
     options.signal = Some(signal);
+    let width = cap.raster_width(page.into(), options.rect, options.rotation)?;
     let image = cap.render_page(epdf_kernel::geometry::PageRef::from(page), options);
-    Ok(rendered(cap, pixels, page, image)?.with_abort(abort))
+    let pixels = pixels.clone();
+    Ok(image.convert(move |image| Raster::read(image, width, &pixels)).with_abort(abort))
 }
 
 #[derive(uniffi::Object)]
@@ -620,6 +657,7 @@ impl RenderHandle {
                     let mut page = options.validated()?;
                     let (signal, abort) = abortable();
                     page.signal = Some(signal.clone());
+                    let (rect, rotation) = (page.rect, page.rotation);
                     let batch = cap.render_pages(
                         pages.into_iter().map(|page| PageArg::Ref(page.into())).collect(),
                         RenderPagesOptions { page, concurrency: concurrency.map(f64::from) },
@@ -639,7 +677,7 @@ impl RenderHandle {
                         let mut applied = Vec::with_capacity(batch.applied.len());
                         for entry in batch.applied {
                             let page = PageRef::from(entry.page);
-                            let width = cap.page_width(entry.page)?;
+                            let width = cap.raster_width(entry.page, rect, rotation)?;
                             applied.push((page, Raster::read(&entry.image, width, &pixels)?));
                         }
                         let failed = batch
@@ -970,3 +1008,5 @@ impl RenderViewDemandHandle {
 
 mod settings;
 pub use settings::*;
+mod snapshot;
+pub use snapshot::*;

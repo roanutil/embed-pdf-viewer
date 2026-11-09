@@ -18,6 +18,7 @@ public typealias RenderConfig = EmbedPDFBindings.RenderConfig
 public typealias RenderFullPageOptions = EmbedPDFBindings.RenderFullPageOptions
 public typealias RenderQuantize = EmbedPDFBindings.RenderQuantize
 public typealias RenderPageOptions = EmbedPDFBindings.RenderPageOptions
+public typealias RenderRotation = EmbedPDFBindings.RenderRotation
 public typealias RenderInvalidateScope = EmbedPDFBindings.RenderInvalidateScope
 public typealias RenderBatchFailure = EmbedPDFBindings.RenderBatchFailure
 public typealias RenderEvent = EmbedPDFBindings.RenderEvent
@@ -34,7 +35,7 @@ public typealias RenderTilePlan = EmbedPDFBindings.RenderTilePlan
 public struct RenderedPage: @unchecked Sendable {
   public let width: Int
   public let height: Int
-  /// Device pixels per PDF point across the page's width.
+  /// Device pixels per PDF point across the rendered region's rotated width.
   public let scale: Double
   /// Immutable, so sharing it across tasks is safe.
   public let image: CGImage
@@ -50,6 +51,29 @@ public struct RenderedPageResult: Sendable {
 public struct RenderBatchResult: Sendable {
   public let applied: [RenderedPageResult]
   public let failed: [RenderBatchFailure]
+}
+
+/// A capture's immediate metadata and separate image wait. Keep the viewer
+/// alive until the image resolves; returned pixels outlive it.
+public struct RenderSnapshot: Sendable {
+  public let page: PageRef
+  public let rect: Rect
+  private let handle: RenderSnapshotImageHandle
+
+  init(_ snapshot: EmbedPDFBindings.RenderSnapshot) {
+    page = snapshot.page
+    rect = snapshot.rect
+    handle = snapshot.image
+  }
+
+  /// Cancelling this task ends only its wait. Clearing the snapshot or
+  /// closing the document cancels a pending capture for every reader.
+  public func image() async throws(PDFError) -> RenderedPage {
+    let pixels = try await bridgedCancellable { token in
+      try await handle.image(cancel: token)
+    }
+    return try RenderedPage(pixels)
+  }
 }
 
 /// A document's page rasters. Get one with `PDFViewer.render(in:)`; the
@@ -75,6 +99,29 @@ public struct RenderCapability: Sendable {
 
   let handle: RenderHandle
   let viewer: PDFViewer
+
+  public func canSnapshot() async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canSnapshot() }
+  }
+
+  /// Read the existing capture without starting a render.
+  public func snapshot() async throws(PDFError) -> RenderSnapshot? {
+    try await bridged { try await handle.snapshot() }.map(RenderSnapshot.init)
+  }
+
+  public func clearSnapshot() async throws(PDFError) {
+    try await bridged { try await handle.clearSnapshot() }
+  }
+
+  /// The capture tool's dragged or held box in page points.
+  public func snapshotBox(on page: PageRef) async throws(PDFError) -> Rect? {
+    try await bridged { try await handle.snapshotBox(page: page) }
+  }
+
+  /// Captures and clears (`nil`). Finishes when the document closes.
+  public var snapshotChanges: AsyncStream<RenderSnapshot?> {
+    viewer.registry.stream { handle.subscribeSnapshots(listener: $0) }
+  }
 
   /// Whether page rasters would be served to this session (`doc.render`).
   public func canRender() async throws(PDFError) -> Bool {
@@ -269,6 +316,14 @@ extension EventRelay: RenderEventListener where Event == RenderEvent {
   func onEnd() {
     continuation.finish()
   }
+}
+
+extension EventRelay: RenderSnapshotListener where Event == RenderSnapshot? {
+  func onSnapshot(snapshot: EmbedPDFBindings.RenderSnapshot?) {
+    continuation.yield(snapshot.map(RenderSnapshot.init))
+  }
+
+  func onEnd() { continuation.finish() }
 }
 
 extension PDFViewer {

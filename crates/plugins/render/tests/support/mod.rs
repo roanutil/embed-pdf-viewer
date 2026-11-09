@@ -122,13 +122,14 @@ fn pixel_spec(table: Table, requests: Arc<Mutex<Vec<(u32, Value)>>>) -> TestSpec
 pub struct Rig {
     pub thread: KernelThread<TestKernel>,
     pub render: Arc<RenderHandle>,
+    table: epdf_ffi::KernelBound<Table>,
     requests: Arc<Mutex<Vec<(u32, Value)>>>,
     released: Arc<Mutex<Vec<u64>>>,
 }
 
 impl Rig {
     pub fn new(engine: Engine) -> Rig {
-        Rig::build(engine, false)
+        Rig::build(engine, false, json!("*"))
     }
 
     pub fn pixels() -> Rig {
@@ -138,17 +139,21 @@ impl Rig {
     /// With `release_closed_sessions`, as `epdf-viewer-host` runs the kernel:
     /// a closed document's capability goes once nothing outside holds it.
     pub fn releasing_closed_sessions() -> Rig {
-        Rig::build(Engine::Pixels, true)
+        Rig::build(Engine::Pixels, true, json!("*"))
     }
 
-    fn build(engine: Engine, release_closed_sessions: bool) -> Rig {
+    pub fn permitted(allows: Value) -> Rig {
+        Rig::build(Engine::Pixels, true, allows)
+    }
+
+    fn build(engine: Engine, release_closed_sessions: bool, allows: Value) -> Rig {
         let requests = Arc::new(Mutex::new(Vec::new()));
         let released = Arc::new(Mutex::new(Vec::new()));
         let (seen, freed) = (requests.clone(), released.clone());
         let (render_tx, render_rx) = std::sync::mpsc::channel();
         let thread = KernelThread::spawn(move |post| {
             let table: Table = Rc::default();
-            let spec = match engine {
+            let mut spec = match engine {
                 Engine::Pixels => pixel_spec(table.clone(), seen),
                 Engine::Value(value) => TestSpec::new(engine_spec(
                     json!([{ "path": "page.render.image", "value": value }]),
@@ -160,6 +165,7 @@ impl Rig {
                     json!([{ "path": "page.render.image", "defer": "raster" }]),
                 )),
             };
+            spec.engine["documents"][DOCUMENT]["security"]["allows"] = allows;
             let releasing = table.clone();
             let host = RenderHost {
                 release_image: Some(Rc::new(move |image: &Value| {
@@ -172,22 +178,25 @@ impl Rig {
             };
             let options = KernelOptions { release_closed_sessions, ..KernelOptions::default() };
             let kernel = TestKernel::open_with(
-                vec![render_plugin_with_host(RenderConfig::default(), host)],
+                vec![
+                    epdf_plugin_interaction::interaction_plugin(Default::default()),
+                    render_plugin_with_host(RenderConfig::default(), host),
+                ],
                 spec,
                 options,
             )?;
             let source = table.clone();
             let handle = RenderHandle::new(
                 kernel.capability(&RENDER)?,
-                post,
+                post.clone(),
                 Rc::new(move |id| source.borrow().get(&id).cloned()),
             );
-            let _ = render_tx.send(handle);
+            let _ = render_tx.send((handle, epdf_ffi::KernelBound::new(table, post)));
             Ok(kernel)
         })
         .unwrap();
-        let render = render_rx.recv().unwrap();
-        Rig { thread, render, requests, released }
+        let (render, table) = render_rx.recv().unwrap();
+        Rig { thread, render, table, requests, released }
     }
 
     /// Wait for a job on the kernel thread: everything posted before it has
@@ -198,6 +207,45 @@ impl Rig {
 
     pub fn close(&self) {
         block_on(self.thread.call(|k| k.close())).unwrap().unwrap();
+    }
+
+    pub fn resolve_pixels(&self, width: u32, height: u32) {
+        block_on(self.table.call(move |table| {
+            table.borrow_mut().insert(1, Arc::new(pixels(width, height, width * 4)));
+            Ok(())
+        }))
+        .unwrap();
+        block_on(self.thread.call(move |k| {
+            let value = json!({
+            "width": width, "height": height, "stride": width * 4, "color": "rgba8",
+            "premultipliedAlpha": false, "source": { "kind": "pixels", "$byteLength": width * height * 4 }, "$host": 1
+            });
+            assert!(k.engine.settle("raster", Ok(value)));
+        })).unwrap();
+    }
+
+    pub fn capture(&self, rotation: f64) {
+        block_on(self.thread.call(move |k| {
+            use epdf_plugin_interaction::{INTERACTION, PageHit, Phase, PointerSample};
+            let interaction = k.capability(&INTERACTION).unwrap();
+            interaction.activate_tool("snapshot").unwrap();
+            let point = epdf_geometry::Point { x: 0.0, y: 0.0 };
+            let hit = PageHit {
+                page: epdf_kernel::geometry::PageRef::new(4),
+                point,
+                scale: Some(10.0),
+                rotation: Some(epdf_geometry::PageRotation(rotation)),
+                zoom: None,
+            };
+            interaction.dispatch_pointer(&PointerSample::new(Phase::Down, point, Some(hit)));
+            let point = epdf_geometry::Point { x: 2.0, y: 1.0 };
+            interaction.dispatch_pointer(&PointerSample::new(
+                Phase::Up,
+                point,
+                Some(PageHit { point, ..hit }),
+            ));
+        }))
+        .unwrap();
     }
 
     pub fn emit(&self, event: Value) {

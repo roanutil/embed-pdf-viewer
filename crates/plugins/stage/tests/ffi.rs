@@ -425,3 +425,46 @@ fn closing_the_document_ends_stage_subscriptions() {
     block_on(thread.call(|k| k.close())).unwrap().unwrap();
     assert_eq!(events.1.load(Ordering::SeqCst), 1);
 }
+
+#[test]
+fn native_zoom_box_uses_viewport_coordinates_and_cancel_preserves_camera() {
+    let (thread, stage, _) = frameless();
+    sized(&stage);
+    let camera = block_on(stage.camera()).unwrap();
+    block_on(stage.begin_zoom_drag(Point { x: 70.0, y: 90.0 })).unwrap();
+    assert!(block_on(stage.zoom_box()).unwrap().is_none());
+    block_on(stage.move_zoom_drag(Point { x: 170.0, y: 190.0 })).unwrap();
+    let rect = block_on(stage.zoom_box()).unwrap().unwrap();
+    assert!((rect.x - 70.0).abs() < 1e-8 && (rect.y - 90.0).abs() < 1e-8);
+    assert!((rect.width - 100.0).abs() < 1e-8 && (rect.height - 100.0).abs() < 1e-8);
+    block_on(stage.cancel_zoom_drag()).unwrap();
+    assert!(block_on(stage.zoom_box()).unwrap().is_none());
+    assert_eq!(block_on(stage.camera()).unwrap(), camera);
+    block_on(stage.begin_zoom_drag(Point { x: 70.0, y: 90.0 })).unwrap();
+    block_on(stage.move_zoom_drag(Point { x: 170.0, y: 190.0 })).unwrap();
+    block_on(stage.end_zoom_drag(None)).unwrap();
+    assert!(block_on(stage.zoom_box()).unwrap().is_none());
+    assert!(block_on(stage.zoom_level()).unwrap() > camera.zoom);
+    assert!(!block_on(stage.current_pages()).unwrap().is_empty());
+    block_on(thread.call(|k| k.close())).unwrap().unwrap();
+    assert_eq!(code(&block_on(stage.cancel_zoom_drag()).unwrap_err()), Some("instance-closed"));
+}
+
+#[test]
+fn current_pages_narrows_a_spread_when_zoomed_beyond_the_viewport() {
+    let (_thread, stage, _) = frameless();
+    sized(&stage);
+    block_on(stage.update_settings(StageSettingsPatch {
+        spread: Some(epdf_ffi::StageSpreadMode::Odd),
+        scroll_behavior: Some(StageScrollBehavior::Instant),
+        ..Default::default()
+    }))
+    .unwrap();
+    block_on(stage.fit_width()).unwrap();
+    let item = block_on(stage.current_item_pages()).unwrap();
+    assert_eq!(item.len(), 2);
+    assert_eq!(block_on(stage.current_pages()).unwrap(), item);
+    block_on(stage.zoom_to(StageZoomTarget::Level { level: 3.0 }, None)).unwrap();
+    assert_eq!(block_on(stage.current_item_pages()).unwrap().len(), 2);
+    assert_eq!(block_on(stage.current_pages()).unwrap().len(), 1);
+}

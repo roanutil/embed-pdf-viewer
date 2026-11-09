@@ -65,6 +65,7 @@ fn the_request_carries_an_exact_width_and_the_annotations_flag() {
         scale: Some(9.0),
         include_annotations: Some(false),
         include_form_fields: None,
+        ..Default::default()
     };
     let image = block_on(rig.render.render_page(LARGE, options, token())).unwrap();
     // `width` wins over `scale`.
@@ -447,4 +448,24 @@ fn a_closed_documents_view_demand_refuses() {
     rig.close();
     let error = block_on(view.plan(LARGE)).unwrap_err();
     assert_eq!(code(&error), Some("instance-closed"), "{error:?}");
+}
+
+#[test]
+fn invalid_or_off_page_crops_refuse_without_rendering() {
+    let rig = Rig::pixels();
+    for rect in [
+        epdf_ffi::Rect { x: f64::NAN, y: 0.0, width: 1.0, height: 1.0 },
+        epdf_ffi::Rect { x: 0.0, y: 0.0, width: 0.0, height: 1.0 },
+        epdf_ffi::Rect { x: 0.0, y: 0.0, width: -1.0, height: 1.0 },
+        epdf_ffi::Rect { x: 10.0, y: 0.0, width: 1.0, height: 1.0 },
+    ] {
+        let error = block_on(rig.render.render_page(
+            SMALL,
+            RenderPageOptions { rect: Some(rect), ..Default::default() },
+            token(),
+        ))
+        .unwrap_err();
+        assert_eq!(code(&error), Some("invalid-input"));
+    }
+    assert!(rig.requests().is_empty());
 }

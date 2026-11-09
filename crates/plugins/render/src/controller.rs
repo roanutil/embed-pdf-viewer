@@ -1564,6 +1564,24 @@ impl RenderCapability {
     pub(crate) fn page_width(&self, page: PageRef) -> Result<f64, Error> {
         self.0.page_of(PageArg::Ref(page)).map(|(_, size)| size.width)
     }
+
+    /// The output region's point width, using the same clip as `render_part`.
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn raster_width(
+        &self,
+        page: PageRef,
+        rect: Option<Rect>,
+        rotation: Option<PageRotation>,
+    ) -> Result<f64, Error> {
+        let (_, size) = self.0.page_of(PageArg::Ref(page))?;
+        let whole = Rect { x: 0.0, y: 0.0, width: size.width, height: size.height };
+        let rect = rect.map_or(whole, |rect| intersect_rects(rect, whole));
+        Ok(epdf_geometry::display_size(
+            epdf_geometry::Size { width: rect.width, height: rect.height },
+            rotation.unwrap_or_default(),
+        )
+        .width)
+    }
 }
 
 // ── view demands ──────────────────────────────────────────────────────────────

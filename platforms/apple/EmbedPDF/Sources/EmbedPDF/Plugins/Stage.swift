@@ -93,6 +93,31 @@ public struct StageCapability: Sendable {
   public func currentPageIndex() async throws(PDFError) -> UInt32 { try await bridged { try await handle.currentPageIndex() } }
   public func currentPage() async throws(PDFError) -> PageRef? { try await bridged { try await handle.currentPage() } }
   public func currentItemPages() async throws(PDFError) -> [PageInfo] { try await bridged { try await handle.currentItemPages() } }
+  /// Pages navigation steps past: the current item when it fits across
+  /// the viewport, otherwise the current page alone.
+  public func currentPages() async throws(PDFError) -> [PageInfo] { try await bridged { try await handle.currentPages() } }
+
+  /// Start the zoom tool's box in viewport points.
+  public func beginZoomDrag(at point: Point) async throws(PDFError) {
+    try await bridged { try await handle.beginZoomDrag(point: point) }
+  }
+
+  public func moveZoomDrag(to point: Point) async throws(PDFError) {
+    try await bridged { try await handle.moveZoomDrag(point: point) }
+  }
+
+  /// Zoom into the box, or one step for a click (out with `zoomOut`).
+  public func endZoomDrag(zoomOut: Bool? = nil) async throws(PDFError) {
+    try await bridged { try await handle.endZoomDrag(zoomOut: zoomOut) }
+  }
+
+  public func cancelZoomDrag() async throws(PDFError) {
+    try await bridged { try await handle.cancelZoomDrag() }
+  }
+
+  public func zoomBox() async throws(PDFError) -> Rect? {
+    try await bridged { try await handle.zoomBox() }
+  }
   public func pageFrame(_ page: PageRef) async throws(PDFError) -> StageVisiblePage? { try await bridged { try await handle.pageFrame(page: page) } }
   public func page(at point: Point) async throws(PDFError) -> StagePageHit? { try await bridged { try await handle.pageAt(point: point) } }
   public func viewportToPage(_ page: PageRef, _ point: Point) async throws(PDFError) -> Point? { try await bridged { try await handle.viewportToPage(page: page, point: point) } }

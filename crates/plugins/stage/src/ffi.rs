@@ -1070,6 +1070,12 @@ impl StageHandle {
         self.read(|c| c.list_current_item_pages().iter().map(page_info).collect()).await
     }
 
+    /// Pages navigation steps past: the current item when it fits across
+    /// the viewport, otherwise the current page alone.
+    pub async fn current_pages(&self) -> Result<Vec<PageInfo>, ViewerError> {
+        self.read(|c| c.list_current_pages().iter().map(page_info).collect()).await
+    }
+
     pub async fn page_frame(&self, page: PageRef) -> Result<Option<StageVisiblePage>, ViewerError> {
         self.read(move |c| {
             c.get_page_box(page_target(page)).as_ref().map(StageVisiblePage::try_from).transpose()
@@ -1199,6 +1205,41 @@ impl StageHandle {
 
     pub async fn end_gesture(&self) -> Result<(), ViewerError> {
         self.read(|c| c.end_gesture()).await
+    }
+
+    /// Start the zoom tool's box at a viewport point.
+    pub async fn begin_zoom_drag(&self, point: Point) -> Result<(), ViewerError> {
+        self.read(move |c| {
+            c.begin_zoom_drag(point.into());
+            Ok(())
+        })
+        .await
+    }
+
+    pub async fn move_zoom_drag(&self, point: Point) -> Result<(), ViewerError> {
+        self.read(move |c| {
+            c.move_zoom_drag(point.into());
+            Ok(())
+        })
+        .await
+    }
+
+    /// Zoom into the box, or one step for a click (out when `zoom_out`).
+    pub async fn end_zoom_drag(&self, zoom_out: Option<bool>) -> Result<(), ViewerError> {
+        self.read(move |c| c.end_zoom_drag(Some(crate::EndZoomDragOptions { zoom_out }))).await
+    }
+
+    pub async fn cancel_zoom_drag(&self) -> Result<(), ViewerError> {
+        self.read(|c| {
+            c.cancel_zoom_drag();
+            Ok(())
+        })
+        .await
+    }
+
+    /// The box in viewport points, absent before the drag reaches its threshold.
+    pub async fn zoom_box(&self) -> Result<Option<Rect>, ViewerError> {
+        self.read(|c| Ok(c.get_zoom_box().map(Into::into))).await
     }
 
     // ── navigation ──

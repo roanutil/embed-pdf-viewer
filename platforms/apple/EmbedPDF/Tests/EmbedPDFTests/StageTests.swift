@@ -23,6 +23,21 @@ extension BaseSuite {
       return (viewer, document, stage)
     }
 
+    @Test func nativeZoomBoxTracksViewportPointsAndCancels() async throws {
+      let (_, _, stage) = try await opened()
+      let before = try await stage.camera()
+      try await stage.beginZoomDrag(at: Point(x: 70, y: 90))
+      #expect(try await stage.zoomBox() == nil)
+      try await stage.moveZoomDrag(to: Point(x: 170, y: 190))
+      let box = try #require(try await stage.zoomBox())
+      #expect(abs(box.x - 70) < 0.000001 && abs(box.y - 90) < 0.000001)
+      #expect(abs(box.width - 100) < 0.000001 && abs(box.height - 100) < 0.000001)
+      try await stage.cancelZoomDrag()
+      #expect(try await stage.zoomBox() == nil)
+      expectNoDifference(try await stage.camera(), before)
+      #expect(try await !stage.currentPages().isEmpty)
+    }
+
     @Test func aSizedStageShowsTheFirstPage() async throws {
       let (_, _, stage) = try await opened()
       let visible = try await stage.visiblePages()
