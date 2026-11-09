@@ -258,3 +258,28 @@ plugins, as in the previous catch-up.
 
 `docs/research/upstream-catchup-2026-11-07/decisions.md` lists every decision the workers raised.
 The ones that need the owner are summarised in the final report of this session.
+
+### Releases from the Mac (2026-11-08)
+
+Run from the host worktree `.claude/worktrees/catchup-mac` (branch `research/catchup-2026-11-07-mac`,
+at plugins `5fda5690d`), with `runtime-src` checked out at `786765b80` and
+`PERF_WORK_DIR=/Users/andrew/repos/embed-pdf-viewer/perf-compare/.work`:
+
+- `runtime-payloads-82dcb4399b212a06` on `roanutil/embed-pdf-runtime`: the `wasm32` payload with
+  the Rust core. Its `wasm32-eh` PDFium is the container build of `786765b80` above, registered by a
+  hand-written stamp at `<PERF_WORK_DIR>/fork/786765b8…/wasm32-eh.json` without a `source` field
+  (the script refuses `source` for an archive at the pinned commit itself). `verify-rust-core`
+  passed; `fetch-payload.sh` resolves the release from the tree's hash.
+- `apple-engine-f9d6ab231f17dd8b`: the iOS and universal macOS `EmbedPDFBindings.xcframework`,
+  fork slices `ios-arm64`, `ios-sim-arm64`, `darwin-static-arm64` and `darwin-static-x64` built at
+  `786765b80`. The package tests passed on the iOS simulator and on macOS arm64 and x86_64 (338
+  tests each, plus the smoke suites). `Package.swift` pins it; `check-apple-engine.sh` reports it
+  current.
+
+`build-xcframework.sh`'s symbol check needs an `nm` that reads Rust 1.98's LLVM 22 bitcode; Xcode
+27.2's does not ("Unknown attribute kind (105)"). The run used Rust's own:
+`rustup component add llvm-tools --toolchain 1.98.0-aarch64-apple-darwin` and
+`EMBEDPDF_NM=~/.rustup/toolchains/1.98.0-aarch64-apple-darwin/lib/rustlib/aarch64-apple-darwin/bin/llvm-nm`.
+
+Still not done: the Android fork slices (their `gn` asserts a Linux host) and the AAR, which needs
+an Android SDK.
