@@ -237,6 +237,15 @@ impl Rig {
     }
 
     pub fn capture(&self, rotation: f64) {
+        self.capture_before_resize(rotation, epdf_geometry::Point { x: 2.0, y: 1.0 }, None);
+    }
+
+    pub fn capture_before_resize(
+        &self,
+        rotation: f64,
+        to: epdf_geometry::Point,
+        resize: Option<(u32, u32)>,
+    ) {
         block_on(self.thread.call(move |k| {
             use epdf_plugin_interaction::{INTERACTION, PageHit, Phase, PointerSample};
             let interaction = k.capability(&INTERACTION).unwrap();
@@ -250,12 +259,19 @@ impl Rig {
                 zoom: None,
             };
             interaction.dispatch_pointer(&PointerSample::new(Phase::Down, point, Some(hit)));
-            let point = epdf_geometry::Point { x: 2.0, y: 1.0 };
+            let point = to;
             interaction.dispatch_pointer(&PointerSample::new(
                 Phase::Up,
                 point,
                 Some(PageHit { point, ..hit }),
             ));
+            if let Some((width, height)) = resize {
+                k.emit(&json!({
+                    "type": "pages.rotated",
+                    "pages": [{ "kind": "objectNumber", "objectNumber": 4 }],
+                    "layout": { "pageCount": 2, "pages": [page(0, 3, 2, 1), page(1, 4, width, height)], "namedPages": [], "labels": [] }
+                })).unwrap();
+            }
         }))
         .unwrap();
     }

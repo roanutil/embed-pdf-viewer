@@ -173,19 +173,7 @@ impl Core {
             };
             this.render_page(PageArg::Ref(page), options).reaction().await
         });
-        #[cfg(feature = "uniffi")]
-        let display_width = epdf_geometry::display_size(
-            epdf_geometry::Size { width: rect.width, height: rect.height },
-            rotation,
-        )
-        .width;
-        let held = Snapshot {
-            page,
-            rect,
-            image,
-            #[cfg(feature = "uniffi")]
-            display_width,
-        };
+        let held = Snapshot { page, rect, image };
         *self.snapshots.held.borrow_mut() = Some(held.clone());
         self.set_snapshot_box(Some(SnapshotBox {
             from: Point { x: rect.x, y: rect.y },

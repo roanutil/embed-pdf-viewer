@@ -88,6 +88,43 @@ class CoverageTests(unittest.TestCase):
             errors = module.validate(root, {'crates': {}, 'members': [member]}, [member])
             self.assertTrue(any('create_draft' in error for error in errors))
 
+    def assert_payload_overload_requires_labels(self, symbol, typed, payload, typed_labels, payload_labels):
+        module = self.module()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'ffi.rs').write_text('pub fn typed() {} pub fn payload() {}')
+            swift = root / 'Form.swift'
+            member = {'path': 'controller.rs', 'owner': 'Core', 'symbol': symbol,
+                      'export': {'path': 'ffi.rs', 'symbol': 'typed'},
+                      'swift': {'path': 'Form.swift', 'symbol': symbol, 'labels': typed_labels},
+                      'overloads': [{'export': {'path': 'ffi.rs', 'symbol': 'payload'},
+                                     'swift': {'path': 'Form.swift', 'symbol': symbol, 'labels': payload_labels}}]}
+            manifest = {'crates': {}, 'members': [member]}
+            swift.write_text(typed + '\n' + payload)
+            self.assertEqual(module.validate(root, manifest, [member]), [])
+            for remaining, missing_labels in [(typed, payload_labels), (payload, typed_labels)]:
+                with self.subTest(missing=missing_labels):
+                    swift.write_text(remaining)
+                    errors = module.validate(root, manifest, [member])
+                    self.assertEqual(len(errors), 1)
+                    self.assertIn('missing Swift', errors[0])
+                    self.assertIn(repr(missing_labels), errors[0])
+
+    def test_create_requires_the_draft_json_label(self):
+        self.assert_payload_overload_requires_labels('create',
+            'public func create(_ input: FormCreateFieldInput) {}',
+            'public func create(draftJSON: String) {}', ['_'], ['draftJSON'])
+
+    def test_update_requires_the_patch_json_label(self):
+        self.assert_payload_overload_requires_labels('update',
+            'public func update(_ ref: FormFieldRef, _ patch: FormFieldPatch) {}',
+            'public func update(_ ref: FormFieldRef, patchJSON: String) {}', ['_', '_'], ['_', 'patchJSON'])
+
+    def test_add_widget_requires_the_placement_json_label(self):
+        self.assert_payload_overload_requires_labels('addWidget',
+            'public func addWidget(to ref: FormFieldRef, _ placement: FormWidgetPlacement) {}',
+            'public func addWidget(to ref: FormFieldRef, placementJSON: String) {}', ['to', '_'], ['to', 'placementJSON'])
+
     def test_justified_exclusion_is_explicit(self):
         module = self.module()
         member = {'path': 'controller.rs', 'owner': 'Core', 'symbol': 'lifetime'}

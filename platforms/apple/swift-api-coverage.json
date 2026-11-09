@@ -3247,7 +3247,10 @@
       },
       "swift": {
         "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
-        "symbol": "create"
+        "symbol": "create",
+        "labels": [
+          "_"
+        ]
       },
       "overloads": [
         {
@@ -3257,7 +3260,10 @@
           },
           "swift": {
             "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
-            "symbol": "create"
+            "symbol": "create",
+            "labels": [
+              "draftJSON"
+            ]
           }
         }
       ]
@@ -3273,7 +3279,11 @@
       },
       "swift": {
         "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
-        "symbol": "addWidget"
+        "symbol": "addWidget",
+        "labels": [
+          "to",
+          "_"
+        ]
       },
       "overloads": [
         {
@@ -3283,7 +3293,11 @@
           },
           "swift": {
             "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
-            "symbol": "addWidget"
+            "symbol": "addWidget",
+            "labels": [
+              "to",
+              "placementJSON"
+            ]
           }
         }
       ]
@@ -3299,7 +3313,11 @@
       },
       "swift": {
         "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
-        "symbol": "update"
+        "symbol": "update",
+        "labels": [
+          "_",
+          "_"
+        ]
       },
       "overloads": [
         {
@@ -3309,7 +3327,11 @@
           },
           "swift": {
             "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
-            "symbol": "update"
+            "symbol": "update",
+            "labels": [
+              "_",
+              "patchJSON"
+            ]
           }
         }
       ]
@@ -9314,8 +9336,14 @@
       "path": "crates/plugins/stage/src/read/pages.rs",
       "owner": "StageCapability",
       "symbol": "list_current_pages",
-      "exclusion": "Laid-out page boxes for host painting; currentItemPages and visiblePages expose the native reading position and transforms.",
-      "classification": "host-presentation"
+      "export": {
+        "path": "crates/plugins/stage/src/ffi.rs",
+        "symbol": "current_pages"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Stage.swift",
+        "symbol": "currentPages"
+      }
     },
     {
       "crate": "stage",

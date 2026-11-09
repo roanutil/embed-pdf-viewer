@@ -43,6 +43,49 @@ def key(member):
     return member['path'], member['owner'], member['symbol']
 
 
+def swift_matches(source, target):
+    symbol = re.escape(target['symbol'])
+    if 'labels' not in target:
+        return re.search(r'\bpublic\s+(?:var|let|func)\s+`?' + symbol + r'`?\b', source) is not None
+    for match in re.finditer(r'\bpublic\s+func\s+`?' + symbol + r'`?\s*\(', source):
+        # Split only the declaration's top-level parameters: defaults and
+        # function/generic types can contain their own commas/parentheses.
+        parameters, start, stack = [], match.end(), []
+        quoted, escaped = False, False
+        for index in range(start, len(source)):
+            char = source[index]
+            if quoted:
+                if escaped:
+                    escaped = False
+                elif char == '\\':
+                    escaped = True
+                elif char == '"':
+                    quoted = False
+                continue
+            if char == '"':
+                quoted = True
+            elif char in '([{<':
+                stack.append(char)
+            elif char == ')' and not stack:
+                parameters.append(source[start:index])
+                break
+            elif char in ')]}>':
+                if stack and {'(': ')', '[': ']', '{': '}', '<': '>'}[stack[-1]] == char:
+                    stack.pop()
+            elif char == ',' and not stack:
+                parameters.append(source[start:index])
+                start = index + 1
+        labels = []
+        for parameter in parameters:
+            if not parameter.strip():
+                continue
+            label = re.match(r'\s*`?(\w+)`?(?:\s+`?\w+`?)?\s*:', parameter)
+            labels.append(label.group(1) if label else None)
+        if labels == target['labels']:
+            return True
+    return False
+
+
 def validate(root, manifest, discovered, allow_pending=False):
     errors = []
     entries = {key(member): member for member in manifest['members']}
@@ -73,7 +116,11 @@ def validate(root, manifest, discovered, allow_pending=False):
                     errors.append(f'incomplete overload mapping: {identity}')
                     continue
                 path = root / target['path']
-                if not path.exists() or not re.search(pattern.format(symbol=re.escape(target['symbol'])), path.read_text()):
+                found = path.exists() and (
+                    swift_matches(path.read_text(), target) if field == 'swift'
+                    else re.search(pattern.format(symbol=re.escape(target['symbol'])), path.read_text())
+                )
+                if not found:
                     errors.append(f"missing {language}: {target}")
     actual_crates = {path.parent.name for path in (root / 'crates/plugins').glob('*/Cargo.toml')}
     if actual_crates and set(manifest['crates']) != actual_crates:

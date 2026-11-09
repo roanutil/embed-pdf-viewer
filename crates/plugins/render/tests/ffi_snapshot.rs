@@ -128,3 +128,33 @@ fn capture_requires_both_render_and_copy_permission() {
         assert!(rig.requests().is_empty());
     }
 }
+
+#[test]
+fn snapshot_uses_geometry_at_render_admission_after_the_settlement_gate() {
+    for (rotation, size) in [(0.0, (1, 2)), (90.0, (2, 1))] {
+        let rig = Rig::new(Engine::Deferred);
+        let events = Arc::new(Events::default());
+        let _sub = rig.render.subscribe_snapshots(events.clone());
+        // Both actions run in one kernel turn: metadata is published on
+        // capture, then geometry changes before the settlement gate opens.
+        rig.capture_before_resize(rotation, epdf_geometry::Point { x: 2.0, y: 2.0 }, Some(size));
+        let snapshot = block_on(rig.render.snapshot()).unwrap().unwrap();
+        let from_event = events.0.lock().unwrap()[0].clone().unwrap();
+        let captured_rect = Rect { x: 0.0, y: 0.0, width: 2.0, height: 2.0 };
+        assert_eq!(snapshot.rect, captured_rect);
+        assert_eq!(from_event.rect, captured_rect);
+        let requests: Vec<_> =
+            rig.engine_log().into_iter().filter(|e| e["path"] == "page.render.image").collect();
+        assert_eq!(requests.len(), 1);
+        assert_eq!(
+            requests[0]["args"][0]["target"]["rect"],
+            serde_json::json!({
+                "x": 0.0, "y": 0.0, "width": f64::from(size.0), "height": f64::from(size.1)
+            })
+        );
+        rig.resolve_pixels(2, 4);
+        let image = block_on(snapshot.image.image(token())).unwrap();
+        assert_eq!((image.width, image.height, image.scale), (2, 4, 2.0));
+        assert_eq!(block_on(from_event.image.image(token())).unwrap(), image);
+    }
+}

@@ -58,9 +58,13 @@ impl RenderSnapshotImageHandle {
 
 fn snapshot(b: &Bound, held: &crate::Snapshot, post: KernelPost) -> RenderSnapshot {
     let pixels = b.pixels.clone();
-    let width = held.display_width;
     // Conversion retains the pixel allocation, not the host-table handle.
-    let image = held.image.convert(move |image| Raster::read(image, width, &pixels));
+    let image = held.image.convert(move |image| {
+        let width = image.point_width().ok_or_else(|| {
+            invalid_state("a snapshot image lacks its render-time geometry".into())
+        })?;
+        Raster::read(image, width, &pixels)
+    });
     RenderSnapshot {
         page: held.page.into(),
         rect: held.rect.into(),

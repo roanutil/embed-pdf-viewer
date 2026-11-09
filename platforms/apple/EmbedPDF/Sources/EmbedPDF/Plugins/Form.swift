@@ -7,7 +7,6 @@ public typealias FormFocusSettingsPatch = EmbedPDFBindings.FormFocusSettingsPatc
 public typealias FormFieldSettings = EmbedPDFBindings.FormFieldSettings
 public typealias FormFieldSettingsPatch = EmbedPDFBindings.FormFieldSettingsPatch
 public typealias FormFillable = EmbedPDFBindings.FormFillable
-public import Foundation
 
 public typealias FormFieldPanelSettings = EmbedPDFBindings.FormFieldPanelSettings
 public typealias FormSettingProperty = EmbedPDFBindings.FormSettingProperty
