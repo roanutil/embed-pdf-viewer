@@ -126,8 +126,11 @@ export type RustKernelClass = new (
 type Fn = (...args: unknown[]) => unknown;
 type Outcome = { returned: unknown } | { threw: unknown } | { promise: number };
 
-/** Members whose result is something new on every call. */
-const MAKES_NEW = /^(create|register|on[A-Z]|subscribe)/;
+/** Members whose result is something new on every call: render's
+ *  `reportPicture` opens a new report each time (one per mounted layer, and
+ *  a closed one must never answer for its successor), and
+ *  `handOverPictures` a new give-back. */
+const MAKES_NEW = /^(create|register|on[A-Z]|subscribe|reportPicture$|handOverPictures$)/;
 
 /** How many distinct calls keep their last answer for reuse. */
 const ANSWERS_KEPT = 4096;

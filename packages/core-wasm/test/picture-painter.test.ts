@@ -2,7 +2,8 @@
  * render's `handOverPictures` and `getPicturePainter` over the Rust kernel:
  * the painter crosses as the host's own value, so the page layers read back
  * the very object that was handed over (`useSelector` compares by
- * reference), and calling it never reaches Rust.
+ * reference), and calling it never reaches Rust. And `reportPicture`, which
+ * every page layer calls when it mounts: each call is a report of its own.
  */
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
@@ -115,5 +116,26 @@ describe('another plugin painting the pictures', () => {
     await k.documents.close('fixture');
     await k.documents.open({ kind: 'bytes', id: 'fixture', bytes });
     expect(k.capability(RenderToken).getPicturePainter()).toBeNull();
+  });
+
+  test('each reportPicture call is a report of its own, and the page state follows them', async () => {
+    const k = await opened();
+    const render = k.capability(RenderToken);
+    const page = k.documents.listPages('fixture')[0].ref;
+    expect(render.getPictureState(page, 'stage')).toEqual({ status: 'idle', slow: false });
+
+    // A layer mounts, unmounts and mounts again with the same arguments.
+    const first = render.reportPicture('stage', page);
+    expect(render.getPictureState(page, 'stage')).toEqual({ status: 'loading', slow: false });
+    first.close();
+    expect(render.getPictureState(page, 'stage')).toEqual({ status: 'idle', slow: false });
+    const second = render.reportPicture('stage', page);
+    expect(second).not.toBe(first);
+    second.shown();
+    expect(render.getPictureState(page, 'stage')).toEqual({ status: 'ready', slow: false });
+    // The same object while it's the same state, as `useSelector` needs.
+    expect(render.getPictureState(page, 'stage')).toBe(render.getPictureState(page, 'stage'));
+    second.close();
+    expect(render.getPictureState(page, 'stage')).toEqual({ status: 'idle', slow: false });
   });
 });
