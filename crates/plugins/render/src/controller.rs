@@ -680,11 +680,18 @@ impl Core {
         // A signal that never fires stands in for none.
         let signal = options.signal.clone().unwrap_or_default();
         let release = self.host.release_image.clone();
+        let region = rect.unwrap_or(whole);
+        let point_width = epdf_geometry::display_size(
+            epdf_geometry::Size { width: region.width, height: region.height },
+            options.rotation.unwrap_or_default(),
+        )
+        .width;
         let handle = move |value: &Value| {
-            Ok(match &release {
+            let image = match &release {
                 Some(release) => PageImageHandle::with_release(value.clone(), release.clone()),
                 None => PageImageHandle::new(value.clone()),
-            })
+            };
+            Ok(image.with_point_width(point_width))
         };
         // A copy draws as the page it copies, which the engine may not have
         // yet either.
@@ -741,7 +748,8 @@ impl Core {
                 view: None,
             };
             let raster = this.acquire_raster(page, key, request, options.signal.as_ref());
-            adopt(cancellable(CAPABILITY, options.signal.clone(), raster)).await
+            let image = adopt(cancellable(CAPABILITY, options.signal.clone(), raster)).await?;
+            Ok(image.with_point_width(size.width))
         })
     }
 

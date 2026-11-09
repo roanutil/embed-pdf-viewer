@@ -34,7 +34,13 @@ pub type ReleaseImage = Rc<dyn Fn(&Value)>;
 /// [`with_release`](Self::with_release) calls its hook once, when the last
 /// clone drops: store eviction, and the paint plans that still held it.
 #[derive(Clone)]
-pub struct PageImageHandle(Rc<HandleInner>);
+pub struct PageImageHandle {
+    inner: Rc<HandleInner>,
+    /// The effective region width selected by this render, after clipping
+    /// and rotation. Kept outside the shared host owner so attaching geometry
+    /// to a cached image neither changes its peers nor duplicates its release.
+    point_width: Option<f64>,
+}
 
 struct HandleInner {
     value: Value,
@@ -51,33 +57,43 @@ impl Drop for HandleInner {
 
 impl std::fmt::Debug for PageImageHandle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("PageImageHandle").field(&self.0.value).finish()
+        f.debug_tuple("PageImageHandle").field(&self.inner.value).finish()
     }
 }
 
 impl PartialEq for PageImageHandle {
     fn eq(&self, other: &Self) -> bool {
-        self.0.value == other.0.value
+        self.inner.value == other.inner.value
     }
 }
 
 impl PageImageHandle {
     pub fn new(value: Value) -> Self {
-        PageImageHandle(Rc::new(HandleInner { value, release: None }))
+        Self { inner: Rc::new(HandleInner { value, release: None }), point_width: None }
     }
 
     /// A handle that calls `release(&value)` when its last clone drops.
     pub fn with_release(value: Value, release: ReleaseImage) -> Self {
-        PageImageHandle(Rc::new(HandleInner { value, release: Some(release) }))
+        Self { inner: Rc::new(HandleInner { value, release: Some(release) }), point_width: None }
     }
 
     pub fn json(&self) -> &Value {
-        &self.0.value
+        &self.inner.value
+    }
+
+    pub(crate) fn with_point_width(mut self, point_width: f64) -> Self {
+        self.point_width = Some(point_width);
+        self
+    }
+
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn point_width(&self) -> Option<f64> {
+        self.point_width
     }
 
     /// The encoded bytes, when the handle carries them (local engines).
     pub fn bytes(&self) -> Option<Bytes> {
-        let source = self.0.value.get("source")?;
+        let source = self.inner.value.get("source")?;
         if source.get("kind").and_then(Value::as_str) != Some("bytes") {
             return None;
         }
@@ -89,7 +105,7 @@ impl PageImageHandle {
     /// estimate for URL handles and for bytes whose length the JSON does not
     /// carry, 1 when nothing is known.
     pub fn cost(&self) -> f64 {
-        let source = self.0.value.get("source");
+        let source = self.inner.value.get("source");
         if source.and_then(|s| s.get("kind")).and_then(Value::as_str) == Some("bytes") {
             // The host keeps the pixels on the JS side and crosses only a
             // byte count (see engine-bridge.ts); fall back to decoding
@@ -117,7 +133,7 @@ impl PageImageHandle {
         {
             return len;
         }
-        match (self.0.value.get("width"), self.0.value.get("height")) {
+        match (self.inner.value.get("width"), self.inner.value.get("height")) {
             (Some(width), Some(height)) => js_number(width) * js_number(height),
             _ => 1.0,
         }
@@ -136,7 +152,7 @@ fn js_number(value: &Value) -> f64 {
 
 impl Serialize for PageImageHandle {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        self.0.value.serialize(s)
+        self.inner.value.serialize(s)
     }
 }
 

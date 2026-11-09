@@ -657,12 +657,11 @@ impl RenderHandle {
                     let mut page = options.validated()?;
                     let (signal, abort) = abortable();
                     page.signal = Some(signal.clone());
-                    let (rect, rotation) = (page.rect, page.rotation);
                     let batch = cap.render_pages(
                         pages.into_iter().map(|page| PageArg::Ref(page.into())).collect(),
                         RenderPagesOptions { page, concurrency: concurrency.map(f64::from) },
                     );
-                    let (cap, pixels) = (cap.clone(), b.pixels.clone());
+                    let pixels = b.pixels.clone();
                     Ok(Promise::spawn(async move {
                         let batch = batch.await?;
                         if signal.aborted() {
@@ -677,7 +676,9 @@ impl RenderHandle {
                         let mut applied = Vec::with_capacity(batch.applied.len());
                         for entry in batch.applied {
                             let page = PageRef::from(entry.page);
-                            let width = cap.raster_width(entry.page, rect, rotation)?;
+                            let width = entry.image.point_width().ok_or_else(|| {
+                                invalid_state("a batch image lacks its render-time geometry".into())
+                            })?;
                             applied.push((page, Raster::read(&entry.image, width, &pixels)?));
                         }
                         let failed = batch

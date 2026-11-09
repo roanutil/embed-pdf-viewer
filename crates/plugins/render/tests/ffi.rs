@@ -469,3 +469,64 @@ fn invalid_or_off_page_crops_refuse_without_rendering() {
     }
     assert!(rig.requests().is_empty());
 }
+
+#[test]
+fn a_held_batch_preserves_each_pages_render_time_clipped_geometry() {
+    use epdf_ffi::Rect;
+    use epdf_plugin_render::ffi::RenderRotation;
+    for (rotation, first_size, second_size) in
+        [(RenderRotation::None, (2, 2), (2, 6)), (RenderRotation::Clockwise90, (2, 2), (6, 2))]
+    {
+        let rig = Rig::new(Engine::Deferred);
+        let mut batch = Box::pin(rig.render.render_pages(
+            vec![SMALL, LARGE],
+            RenderPageOptions {
+                rect: Some(Rect { x: 1.0, y: 0.0, width: 2.0, height: 3.0 }),
+                rotation: Some(rotation),
+                scale: Some(2.0),
+                ..Default::default()
+            },
+            Some(1),
+            token(),
+        ));
+        support::start(&mut batch);
+        rig.ping();
+        let requests = || {
+            rig.engine_log()
+                .into_iter()
+                .filter(|e| e["path"] == "page.render.image")
+                .collect::<Vec<_>>()
+        };
+        let first = requests();
+        assert_eq!(first.len(), 1, "concurrency 1 must hold the second page in the queue");
+        assert_eq!(
+            first[0]["args"][0]["target"]["rect"],
+            json!({"x":1.0,"y":0.0,"width":1.0,"height":1.0})
+        );
+        // The first page has selected its geometry; the queued page has not.
+        rig.resize_pages((2, 1), (2, 3));
+        rig.resolve_pixels_as(1, first_size.0, first_size.1);
+        rig.ping();
+        let started = requests();
+        assert_eq!(started.len(), 2);
+        assert_eq!(
+            started[1]["args"][0]["target"]["rect"],
+            json!({"x":1.0,"y":0.0,"width":1.0,"height":3.0})
+        );
+        // The first image is complete, while the second remains held. Both
+        // requested crops now miss their pages, so a live width read is wrong.
+        rig.resize_pages((1, 1), (1, 1));
+        rig.resolve_pixels_as(2, second_size.0, second_size.1);
+        let result = block_on(batch).unwrap();
+        assert!(result.failed.is_empty());
+        assert_eq!(result.applied.len(), 2);
+        for (entry, expected) in result.applied.iter().zip([first_size, second_size]) {
+            assert_eq!((entry.image.width, entry.image.height), expected);
+            assert_eq!(
+                entry.image.scale, 2.0,
+                "scale must describe each render's own clipped and rotated region"
+            );
+            assert!(entry.image.scale.is_finite());
+        }
+    }
+}

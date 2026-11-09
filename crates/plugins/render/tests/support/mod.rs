@@ -210,18 +210,30 @@ impl Rig {
     }
 
     pub fn resolve_pixels(&self, width: u32, height: u32) {
+        self.resolve_pixels_as(1, width, height);
+    }
+
+    pub fn resolve_pixels_as(&self, id: u64, width: u32, height: u32) {
         block_on(self.table.call(move |table| {
-            table.borrow_mut().insert(1, Arc::new(pixels(width, height, width * 4)));
+            table.borrow_mut().insert(id, Arc::new(pixels(width, height, width * 4)));
             Ok(())
         }))
         .unwrap();
         block_on(self.thread.call(move |k| {
             let value = json!({
             "width": width, "height": height, "stride": width * 4, "color": "rgba8",
-            "premultipliedAlpha": false, "source": { "kind": "pixels", "$byteLength": width * height * 4 }, "$host": 1
+            "premultipliedAlpha": false, "source": { "kind": "pixels", "$byteLength": width * height * 4 }, "$host": id
             });
             assert!(k.engine.settle("raster", Ok(value)));
         })).unwrap();
+    }
+
+    pub fn resize_pages(&self, small: (u32, u32), large: (u32, u32)) {
+        self.emit(json!({
+            "type": "pages.rotated",
+            "pages": [{ "kind": "objectNumber", "objectNumber": 3 }, { "kind": "objectNumber", "objectNumber": 4 }],
+            "layout": { "pageCount": 2, "pages": [page(0, 3, small.0, small.1), page(1, 4, large.0, large.1)], "namedPages": [], "labels": [] }
+        }));
     }
 
     pub fn capture(&self, rotation: f64) {
