@@ -232,6 +232,8 @@ const ghAsync = (args) => runOwned('gh', args, repo, {}, 'continue');
 // The pack, the same bytes for the same files: names sorted, times, owners and
 // modes fixed, and gzip without a name or time. GNU tar does it with flags; with
 // bsdtar the files' times are set first and the names listed in order.
+// COPYFILE_DISABLE=1 keeps macOS tar from adding a ._<name> AppleDouble entry
+// (extended attributes) for each file.
 function packCommand(dir, archive) {
   const gnu = /GNU tar/.test(spawnSync('tar', ['--version'], { encoding: 'utf8' }).stdout ?? '');
   const names = readdirSync(dir)
@@ -240,13 +242,13 @@ function packCommand(dir, archive) {
   const quoted = (value) => JSON.stringify(value);
   if (gnu) {
     return (
-      `tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --mode=u=rw,go=r ` +
+      `COPYFILE_DISABLE=1 tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --mode=u=rw,go=r ` +
       `-cf - -C ${quoted(dir)} ${names.map(quoted).join(' ')} | gzip -n > ${quoted(archive)}`
     );
   }
   for (const name of names) utimesSync(path.join(dir, name), 0, 0);
   return (
-    `tar --uid 0 --gid 0 --numeric-owner -cf - -C ${quoted(dir)} ${names.map(quoted).join(' ')} ` +
+    `COPYFILE_DISABLE=1 tar --uid 0 --gid 0 --numeric-owner -cf - -C ${quoted(dir)} ${names.map(quoted).join(' ')} ` +
     `| gzip -n > ${quoted(archive)}`
   );
 }
