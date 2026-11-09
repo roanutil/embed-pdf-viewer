@@ -9,6 +9,9 @@ public typealias FormFieldSettingsPatch = EmbedPDFBindings.FormFieldSettingsPatc
 public typealias FormFillable = EmbedPDFBindings.FormFillable
 public import Foundation
 
+public typealias FormFieldPanelSettings = EmbedPDFBindings.FormFieldPanelSettings
+public typealias FormSettingProperty = EmbedPDFBindings.FormSettingProperty
+public typealias FormSettingControl = EmbedPDFBindings.FormSettingControl
 public typealias FormValidationResult = EmbedPDFBindings.FormValidationResult
 public typealias FormFieldRef = EmbedPDFBindings.FormFieldRef
 public typealias FormFieldFamily = EmbedPDFBindings.FormFieldFamily
@@ -217,6 +220,26 @@ public struct FormCapability: Sendable {
   @discardableResult
   public func reset(_ fields: [FormFieldRef]? = nil) async throws(PDFError) -> [FormField] {
     try await bridgedCancellable { token in try await handle.reset(fields: fields, cancel: token) }
+  }
+
+  /// Family-specific panel descriptors and current values, resolved by Rust.
+  public func fieldSettings(_ ref: FormFieldRef) async throws(PDFError) -> FormFieldPanelSettings? {
+    try await bridged { try await handle.fieldSettings(fieldRef: ref) }
+  }
+
+  /// The engine's FormFieldDraft, including family options and actions/scripts.
+  public func create(draftJSON: String) async throws(PDFError) -> FormField {
+    try await bridgedCancellable { token in try await handle.createDraft(draftJson: draftJSON, cancel: token) }
+  }
+
+  /// The engine's FormFieldPatch. Omission preserves a value; null clears it.
+  @discardableResult
+  public func update(_ ref: FormFieldRef, patchJSON: String) async throws(PDFError) -> FormField {
+    try await bridgedCancellable { token in try await handle.updatePatch(fieldRef: ref, patchJson: patchJSON, cancel: token) }
+  }
+
+  public func addWidget(to ref: FormFieldRef, placementJSON: String) async throws(PDFError) -> FormWidgetAdded {
+    try await bridgedCancellable { token in try await handle.addWidgetPlacement(fieldRef: ref, placementJson: placementJSON, cancel: token) }
   }
 
   public func create(_ input: FormCreateFieldInput) async throws(PDFError) -> FormField {

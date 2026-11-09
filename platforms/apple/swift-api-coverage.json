@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "crates": {
     "acrojs": {
       "kind": "pure-core",
@@ -147,12 +147,12 @@
       "owner": "ActionsCapability",
       "symbol": "get_settings",
       "export": {
-        "path": "crates/plugins/actions/src/ffi.rs",
-        "symbol": "policy"
+        "path": "crates/plugins/actions/src/ffi/settings.rs",
+        "symbol": "settings"
       },
       "swift": {
         "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Actions.swift",
-        "symbol": "policy"
+        "symbol": "settings"
       }
     },
     {
@@ -161,12 +161,12 @@
       "owner": "ActionsCapability",
       "symbol": "update_settings",
       "export": {
-        "path": "crates/plugins/actions/src/ffi.rs",
-        "symbol": "update_policy"
+        "path": "crates/plugins/actions/src/ffi/settings.rs",
+        "symbol": "update_settings"
       },
       "swift": {
         "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Actions.swift",
-        "symbol": "updatePolicy"
+        "symbol": "updateSettings"
       }
     },
     {
@@ -174,14 +174,29 @@
       "path": "crates/plugins/actions/src/controller.rs",
       "owner": "ActionsCapability",
       "symbol": "reset_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/actions/src/ffi/settings.rs",
+        "symbol": "reset_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Actions.swift",
+        "symbol": "resetSettings"
+      }
     },
     {
       "crate": "actions",
       "path": "crates/plugins/actions/src/controller.rs",
       "owner": "ActionsCapability",
       "symbol": "on_settings_changed",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "state_revision"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "observeStateRevisions"
+      },
+      "note": "Read current plugin settings after the viewer revision stream wakes; no duplicate Swift settings store."
     },
     {
       "crate": "actions",
@@ -342,7 +357,14 @@
       "path": "crates/plugins/actions/src/dispatch/dispatcher.rs",
       "owner": "ActionsCapability",
       "symbol": "can_execute_named",
-      "exclusion": "Named-action permission probing is not in the current FFI; use executeNamed and its structured refusal."
+      "export": {
+        "path": "crates/plugins/actions/src/ffi.rs",
+        "symbol": "can_execute_named"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Actions.swift",
+        "symbol": "canExecuteNamed"
+      }
     },
     {
       "crate": "actions",
@@ -391,7 +413,8 @@
       "path": "crates/plugins/actions/src/lifecycle/page_lifecycle.rs",
       "owner": "ActionsCapability",
       "symbol": "report_page_state",
-      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories."
+      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories.",
+      "classification": "host-presentation"
     },
     {
       "crate": "actions",
@@ -412,28 +435,32 @@
       "path": "crates/plugins/actions/src/scripting/realm.rs",
       "owner": "ActionsCapability",
       "symbol": "script_realm",
-      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories."
+      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories.",
+      "classification": "host-presentation"
     },
     {
       "crate": "actions",
       "path": "crates/plugins/actions/src/scripting/realm.rs",
       "owner": "ActionsCapability",
       "symbol": "create_detached_script_realm",
-      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories."
+      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories.",
+      "classification": "host-presentation"
     },
     {
       "crate": "actions",
       "path": "crates/plugins/actions/src/scripting/surface.rs",
       "owner": "ActionsCapability",
       "symbol": "surface_script_result",
-      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories."
+      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories.",
+      "classification": "host-presentation"
     },
     {
       "crate": "actions",
       "path": "crates/plugins/actions/src/scripting/surface.rs",
       "owner": "ActionsCapability",
       "symbol": "surface_script_commit",
-      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories."
+      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories.",
+      "classification": "host-presentation"
     },
     {
       "crate": "actions",
@@ -454,21 +481,24 @@
       "path": "crates/plugins/actions/src/services/ports.rs",
       "owner": "ActionsCapability",
       "symbol": "register_annot_commit_sink",
-      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories."
+      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories.",
+      "classification": "host-presentation"
     },
     {
       "crate": "actions",
       "path": "crates/plugins/actions/src/services/ports.rs",
       "owner": "ActionsCapability",
       "symbol": "register_form_commit_sink",
-      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories."
+      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories.",
+      "classification": "host-presentation"
     },
     {
       "crate": "actions",
       "path": "crates/plugins/actions/src/services/ports.rs",
       "owner": "ActionsCapability",
       "symbol": "register_form_reader",
-      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories."
+      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories.",
+      "classification": "host-presentation"
     },
     {
       "crate": "actions",
@@ -489,14 +519,16 @@
       "path": "crates/plugins/actions/src/services/ports.rs",
       "owner": "ActionsCapability",
       "symbol": "register_submit_resolver",
-      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories."
+      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories.",
+      "classification": "host-presentation"
     },
     {
       "crate": "actions",
       "path": "crates/plugins/actions/src/services/ports.rs",
       "owner": "ActionsCapability",
       "symbol": "register_form_focus",
-      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories."
+      "exclusion": "Sibling scripting/lifecycle host port; actions owns this integration with form/annotation and native script factories.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
@@ -643,28 +675,66 @@
       "path": "crates/plugins/annotation/src/comments/threads.rs",
       "owner": "Core",
       "symbol": "threads_index",
-      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource."
+      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource.",
+      "classification": "internal-resource"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/controller.rs",
       "owner": "Core",
       "symbol": "capability",
-      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource."
+      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource.",
+      "classification": "internal-resource"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/controller.rs",
       "owner": "Core",
       "symbol": "get_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/annotation/src/ffi/handle.rs",
+        "symbol": "settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Annotation.swift",
+        "symbol": "settings"
+      }
+    },
+    {
+      "crate": "annotation",
+      "path": "crates/plugins/annotation/src/controller.rs",
+      "owner": "Core",
+      "symbol": "update_settings",
+      "export": {
+        "path": "crates/plugins/annotation/src/ffi/handle.rs",
+        "symbol": "update_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Annotation.swift",
+        "symbol": "updateSettings"
+      }
+    },
+    {
+      "crate": "annotation",
+      "path": "crates/plugins/annotation/src/controller.rs",
+      "owner": "Core",
+      "symbol": "reset_settings",
+      "export": {
+        "path": "crates/plugins/annotation/src/ffi/handle.rs",
+        "symbol": "reset_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Annotation.swift",
+        "symbol": "resetSettings"
+      }
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/controller.rs",
       "owner": "Core",
       "symbol": "model",
-      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource."
+      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource.",
+      "classification": "internal-resource"
     },
     {
       "crate": "annotation",
@@ -727,7 +797,8 @@
       "path": "crates/plugins/annotation/src/read/annotations.rs",
       "owner": "Core",
       "symbol": "get_hovered",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
@@ -748,21 +819,24 @@
       "path": "crates/plugins/annotation/src/read/annotations.rs",
       "owner": "Core",
       "symbol": "is_editable",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/read/chrome.rs",
       "owner": "Core",
       "symbol": "list_chrome_nodes",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/read/chrome.rs",
       "owner": "Core",
       "symbol": "get_annotation_anchor",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
@@ -783,63 +857,72 @@
       "path": "crates/plugins/annotation/src/read/chrome.rs",
       "owner": "Core",
       "symbol": "rotation_anchor",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/read/chrome.rs",
       "owner": "Core",
       "symbol": "get_hit_kind",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/read/chrome.rs",
       "owner": "Core",
       "symbol": "claims_touch_at",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/read/chrome.rs",
       "owner": "Core",
       "symbol": "get_cursor_at",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/read/render.rs",
       "owner": "Core",
       "symbol": "list_page_items",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/read/render.rs",
       "owner": "Core",
       "symbol": "list_text_items",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/read/render.rs",
       "owner": "Core",
       "symbol": "list_link_items",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/read/render.rs",
       "owner": "Core",
       "symbol": "get_appearance_epoch",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/read/render.rs",
       "owner": "Core",
       "symbol": "render_appearances",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
@@ -958,28 +1041,32 @@
       "path": "crates/plugins/annotation/src/services/lending.rs",
       "owner": "Core",
       "symbol": "lend",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/tools/behaviors.rs",
       "owner": "Core",
       "symbol": "register_behavior",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/tools/behaviors.rs",
       "owner": "Core",
       "symbol": "get_behavior_for",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/tools/behaviors.rs",
       "owner": "Core",
       "symbol": "prune_engaged_selection",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
@@ -1014,7 +1101,8 @@
       "path": "crates/plugins/annotation/src/tools/ghost.rs",
       "owner": "Core",
       "symbol": "get_image_ghost",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
@@ -1091,7 +1179,8 @@
       "path": "crates/plugins/annotation/src/tools/registry.rs",
       "owner": "Core",
       "symbol": "tools_register",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
@@ -1126,21 +1215,24 @@
       "path": "crates/plugins/annotation/src/tools/registry.rs",
       "owner": "Core",
       "symbol": "list_resolved_tools",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/tools/registry.rs",
       "owner": "Core",
       "symbol": "get_resolved_tool",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/tools/registry.rs",
       "owner": "Core",
       "symbol": "get_tool_subtype",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
@@ -1203,14 +1295,28 @@
       "path": "crates/plugins/annotation/src/write/crud.rs",
       "owner": "Core",
       "symbol": "export",
-      "exclusion": "Annotation bundle interchange is not supported by the Apple facade; CRUD and attachment-byte access are supported."
+      "export": {
+        "path": "crates/plugins/annotation/src/ffi/interchange.rs",
+        "symbol": "export"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Annotation.swift",
+        "symbol": "export"
+      }
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/write/crud.rs",
       "owner": "Core",
       "symbol": "import",
-      "exclusion": "Annotation bundle interchange is not supported by the Apple facade; CRUD and attachment-byte access are supported."
+      "export": {
+        "path": "crates/plugins/annotation/src/ffi/interchange.rs",
+        "symbol": "import"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Annotation.swift",
+        "symbol": "import"
+      }
     },
     {
       "crate": "annotation",
@@ -1287,7 +1393,8 @@
       "path": "crates/plugins/annotation/src/write/drafts.rs",
       "owner": "Core",
       "symbol": "distance_creation_page",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
@@ -1392,7 +1499,8 @@
       "path": "crates/plugins/annotation/src/write/markup.rs",
       "owner": "Core",
       "symbol": "apply_tool_to_selection",
-      "exclusion": "Generic tool application is not supported; use the typed createFromSelection/markup methods."
+      "exclusion": "Generic tool application is not supported; use the typed createFromSelection/markup methods.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
@@ -1441,49 +1549,56 @@
       "path": "crates/plugins/annotation/src/write/measurement.rs",
       "owner": "Core",
       "symbol": "set_page_viewports",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/write/measurement.rs",
       "owner": "Core",
       "symbol": "remeasure_page",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/write/pointer.rs",
       "owner": "Core",
       "symbol": "edit_pointer",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/write/pointer.rs",
       "owner": "Core",
       "symbol": "marquee_pointer",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/write/pointer.rs",
       "owner": "Core",
       "symbol": "create_pointer",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/write/pointer.rs",
       "owner": "Core",
       "symbol": "hover_at",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/write/script_effects.rs",
       "owner": "Core",
       "symbol": "commit_script_effects",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
@@ -1588,7 +1703,14 @@
       "path": "crates/plugins/annotation/src/write/selection.rs",
       "owner": "Core",
       "symbol": "selection_update_link",
-      "exclusion": "Bulk selected-link editing is not supported; update each annotation through threads.setLink."
+      "export": {
+        "path": "crates/plugins/annotation/src/ffi/selection.rs",
+        "symbol": "update_link"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Annotation.swift",
+        "symbol": "updateLink"
+      }
     },
     {
       "crate": "annotation",
@@ -1637,7 +1759,8 @@
       "path": "crates/plugins/annotation/src/write/selection.rs",
       "owner": "Core",
       "symbol": "selection_get_anchor",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
@@ -1784,14 +1907,16 @@
       "path": "crates/plugins/annotation/src/write/stamps.rs",
       "owner": "Core",
       "symbol": "get_armed_stamp",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
       "path": "crates/plugins/annotation/src/write/stamps.rs",
       "owner": "Core",
       "symbol": "render_armed_stamp_preview",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
@@ -1840,7 +1965,8 @@
       "path": "crates/plugins/annotation/src/write/text_editing.rs",
       "owner": "Core",
       "symbol": "get_editing_id",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
@@ -1861,7 +1987,8 @@
       "path": "crates/plugins/annotation/src/write/text_editing.rs",
       "owner": "Core",
       "symbol": "draft_rich_text",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "annotation",
@@ -1882,7 +2009,8 @@
       "path": "crates/plugins/annotation/src/write/text_editing.rs",
       "owner": "Core",
       "symbol": "get_css_font_family",
-      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter."
+      "exclusion": "Annotation host rendering, text-editor or pointer/tool integration; native facade currently supports document CRUD, drafts, selection and threads, not the web chrome adapter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "attachment",
@@ -2127,28 +2255,38 @@
       "path": "crates/plugins/commands/src/controller.rs",
       "owner": "WeakCommandsCapability",
       "symbol": "upgrade",
-      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource."
+      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource.",
+      "classification": "internal-resource"
     },
     {
       "crate": "commands",
       "path": "crates/plugins/commands/src/controller.rs",
       "owner": "CommandsCapability",
       "symbol": "downgrade",
-      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource."
+      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource.",
+      "classification": "internal-resource"
     },
     {
       "crate": "commands",
       "path": "crates/plugins/commands/src/controller.rs",
       "owner": "CommandsCapability",
       "symbol": "in_scope",
-      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource."
+      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource.",
+      "classification": "internal-resource"
     },
     {
       "crate": "commands",
       "path": "crates/plugins/commands/src/controller.rs",
       "owner": "CommandsCapability",
       "symbol": "get_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/commands/src/ffi/settings.rs",
+        "symbol": "settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Commands.swift",
+        "symbol": "settings"
+      }
     },
     {
       "crate": "commands",
@@ -2156,12 +2294,12 @@
       "owner": "CommandsCapability",
       "symbol": "update_settings",
       "export": {
-        "path": "crates/plugins/commands/src/ffi.rs",
-        "symbol": "set_app_state_json"
+        "path": "crates/plugins/commands/src/ffi/settings.rs",
+        "symbol": "update_settings"
       },
       "swift": {
         "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Commands.swift",
-        "symbol": "setAppState"
+        "symbol": "updateSettings"
       }
     },
     {
@@ -2169,21 +2307,37 @@
       "path": "crates/plugins/commands/src/controller.rs",
       "owner": "CommandsCapability",
       "symbol": "retained_commands",
-      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource."
+      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource.",
+      "classification": "internal-resource"
     },
     {
       "crate": "commands",
       "path": "crates/plugins/commands/src/controller.rs",
       "owner": "CommandsCapability",
       "symbol": "reset_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/commands/src/ffi/settings.rs",
+        "symbol": "reset_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Commands.swift",
+        "symbol": "resetSettings"
+      }
     },
     {
       "crate": "commands",
       "path": "crates/plugins/commands/src/controller.rs",
       "owner": "CommandsCapability",
       "symbol": "on_settings_changed",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "state_revision"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "observeStateRevisions"
+      },
+      "note": "Read current plugin settings after the viewer revision stream wakes; no duplicate Swift settings store."
     },
     {
       "crate": "commands",
@@ -2344,7 +2498,14 @@
       "path": "crates/plugins/commands/src/controller.rs",
       "owner": "CommandsCapability",
       "symbol": "get_refusal",
-      "exclusion": "Detailed permanent command refusal is not exported; resolved command enabled/visible and canExecute are supported."
+      "export": {
+        "path": "crates/plugins/commands/src/ffi.rs",
+        "symbol": "refusal"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Commands.swift",
+        "symbol": "refusal"
+      }
     },
     {
       "crate": "commands",
@@ -2477,56 +2638,94 @@
       "path": "crates/plugins/commands/src/turning_off.rs",
       "owner": "CommandsCapability",
       "symbol": "get_disabled_commands",
-      "exclusion": "Per-command disabling is not exported; category disabling is the supported facade workflow."
+      "export": {
+        "path": "crates/plugins/commands/src/ffi.rs",
+        "symbol": "disabled_commands"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Commands.swift",
+        "symbol": "disabledCommands"
+      }
     },
     {
       "crate": "commands",
       "path": "crates/plugins/commands/src/turning_off.rs",
       "owner": "CommandsCapability",
       "symbol": "is_command_disabled",
-      "exclusion": "Per-command disabling is not exported; category disabling is the supported facade workflow."
+      "export": {
+        "path": "crates/plugins/commands/src/ffi.rs",
+        "symbol": "is_command_disabled"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Commands.swift",
+        "symbol": "isCommandDisabled"
+      }
     },
     {
       "crate": "commands",
       "path": "crates/plugins/commands/src/turning_off.rs",
       "owner": "CommandsCapability",
       "symbol": "disable_command",
-      "exclusion": "Per-command disabling is not exported; category disabling is the supported facade workflow."
+      "export": {
+        "path": "crates/plugins/commands/src/ffi.rs",
+        "symbol": "disable_command"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Commands.swift",
+        "symbol": "disableCommand"
+      }
     },
     {
       "crate": "commands",
       "path": "crates/plugins/commands/src/turning_off.rs",
       "owner": "CommandsCapability",
       "symbol": "enable_command",
-      "exclusion": "Per-command disabling is not exported; category disabling is the supported facade workflow."
+      "export": {
+        "path": "crates/plugins/commands/src/ffi.rs",
+        "symbol": "enable_command"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Commands.swift",
+        "symbol": "enableCommand"
+      }
     },
     {
       "crate": "commands",
       "path": "crates/plugins/commands/src/turning_off.rs",
       "owner": "CommandsCapability",
       "symbol": "set_disabled_commands",
-      "exclusion": "Per-command disabling is not exported; category disabling is the supported facade workflow."
+      "export": {
+        "path": "crates/plugins/commands/src/ffi.rs",
+        "symbol": "set_disabled_commands"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Commands.swift",
+        "symbol": "setDisabledCommands"
+      }
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/controller.rs",
       "owner": "Core",
       "symbol": "capability",
-      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource."
+      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource.",
+      "classification": "internal-resource"
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/controller.rs",
       "owner": "Core",
       "symbol": "view",
-      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource."
+      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource.",
+      "classification": "internal-resource"
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/controller.rs",
       "owner": "Core",
       "symbol": "truth",
-      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource."
+      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource.",
+      "classification": "internal-resource"
     },
     {
       "crate": "form",
@@ -2603,28 +2802,57 @@
       "path": "crates/plugins/form/src/controller.rs",
       "owner": "Core",
       "symbol": "get_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/form/src/ffi/settings.rs",
+        "symbol": "settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
+        "symbol": "settings"
+      }
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/controller.rs",
       "owner": "Core",
       "symbol": "update_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/form/src/ffi/settings.rs",
+        "symbol": "update_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
+        "symbol": "updateSettings"
+      }
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/controller.rs",
       "owner": "Core",
       "symbol": "reset_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/form/src/ffi/settings.rs",
+        "symbol": "reset_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
+        "symbol": "resetSettings"
+      }
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/controller.rs",
       "owner": "Core",
       "symbol": "on_settings_changed",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "state_revision"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "observeStateRevisions"
+      },
+      "note": "Read current plugin settings after the viewer revision stream wakes; no duplicate Swift settings store."
     },
     {
       "crate": "form",
@@ -2659,7 +2887,14 @@
       "path": "crates/plugins/form/src/read/fields.rs",
       "owner": "Core",
       "symbol": "get_form_kind",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "export": {
+        "path": "crates/plugins/form/src/ffi.rs",
+        "symbol": "snapshot"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
+        "symbol": "snapshot"
+      }
     },
     {
       "crate": "form",
@@ -2708,14 +2943,28 @@
       "path": "crates/plugins/form/src/read/fields.rs",
       "owner": "Core",
       "symbol": "get_widget",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "export": {
+        "path": "crates/plugins/form/src/ffi/editing.rs",
+        "symbol": "widget"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
+        "symbol": "widget"
+      }
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/read/fields.rs",
       "owner": "Core",
       "symbol": "get_widgets",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "export": {
+        "path": "crates/plugins/form/src/ffi/editing.rs",
+        "symbol": "field_widgets"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
+        "symbol": "widgets"
+      }
     },
     {
       "crate": "form",
@@ -2778,14 +3027,28 @@
       "path": "crates/plugins/form/src/read/fields.rs",
       "owner": "Core",
       "symbol": "get_selected_field",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "export": {
+        "path": "crates/plugins/form/src/ffi/editing.rs",
+        "symbol": "selected_field"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
+        "symbol": "selectedField"
+      }
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/read/settings.rs",
       "owner": "Core",
       "symbol": "get_field_settings",
-      "exclusion": "Per-field resolved settings are not exported; configure form settings at viewer registration."
+      "export": {
+        "path": "crates/plugins/form/src/ffi/editing.rs",
+        "symbol": "field_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
+        "symbol": "fieldSettings"
+      }
     },
     {
       "crate": "form",
@@ -2848,7 +3111,8 @@
       "path": "crates/plugins/form/src/read/widgets.rs",
       "owner": "Core",
       "symbol": "get_page_box_json",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "form",
@@ -2869,70 +3133,80 @@
       "path": "crates/plugins/form/src/services/design.rs",
       "owner": "Core",
       "symbol": "lending",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/services/looks.rs",
       "owner": "Core",
       "symbol": "list_shown_widgets",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/services/looks.rs",
       "owner": "Core",
       "symbol": "widget_is_pending",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/services/looks.rs",
       "owner": "Core",
       "symbol": "get_widget_painting",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/services/looks.rs",
       "owner": "Core",
       "symbol": "get_text_editor_layout",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/services/pictures.rs",
       "owner": "Core",
       "symbol": "get_appearance_epoch",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/services/pictures.rs",
       "owner": "Core",
       "symbol": "render_appearances",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/services/pictures.rs",
       "owner": "Core",
       "symbol": "picture_version_of_ref",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/services/rights.rs",
       "owner": "Core",
       "symbol": "may_fill",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/services/rights.rs",
       "owner": "Core",
       "symbol": "may_sign",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "form",
@@ -2974,7 +3248,19 @@
       "swift": {
         "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
         "symbol": "create"
-      }
+      },
+      "overloads": [
+        {
+          "export": {
+            "path": "crates/plugins/form/src/ffi/editing.rs",
+            "symbol": "create_draft"
+          },
+          "swift": {
+            "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
+            "symbol": "create"
+          }
+        }
+      ]
     },
     {
       "crate": "form",
@@ -2988,7 +3274,19 @@
       "swift": {
         "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
         "symbol": "addWidget"
-      }
+      },
+      "overloads": [
+        {
+          "export": {
+            "path": "crates/plugins/form/src/ffi/editing.rs",
+            "symbol": "add_widget_placement"
+          },
+          "swift": {
+            "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
+            "symbol": "addWidget"
+          }
+        }
+      ]
     },
     {
       "crate": "form",
@@ -3002,14 +3300,33 @@
       "swift": {
         "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
         "symbol": "update"
-      }
+      },
+      "overloads": [
+        {
+          "export": {
+            "path": "crates/plugins/form/src/ffi/editing.rs",
+            "symbol": "update_patch"
+          },
+          "swift": {
+            "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
+            "symbol": "update"
+          }
+        }
+      ]
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/write/fields.rs",
       "owner": "Core",
       "symbol": "reorder_calculations",
-      "exclusion": "Calculation-order editing is not supported by the Apple facade; form create/fill/design remain available."
+      "export": {
+        "path": "crates/plugins/form/src/ffi/editing.rs",
+        "symbol": "reorder_calculations"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
+        "symbol": "reorderCalculations"
+      }
     },
     {
       "crate": "form",
@@ -3044,14 +3361,28 @@
       "path": "crates/plugins/form/src/write/fields.rs",
       "owner": "Core",
       "symbol": "update_widget",
-      "exclusion": "Independent widget property editing is not exported; field updates, adding and removing widgets are supported."
+      "export": {
+        "path": "crates/plugins/form/src/ffi/editing.rs",
+        "symbol": "update_widget"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
+        "symbol": "updateWidget"
+      }
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/write/fields.rs",
       "owner": "Core",
       "symbol": "delete_widget",
-      "exclusion": "Use removeWidget for the supported field/widget removal workflow."
+      "export": {
+        "path": "crates/plugins/form/src/ffi/editing.rs",
+        "symbol": "delete_widget"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Form.swift",
+        "symbol": "deleteWidget"
+      }
     },
     {
       "crate": "form",
@@ -3170,42 +3501,48 @@
       "path": "crates/plugins/form/src/write/reset.rs",
       "owner": "Core",
       "symbol": "reset_form_action",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/write/script_effects.rs",
       "owner": "Core",
       "symbol": "resolve_submit_dataset",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/write/script_effects.rs",
       "owner": "Core",
       "symbol": "commit_script_form_effects",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/write/typing.rs",
       "owner": "Core",
       "symbol": "draft_text",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/write/typing.rs",
       "owner": "Core",
       "symbol": "discard_draft_text",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "form",
       "path": "crates/plugins/form/src/write/typing.rs",
       "owner": "Core",
       "symbol": "commit_draft_text",
-      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter."
+      "exclusion": "Form host presentation, scripting or draft-editor integration; native facade supports typed fields, values, focus and widget activation, not the web widget painter.",
+      "classification": "host-presentation"
     },
     {
       "crate": "form",
@@ -3268,7 +3605,8 @@
       "path": "crates/plugins/history/src/controller.rs",
       "owner": "HistoryCapability",
       "symbol": "settings_json",
-      "exclusion": "Equivalent JSON settings overload; the typed settings API and settingsChanged event are exported."
+      "exclusion": "Equivalent JSON settings overload; the typed settings API and settingsChanged event are exported.",
+      "classification": "equivalent-representation"
     },
     {
       "crate": "history",
@@ -3289,7 +3627,8 @@
       "path": "crates/plugins/history/src/controller.rs",
       "owner": "HistoryCapability",
       "symbol": "update_settings_json",
-      "exclusion": "Equivalent JSON settings overload; the typed settings API and settingsChanged event are exported."
+      "exclusion": "Equivalent JSON settings overload; the typed settings API and settingsChanged event are exported.",
+      "classification": "equivalent-representation"
     },
     {
       "crate": "history",
@@ -3324,7 +3663,8 @@
       "path": "crates/plugins/history/src/controller.rs",
       "owner": "HistoryCapability",
       "symbol": "on_settings_changed_json",
-      "exclusion": "Equivalent JSON settings overload; the typed settings API and settingsChanged event are exported."
+      "exclusion": "Equivalent JSON settings overload; the typed settings API and settingsChanged event are exported.",
+      "classification": "equivalent-representation"
     },
     {
       "crate": "history",
@@ -3457,35 +3797,65 @@
       "path": "crates/plugins/i18n/src/controller.rs",
       "owner": "I18nCapability",
       "symbol": "get_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/i18n/src/ffi/settings.rs",
+        "symbol": "settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/I18n.swift",
+        "symbol": "settings"
+      }
     },
     {
       "crate": "i18n",
       "path": "crates/plugins/i18n/src/controller.rs",
       "owner": "I18nCapability",
       "symbol": "update_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/i18n/src/ffi/settings.rs",
+        "symbol": "update_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/I18n.swift",
+        "symbol": "updateSettings"
+      }
     },
     {
       "crate": "i18n",
       "path": "crates/plugins/i18n/src/controller.rs",
       "owner": "I18nCapability",
       "symbol": "retained_loaders",
-      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource."
+      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource.",
+      "classification": "internal-resource"
     },
     {
       "crate": "i18n",
       "path": "crates/plugins/i18n/src/controller.rs",
       "owner": "I18nCapability",
       "symbol": "reset_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/i18n/src/ffi/settings.rs",
+        "symbol": "reset_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/I18n.swift",
+        "symbol": "resetSettings"
+      }
     },
     {
       "crate": "i18n",
       "path": "crates/plugins/i18n/src/controller.rs",
       "owner": "I18nCapability",
       "symbol": "on_settings_changed",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "state_revision"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "observeStateRevisions"
+      },
+      "note": "Read current plugin settings after the viewer revision stream wakes; no duplicate Swift settings store."
     },
     {
       "crate": "i18n",
@@ -3506,7 +3876,8 @@
       "path": "crates/plugins/i18n/src/controller.rs",
       "owner": "I18nCapability",
       "symbol": "get_translator",
-      "exclusion": "Rust translator closure factory; Swift uses t and registered locale loaders."
+      "exclusion": "Rust translator closure factory; Swift uses t and registered locale loaders.",
+      "classification": "internal-resource"
     },
     {
       "crate": "i18n",
@@ -3653,28 +4024,57 @@
       "path": "crates/plugins/interaction/src/controller.rs",
       "owner": "InteractionCapability",
       "symbol": "get_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/interaction/src/ffi/settings.rs",
+        "symbol": "settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Interaction.swift",
+        "symbol": "settings"
+      }
     },
     {
       "crate": "interaction",
       "path": "crates/plugins/interaction/src/controller.rs",
       "owner": "InteractionCapability",
       "symbol": "update_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/interaction/src/ffi/settings.rs",
+        "symbol": "update_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Interaction.swift",
+        "symbol": "updateSettings"
+      }
     },
     {
       "crate": "interaction",
       "path": "crates/plugins/interaction/src/controller.rs",
       "owner": "InteractionCapability",
       "symbol": "reset_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/interaction/src/ffi/settings.rs",
+        "symbol": "reset_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Interaction.swift",
+        "symbol": "resetSettings"
+      }
     },
     {
       "crate": "interaction",
       "path": "crates/plugins/interaction/src/controller.rs",
       "owner": "InteractionCapability",
       "symbol": "on_settings_changed",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "state_revision"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "observeStateRevisions"
+      },
+      "note": "Read current plugin settings after the viewer revision stream wakes; no duplicate Swift settings store."
     },
     {
       "crate": "interaction",
@@ -4045,7 +4445,8 @@
       "path": "crates/plugins/link/src/controller.rs",
       "owner": "LinkCapability",
       "symbol": "get_page",
-      "exclusion": "Host link page cache/URI opener integration; Swift receives LinkActivation and the app decides URL handling."
+      "exclusion": "Host link page cache/URI opener integration; Swift receives LinkActivation and the app decides URL handling.",
+      "classification": "internal-resource"
     },
     {
       "crate": "link",
@@ -4234,7 +4635,8 @@
       "path": "crates/plugins/link/src/controller.rs",
       "owner": "LinkCapability",
       "symbol": "register_uri_opener",
-      "exclusion": "Host link page cache/URI opener integration; Swift receives LinkActivation and the app decides URL handling."
+      "exclusion": "Host link page cache/URI opener integration; Swift receives LinkActivation and the app decides URL handling.",
+      "classification": "internal-resource"
     },
     {
       "crate": "link",
@@ -4283,49 +4685,88 @@
       "path": "crates/plugins/measurement/src/controller.rs",
       "owner": "MeasurementCapability",
       "symbol": "get_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/measurement/src/ffi/settings.rs",
+        "symbol": "settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Measurement.swift",
+        "symbol": "settings"
+      }
     },
     {
+      "exclusion": "Equivalent open settings representation; the complete mutable native subset uses typed settings/patch records and the same Rust owner.",
       "crate": "measurement",
       "path": "crates/plugins/measurement/src/controller.rs",
       "owner": "MeasurementCapability",
       "symbol": "settings_json",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "classification": "equivalent-representation"
     },
     {
       "crate": "measurement",
       "path": "crates/plugins/measurement/src/controller.rs",
       "owner": "MeasurementCapability",
       "symbol": "update_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/measurement/src/ffi/settings.rs",
+        "symbol": "update_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Measurement.swift",
+        "symbol": "updateSettings"
+      }
     },
     {
+      "exclusion": "Equivalent open settings representation; the complete mutable native subset uses typed settings/patch records and the same Rust owner.",
       "crate": "measurement",
       "path": "crates/plugins/measurement/src/controller.rs",
       "owner": "MeasurementCapability",
       "symbol": "update_settings_json",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "classification": "equivalent-representation"
     },
     {
       "crate": "measurement",
       "path": "crates/plugins/measurement/src/controller.rs",
       "owner": "MeasurementCapability",
       "symbol": "reset_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/measurement/src/ffi/settings.rs",
+        "symbol": "reset_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Measurement.swift",
+        "symbol": "resetSettings"
+      }
     },
     {
       "crate": "measurement",
       "path": "crates/plugins/measurement/src/controller.rs",
       "owner": "MeasurementCapability",
       "symbol": "on_settings_changed",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "state_revision"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "observeStateRevisions"
+      },
+      "note": "Read current plugin settings after the viewer revision stream wakes; no duplicate Swift settings store."
     },
     {
       "crate": "measurement",
       "path": "crates/plugins/measurement/src/controller.rs",
       "owner": "MeasurementCapability",
       "symbol": "on_settings_changed_json",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "state_revision"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "observeStateRevisions"
+      },
+      "note": "Read current plugin settings after the viewer revision stream wakes; no duplicate Swift settings store."
     },
     {
       "crate": "measurement",
@@ -5494,49 +5935,88 @@
       "path": "crates/plugins/redaction/src/controller.rs",
       "owner": "RedactionCapability",
       "symbol": "get_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/redaction/src/ffi/settings.rs",
+        "symbol": "settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Redaction.swift",
+        "symbol": "settings"
+      }
     },
     {
+      "exclusion": "Equivalent open settings representation; the complete mutable native subset uses typed settings/patch records and the same Rust owner.",
       "crate": "redaction",
       "path": "crates/plugins/redaction/src/controller.rs",
       "owner": "RedactionCapability",
       "symbol": "settings_json",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "classification": "equivalent-representation"
     },
     {
       "crate": "redaction",
       "path": "crates/plugins/redaction/src/controller.rs",
       "owner": "RedactionCapability",
       "symbol": "update_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/redaction/src/ffi/settings.rs",
+        "symbol": "update_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Redaction.swift",
+        "symbol": "updateSettings"
+      }
     },
     {
+      "exclusion": "Equivalent open settings representation; the complete mutable native subset uses typed settings/patch records and the same Rust owner.",
       "crate": "redaction",
       "path": "crates/plugins/redaction/src/controller.rs",
       "owner": "RedactionCapability",
       "symbol": "update_settings_json",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "classification": "equivalent-representation"
     },
     {
       "crate": "redaction",
       "path": "crates/plugins/redaction/src/controller.rs",
       "owner": "RedactionCapability",
       "symbol": "reset_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/redaction/src/ffi/settings.rs",
+        "symbol": "reset_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Redaction.swift",
+        "symbol": "resetSettings"
+      }
     },
     {
       "crate": "redaction",
       "path": "crates/plugins/redaction/src/controller.rs",
       "owner": "RedactionCapability",
       "symbol": "on_settings_changed",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "state_revision"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "observeStateRevisions"
+      },
+      "note": "Read current plugin settings after the viewer revision stream wakes; no duplicate Swift settings store."
     },
     {
       "crate": "redaction",
       "path": "crates/plugins/redaction/src/controller.rs",
       "owner": "RedactionCapability",
       "symbol": "on_settings_changed_json",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "state_revision"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "observeStateRevisions"
+      },
+      "note": "Read current plugin settings after the viewer revision stream wakes; no duplicate Swift settings store."
     },
     {
       "crate": "redaction",
@@ -5865,28 +6345,57 @@
       "path": "crates/plugins/render/src/controller.rs",
       "owner": "RenderCapability",
       "symbol": "get_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/render/src/ffi/settings.rs",
+        "symbol": "settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Render.swift",
+        "symbol": "settings"
+      }
     },
     {
       "crate": "render",
       "path": "crates/plugins/render/src/controller.rs",
       "owner": "RenderCapability",
       "symbol": "update_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/render/src/ffi/settings.rs",
+        "symbol": "update_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Render.swift",
+        "symbol": "updateSettings"
+      }
     },
     {
       "crate": "render",
       "path": "crates/plugins/render/src/controller.rs",
       "owner": "RenderCapability",
       "symbol": "reset_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/render/src/ffi/settings.rs",
+        "symbol": "reset_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Render.swift",
+        "symbol": "resetSettings"
+      }
     },
     {
       "crate": "render",
       "path": "crates/plugins/render/src/controller.rs",
       "owner": "RenderCapability",
       "symbol": "on_settings_changed",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "state_revision"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "observeStateRevisions"
+      },
+      "note": "Read current plugin settings after the viewer revision stream wakes; no duplicate Swift settings store."
     },
     {
       "crate": "render",
@@ -5901,6 +6410,46 @@
         "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Render.swift",
         "symbol": "canRender"
       }
+    },
+    {
+      "crate": "render",
+      "path": "crates/plugins/render/src/controller.rs",
+      "owner": "RenderCapability",
+      "symbol": "get_picture_state",
+      "exclusion": "Rust picture painter and cache ownership; native callers use owned CGImages and render view demand rather than host painter values.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "render",
+      "path": "crates/plugins/render/src/controller.rs",
+      "owner": "RenderCapability",
+      "symbol": "on_picture_state_changed",
+      "exclusion": "Rust picture painter and cache ownership; native callers use owned CGImages and render view demand rather than host painter values.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "render",
+      "path": "crates/plugins/render/src/controller.rs",
+      "owner": "RenderCapability",
+      "symbol": "report_picture",
+      "exclusion": "Rust picture painter and cache ownership; native callers use owned CGImages and render view demand rather than host painter values.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "render",
+      "path": "crates/plugins/render/src/controller.rs",
+      "owner": "RenderCapability",
+      "symbol": "hand_over_pictures",
+      "exclusion": "Rust picture painter and cache ownership; native callers use owned CGImages and render view demand rather than host painter values.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "render",
+      "path": "crates/plugins/render/src/controller.rs",
+      "owner": "RenderCapability",
+      "symbol": "get_picture_painter",
+      "exclusion": "Rust picture painter and cache ownership; native callers use owned CGImages and render view demand rather than host painter values.",
+      "classification": "internal-resource"
     },
     {
       "crate": "render",
@@ -6075,7 +6624,8 @@
       "path": "crates/plugins/render/src/controller.rs",
       "owner": "RenderCapability",
       "symbol": "get_layer_rights",
-      "exclusion": "Rust renderer resource/appearance implementation; native callers use renderPage, viewport demand and owned pixel handles."
+      "exclusion": "Rust renderer resource/appearance implementation; native callers use renderPage, viewport demand and owned pixel handles.",
+      "classification": "internal-resource"
     },
     {
       "crate": "render",
@@ -6096,21 +6646,24 @@
       "path": "crates/plugins/render/src/controller.rs",
       "owner": "RenderCapability",
       "symbol": "render_appearances",
-      "exclusion": "Rust renderer resource/appearance implementation; native callers use renderPage, viewport demand and owned pixel handles."
+      "exclusion": "Rust renderer resource/appearance implementation; native callers use renderPage, viewport demand and owned pixel handles.",
+      "classification": "internal-resource"
     },
     {
       "crate": "render",
       "path": "crates/plugins/render/src/controller.rs",
       "owner": "RenderCapability",
       "symbol": "get_kept_appearances",
-      "exclusion": "Rust renderer resource/appearance implementation; native callers use renderPage, viewport demand and owned pixel handles."
+      "exclusion": "Rust renderer resource/appearance implementation; native callers use renderPage, viewport demand and owned pixel handles.",
+      "classification": "internal-resource"
     },
     {
       "crate": "render",
       "path": "crates/plugins/render/src/controller.rs",
       "owner": "RenderCapability",
       "symbol": "get_appearance_scale",
-      "exclusion": "Rust renderer resource/appearance implementation; native callers use renderPage, viewport demand and owned pixel handles."
+      "exclusion": "Rust renderer resource/appearance implementation; native callers use renderPage, viewport demand and owned pixel handles.",
+      "classification": "internal-resource"
     },
     {
       "crate": "render",
@@ -6144,15 +6697,87 @@
       "crate": "render",
       "path": "crates/plugins/render/src/controller.rs",
       "owner": "RenderCapability",
+      "symbol": "can_snapshot",
+      "export": {
+        "path": "crates/plugins/render/src/ffi/snapshot.rs",
+        "symbol": "can_snapshot"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Render.swift",
+        "symbol": "canSnapshot"
+      }
+    },
+    {
+      "crate": "render",
+      "path": "crates/plugins/render/src/controller.rs",
+      "owner": "RenderCapability",
+      "symbol": "get_snapshot",
+      "export": {
+        "path": "crates/plugins/render/src/ffi/snapshot.rs",
+        "symbol": "snapshot"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Render.swift",
+        "symbol": "snapshot"
+      }
+    },
+    {
+      "crate": "render",
+      "path": "crates/plugins/render/src/controller.rs",
+      "owner": "RenderCapability",
+      "symbol": "clear_snapshot",
+      "export": {
+        "path": "crates/plugins/render/src/ffi/snapshot.rs",
+        "symbol": "clear_snapshot"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Render.swift",
+        "symbol": "clearSnapshot"
+      }
+    },
+    {
+      "crate": "render",
+      "path": "crates/plugins/render/src/controller.rs",
+      "owner": "RenderCapability",
+      "symbol": "on_snapshot_changed",
+      "export": {
+        "path": "crates/plugins/render/src/ffi/snapshot.rs",
+        "symbol": "subscribe_snapshots"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Render.swift",
+        "symbol": "snapshotChanges"
+      }
+    },
+    {
+      "crate": "render",
+      "path": "crates/plugins/render/src/controller.rs",
+      "owner": "RenderCapability",
+      "symbol": "get_snapshot_box",
+      "export": {
+        "path": "crates/plugins/render/src/ffi/snapshot.rs",
+        "symbol": "snapshot_box"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Render.swift",
+        "symbol": "snapshotBox"
+      }
+    },
+    {
+      "crate": "render",
+      "path": "crates/plugins/render/src/controller.rs",
+      "owner": "RenderCapability",
       "symbol": "raster_store",
-      "exclusion": "Rust renderer resource/appearance implementation; native callers use renderPage, viewport demand and owned pixel handles."
+      "exclusion": "Rust renderer resource/appearance implementation; native callers use renderPage, viewport demand and owned pixel handles.",
+      "classification": "internal-resource"
     },
     {
       "crate": "render",
       "path": "crates/plugins/render/src/controller.rs",
       "owner": "RenderCapability",
       "symbol": "tile_manager",
-      "exclusion": "Rust renderer resource/appearance implementation; native callers use renderPage, viewport demand and owned pixel handles."
+      "exclusion": "Rust renderer resource/appearance implementation; native callers use renderPage, viewport demand and owned pixel handles.",
+      "classification": "internal-resource"
     },
     {
       "crate": "render",
@@ -6243,42 +6868,73 @@
       "path": "crates/plugins/render/src/controller.rs",
       "owner": "ViewDemand",
       "symbol": "view_id",
-      "exclusion": "Rust renderer resource/appearance implementation; native callers use renderPage, viewport demand and owned pixel handles."
+      "exclusion": "Rust renderer resource/appearance implementation; native callers use renderPage, viewport demand and owned pixel handles.",
+      "classification": "internal-resource"
     },
     {
       "crate": "render",
       "path": "crates/plugins/render/src/controller.rs",
       "owner": "ViewDemand",
       "symbol": "same",
-      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource."
+      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource.",
+      "classification": "internal-resource"
     },
     {
       "crate": "search",
       "path": "crates/plugins/search/src/controller.rs",
       "owner": "SearchCapability",
       "symbol": "get_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/search/src/ffi/settings.rs",
+        "symbol": "settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Search.swift",
+        "symbol": "settings"
+      }
     },
     {
       "crate": "search",
       "path": "crates/plugins/search/src/controller.rs",
       "owner": "SearchCapability",
       "symbol": "update_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/search/src/ffi/settings.rs",
+        "symbol": "update_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Search.swift",
+        "symbol": "updateSettings"
+      }
     },
     {
       "crate": "search",
       "path": "crates/plugins/search/src/controller.rs",
       "owner": "SearchCapability",
       "symbol": "reset_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/search/src/ffi/settings.rs",
+        "symbol": "reset_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Search.swift",
+        "symbol": "resetSettings"
+      }
     },
     {
       "crate": "search",
       "path": "crates/plugins/search/src/controller.rs",
       "owner": "SearchCapability",
       "symbol": "on_settings_changed",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "state_revision"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "observeStateRevisions"
+      },
+      "note": "Read current plugin settings after the viewer revision stream wakes; no duplicate Swift settings store."
     },
     {
       "crate": "search",
@@ -6677,28 +7333,57 @@
       "path": "crates/plugins/selection/src/controller.rs",
       "owner": "SelectionCapability",
       "symbol": "get_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/selection/src/ffi/settings.rs",
+        "symbol": "settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Selection.swift",
+        "symbol": "settings"
+      }
     },
     {
       "crate": "selection",
       "path": "crates/plugins/selection/src/controller.rs",
       "owner": "SelectionCapability",
       "symbol": "update_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/selection/src/ffi/settings.rs",
+        "symbol": "update_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Selection.swift",
+        "symbol": "updateSettings"
+      }
     },
     {
       "crate": "selection",
       "path": "crates/plugins/selection/src/controller.rs",
       "owner": "SelectionCapability",
       "symbol": "reset_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/selection/src/ffi/settings.rs",
+        "symbol": "reset_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Selection.swift",
+        "symbol": "resetSettings"
+      }
     },
     {
       "crate": "selection",
       "path": "crates/plugins/selection/src/controller.rs",
       "owner": "SelectionCapability",
       "symbol": "on_settings_changed",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "state_revision"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "observeStateRevisions"
+      },
+      "note": "Read current plugin settings after the viewer revision stream wakes; no duplicate Swift settings store."
     },
     {
       "crate": "selection",
@@ -7415,53 +8100,92 @@
       }
     },
     {
+      "exclusion": "Equivalent open settings representation; the complete mutable native subset uses typed settings/patch records and the same Rust owner.",
       "crate": "signature",
       "path": "crates/plugins/signature/src/controller.rs",
       "owner": "SignatureCapability",
       "symbol": "settings_json",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "classification": "equivalent-representation"
     },
     {
       "crate": "signature",
       "path": "crates/plugins/signature/src/controller.rs",
       "owner": "SignatureCapability",
       "symbol": "get_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/signature/src/ffi/settings.rs",
+        "symbol": "settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Signature.swift",
+        "symbol": "settings"
+      }
     },
     {
       "crate": "signature",
       "path": "crates/plugins/signature/src/controller.rs",
       "owner": "SignatureCapability",
       "symbol": "update_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/signature/src/ffi/settings.rs",
+        "symbol": "update_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Signature.swift",
+        "symbol": "updateSettings"
+      }
     },
     {
       "crate": "signature",
       "path": "crates/plugins/signature/src/controller.rs",
       "owner": "SignatureCapability",
       "symbol": "retained_ports",
-      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource."
+      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource.",
+      "classification": "internal-resource"
     },
     {
       "crate": "signature",
       "path": "crates/plugins/signature/src/controller.rs",
       "owner": "SignatureCapability",
       "symbol": "reset_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/signature/src/ffi/settings.rs",
+        "symbol": "reset_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Signature.swift",
+        "symbol": "resetSettings"
+      }
     },
     {
       "crate": "signature",
       "path": "crates/plugins/signature/src/controller.rs",
       "owner": "SignatureCapability",
       "symbol": "on_settings_changed",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "state_revision"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "observeStateRevisions"
+      },
+      "note": "Read current plugin settings after the viewer revision stream wakes; no duplicate Swift settings store."
     },
     {
       "crate": "signature",
       "path": "crates/plugins/signature/src/controller.rs",
       "owner": "SignatureCapability",
       "symbol": "on_settings_changed_json",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "state_revision"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "observeStateRevisions"
+      },
+      "note": "Read current plugin settings after the viewer revision stream wakes; no duplicate Swift settings store."
     },
     {
       "crate": "signature",
@@ -7899,20 +8623,6 @@
     },
     {
       "crate": "stage",
-      "path": "crates/plugins/stage/src/camera/gestures.rs",
-      "owner": "StageCapability",
-      "symbol": "fling",
-      "export": {
-        "path": "crates/plugins/stage/src/ffi.rs",
-        "symbol": "fling"
-      },
-      "swift": {
-        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Stage.swift",
-        "symbol": "fling"
-      }
-    },
-    {
-      "crate": "stage",
       "path": "crates/plugins/stage/src/camera/animation.rs",
       "owner": "StageCapability",
       "symbol": "is_moving",
@@ -7958,7 +8668,8 @@
       "path": "crates/plugins/stage/src/camera/gestures.rs",
       "owner": "StageCapability",
       "symbol": "set_camera_object",
-      "exclusion": "Rust camera-object/settings-lock resource; native callers use typed camera operations and settings updates."
+      "exclusion": "Rust camera-object/settings-lock resource; native callers use typed camera operations and settings updates.",
+      "classification": "internal-resource"
     },
     {
       "crate": "stage",
@@ -8046,10 +8757,25 @@
     },
     {
       "crate": "stage",
+      "path": "crates/plugins/stage/src/camera/gestures.rs",
+      "owner": "StageCapability",
+      "symbol": "fling",
+      "export": {
+        "path": "crates/plugins/stage/src/ffi.rs",
+        "symbol": "fling"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Stage.swift",
+        "symbol": "fling"
+      }
+    },
+    {
+      "crate": "stage",
       "path": "crates/plugins/stage/src/controller.rs",
       "owner": "StageCapability",
       "symbol": "same",
-      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource."
+      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource.",
+      "classification": "internal-resource"
     },
     {
       "crate": "stage",
@@ -8392,35 +9118,70 @@
       "path": "crates/plugins/stage/src/navigation/zoom_drag.rs",
       "owner": "StageCapability",
       "symbol": "begin_zoom_drag",
-      "exclusion": "Native zoom-box gestures are not exported; native adapters use camera/point zoom and gesture bracketing."
+      "export": {
+        "path": "crates/plugins/stage/src/ffi.rs",
+        "symbol": "begin_zoom_drag"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Stage.swift",
+        "symbol": "beginZoomDrag"
+      }
     },
     {
       "crate": "stage",
       "path": "crates/plugins/stage/src/navigation/zoom_drag.rs",
       "owner": "StageCapability",
       "symbol": "move_zoom_drag",
-      "exclusion": "Native zoom-box gestures are not exported; native adapters use camera/point zoom and gesture bracketing."
+      "export": {
+        "path": "crates/plugins/stage/src/ffi.rs",
+        "symbol": "move_zoom_drag"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Stage.swift",
+        "symbol": "moveZoomDrag"
+      }
     },
     {
       "crate": "stage",
       "path": "crates/plugins/stage/src/navigation/zoom_drag.rs",
       "owner": "StageCapability",
       "symbol": "end_zoom_drag",
-      "exclusion": "Native zoom-box gestures are not exported; native adapters use camera/point zoom and gesture bracketing."
+      "export": {
+        "path": "crates/plugins/stage/src/ffi.rs",
+        "symbol": "end_zoom_drag"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Stage.swift",
+        "symbol": "endZoomDrag"
+      }
     },
     {
       "crate": "stage",
       "path": "crates/plugins/stage/src/navigation/zoom_drag.rs",
       "owner": "StageCapability",
       "symbol": "cancel_zoom_drag",
-      "exclusion": "Native zoom-box gestures are not exported; native adapters use camera/point zoom and gesture bracketing."
+      "export": {
+        "path": "crates/plugins/stage/src/ffi.rs",
+        "symbol": "cancel_zoom_drag"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Stage.swift",
+        "symbol": "cancelZoomDrag"
+      }
     },
     {
       "crate": "stage",
       "path": "crates/plugins/stage/src/navigation/zoom_drag.rs",
       "owner": "StageCapability",
       "symbol": "get_zoom_box",
-      "exclusion": "Native zoom-box gestures are not exported; native adapters use camera/point zoom and gesture bracketing."
+      "export": {
+        "path": "crates/plugins/stage/src/ffi.rs",
+        "symbol": "zoom_box"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Stage.swift",
+        "symbol": "zoomBox"
+      }
     },
     {
       "crate": "stage",
@@ -8547,6 +9308,14 @@
         "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Stage.swift",
         "symbol": "currentItemPages"
       }
+    },
+    {
+      "crate": "stage",
+      "path": "crates/plugins/stage/src/read/pages.rs",
+      "owner": "StageCapability",
+      "symbol": "list_current_pages",
+      "exclusion": "Laid-out page boxes for host painting; currentItemPages and visiblePages expose the native reading position and transforms.",
+      "classification": "host-presentation"
     },
     {
       "crate": "stage",
@@ -8917,14 +9686,16 @@
       "path": "crates/plugins/stage/src/settings/area.rs",
       "owner": "StageCapability",
       "symbol": "lock_settings",
-      "exclusion": "Rust camera-object/settings-lock resource; native callers use typed camera operations and settings updates."
+      "exclusion": "Rust camera-object/settings-lock resource; native callers use typed camera operations and settings updates.",
+      "classification": "internal-resource"
     },
     {
       "crate": "stage",
       "path": "crates/plugins/stage/src/settings/area.rs",
       "owner": "StageCapability",
       "symbol": "get_lock",
-      "exclusion": "Rust camera-object/settings-lock resource; native callers use typed camera operations and settings updates."
+      "exclusion": "Rust camera-object/settings-lock resource; native callers use typed camera operations and settings updates.",
+      "classification": "internal-resource"
     },
     {
       "crate": "stage",
@@ -9025,53 +9796,92 @@
       }
     },
     {
+      "exclusion": "Equivalent open settings representation; the complete mutable native subset uses typed settings/patch records and the same Rust owner.",
       "crate": "stamp",
       "path": "crates/plugins/stamp/src/controller.rs",
       "owner": "StampCapability",
       "symbol": "settings_json",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "classification": "equivalent-representation"
     },
     {
       "crate": "stamp",
       "path": "crates/plugins/stamp/src/controller.rs",
       "owner": "StampCapability",
       "symbol": "get_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/stamp/src/ffi/settings.rs",
+        "symbol": "settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Stamp.swift",
+        "symbol": "settings"
+      }
     },
     {
       "crate": "stamp",
       "path": "crates/plugins/stamp/src/controller.rs",
       "owner": "StampCapability",
       "symbol": "update_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/stamp/src/ffi/settings.rs",
+        "symbol": "update_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Stamp.swift",
+        "symbol": "updateSettings"
+      }
     },
     {
       "crate": "stamp",
       "path": "crates/plugins/stamp/src/controller.rs",
       "owner": "StampCapability",
       "symbol": "retained_engines",
-      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource."
+      "exclusion": "Rust ownership, cache or controller plumbing; foreign handles own scheduling and lifetime rather than exposing this resource.",
+      "classification": "internal-resource"
     },
     {
       "crate": "stamp",
       "path": "crates/plugins/stamp/src/controller.rs",
       "owner": "StampCapability",
       "symbol": "reset_settings",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/plugins/stamp/src/ffi/settings.rs",
+        "symbol": "reset_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Stamp.swift",
+        "symbol": "resetSettings"
+      }
     },
     {
       "crate": "stamp",
       "path": "crates/plugins/stamp/src/controller.rs",
       "owner": "StampCapability",
       "symbol": "on_settings_changed",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "state_revision"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "observeStateRevisions"
+      },
+      "note": "Read current plugin settings after the viewer revision stream wakes; no duplicate Swift settings store."
     },
     {
       "crate": "stamp",
       "path": "crates/plugins/stamp/src/controller.rs",
       "owner": "StampCapability",
       "symbol": "on_settings_changed_json",
-      "exclusion": "Runtime settings mutation/observation is not exposed for this plugin; ViewerConfig registration is the supported configuration boundary."
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "state_revision"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "observeStateRevisions"
+      },
+      "note": "Read current plugin settings after the viewer revision stream wakes; no duplicate Swift settings store."
     },
     {
       "crate": "stamp",
@@ -9816,81 +10626,780 @@
       }
     },
     {
-      "crate": "render",
-      "path": "crates/plugins/render/src/controller.rs",
-      "owner": "RenderCapability",
-      "symbol": "can_snapshot",
-      "exclusion": "Snapshot workflow added after the parity branch; native API is tracked for the app-facing Swift coverage follow-up."
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "settings_of",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
     },
     {
-      "crate": "render",
-      "path": "crates/plugins/render/src/controller.rs",
-      "owner": "RenderCapability",
-      "symbol": "clear_snapshot",
-      "exclusion": "Snapshot workflow added after the parity branch; native API is tracked for the app-facing Swift coverage follow-up."
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "new",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
     },
     {
-      "crate": "render",
-      "path": "crates/plugins/render/src/controller.rs",
-      "owner": "RenderCapability",
-      "symbol": "get_picture_painter",
-      "exclusion": "Rust picture painter and cache ownership; native callers use owned CGImages and render view demand rather than host painter values."
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "new_with_clock",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
     },
     {
-      "crate": "render",
-      "path": "crates/plugins/render/src/controller.rs",
-      "owner": "RenderCapability",
-      "symbol": "get_picture_state",
-      "exclusion": "Rust picture painter and cache ownership; native callers use owned CGImages and render view demand rather than host painter values."
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "new_with_viewer_settings",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
     },
     {
-      "crate": "render",
-      "path": "crates/plugins/render/src/controller.rs",
-      "owner": "RenderCapability",
-      "symbol": "get_snapshot",
-      "exclusion": "Snapshot workflow added after the parity branch; native API is tracked for the app-facing Swift coverage follow-up."
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "get_settings",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "viewer_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "settings"
+      }
     },
     {
-      "crate": "render",
-      "path": "crates/plugins/render/src/controller.rs",
-      "owner": "RenderCapability",
-      "symbol": "get_snapshot_box",
-      "exclusion": "Snapshot workflow added after the parity branch; native API is tracked for the app-facing Swift coverage follow-up."
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "update_settings",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "update_viewer_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "updateSettings"
+      }
     },
     {
-      "crate": "render",
-      "path": "crates/plugins/render/src/controller.rs",
-      "owner": "RenderCapability",
-      "symbol": "hand_over_pictures",
-      "exclusion": "Rust picture painter and cache ownership; native callers use owned CGImages and render view demand rather than host painter values."
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "reset_settings",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "reset_viewer_settings"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "resetSettings"
+      }
     },
     {
-      "crate": "render",
-      "path": "crates/plugins/render/src/controller.rs",
-      "owner": "RenderCapability",
-      "symbol": "on_picture_state_changed",
-      "exclusion": "Rust picture painter and cache ownership; native callers use owned CGImages and render view demand rather than host painter values."
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "on_settings_changed",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "state_revision"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "observeStateRevisions"
+      }
     },
     {
-      "crate": "render",
-      "path": "crates/plugins/render/src/controller.rs",
-      "owner": "RenderCapability",
-      "symbol": "on_snapshot_changed",
-      "exclusion": "Snapshot workflow added after the parity branch; native API is tracked for the app-facing Swift coverage follow-up."
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "new_with_clock_and_settings",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
     },
     {
-      "crate": "render",
-      "path": "crates/plugins/render/src/controller.rs",
-      "owner": "RenderCapability",
-      "symbol": "report_picture",
-      "exclusion": "Rust picture painter and cache ownership; native callers use owned CGImages and render view demand rather than host painter values."
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "engine",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
     },
     {
-      "crate": "stage",
-      "path": "crates/plugins/stage/src/read/pages.rs",
-      "owner": "StageCapability",
-      "symbol": "list_current_pages",
-      "exclusion": "Laid-out page boxes for host painting; currentItemPages and visiblePages expose the native reading position and transforms."
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "documents",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "status",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "provides",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "capability_any",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "try_capability_any",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "capability",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "try_capability",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "scope_of",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "subscribe",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "store",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "state_json",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "state_text",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "state_revision",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "core_revision",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "state_revisions",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "core_text",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "slice_text",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "core",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "start",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "start"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "start"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Kernel",
+      "symbol": "destroy",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "destroy"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "destroy"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "in_scope",
+      "exclusion": "Kernel construction, scope, dependency resolution, store or serialization resource; ViewerHost owns lifetime and exports typed app capabilities and observeStateRevisions.",
+      "classification": "internal-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "open_with_signal",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "open_document"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "open"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "unlock_with_signal",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "unlock_document"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "unlock"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "open",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "open_document"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "open"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "retry",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "retry_document"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "retry"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "rename",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "rename_document"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "rename"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "open_all",
+      "exclusion": "Startup batch registration helper for Rust InitialDocument/thunk sources; native apps open bytes/URLs with PDFViewer.open and explicit activation.",
+      "classification": "registration-resource"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "unlock",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "unlock_document"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "unlock"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "close",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "close_document"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "close"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "close_all",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "close_all_documents"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "closeAll"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "set_active",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "set_active_document"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "setActive"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "get_active_id",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "active_document_id"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "activeDocumentID"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "get_active",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "active_document"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "activeDocument"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "list",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "documents"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "documents"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "get",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "document"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "document"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "has",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "has_document"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "hasDocument"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "get_count",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "document_count"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "documentCount"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "get_order",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "document_order"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "documentOrder"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "set_order",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "set_document_order"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "setDocumentOrder"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "move_to",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "move_document"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "move"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "swap",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "swap_documents"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "swap"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "save",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "save"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "save"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "save_with_signal",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "save"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "save"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "save_layer",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "save_layer"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "saveLayer"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "save_layer_with_signal",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "save_layer"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "saveLayer"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "list_pages",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "pages"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "pages"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "get_page",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "page"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "page"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "get_page_at",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "page_at"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "page"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "get_page_index",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "page_index"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "index"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "get_revision",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "page_revision"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "pageRevision"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "allows",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "allows"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "allows"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "can_download",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "can_download"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "canDownload"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "get_document",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/documents.rs",
+        "symbol": "document"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "document"
+      }
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "prepare_print",
+      "exclusion": "Host integration required: native ViewerHost has no HostPrinter with prepared PDF/picture representations and disposal lifetime. Printing is not implemented.",
+      "classification": "host-integration"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "print",
+      "exclusion": "Host integration required: native ViewerHost has no HostPrinter with prepared PDF/picture representations and disposal lifetime. Printing is not implemented.",
+      "classification": "host-integration"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "get_print_quality",
+      "exclusion": "Host integration required: native ViewerHost has no HostPrinter with prepared PDF/picture representations and disposal lifetime. Printing is not implemented.",
+      "classification": "host-integration"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "can_print",
+      "exclusion": "Host integration required: native ViewerHost has no HostPrinter with prepared PDF/picture representations and disposal lifetime. Printing is not implemented.",
+      "classification": "host-integration"
+    },
+    {
+      "crate": "epdf-kernel",
+      "path": "crates/epdf-kernel/src/kernel.rs",
+      "owner": "Documents",
+      "symbol": "events",
+      "export": {
+        "path": "crates/epdf-viewer-host/src/lib.rs",
+        "symbol": "subscribe_documents"
+      },
+      "swift": {
+        "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/PDFViewer.swift",
+        "symbol": "documentEvents"
+      }
     }
-  ]
+  ],
+  "kernel": {
+    "kind": "core",
+    "disposition": "Documents and Kernel public members inventoried below; all other kernel types (stores, queues, scopes, mirrors, signals, event hooks, engine/host ports and settings implementation) are internal resources owned by the exported host."
+  }
 }

@@ -4,7 +4,8 @@ The Apple package exposes the Rust viewer through typed Swift capabilities and
 SwiftUI controls on iOS 17 and macOS 14 or later.
 
 **This branch requires the local source engine or locally packaged engine.**
-The published engine pin predates the new history, outline and attachment APIs.
+The published engine pins predate the app-facing document, settings, editing and
+snapshot APIs validated on this branch.
 Use the nested package at `platforms/apple/EmbedPDF` with one of the local modes
 below. The repository-root package remains pinned to the previous release; a
 matching engine must be published and both manifests updated before default
@@ -405,15 +406,41 @@ handling locked tabs/passwords.
 
 ## Audited API coverage
 
-`swift-api-coverage.json` accounts for 779 public controller/core/view-demand
-members across all 30 Rust plugin crates: 594 mapped members and 185 explicit
-exclusions, with no pending entries. This counts audited members, not 779 Swift
-methods. Each exclusion has its own rationale. Shared pure cores, kernel
-installation/lifetimes, host plumbing and view-demand internals remain in Rust.
-Some existing public workflows remain excluded: most live settings mutation,
-annotation bundle transfer, command-disable/refusal detail, individual widget
-property/calculation-order editing and native zoom-box gestures. Registration
-settings remain available through `ViewerConfig`.
+`swift-api-coverage.json` accounts for 860 public members across 31 Rust plugin-directory
+crates and the kernel: 723 mapped members and 137 explicit exclusions. The nine
+pure libraries are classified as owner-consumed code without fictional plugin APIs.
+The checker inventories public kernel `Documents` operations and `Kernel` methods,
+including viewer settings; internal kernel types are classified separately.
+These are accounting counts, not an implementation parity percentage or a count
+of Swift methods. Open form payload overloads are checked alongside typed conveniences.
+
+Delivered workflows include document lookup/order/retry/URL loading and layer
+save/open, live settings/read/update/reset for 13 plugins, command disabling and
+refusal details, named-action permission checks, annotation bundle import/export
+and selected-link edits, independent form widget edits/deletion and calculation
+order, snapshots with cancellable owned images, and native zoom boxes. Rust owns
+permissions, registration reset values, geometry and document lifetime.
+
+Form authoring keeps its typed convenience methods and accepts the engine's open
+payloads through `create(draftJSON:)`, `update(_:patchJSON:)` and
+`addWidget(to:placementJSON:)`. A patch's omitted members preserve values;
+explicit null removes nullable values. Field script writes use
+`{"type":"javascript","script":"event.value = 7"}` inside their event,
+rather than the read tree's `root` wrapper. `fieldSettings(_:)` returns typed
+family-specific panel descriptors and current values JSON. Malformed JSON or a
+non-object payload refuses with `invalid-input` before mutation.
+
+Remaining exclusions name concrete resources or host integrations in the inventory:
+Rust caches and ownership handles, painter/appearance and text-editor/pointer
+presentation seams, scripting sibling ports, equivalent JSON settings forms, and
+startup registration helpers. Printing still requires a native `HostPrinter`
+with prepared PDF/picture representations and disposal lifetime; it is not
+implemented. Observe current settings through `observeStateRevisions()` and a
+fresh settings read. Native rendering uses owned images and render view demand.
+
+The [validation report](../../docs/superpowers/reports/2026-11-09-swift-app-api-coverage.md)
+records exact source-engine results. Source commits do not publish an engine:
+matching downloaded artifacts and both package pins still need a separate release.
 
 ```sh
 python3 platforms/apple/check-swift-api-coverage.py

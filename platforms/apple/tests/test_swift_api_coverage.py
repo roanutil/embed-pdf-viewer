@@ -39,6 +39,55 @@ class CoverageTests(unittest.TestCase):
             swift.write_text('public func renamed() {}')
             self.assertTrue(any('Swift' in error for error in module.validate(root, {'crates': {}, 'members': [member]}, [member])))
 
+    def test_detects_new_public_core_document_operation_and_viewer_settings(self):
+        module = self.module()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / 'crates/epdf-kernel/src/kernel/docs/read.rs'
+            source.parent.mkdir(parents=True)
+            source.write_text('impl Documents { pub fn new_document_read(&self) {} }')
+            settings = root / 'crates/epdf-kernel/src/kernel/config.rs'
+            settings.write_text('impl Kernel { pub fn get_settings(&self) {} pub fn update_settings(&self) {} }')
+            symbols = module.inventory(root)
+            self.assertEqual({entry['symbol'] for entry in symbols}, {'new_document_read', 'get_settings', 'update_settings'})
+            self.assertTrue(any('new_document_read' in error for error in module.validate(root, {'crates': {}, 'members': []}, symbols)))
+
+    def test_core_mapping_requires_both_export_and_swift(self):
+        module = self.module()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            member = {'crate': 'epdf-kernel', 'path': 'core.rs', 'owner': 'Documents', 'symbol': 'lookup',
+                      'export': {'path': 'host.rs', 'symbol': 'document'},
+                      'swift': {'path': 'PDFViewer.swift', 'symbol': 'document'}}
+            for path in ('host.rs', 'PDFViewer.swift'):
+                (root / path).write_text('')
+            errors = module.validate(root, {'crates': {}, 'members': [member]}, [member])
+            self.assertTrue(any('Rust export' in error for error in errors))
+            self.assertTrue(any('Swift' in error for error in errors))
+
+    def test_pure_libraries_do_not_invent_capabilities(self):
+        module = self.module()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / 'crates/plugins/form-core/src/lib.rs'
+            source.parent.mkdir(parents=True)
+            source.write_text('impl Core { pub fn scene(&self) {} }')
+            self.assertEqual(module.inventory(root), [])
+
+    def test_payload_overload_must_have_real_exports(self):
+        module = self.module()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'ffi.rs').write_text('pub fn create() {}')
+            (root / 'Form.swift').write_text('public func create() {}')
+            member = {'path': 'controller.rs', 'owner': 'Core', 'symbol': 'create',
+                      'export': {'path': 'ffi.rs', 'symbol': 'create'},
+                      'swift': {'path': 'Form.swift', 'symbol': 'create'},
+                      'overloads': [{'export': {'path': 'ffi.rs', 'symbol': 'create_draft'},
+                                     'swift': {'path': 'Form.swift', 'symbol': 'create'}}]}
+            errors = module.validate(root, {'crates': {}, 'members': [member]}, [member])
+            self.assertTrue(any('create_draft' in error for error in errors))
+
     def test_justified_exclusion_is_explicit(self):
         module = self.module()
         member = {'path': 'controller.rs', 'owner': 'Core', 'symbol': 'lifetime'}

@@ -153,6 +153,75 @@ extension BaseSuite {
       await #expect { try await form.deleteWidget(widget) } throws: { ($0 as? PDFError)?.code == "instance-closed" }
     }
 
+    @Test func directFormPayloadsAuthorOptionsScriptsAndPersistNullEdits() async throws {
+      let viewer = try await editingViewer()
+      let document = try await viewer.open(Fixture.data("report"))
+      let form = try await viewer.form(for: document)
+      try await form.refresh()
+      let page = try #require(try await viewer.pages(of: document).first).page
+      let action: [String: Any] = ["type": "javascript", "script": "event.value = 7", "next": []]
+      let field = try await form.create(draftJSON: json([
+        "kind": "combobox", "name": "direct_native", "edit": true,
+        "alternateName": "Preserved", "mappingName": "Clear", "defaultValue": "a",
+        "options": [["label": "Alpha", "value": "a"], ["label": "Beta", "value": "b"]],
+        "actions": ["calculate": action],
+        "widgets": [["page": ["kind": "objectNumber", "objectNumber": page.pageObjectNumber],
+                     "rect": ["x": 20, "y": 30, "width": 120, "height": 24]]]
+      ]))
+      if case let .combobox(_, _, edit, options) = field.detail {
+        #expect(edit)
+        expectNoDifference(options.map(\.value), ["a", "b"])
+      } else { Issue.record("Expected combobox") }
+      let updated = try await form.update(field.fieldRef, patchJSON: json([
+        "mappingName": NSNull(), "edit": false, "actions": ["validate": action]
+      ]))
+      expectNoDifference(updated.alternateName, "Preserved")
+      #expect(updated.mappingName == nil)
+      let panel = try #require(try await form.fieldSettings(field.fieldRef))
+      let choice = try #require(panel.properties.first { $0.key == "defaultValue" })
+      expectNoDifference(choice.control, .choice)
+      expectNoDifference(choice.free, false)
+      expectNoDifference(choice.options, ["a", "b"])
+      #expect(try object(panel.valuesJson)["edit"] as? Bool == false)
+      let added = try await form.addWidget(to: field.fieldRef, placementJSON: json([
+        "rect": ["x": 20, "y": 70, "width": 120, "height": 24],
+        "fontSize": 19, "actions": ["focus": action]
+      ]))
+      #expect(try object(added.widgetJson)["fontSize"] as? Double == 19)
+      let count = try await form.fields().count
+      for malformed in ["{", "[]", "null", "42"] {
+        await #expect { try await form.create(draftJSON: malformed) } throws: { ($0 as? PDFError)?.code == "invalid-input" }
+        await #expect { try await form.update(field.fieldRef, patchJSON: malformed) } throws: { ($0 as? PDFError)?.code == "invalid-input" }
+        await #expect { try await form.addWidget(to: field.fieldRef, placementJSON: malformed) } throws: { ($0 as? PDFError)?.code == "invalid-input" }
+      }
+      expectNoDifference(try await form.fields().count, count)
+      let saved = try await viewer.open(try await viewer.save(document))
+      let reopened = try await viewer.form(for: saved)
+      try await reopened.refresh()
+      let found = try #require(try await reopened.field(field.fieldRef))
+      expectNoDifference(found.alternateName, "Preserved")
+      #expect(found.mappingName == nil)
+      let actions = try #require(try object(found.fieldsJson)["actions"] as? [String: Any])
+      let validate = try #require(actions["validate"] as? [String: Any])
+      let root = try #require(validate["root"] as? [String: Any])
+      expectNoDifference(root["script"] as? String, "event.value = 7")
+      expectNoDifference(try await reopened.widgets(of: found.fieldRef).count, 2)
+      try await viewer.close(document)
+      await #expect { try await form.fieldSettings(field.fieldRef) } throws: { ($0 as? PDFError)?.code == "instance-closed" }
+    }
+
+    @Test func directFormPayloadsRespectScriptPermission() async throws {
+      let viewer = try PDFViewer(ViewerConfig(scope: ["doc.open", "doc.forms.read", "doc.forms.modify"], interaction: true, form: FormConfig()))
+      try await viewer.start()
+      let document = try await viewer.open(Fixture.data("report"))
+      let form = try await viewer.form(for: document)
+      let actions = #"{"calculate":{"type":"javascript","script":"event.value = 1"}}"#
+      await #expect { try await form.create(draftJSON: "{\"kind\":\"text\",\"name\":\"denied\",\"widgets\":[],\"actions\":" + actions + "}") } throws: { ($0 as? PDFError)?.code == "permission-denied" }
+      let missing = FormFieldRef.fqn(name: "missing")
+      await #expect { try await form.update(missing, patchJSON: "{\"actions\":" + actions + "}") } throws: { ($0 as? PDFError)?.code == "permission-denied" }
+      await #expect { try await form.addWidget(to: missing, placementJSON: "{\"actions\":" + actions + "}") } throws: { ($0 as? PDFError)?.code == "permission-denied" }
+    }
+
     @Test func optionalEditingPluginsReportUnsupported() async throws {
       let viewer = try PDFViewer(ViewerConfig())
       try await viewer.start()

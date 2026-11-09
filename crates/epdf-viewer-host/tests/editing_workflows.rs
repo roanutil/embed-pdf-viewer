@@ -375,3 +375,109 @@ fn form_widget_changes_and_calculation_order_survive_save_and_reopen() {
     assert!(block_on(form.selected_field()).is_err());
     assert!(block_on(form.field_widgets(f.field_ref.clone())).is_err());
 }
+
+#[test]
+fn direct_form_payloads_preserve_options_scripts_nulls_and_save_reopen() {
+    let host = host(config());
+    let document =
+        block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+            .unwrap();
+    let form = block_on(host.form(document.id.clone())).unwrap();
+    block_on(form.refresh(CancelToken::new())).unwrap();
+    let page = block_on(host.pages(document.id.clone())).unwrap()[0].page;
+    let action = json!({"type":"javascript","script":"event.value = 7","next":[]});
+    let field = block_on(form.create_draft(json!({
+        "kind":"combobox", "name":"direct_choice", "edit":true,
+        "alternateName":"Keep me", "mappingName":"Clear me", "defaultValue":"a",
+        "options":[{"label":"Alpha","value":"a"},{"label":"Beta","value":"b"}],
+        "actions":{"calculate":action},
+        "widgets":[{"page":{"kind":"objectNumber","objectNumber":page.page_object_number},"rect":{"x":20,"y":30,"width":120,"height":24}}]
+    }).to_string(), CancelToken::new())).unwrap();
+    assert!(
+        matches!(&field.detail, epdf_plugin_form::ffi::FormFieldDetail::Combobox { edit:true, options,.. } if options.len()==2)
+    );
+    assert_eq!(
+        value(&field.fields_json)["actions"]["calculate"]["root"]["script"],
+        "event.value = 7"
+    );
+    let updated = block_on(form.update_patch(
+        field.field_ref.clone(),
+        json!({"mappingName":null,"edit":false,"actions":{"validate":action}}).to_string(),
+        CancelToken::new(),
+    ))
+    .unwrap();
+    assert_eq!(updated.alternate_name.as_deref(), Some("Keep me"));
+    assert_eq!(updated.mapping_name, None);
+    assert_eq!(
+        value(&updated.fields_json)["actions"]["validate"]["root"]["script"],
+        "event.value = 7"
+    );
+    let panel = block_on(form.field_settings(field.field_ref.clone())).unwrap().unwrap();
+    let choice = panel.properties.iter().find(|property| property.key == "defaultValue").unwrap();
+    assert_eq!(choice.free, Some(false));
+    assert_eq!(choice.options, Some(vec!["a".into(), "b".into()]));
+    let added = block_on(form.add_widget_placement(field.field_ref.clone(),json!({"rect":{"x":20,"y":70,"width":120,"height":24},"fontSize":19,"actions":{"focus":action}}).to_string(),CancelToken::new())).unwrap();
+    let widget = value(&added.widget_json);
+    assert_eq!(widget["fontSize"].as_f64(), Some(19.0));
+    assert_eq!(widget["actions"]["focus"]["root"]["script"], "event.value = 7");
+    let saved =
+        block_on(host.save(document.id, SaveMode::Incremental, CancelToken::new())).unwrap();
+    let reopened = block_on(host.open_document(saved, options())).unwrap();
+    let reopened = block_on(host.form(reopened.id)).unwrap();
+    block_on(reopened.refresh(CancelToken::new())).unwrap();
+    let found = block_on(reopened.field(field.field_ref)).unwrap().unwrap();
+    assert_eq!(found.alternate_name.as_deref(), Some("Keep me"));
+    assert_eq!(found.mapping_name, None);
+    assert_eq!(
+        value(&found.fields_json)["actions"]["validate"]["root"]["script"],
+        "event.value = 7"
+    );
+    let widgets = block_on(reopened.field_widgets(found.field_ref)).unwrap();
+    assert_eq!(widgets.len(), 2);
+    assert!(
+        widgets.iter().any(|widget| value(&widget.fields_json)["fontSize"].as_f64() == Some(19.0))
+    );
+}
+
+#[test]
+fn direct_form_payloads_enforce_design_and_script_permissions() {
+    for scope in
+        [vec!["doc.open", "doc.forms.read"], vec!["doc.open", "doc.forms.read", "doc.forms.modify"]]
+    {
+        let host = host(ViewerConfig {
+            scope: Some(scope.iter().map(|value| (*value).into()).collect()),
+            ..config()
+        });
+        let document =
+            block_on(host.open_document(test_support::fixture(test_support::REPORT), options()))
+                .unwrap();
+        let form = block_on(host.form(document.id)).unwrap();
+        block_on(form.refresh(CancelToken::new())).unwrap();
+        let action =
+            json!({"calculate":{"type":"javascript","script":"event.value = 1","next":[]}});
+        let reference = epdf_ffi::FormFieldRef::Fqn { name: "missing".into() };
+        for result in [
+            block_on(form.create_draft(
+                json!({"kind":"text","name":"denied","widgets":[],"actions":action}).to_string(),
+                CancelToken::new(),
+            ))
+            .map(|_| ()),
+            block_on(form.update_patch(
+                reference.clone(),
+                json!({"actions":action}).to_string(),
+                CancelToken::new(),
+            ))
+            .map(|_| ()),
+            block_on(form.add_widget_placement(
+                reference,
+                json!({"actions":action}).to_string(),
+                CancelToken::new(),
+            ))
+            .map(|_| ()),
+        ] {
+            assert!(
+                matches!(result.unwrap_err(),ViewerError::Kernel {code:Some(code),..} if code=="permission-denied")
+            );
+        }
+    }
+}

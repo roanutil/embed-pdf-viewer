@@ -52,7 +52,7 @@ fn row() -> Value {
 fn cancelling_running_design_operations_ends_the_wait_and_leaves_admitted_changes_owned() {
     use std::future::Future;
     use std::task::{Context, Poll};
-    for operation in ["reorder", "update", "delete"] {
+    for operation in ["reorder", "update", "delete", "patch"] {
         let thread = KernelThread::spawn(|_| {
             let mut engine = spec().engine;
             engine["documents"]["a"]["responses"] = json!([{"path":"apply","defer":"design"}]);
@@ -107,6 +107,15 @@ fn cancelling_running_design_operations_ends_the_wait_and_leaves_admitted_change
                     .await
                     .map(|_| ())
                 }),
+                "patch" => Box::pin(async {
+                    form.update_patch(
+                        text_ref(),
+                        json!({"maxLength":41}).to_string(),
+                        token.clone(),
+                    )
+                    .await
+                    .map(|_| ())
+                }),
                 _ => Box::pin(async {
                     form.delete_widget(widget.clone(), token.clone()).await.map(|_| ())
                 }),
@@ -127,6 +136,10 @@ fn cancelling_running_design_operations_ends_the_wait_and_leaves_admitted_change
                 block_on(form.widget(widget.clone())).unwrap().unwrap().bounds,
                 epdf_ffi::Rect { x: 210.0, y: 240.0, width: 100.0, height: 24.0 }
             ),
+            "patch" => assert!(matches!(
+                block_on(form.field(text_ref())).unwrap().unwrap().detail,
+                FormFieldDetail::Text { max_length: Some(41), .. }
+            )),
             _ => assert!(block_on(form.widget(widget.clone())).unwrap().is_none()),
         }
         token.cancel();
@@ -151,6 +164,10 @@ fn cancelling_running_design_operations_ends_the_wait_and_leaves_admitted_change
             }))
             .unwrap()
         );
+        assert!(matches!(
+            block_on(form.field(text_ref())).unwrap().unwrap().detail,
+            FormFieldDetail::Text { max_length: Some(40), .. }
+        ));
         assert_eq!(block_on(form.snapshot()).unwrap().unwrap().calculation_order, original_order);
         assert_eq!(
             block_on(form.widget(widget.clone())).unwrap().unwrap().bounds,
@@ -391,4 +408,38 @@ fn a_native_focus_target_receives_selection_and_unregisters() {
     assert!(events.0.lock().unwrap().iter().any(|event|matches!(event,FormEvent::FocusChanged {field:Some(field),widget:Some(_)} if field.name=="name")));
     registration.unregister();
     assert!(!block_on(form.focus(reference, None)).unwrap());
+}
+
+#[test]
+fn open_form_payloads_reject_invalid_objects_without_mutating_and_describe_field_settings() {
+    let (thread, form) = handle();
+    for bad in ["{", "[]", "null", "42"] {
+        for result in [
+            block_on(form.create_draft(bad.into(), CancelToken::new())).map(|_| ()),
+            block_on(form.update_patch(text_ref(), bad.into(), CancelToken::new())).map(|_| ()),
+            block_on(form.add_widget_placement(text_ref(), bad.into(), CancelToken::new()))
+                .map(|_| ()),
+        ] {
+            assert_eq!(code(&result.unwrap_err()), Some("invalid-input"));
+        }
+    }
+    assert!(sent(&thread).is_empty());
+    let panel = block_on(form.field_settings(text_ref())).unwrap().unwrap();
+    assert!(
+        panel
+            .properties
+            .iter()
+            .any(|property| property.key == "maxLength" && property.min == Some(1.0))
+    );
+    assert_eq!(serde_json::from_str::<Value>(&panel.values_json).unwrap()["maxLength"], 40);
+    assert!(
+        block_on(form.field_settings(FormFieldRef::Fqn { name: "missing".into() }))
+            .unwrap()
+            .is_none()
+    );
+    block_on(thread.call(|k| k.close())).unwrap().unwrap();
+    assert_eq!(
+        code(&block_on(form.field_settings(text_ref())).unwrap_err()),
+        Some("instance-closed")
+    );
 }

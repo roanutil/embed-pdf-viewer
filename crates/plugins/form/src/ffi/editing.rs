@@ -9,6 +9,59 @@ fn cancellable_operation<T: Clone + 'static>(
         .with_abort_member(move |reason| signal.abort(Error::abort(reason))))
 }
 
+/// The form owner's settings-panel control vocabulary.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, uniffi::Enum)]
+#[serde(rename_all = "camelCase")]
+pub enum FormSettingControl {
+    Text,
+    Flag,
+    Number,
+    Options,
+    Choice,
+    Choices,
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, uniffi::Record)]
+#[serde(rename_all = "camelCase")]
+pub struct FormSettingProperty {
+    pub key: String,
+    pub control: FormSettingControl,
+    pub label: String,
+    pub label_key: String,
+    pub min: Option<f64>,
+    pub free: Option<bool>,
+    pub options: Option<Vec<String>>,
+}
+
+/// Family-specific descriptors and their open engine values.
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+pub struct FormFieldPanelSettings {
+    pub properties: Vec<FormSettingProperty>,
+    pub values_json: String,
+}
+
+fn object_payload(source: &str, kind: &str) -> Result<Value, Error> {
+    let value: Value = serde_json::from_str(source).map_err(|error| {
+        plugin_error(
+            code::INVALID_INPUT,
+            "form",
+            format!("{kind} is not JSON: {error}"),
+            None,
+            None,
+        )
+    })?;
+    if !value.is_object() {
+        return Err(plugin_error(
+            code::INVALID_INPUT,
+            "form",
+            format!("{kind} must be an object"),
+            None,
+            None,
+        ));
+    }
+    Ok(value)
+}
+
 /// A widget's annotation row, including its typed identity and page-space bounds.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct FormWidgetRecord {
@@ -49,6 +102,101 @@ impl FormCalculationPosition {
 
 #[uniffi::export]
 impl FormHandle {
+    pub async fn field_settings(
+        &self,
+        field_ref: FormFieldRef,
+    ) -> Result<Option<FormFieldPanelSettings>, ViewerError> {
+        self.cap
+            .call(move |capability| {
+                open(capability)?
+                    .get_field_settings(&field_ref_json(&field_ref))
+                    .map(|settings| {
+                        Ok(FormFieldPanelSettings {
+                            properties: decode(settings["properties"].clone())?,
+                            values_json: settings["values"].to_string(),
+                        })
+                    })
+                    .transpose()
+            })
+            .await
+    }
+
+    /// The engine's FormFieldDraft, including family options and action/script data.
+    /// Cancellation ends the wait; admitted changes remain kernel-owned.
+    pub async fn create_draft(
+        &self,
+        draft_json: String,
+        cancel: Arc<CancelToken>,
+    ) -> Result<FormField, ViewerError> {
+        self.cap
+            .call_promise_cancellable(
+                cancel,
+                move |capability| {
+                    let draft = object_payload(&draft_json, "a form draft")?;
+                    cancellable_operation(
+                        |signal| Ok(open(capability)?.create(draft, Some(signal))),
+                    )
+                },
+                |result| field_result(&result),
+            )
+            .await?
+    }
+
+    /// The engine's FormFieldPatch: omission preserves a value; null clears it.
+    pub async fn update_patch(
+        &self,
+        field_ref: FormFieldRef,
+        patch_json: String,
+        cancel: Arc<CancelToken>,
+    ) -> Result<FormField, ViewerError> {
+        self.cap
+            .call_promise_cancellable(
+                cancel,
+                move |capability| {
+                    let patch = object_payload(&patch_json, "a form patch")?;
+                    cancellable_operation(|signal| {
+                        Ok(open(capability)?.update(
+                            field_ref_json(&field_ref),
+                            patch,
+                            Some(signal),
+                        ))
+                    })
+                },
+                |result| field_result(&result),
+            )
+            .await?
+    }
+
+    /// The engine's WidgetPlacement, including appearance and action data.
+    pub async fn add_widget_placement(
+        &self,
+        field_ref: FormFieldRef,
+        placement_json: String,
+        cancel: Arc<CancelToken>,
+    ) -> Result<FormWidgetAdded, ViewerError> {
+        self.cap
+            .call_promise_cancellable(
+                cancel,
+                move |capability| {
+                    let placement = object_payload(&placement_json, "a widget placement")?;
+                    cancellable_operation(|signal| {
+                        Ok(open(capability)?.add_widget(
+                            field_ref_json(&field_ref),
+                            placement,
+                            Some(signal),
+                        ))
+                    })
+                },
+                |result| {
+                    Ok::<_, ViewerError>(FormWidgetAdded {
+                        field: field_result(&result)?,
+                        widget_json: result["widget"].to_string(),
+                    })
+                },
+            )
+            .await?
+    }
+
     pub async fn widget(
         &self,
         widget: AnnotationRef,

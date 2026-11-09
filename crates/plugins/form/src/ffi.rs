@@ -703,8 +703,7 @@ pub struct FormChoiceOptionInput {
     pub value: String,
 }
 
-/// A new field with one widget (`FormFieldDraft`); `draft_json` is the
-/// engine's whole draft when the typed members don't say enough.
+/// A new field with one widget. Use `create_draft` for the whole engine draft.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct FormCreateFieldInput {
     pub family: FormFieldFamily,
@@ -1655,4 +1654,7 @@ mod settings;
 pub use settings::*;
 
 mod editing;
-pub use editing::{FormCalculationPosition, FormWidgetRecord};
+pub use editing::{
+    FormCalculationPosition, FormFieldPanelSettings, FormSettingControl, FormSettingProperty,
+    FormWidgetRecord,
+};
