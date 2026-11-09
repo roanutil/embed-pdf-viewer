@@ -21,6 +21,7 @@ import type {
   Engine,
   GlobalState,
   HostClock,
+  HostFetch,
   Kernel,
   KernelStatus,
   PluginScope,
@@ -132,6 +133,39 @@ function withReleaseImage(config: unknown, bridge: EngineBridge): unknown {
   return { ...base, host: { ...base.host, releaseImage: (n: number) => bridge.release(n) } };
 }
 
+/** What the Rust kernel calls to download a URL source
+ *  (`crates/epdf-web/src/fetch.rs`): one `fetch(url, { signal })` with the
+ *  host's `fetch`, else the global one read at the call, as the TypeScript
+ *  kernel's `fetchUrlSource` does. It answers the response's `ok` and
+ *  `status`, the file on demand, and an `abort` the kernel calls when the
+ *  tab closes. The file stays here: the kernel gets it as the bridge's
+ *  `$host` (which `engine.open` decodes and the kernel releases), plus its
+ *  first bytes for the PDF header check. */
+export function urlFetch(bridge: EngineBridge, hostFetch: HostFetch | undefined) {
+  return (url: string) => {
+    const controller = new AbortController();
+    const fetchFile = hostFetch ?? (globalThis as { fetch?: HostFetch }).fetch;
+    const answer = Promise.resolve().then(() => {
+      if (!fetchFile) return undefined;
+      // Called as a plain function: the browser's own `fetch` refuses any other `this`.
+      return fetchFile(url, { signal: controller.signal });
+    });
+    // A rejection the kernel never reads (it read `response` first) is not unhandled.
+    answer.catch(() => {});
+    return {
+      response: answer.then((response) =>
+        response ? { ok: response.ok, status: response.status } : { noFetch: true },
+      ),
+      body: async () => {
+        const response = await answer;
+        const bytes = new Uint8Array(await response!.arrayBuffer());
+        return { bytes: { $host: bridge.hold(bytes) }, head: Array.from(bytes.subarray(0, 1028)) };
+      },
+      abort: (reason?: unknown) => controller.abort(reason),
+    };
+  };
+}
+
 export function createKernel(opts: {
   engine: Engine;
   plugins: AnyPlugin[];
@@ -145,6 +179,11 @@ export function createKernel(opts: {
   clock?: HostClock;
   /** Kept for the signature: the Rust kernel prints nothing. */
   printer?: unknown;
+  /** How a `{ kind: 'url' }` source downloads: `fetch`'s own shape, called
+   *  with the URL and the document's cancel `signal`. Default: the global
+   *  `fetch`. The Rust kernel downloads under the loading tab through it
+   *  (`urlFetch`). */
+  fetch?: HostFetch;
 }): Kernel {
   const { engine } = opts;
   const report = opts.report ?? ((error: unknown) => console.error('[kernel]', error));
@@ -182,6 +221,7 @@ export function createKernel(opts: {
         wire.releaseJs,
         settings,
         nextFrame,
+        urlFetch(bridge, opts.fetch),
       );
     } catch (error) {
       throw toError(error);

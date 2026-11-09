@@ -120,6 +120,7 @@ export type RustKernelClass = new (
   releaseJs: (id: string) => void,
   settingsJson?: string,
   nextFrame?: (run: (timeMs: number) => void) => unknown,
+  fetchUrl?: (url: string) => unknown,
 ) => RustKernel;
 
 type Fn = (...args: unknown[]) => unknown;
