@@ -30,15 +30,19 @@ extension BaseSuite {
         handler: CommandHandler(run: { _ in runs.withValue { $0 += 1 } })))
       try await commands.disableCommand("edit:note")
       try await commands.disableCommand("edit:note")
-      expectNoDifference(try await commands.disabledCommands(), ["edit:note"])
-      expectNoDifference(try await commands.refusal("edit:note")?.reason, .turnedOff)
-      expectNoDifference(try await commands.execute("edit:note"), .rejected(reason: .hidden))
+      let disabledCommands = try await commands.disabledCommands()
+      expectNoDifference(disabledCommands, ["edit:note"])
+      let refusalReason = try await commands.refusal("edit:note")?.reason
+      expectNoDifference(refusalReason, .turnedOff)
+      let refusedExecution = try await commands.execute("edit:note")
+      expectNoDifference(refusedExecution, .rejected(reason: .hidden))
       expectNoDifference(runs.value, 0)
       try await commands.disableCategory("edit")
       try await commands.enableCommand("edit:note")
       #expect(try await commands.isCommandDisabled("edit:note"))
       try await commands.enableCategory("edit")
-      expectNoDifference(try await commands.execute("edit:note"), .executed)
+      let allowedExecution = try await commands.execute("edit:note")
+      expectNoDifference(allowedExecution, .executed)
       expectNoDifference(runs.value, 1)
       try await commands.setDisabledCommands(["", "missing"])
       #expect(try await commands.isCommandDisabled(""))
@@ -131,14 +135,17 @@ extension BaseSuite {
       let annotations = try await viewer.annotations(for: document)
       try await interaction.activateTool("form-edit")
       try await annotations.selection.select([widget])
-      expectNoDifference(try await form.selectedField()?.fieldRef, a.fieldRef)
+      let selectedField = try await form.selectedField()?.fieldRef
+      expectNoDifference(selectedField, a.fieldRef)
       try await annotations.selection.clear()
       let updated = try await form.updateWidget(widget, #"{"rect":{"x":60,"y":90,"width":160,"height":28}}"#)
       expectNoDifference(updated.bounds.x, 60)
-      expectNoDifference(try await form.widgets(of: a.fieldRef).map(\.annotationRef), [widget])
+      let widgetRefs = try await form.widgets(of: a.fieldRef).map(\.annotationRef)
+      expectNoDifference(widgetRefs, [widget])
       let extra = try await form.addWidget(to: a.fieldRef, FormWidgetPlacement(page: page, bounds: Rect(x: 20, y: 150, width: 100, height: 24)))
       let added = try #require(extra.field.widgets.last?.annotationRef)
-      expectNoDifference(try await form.deleteWidget(added)?.widgets.count, 1)
+      let remainingWidgetCount = try await form.deleteWidget(added)?.widgets.count
+      expectNoDifference(remainingWidgetCount, 1)
       #expect(try await form.widget(added) == nil)
       let order = try await form.reorderCalculations([b.fieldRef], to: .before(field: a.fieldRef))
       expectNoDifference(order, [b.fieldRef, a.fieldRef])
@@ -146,8 +153,10 @@ extension BaseSuite {
       let saved = try await viewer.open(savedBytes)
       let reopened = try await viewer.form(for: saved)
       try await reopened.refresh()
-      expectNoDifference(try await reopened.snapshot()?.calculationOrder, order)
-      expectNoDifference(try await reopened.widget(widget)?.bounds.x, 60)
+      let reopenedOrder = try await reopened.snapshot()?.calculationOrder
+      expectNoDifference(reopenedOrder, order)
+      let reopenedWidgetX = try await reopened.widget(widget)?.bounds.x
+      expectNoDifference(reopenedWidgetX, 60)
       try await viewer.close(document)
       await #expect { try await form.selectedField() } throws: { ($0 as? PDFError)?.code == "instance-closed" }
       await #expect { try await form.deleteWidget(widget) } throws: { ($0 as? PDFError)?.code == "instance-closed" }
@@ -194,7 +203,8 @@ extension BaseSuite {
         await #expect { try await form.update(field.fieldRef, patchJSON: malformed) } throws: { ($0 as? PDFError)?.code == "invalid-input" }
         await #expect { try await form.addWidget(to: field.fieldRef, placementJSON: malformed) } throws: { ($0 as? PDFError)?.code == "invalid-input" }
       }
-      expectNoDifference(try await form.fields().count, count)
+      let currentFieldCount = try await form.fields().count
+      expectNoDifference(currentFieldCount, count)
       let saved = try await viewer.open(try await viewer.save(document))
       let reopened = try await viewer.form(for: saved)
       try await reopened.refresh()
@@ -205,7 +215,8 @@ extension BaseSuite {
       let validate = try #require(actions["validate"] as? [String: Any])
       let root = try #require(validate["root"] as? [String: Any])
       expectNoDifference(root["script"] as? String, "event.value = 7")
-      expectNoDifference(try await reopened.widgets(of: found.fieldRef).count, 2)
+      let reopenedWidgetCount = try await reopened.widgets(of: found.fieldRef).count
+      expectNoDifference(reopenedWidgetCount, 2)
       try await viewer.close(document)
       await #expect { try await form.fieldSettings(field.fieldRef) } throws: { ($0 as? PDFError)?.code == "instance-closed" }
     }

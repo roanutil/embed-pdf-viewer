@@ -50,6 +50,14 @@ plugin capability. Other kernel types—stores, queues, scopes, mirrors, signals
 event hooks, engine/host ports and settings implementation—are explicitly
 internal resources rather than app capabilities.
 
+| Exclusion classification | Members |
+| --- | ---: |
+| Host presentation | 65 |
+| Internal resource | 58 |
+| Equivalent representation | 9 |
+| Host integration (printer) | 4 |
+| Registration resource | 1 |
+
 The machine-readable inventory gives a reason for every exclusion. Remaining
 categories are host presentation/painters/text-editor/pointer seams, internal
 resources and sibling scripting ports, equivalent settings representations,
@@ -61,8 +69,12 @@ through owned images and render demand; this work does not build every editor UI
 
 ## Validation
 
-Source validation is in progress at the source/build freeze. Final results will
-replace this paragraph after the frozen inputs build and native tests complete.
+Rust inputs were committed and frozen at
+`a68a422fc5b37bbd6258d57a060e72ff931b9b1d` before the four-slice build.
+Fresh generated Swift compilation exposed missing public viewer-settings aliases
+and asynchronous reads inside synchronous CustomDump assertion autoclosures. The
+Swift facade aliases and tests were corrected; Rust inputs remained frozen. The
+complete suites below pass with those corrections.
 
 - New missing-form-API regression failed before implementation; object validation,
   settings panel, held cancellation and 10 form FFI tests then passed.
@@ -73,7 +85,27 @@ replace this paragraph after the frozen inputs build and native tests complete.
   payload overload checks. The inventory checker passes with the counts above.
 - Clippy passes for kernel, viewer host and all 14 affected plugin crates,
   all targets, with -D warnings. Rust formatting passes for changed Rust files.
-- Broader affected Rust suites and four-slice/native execution: pending.
+- Broader affected Rust suites: 1,045 passed, 0 failed or ignored across 127
+  result groups (kernel, viewer host and the same 14 plugins). Log:
+  /private/tmp/swift-task5-rust-tests.log.
+- All four Apple slices rebuilt successfully: aarch64-apple-ios,
+  aarch64-apple-ios-sim, aarch64-apple-darwin and x86_64-apple-darwin.
+  Generated graph comparison and XCFramework creation passed. Command:
+  `LIB_ROOT=<local fork runtime staging> EMBEDPDF_NM=<Rust llvm-nm> bash platforms/apple/build-xcframework.sh`.
+  Log: /private/tmp/swift-task5-framework.log.
+- Complete macOS suite: **427 passed**, 0 failures (378 API + 41 UI/model +
+  8 generated-binding smoke). Command:
+  `EMBEDPDF_LOCAL_ENGINE=1 swift test --package-path platforms/apple/EmbedPDF`.
+  Log: /private/tmp/swift-task5-macos.log.
+- Complete iOS 26.5 simulator suite: **427 passed**, 0 failures (same breakdown),
+  xcodebuild exit 0, TEST SUCCEEDED. From platforms/apple/EmbedPDF:
+  `EMBEDPDF_LOCAL_ENGINE=1 xcodebuild test -scheme EmbedPDF-Package -destination 'platform=iOS Simulator,id=5FA32A5D-6186-4C16-BE25-C87829DD1BFA' -derivedDataPath /private/tmp/swift-task5-ios-derived`.
+  Log: /private/tmp/swift-task5-ios.log. The xcresult is under that derived-data
+  directory's Logs/Test. Xcode 27.2 performed both native validations.
+
+Final checks: inventory checker and all 7 checker tests pass; git diff --check
+passes. No native runtime failures remain. Broad Rust/native tests were not
+repeated after the final green runs because only this evidence report changed.
 
 ## Distribution boundary
 

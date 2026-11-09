@@ -34,7 +34,8 @@ extension BaseSuite {
       #expect(abs(box.width - 100) < 0.000001 && abs(box.height - 100) < 0.000001)
       try await stage.cancelZoomDrag()
       #expect(try await stage.zoomBox() == nil)
-      expectNoDifference(try await stage.camera(), before)
+      let afterCancel = try await stage.camera()
+      expectNoDifference(afterCancel, before)
       #expect(try await !stage.currentPages().isEmpty)
     }
 
