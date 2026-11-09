@@ -311,3 +311,33 @@ impl Lifecycle {
         })
     }
 }
+
+/// Presentation hints for native chrome. Values use the kernel's CSS strings;
+/// the native app chooses how to paint them. They do not change engine authority.
+#[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
+pub struct ViewerSettings {
+    pub accent: Option<String>,
+    pub page_background: Option<String>,
+    pub page_shadow: Option<String>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
+pub enum ViewerSettingsField {
+    Accent,
+    PageBackground,
+    PageShadow,
+}
+
+/// Omitted fields stay unchanged; `clear` writes null. Setting and clearing
+/// the same field is `invalid-input`. Reset restores registration values.
+#[derive(Clone, Debug, Default, uniffi::Record)]
+pub struct ViewerSettingsPatch {
+    #[uniffi(default = None)]
+    pub accent: Option<String>,
+    #[uniffi(default = None)]
+    pub page_background: Option<String>,
+    #[uniffi(default = None)]
+    pub page_shadow: Option<String>,
+    #[uniffi(default = [])]
+    pub clear: Vec<ViewerSettingsField>,
+}

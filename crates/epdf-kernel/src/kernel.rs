@@ -1876,7 +1876,13 @@ impl Inner {
                 // A synchronous throw skips `engineCall`: it leaves
                 // `input(signal)` before there is a promise to race.
                 let produced = thunk(session.cancel.clone())?;
-                let value = rt::returned(Self::engine_call(&session, produced, None)).await?;
+                let on_late: Rc<dyn Fn(Value) -> Result<Option<Promise<()>>, Error>> =
+                    Rc::new(|late| {
+                        drop(HostHold::of_value(&late));
+                        Ok(None)
+                    });
+                let value =
+                    rt::returned(Self::engine_call(&session, produced, Some(on_late))).await?;
                 *session.produced.borrow_mut() = HostHold::of_value(&value);
                 value
             }

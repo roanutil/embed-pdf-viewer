@@ -5,9 +5,11 @@
 //! a `Session` holds the kernel; every export posts a job there.
 
 pub mod api;
+mod documents;
 pub mod engine_worker;
 #[cfg(feature = "manual-bridge")]
 mod experimental;
+pub mod fetch;
 pub mod host_table;
 pub mod native_engine;
 pub mod png_encoder;
@@ -29,7 +31,7 @@ use std::sync::{Arc, Mutex};
 
 use epdf_ffi::{CancelToken, KernelPost, KernelThread, PromiseSlot, Subscription, ViewerError};
 use epdf_kernel::error::{code, plugin_error, to_plugin_error};
-use epdf_kernel::{Error, Kernel, KernelStatus, OpenOptions, OpenSource, Promise, Unsubscribe};
+use epdf_kernel::{Error, Kernel, KernelStatus, OpenOptions, Promise, Unsubscribe};
 use epdf_plugin_actions::ffi::ActionsHandle;
 use epdf_plugin_annotation::ffi::AnnotationHandle;
 use epdf_plugin_commands::ffi::CommandsHandle;
@@ -49,13 +51,15 @@ use epdf_plugin_signature::ffi::{SignatureHandle, SignatureSigner, SignatureTrus
 use epdf_plugin_stage::ffi::StageHandle;
 use epdf_plugin_stamp::ffi::StampHandle;
 use epdf_plugin_view_manager::ffi::ViewManagerHandle;
-use serde_json::{Map, Value, json};
+use serde_json::{Map, Value};
 
 pub use api::{
     DocumentEvent, DocumentEventListener, DocumentInfo, DocumentStatus, OpenDocumentOptions,
-    PageInfo, SaveMode, ViewerConfig, ViewerDelegate,
+    PageInfo, SaveMode, ViewerConfig, ViewerDelegate, ViewerSettings, ViewerSettingsField,
+    ViewerSettingsPatch,
 };
 use api::{Lifecycle, decode_pages};
+pub use fetch::{DocumentFetchCancellation, DocumentFetchCompletion, DocumentFetcher};
 use host_table::HostTable;
 use session::{Session, SignatureSlots};
 
@@ -114,6 +118,37 @@ pub struct ViewerHost {
 }
 
 impl ViewerHost {
+    fn build(
+        config: ViewerConfig,
+        delegate: Arc<dyn ViewerDelegate>,
+        fetcher: Option<Arc<dyn DocumentFetcher>>,
+    ) -> Result<Arc<Self>, ViewerError> {
+        let revision = Arc::new(AtomicU64::new(0));
+        let mirror = revision.clone();
+        let signature_slots = SignatureSlots::default();
+        let slots = signature_slots.clone();
+        let thread = KernelThread::spawn(move |post| {
+            Session::build(config, delegate, mirror, post, slots, fetcher)
+        })?;
+        let post = thread.post();
+        #[cfg(not(feature = "manual-bridge"))]
+        let host = Arc::new(ViewerHost {
+            thread: Mutex::new(Some(thread)),
+            revision,
+            post,
+            signature_slots,
+        });
+        #[cfg(feature = "manual-bridge")]
+        let host = Arc::new_cyclic(|weak| ViewerHost {
+            token: experimental::register(weak.clone(), post.clone()),
+            thread: Mutex::new(Some(thread)),
+            revision,
+            post,
+            signature_slots,
+        });
+        Ok(host)
+    }
+
     fn call<T: Send + 'static>(
         &self,
         f: impl FnOnce(&mut Session) -> Result<T, Error> + Send + 'static,
@@ -179,29 +214,17 @@ impl ViewerHost {
         config: ViewerConfig,
         delegate: Arc<dyn ViewerDelegate>,
     ) -> Result<Arc<Self>, ViewerError> {
-        let revision = Arc::new(AtomicU64::new(0));
-        let mirror = revision.clone();
-        let signature_slots = SignatureSlots::default();
-        let slots = signature_slots.clone();
-        let thread =
-            KernelThread::spawn(move |post| Session::build(config, delegate, mirror, post, slots))?;
-        let post = thread.post();
-        #[cfg(not(feature = "manual-bridge"))]
-        let host = Arc::new(ViewerHost {
-            thread: Mutex::new(Some(thread)),
-            revision,
-            post,
-            signature_slots,
-        });
-        #[cfg(feature = "manual-bridge")]
-        let host = Arc::new_cyclic(|weak| ViewerHost {
-            token: experimental::register(weak.clone(), post.clone()),
-            thread: Mutex::new(Some(thread)),
-            revision,
-            post,
-            signature_slots,
-        });
-        Ok(host)
+        Self::build(config, delegate, None)
+    }
+
+    /// Creates a host whose URL sources use the supplied native transport.
+    #[uniffi::constructor]
+    pub fn new_with_fetcher(
+        config: ViewerConfig,
+        delegate: Arc<dyn ViewerDelegate>,
+        fetcher: Arc<dyn DocumentFetcher>,
+    ) -> Result<Arc<Self>, ViewerError> {
+        Self::build(config, delegate, Some(fetcher))
     }
 
     pub async fn start(&self) -> Result<(), ViewerError> {
@@ -224,7 +247,6 @@ impl ViewerHost {
         let OpenDocumentOptions { name, password, activate } = options;
         self.call_promise(
             move |s| {
-                let bytes = HostTable::put(bytes);
                 // The kernel hands `engine` to `Engine::open` as its options,
                 // which is where `NativeEngine::open` reads the password.
                 let mut engine = Map::new();
@@ -233,12 +255,9 @@ impl ViewerHost {
                 }
                 let documents = s.kernel.documents();
                 let opened = documents.open(
-                    OpenSource::Input(json!({ "$host": bytes })),
+                    documents::byte_source(bytes, None),
                     OpenOptions { activate: Some(activate), name, engine },
                 );
-                // An open refused before the engine took the bytes (a
-                // destroyed kernel) leaves them in the table.
-                opened.on_settle(move |_| HostTable::release(bytes));
                 // `open()` resolves `{ document: DocumentInfo }`.
                 Ok(opened.map(move |opened| {
                     let id = opened["document"]["id"].as_str().unwrap_or_default().to_owned();
@@ -304,8 +323,12 @@ impl ViewerHost {
         cancel: Arc<CancelToken>,
     ) -> Result<Vec<u8>, ViewerError> {
         self.call_promise_cancellable(cancel, move |s| {
-            let saved = s.kernel.documents().save(Some(&document_id), Some(mode.as_str().into()));
-            let aborter = saved.clone();
+            let signal = epdf_kernel::signal::AbortSignal::new();
+            let saved = s.kernel.documents().save_with_signal(
+                Some(&document_id),
+                Some(mode.as_str().into()),
+                Some(signal.clone()),
+            );
             Ok(Promise::spawn(async move {
                 match saved.await {
                     // `download` answers `{"$hostBytes": id}` (`Decode::HostBytes`).
@@ -319,7 +342,7 @@ impl ViewerHost {
                     Err(error) => Err(to_plugin_error("documents", &error)),
                 }
             })
-            .with_abort(move |reason| aborter.abort(reason)))
+            .with_abort(move |reason| signal.abort(Error::abort(reason))))
         })
         .await
     }

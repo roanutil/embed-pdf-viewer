@@ -1072,3 +1072,30 @@ fn notify_wakes_readers_and_a_serial_queue_is_one_per_key() {
     assert!(matches!(second.peek(), Some(Ok(()))));
     run(kernel.destroy()).unwrap();
 }
+
+#[test]
+fn closing_during_source_production_releases_a_late_host_buffer_before_engine_admission() {
+    rt::reset();
+    let released = Rc::new(RefCell::new(Vec::new()));
+    let record = released.clone();
+    epdf_kernel::bytes::set_host_releaser(Some(Rc::new(move |value| {
+        record.borrow_mut().push(value.clone())
+    })));
+    let document = doc(false);
+    let kernel = Kernel::new(Rc::new(TestEngine(document.clone())), vec![], options()).unwrap();
+    run(kernel.start()).unwrap();
+    let (source, answer) = Promise::pending();
+    let opening = kernel
+        .documents()
+        .open(OpenSource::Thunk(Rc::new(move |_| Ok(source.clone()))), OpenOptions::default());
+    rt::run_until_stalled();
+    let tab = kernel.documents().list().remove(0);
+    run(kernel.documents().close(&tab.id)).unwrap();
+    assert_eq!(run(opening).unwrap_err().code(), Some("operation-cancelled"));
+    answer.resolve(json!({ "$host": 37 }));
+    rt::run_until_stalled();
+    assert_eq!(*released.borrow(), vec![json!({ "$host": 37 })]);
+    assert_eq!(document.pages.get(), 0);
+    epdf_kernel::bytes::set_host_releaser(None);
+    run(kernel.destroy()).unwrap();
+}

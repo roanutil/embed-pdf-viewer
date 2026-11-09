@@ -47,6 +47,11 @@ impl HostTable {
     /// one reader without a base64 round trip. On the kernel thread, once
     /// per thread.
     pub fn install_bytes_resolver() {
+        epdf_kernel::bytes::set_host_releaser(Some(std::rc::Rc::new(|value| {
+            if let Some(id) = value.get("$host").and_then(serde_json::Value::as_u64) {
+                HostTable::release(id);
+            }
+        })));
         epdf_kernel::bytes::set_host_bytes_resolver(Some(std::rc::Rc::new(|id: u32| {
             HostTable::take(u64::from(id))
         })));

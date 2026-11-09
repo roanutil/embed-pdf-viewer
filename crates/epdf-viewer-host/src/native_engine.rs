@@ -248,7 +248,11 @@ impl Engine for NativeEngine {
         // opening a document of its own (page edit's subset insert, the
         // stamp plugin's asset libraries) sends them as `Bytes` JSON under
         // `bytes`.
-        let bytes = match input.get("$host").and_then(Value::as_u64) {
+        let bytes = match input
+            .get("$host")
+            .or_else(|| input.get("bytes").and_then(|bytes| bytes.get("$host")))
+            .and_then(Value::as_u64)
+        {
             Some(id) => HostTable::take(id),
             None => input.get("bytes").and_then(epdf_kernel::bytes::Bytes::from_json).map(|b| b.0),
         };
@@ -260,24 +264,41 @@ impl Engine for NativeEngine {
                 .with("code", "invalid-input"),
             );
         };
+        let artifact = match input.get("layer") {
+            None => None,
+            Some(layer) => {
+                match layer.get("$host").and_then(Value::as_u64).and_then(HostTable::take) {
+                    Some(bytes) => Some(bytes),
+                    None => {
+                        return Promise::rejected(
+                            Error::new("[epdf-viewer-host] the layer artifact has no bytes")
+                                .with("code", "invalid-input"),
+                        );
+                    }
+                }
+            }
+        };
         let password = options.as_ref().and_then(|o| o.get("password")).cloned();
         let n = self.inner.documents.get() + 1;
         self.inner.documents.set(n);
         let doc = format!("{}-{n}", self.inner.prefix);
         let opened = self.inner.send(&doc, |job| {
-            Ok(WireCall {
-                request: json!({
-                    "kind": "open.fatMem",
-                    "effect": "open",
-                    "jobId": job,
-                    "docId": doc,
-                    "password": password.unwrap_or(Value::Null),
-                    "scope": self.inner.scope,
-                    "reserveObjectNumbers": OBJECT_NUMBER_POOL_SIZE,
-                }),
-                payloads: vec![bytes],
-                decode: Decode::Result,
-            })
+            let mut request = json!({
+                "kind": if artifact.is_some() { "open.layerMemBase" } else { "open.fatMem" },
+                "effect": "open",
+                "jobId": job,
+                "docId": doc,
+                "password": password.unwrap_or(Value::Null),
+                "scope": self.inner.scope,
+                "reserveObjectNumbers": OBJECT_NUMBER_POOL_SIZE,
+            });
+            let mut payloads = vec![bytes];
+            if let Some(artifact) = artifact {
+                request["baseKey"] = doc.clone().into();
+                request["layer"] = json!({ "kind": "artifact" });
+                payloads.push(artifact);
+            }
+            Ok(WireCall { request, payloads, decode: Decode::Result })
         });
         let (promise, resolver) = Promise::<Rc<dyn DocumentHandle>>::pending();
         let aborted = Rc::new(Cell::new(false));

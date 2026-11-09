@@ -38,7 +38,7 @@ pub fn set_host_bytes_resolver(resolver: Option<Rc<dyn Fn(u32) -> Option<Vec<u8>
 thread_local! {
     /// What [`release_host`] calls. `None` until a host installs one (the
     /// wasm build's `set_host_releaser`, over its engine bridge's module-
-    /// level release); a native build never does.
+    /// level release), or a native host over its buffer table.
     static HOST_RELEASER: RefCell<Option<Rc<dyn Fn(&Value)>>> = const { RefCell::new(None) };
 }
 
@@ -54,7 +54,9 @@ pub fn set_host_releaser(releaser: Option<Rc<dyn Fn(&Value)>>) {
 /// host's copy is gone after this, and a `$host` id that comes back fails.
 /// Does nothing with no releaser installed.
 pub fn release_host(value: &Value) {
-    let releaser = HOST_RELEASER.with(|cell| cell.borrow().clone());
+    // Host holds can drop with the runtime's pending tasks during thread
+    // teardown, after the releaser and its buffer table have already gone.
+    let releaser = HOST_RELEASER.try_with(|cell| cell.borrow().clone()).ok().flatten();
     if let Some(release) = releaser {
         release(value);
     }

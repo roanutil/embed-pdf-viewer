@@ -40,12 +40,17 @@ impl Session {
         revision: Arc<AtomicU64>,
         post: KernelPost,
         signature_slots: SignatureSlots,
+        fetcher: Option<Arc<dyn crate::DocumentFetcher>>,
     ) -> Result<Session, Error> {
         let worker = EngineWorker::spawn();
         HostTable::install_bytes_resolver();
         let engine = Rc::new(NativeEngine::new(worker.clone(), post.clone(), config.scope.clone()));
         let reporter = delegate.clone();
         let options = KernelOptions {
+            fetch: fetcher.map(|foreign| {
+                Rc::new(crate::fetch::NativeFetch { foreign, post: post.clone() })
+                    as Rc<dyn epdf_kernel::fetch::HostFetch>
+            }),
             report: Some(Rc::new(move |error: &Error| {
                 reporter.report(ViewerError::from(error.clone()));
             })),
