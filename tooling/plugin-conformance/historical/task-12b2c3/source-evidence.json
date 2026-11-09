@@ -27,7 +27,7 @@
     "../../../packages/engine/core/src/identity/AnnotationRef.ts": "a86b50f7ccb02b0e82d3378fe8ef4323285bc2cbaf20c8e055664f6e5ff19b1b",
     "../../../packages/engine/core/src/events/DocumentEvent.ts": "012b5fa5705bc9f5eeaa093edd4800d445d8813a274af1c21706791917386fba",
     "../src/suites/actions-current-fixtures.ts": "4138e5c4ebc1cd09831e3281b2000eb755af36f4068d6b77b501c00f56af3764",
-    "../src/scenario.ts": "0719f66346130b01e031ce36682e849bb3af4d4a50c6d60879e7a748bfba3961",
+    "../src/scenario.ts": "20204dd9f226752580bc0c087b03e65f96ae25158b4ed4116099551f4582b813",
     "../src/fake-engine.ts": "8deb00495a1769e55b80d08dcd6870c61dfb900620cfcf9066596c9b3b5eb5bc",
     "../src/canonical.ts": "28720fd87e574c9c05e9d5a328a5bec83c5bf86d2d790155f944acd1bb8f26ce",
     "../src/vectors.ts": "56381a25abba012c626ece0e70a98f1271a181a2dbd012a1b6f8a29fa5e77c7d"
