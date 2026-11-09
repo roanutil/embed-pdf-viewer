@@ -56,9 +56,21 @@ fn cancelling_running_design_operations_ends_the_wait_and_leaves_admitted_change
         let thread = KernelThread::spawn(|_| {
             let mut engine = spec().engine;
             engine["documents"]["a"]["responses"] = json!([{"path":"apply","defer":"design"}]);
-            let spec = TestSpec::new(engine).respond("forms.list", |_| Ok(Reply::value(json!({
-                "formKind":"acroform","needsAppearances":false,"calculationOrder":[],"fields":[text("Ada")],"widgets":[row()]
-            }))));
+            let spec = TestSpec::new(engine).respond("forms.list", |_| {
+                let mut first = text("Ada");
+                first["actions"] = json!({"calculate":{"root":{"type":"javascript","subtype":"JavaScript","script":"event.value = 1","next":[]},"incomplete":false,"warnings":[]}});
+                let mut second = first.clone();
+                second["ref"] = json!({"kind":"objectNumber","objectNumber":2});
+                second["name"] = json!("second");
+                second["widgets"] = json!([]);
+                let mut widget = row();
+                widget["box"] = widget["rect"].clone();
+                widget["rotation"] = json!(0);
+                Ok(Reply::value(json!({
+                    "formKind":"acroform","needsAppearances":false,
+                    "calculationOrder":[first["ref"],second["ref"]],"fields":[first,second],"widgets":[widget]
+                })))
+            });
             TestKernel::open(vec![interaction_plugin(InteractionConfig::default()), form_plugin(None)], spec)
         }).unwrap();
         let post = thread.post();
@@ -66,6 +78,11 @@ fn cancelling_running_design_operations_ends_the_wait_and_leaves_admitted_change
             block_on(thread.call(move |k| FormHandle::new(k.capability(&FORM).unwrap(), post)))
                 .unwrap();
         let token = CancelToken::new();
+        let first = FormFieldRef::ObjectNumber { field_object_number: 1 };
+        let second = FormFieldRef::ObjectNumber { field_object_number: 2 };
+        let original_order = vec![Some(first), Some(second.clone())];
+        let original_bounds = epdf_ffi::Rect { x: 10.0, y: 20.0, width: 100.0, height: 24.0 };
+        assert_eq!(block_on(form.snapshot()).unwrap().unwrap().calculation_order, original_order);
         let widget = epdf_ffi::AnnotationRef::ObjectNumber {
             page: PageRef { page_object_number: 1 },
             annot_object_number: 101,
@@ -74,7 +91,7 @@ fn cancelling_running_design_operations_ends_the_wait_and_leaves_admitted_change
             match operation {
                 "reorder" => Box::pin(async {
                     form.reorder_calculations(
-                        vec![],
+                        vec![second.clone()],
                         epdf_plugin_form::ffi::FormCalculationPosition::Start,
                         token.clone(),
                     )
@@ -82,7 +99,13 @@ fn cancelling_running_design_operations_ends_the_wait_and_leaves_admitted_change
                     .map(|_| ())
                 }),
                 "update" => Box::pin(async {
-                    form.update_widget(widget.clone(), "{}".into(), token.clone()).await.map(|_| ())
+                    form.update_widget(
+                        widget.clone(),
+                        json!({"rect":{"x":210,"y":240,"width":100,"height":24}}).to_string(),
+                        token.clone(),
+                    )
+                    .await
+                    .map(|_| ())
                 }),
                 _ => Box::pin(async {
                     form.delete_widget(widget.clone(), token.clone()).await.map(|_| ())
@@ -95,6 +118,17 @@ fn cancelling_running_design_operations_ends_the_wait_and_leaves_admitted_change
                 .unwrap(),
             "{operation}"
         );
+        match operation {
+            "reorder" => assert_eq!(
+                block_on(form.snapshot()).unwrap().unwrap().calculation_order,
+                vec![original_order[1].clone(), original_order[0].clone()]
+            ),
+            "update" => assert_eq!(
+                block_on(form.widget(widget.clone())).unwrap().unwrap().bounds,
+                epdf_ffi::Rect { x: 210.0, y: 240.0, width: 100.0, height: 24.0 }
+            ),
+            _ => assert!(block_on(form.widget(widget.clone())).unwrap().is_none()),
+        }
         token.cancel();
         block_on(thread.call(|_| ())).unwrap();
         assert!(
@@ -117,7 +151,12 @@ fn cancelling_running_design_operations_ends_the_wait_and_leaves_admitted_change
             }))
             .unwrap()
         );
-        assert!(block_on(form.widget(widget.clone())).unwrap().is_some(), "{operation}");
+        assert_eq!(block_on(form.snapshot()).unwrap().unwrap().calculation_order, original_order);
+        assert_eq!(
+            block_on(form.widget(widget.clone())).unwrap().unwrap().bounds,
+            original_bounds,
+            "{operation}"
+        );
     }
 }
 

@@ -157,6 +157,23 @@ fn annotation_bundles_copy_mixed_resources_and_typed_identities_between_document
     .unwrap();
     let empty = value(&block_on(source.export(Some(vec![]), None, CancelToken::new())).unwrap());
     assert_eq!(empty["items"], json!([]));
+    let refs_only = value(
+        &block_on(source.export(Some(vec![square.clone()]), Some(vec![]), CancelToken::new()))
+            .unwrap(),
+    );
+    assert_eq!(refs_only["items"].as_array().unwrap().len(), 1);
+    assert_eq!(
+        epdf_ffi::AnnotationRef::from_json(&refs_only["items"][0]["data"]["ref"]).unwrap(),
+        square
+    );
+    let page_only = value(
+        &block_on(source.export(Some(vec![]), Some(vec![page]), CancelToken::new())).unwrap(),
+    );
+    for reference in [&file, &stamp, &square] {
+        assert!(page_only["items"].as_array().unwrap().iter().any(|item| {
+            epdf_ffi::AnnotationRef::from_json(&item["data"]["ref"]).unwrap() == *reference
+        }));
+    }
     let text = block_on(source.export(
         Some(vec![file.clone(), stamp.clone(), square.clone()]),
         None,

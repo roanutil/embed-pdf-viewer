@@ -8,12 +8,15 @@ use serde_json::{Value, json};
 #[test]
 fn annotation_settings_keep_registered_tool_defaults_and_reset() {
     let thread = KernelThread::spawn(|_| {
+        let mut spec = one_document();
+        spec["documents"]["b"] = spec["documents"]["a"].clone();
+        spec["documents"]["b"]["id"] = json!("b");
         TestKernel::open(
             vec![
                 epdf_plugin_interaction::interaction_plugin(Default::default()),
                 annotation_plugin(Some(json!({"tools":{"square":{"defaults":{"color":"red"}}}}))),
             ],
-            one_document(),
+            spec,
         )
     })
     .unwrap();
@@ -22,22 +25,40 @@ fn annotation_settings_keep_registered_tool_defaults_and_reset() {
         thread.call(move |k| AnnotationHandle::new(k.capability(&ANNOTATION).unwrap(), post)),
     )
     .unwrap();
+    let post = thread.post();
+    let other = block_on(thread.call(move |k| {
+        let opened = plugin_conformance::test_kernel::settle(&k.kernel.documents().open(
+            epdf_kernel::OpenSource::Input(json!({"kind":"bytes","id":"b","bytes":{"$bytes":""}})),
+            epdf_kernel::OpenOptions::default(),
+        ))
+        .unwrap();
+        let id = opened["document"]["id"].as_str().unwrap();
+        AnnotationHandle::new(k.kernel.capability(&ANNOTATION, Some(id)).unwrap(), post)
+    }))
+    .unwrap();
     let settings = block_on(handle.settings()).unwrap();
+    assert_eq!(block_on(other.settings()).unwrap(), settings);
     let original: Value = serde_json::from_str(&settings).unwrap();
     assert_eq!(original["tools"]["square"]["defaults"]["color"], "red");
+    let before_update = block_on(thread.call(|k| k.kernel.state_revision())).unwrap();
     block_on(
         handle
             .update_settings(json!({"tools":{"square":{"defaults":{"color":"blue"}}}}).to_string()),
     )
     .unwrap();
+    assert!(block_on(thread.call(|k| k.kernel.state_revision())).unwrap() > before_update);
+    assert_eq!(block_on(other.settings()).unwrap(), block_on(handle.settings()).unwrap());
     assert_eq!(
         serde_json::from_str::<Value>(&block_on(handle.settings()).unwrap()).unwrap()["tools"]["square"]
             ["defaults"]["color"],
         "blue"
     );
     assert!(block_on(handle.update_settings("[]".into())).is_err());
+    let before_reset = block_on(thread.call(|k| k.kernel.state_revision())).unwrap();
     block_on(handle.reset_settings()).unwrap();
+    assert!(block_on(thread.call(|k| k.kernel.state_revision())).unwrap() > before_reset);
     assert_eq!(block_on(handle.settings()).unwrap(), settings);
+    assert_eq!(block_on(other.settings()).unwrap(), settings);
     block_on(thread.call(|k| k.close())).unwrap().unwrap();
     assert!(block_on(handle.settings()).is_err());
     assert!(block_on(handle.update_settings("{}".into())).is_err());

@@ -36,7 +36,8 @@ pub struct AnnotationImportResult {
 #[uniffi::export]
 impl AnnotationHandle {
     /// A self-contained AnnotationBundle: resource bytes use the existing `$bytes` encoding.
-    /// Omitted filters select all; an empty ref or page list selects none.
+    /// Omitting both filters selects all. Supplied pages and refs contribute their union;
+    /// an empty list contributes no members and does not override the other filter.
     pub async fn export(
         &self,
         refs: Option<Vec<AnnotationRef>>,

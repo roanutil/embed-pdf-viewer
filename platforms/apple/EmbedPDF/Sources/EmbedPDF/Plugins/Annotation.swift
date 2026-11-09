@@ -109,7 +109,8 @@ public struct AnnotationCapability: Sendable {
   }
 
   /// A self-contained annotation bundle, including resource bytes encoded as `$bytes`.
-  /// Omitted filters select all; an empty filter selects none.
+  /// Omitting both filters selects all. Supplied pages and refs contribute their union;
+  /// an empty list contributes no members and does not override the other filter.
   public func export(refs: [AnnotationRef]? = nil, pages: [PageRef]? = nil) async throws(PDFError) -> String {
     try await bridgedCancellable { token in try await handle.export(refs: refs, pages: pages, cancel: token) }
   }
