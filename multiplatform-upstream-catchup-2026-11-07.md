@@ -283,3 +283,28 @@ at plugins `5fda5690d`), with `runtime-src` checked out at `786765b80` and
 
 Still not done: the Android fork slices (their `gn` asserts a Linux host) and the AAR, which needs
 an Android SDK.
+
+### Android (2026-11-09)
+
+Upstream runtime `547ea3376` ("Use secure randomness for encrypted saves") gives
+`core/fxcrt/epdf_secure_random.cpp` sources for Windows, Apple, asm.js and Linux and an `#error`
+for everything else; Android builds set `IS_ANDROID`, not `IS_LINUX`, so no Android slice compiled.
+Fork `3c6e02297` (branch `fix/android-secure-random`, on `786765b80`) sends Android down the Apple
+branch, `arc4random_buf`, which bionic has at every API level (`getrandom()` needs API 28; the AAR
+declares `minSdk 24`). The note is `docs/embedpdf/syncs/2026-11-08-android-secure-random.md` in the
+fork. Upstream has the same gap; take upstream's branch once it has one.
+
+- `android-arm64` and `android-x64` were built from `3c6e02297` in `embedpdf-runtime-build-c7`
+  (`linux/amd64`, `PDF_RUNTIME_TARGET_OS_LIST="linux android"`); sha256 `80b9593b…` and `179e9784…`,
+  in `engine-runtime-build.local.json` (`9b96c8346`).
+- The AAR was built in `embedpdf-android-build` (`linux/amd64`, JDK 21, SDK 36, NDK r29, Gradle
+  9.9.0, `libclang-dev` for bindgen): every `.so` in both ABIs has LOAD alignment `0x4000`, and
+  `assembleRelease` succeeded (`library-release.aar`, 21.4 MB, sha256 `9248fe9a…`). The emulator
+  run was not done: Docker on Apple silicon has no nested virtualization.
+- `runtime-src` moved to `3c6e02297`, which changes both release hashes. `apple-engine-196ff43853e318b1`
+  (`2c9f156af`; 338 tests on each of the iOS simulator, macOS arm64 and macOS x86_64) and
+  `runtime-payloads-1e16576964e0564b`. The `wasm32-eh` library rebuilt at `3c6e02297` is byte-for-byte
+  the one built at `786765b80` (`libembedpdf.a` sha256 `7a160f61…`).
+
+Archives and logs: `/Users/andrew/repos/embed-pdf-runtime-builds/c7-4346c5131/` (`android/` for the
+AAR).
