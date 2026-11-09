@@ -20,6 +20,8 @@ public typealias Annotation = AnnotationRecord
 public typealias AnnotationFilter = EmbedPDFBindings.AnnotationFilter
 public typealias AnnotationBatchResult = EmbedPDFBindings.AnnotationBatchResult
 public typealias AnnotationBatchFailure = EmbedPDFBindings.AnnotationBatchFailure
+public typealias AnnotationImportResult = EmbedPDFBindings.AnnotationImportResult
+public typealias AnnotationRefMapping = EmbedPDFBindings.AnnotationRefMapping
 public typealias AnnotationEvent = EmbedPDFBindings.AnnotationEvent
 public typealias AnnotationChangedEvent = EmbedPDFBindings.AnnotationChangedEvent
 public typealias AnnotationDeletedEvent = EmbedPDFBindings.AnnotationDeletedEvent
@@ -104,6 +106,17 @@ public struct AnnotationCapability: Sendable {
 
   public func selected() async throws(PDFError) -> [AnnotationRecord] {
     try await bridged { try await handle.selected() }
+  }
+
+  /// A self-contained annotation bundle, including resource bytes encoded as `$bytes`.
+  /// Omitted filters select all; an empty filter selects none.
+  public func export(refs: [AnnotationRef]? = nil, pages: [PageRef]? = nil) async throws(PDFError) -> String {
+    try await bridgedCancellable { token in try await handle.export(refs: refs, pages: pages, cancel: token) }
+  }
+
+  /// Copy a bundle using the engine's AnnotationImportOptions JSON vocabulary.
+  public func `import`(_ bundleJSON: String, optionsJSON: String = "{}") async throws(PDFError) -> AnnotationImportResult {
+    try await bridgedCancellable { token in try await handle.import(bundleJson: bundleJSON, optionsJson: optionsJSON, cancel: token) }
   }
 
   /// The topmost annotation under a page-space point (`getAt`).
@@ -233,6 +246,11 @@ public struct AnnotationSelectionCapability: Sendable {
 
   public func delete() async throws(PDFError) -> AnnotationBatchResult {
     try await bridgedCancellable { token in try await handle.delete(cancel: token) }
+  }
+
+  /// Set or clear links using the core's selection edit and per-annotation authority.
+  public func updateLink(_ target: PdfLinkTarget?) async throws(PDFError) -> AnnotationBatchResult {
+    try await bridgedCancellable { token in try await handle.updateLink(target: target, cancel: token) }
   }
 
   public func rotate(by degrees: Double) async throws(PDFError) {

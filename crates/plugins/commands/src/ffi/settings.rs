@@ -74,7 +74,9 @@ impl CommandsHandle {
     }
 }
 
-fn open_settings(cap: &CommandsCapability) -> Result<&CommandsCapability, epdf_kernel::Error> {
+pub(super) fn open_settings(
+    cap: &CommandsCapability,
+) -> Result<&CommandsCapability, epdf_kernel::Error> {
     if cap.lifetime().aborted() {
         return Err(epdf_kernel::error::plugin_error(
             "instance-closed",

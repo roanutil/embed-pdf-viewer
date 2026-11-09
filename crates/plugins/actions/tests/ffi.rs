@@ -110,6 +110,42 @@ fn tree(json: Value) -> Arc<PdfActionTree> {
 }
 
 #[test]
+fn named_action_probe_obeys_policy_and_document_lifetime() {
+    let (thread, actions) = handle();
+    assert!(block_on(actions.can_execute_named("NextPage".into(), None)).unwrap());
+    block_on(actions.update_policy(ActionPolicyPatch {
+        named: Some(PartialActionPolicyRow {
+            user: Some(ActionPolicyDecision::Block),
+            ..Default::default()
+        }),
+        ..Default::default()
+    }))
+    .unwrap();
+    assert!(!block_on(actions.can_execute_named("NextPage".into(), None)).unwrap());
+    block_on(thread.call(|k| k.close())).unwrap().unwrap();
+    assert_eq!(
+        code(&block_on(actions.can_execute_named("NextPage".into(), None)).unwrap_err()),
+        Some("instance-closed")
+    );
+}
+
+#[test]
+fn named_print_probe_requires_print_permission() {
+    let thread = KernelThread::spawn(|_| {
+        let mut spec = spec();
+        spec.engine["documents"][DOCUMENT]["security"]["allows"] = json!(["doc.open"]);
+        TestKernel::open(vec![actions_plugin(quiet())], spec)
+    })
+    .unwrap();
+    let post = thread.post();
+    let actions =
+        block_on(thread.call(move |k| ActionsHandle::new(k.capability(&ACTIONS).unwrap(), post)))
+            .unwrap();
+    assert!(!block_on(actions.can_execute_named("Print".into(), None)).unwrap());
+    assert!(block_on(actions.can_execute_named("NextPage".into(), None)).unwrap());
+}
+
+#[test]
 fn the_policy_reads_and_patches() {
     let (_thread, actions) = handle();
     let policy = block_on(actions.policy()).unwrap();

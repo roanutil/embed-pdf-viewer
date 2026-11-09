@@ -48,6 +48,79 @@ fn row() -> Value {
     })
 }
 
+#[test]
+fn cancelling_running_design_operations_ends_the_wait_and_leaves_admitted_changes_owned() {
+    use std::future::Future;
+    use std::task::{Context, Poll};
+    for operation in ["reorder", "update", "delete"] {
+        let thread = KernelThread::spawn(|_| {
+            let mut engine = spec().engine;
+            engine["documents"]["a"]["responses"] = json!([{"path":"apply","defer":"design"}]);
+            let spec = TestSpec::new(engine).respond("forms.list", |_| Ok(Reply::value(json!({
+                "formKind":"acroform","needsAppearances":false,"calculationOrder":[],"fields":[text("Ada")],"widgets":[row()]
+            }))));
+            TestKernel::open(vec![interaction_plugin(InteractionConfig::default()), form_plugin(None)], spec)
+        }).unwrap();
+        let post = thread.post();
+        let form =
+            block_on(thread.call(move |k| FormHandle::new(k.capability(&FORM).unwrap(), post)))
+                .unwrap();
+        let token = CancelToken::new();
+        let widget = epdf_ffi::AnnotationRef::ObjectNumber {
+            page: PageRef { page_object_number: 1 },
+            annot_object_number: 101,
+        };
+        let mut call: std::pin::Pin<Box<dyn Future<Output = Result<(), ViewerError>> + '_>> =
+            match operation {
+                "reorder" => Box::pin(async {
+                    form.reorder_calculations(
+                        vec![],
+                        epdf_plugin_form::ffi::FormCalculationPosition::Start,
+                        token.clone(),
+                    )
+                    .await
+                    .map(|_| ())
+                }),
+                "update" => Box::pin(async {
+                    form.update_widget(widget.clone(), "{}".into(), token.clone()).await.map(|_| ())
+                }),
+                _ => Box::pin(async {
+                    form.delete_widget(widget.clone(), token.clone()).await.map(|_| ())
+                }),
+            };
+        let mut cx = Context::from_waker(futures::task::noop_waker_ref());
+        assert!(call.as_mut().poll(&mut cx).is_pending());
+        assert!(
+            block_on(thread.call(|k| k.engine.log_since(0).iter().any(|e| e["path"] == "apply")))
+                .unwrap(),
+            "{operation}"
+        );
+        token.cancel();
+        block_on(thread.call(|_| ())).unwrap();
+        assert!(
+            matches!(call.as_mut().poll(&mut cx),Poll::Ready(Err(ViewerError::Kernel {code:Some(code),..})) if code == "operation-cancelled"),
+            "{operation}"
+        );
+        assert!(
+            !block_on(
+                thread.call(|k| k.engine.log_since(0).iter().any(|e| e.get("abort").is_some()))
+            )
+            .unwrap(),
+            "{operation}"
+        );
+        // Staged writes belong to the kernel after admission. A late refusal
+        // still removes the prediction after the caller stopped waiting.
+        assert!(
+            block_on(thread.call(|k| {
+                k.engine
+                    .settle("design", Err(&json!({"code":"InvalidArg","message":"late refusal"})))
+            }))
+            .unwrap()
+        );
+        assert!(block_on(form.widget(widget.clone())).unwrap().is_some(), "{operation}");
+    }
+}
+
 thread_local! {
     static NAME: RefCell<String> = RefCell::new("Ada".into());
     /// The ops each `apply` the engine was sent carried, in order.

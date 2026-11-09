@@ -8,8 +8,7 @@
 //! Task 13.33: reads that throw in the TypeScript answer
 //! `Result`, reads hand out `Rc`s (copied here), `panel` carries `focus`,
 //! and `match_stroke` answers the command with its refusal. Not exposed
-//! yet: the full settings calls, `get_refusal`, the per-command
-//! turning-off calls, families, `requires`/`allowed`, a signal on
+//! yet: families, `requires`/`allowed`, a signal on
 //! `execute`, and the scoped view.
 
 use std::rc::Rc;
@@ -655,6 +654,56 @@ impl CommandsHandle {
 
     pub async fn disabled_categories(&self) -> Result<Vec<String>, ViewerError> {
         self.cap.call(|c| Ok((*c.get_disabled_categories()).clone())).await
+    }
+
+    pub async fn disabled_commands(&self) -> Result<Vec<String>, ViewerError> {
+        self.cap.call(|c| Ok((*settings::open_settings(c)?.get_disabled_commands()).clone())).await
+    }
+
+    pub async fn is_command_disabled(&self, id: String) -> Result<bool, ViewerError> {
+        self.cap.call(move |c| settings::open_settings(c)?.is_command_disabled(&id)).await
+    }
+
+    pub async fn disable_command(&self, id: String) -> Result<(), ViewerError> {
+        self.cap
+            .call(move |c| {
+                settings::open_settings(c)?.disable_command(&id);
+                Ok(())
+            })
+            .await
+    }
+
+    pub async fn enable_command(&self, id: String) -> Result<(), ViewerError> {
+        self.cap
+            .call(move |c| {
+                settings::open_settings(c)?.enable_command(&id);
+                Ok(())
+            })
+            .await
+    }
+
+    pub async fn set_disabled_commands(&self, ids: Vec<String>) -> Result<(), ViewerError> {
+        self.cap
+            .call(move |c| {
+                settings::open_settings(c)?.set_disabled_commands(&ids);
+                Ok(())
+            })
+            .await
+    }
+
+    /// A permanent refusal, or none for an unknown or temporarily disabled command.
+    pub async fn refusal(
+        &self,
+        id: String,
+        document_id: Option<String>,
+    ) -> Result<Option<CommandRefusalInfo>, ViewerError> {
+        self.cap
+            .call(move |c| {
+                Ok(settings::open_settings(c)?
+                    .get_refusal(&id, document_id.as_deref())?
+                    .map(Into::into))
+            })
+            .await
     }
 
     pub async fn is_category_disabled(&self, category: String) -> Result<bool, ViewerError> {

@@ -631,6 +631,14 @@ impl ActionsHandle {
             .await
     }
 
+    pub async fn can_execute_named(
+        &self,
+        name: String,
+        context: Option<PartialActionContext>,
+    ) -> Result<bool, ViewerError> {
+        self.cap.call(move |c| Ok(open(c)?.can_execute_named(&name, context.map(Into::into)))).await
+    }
+
     /// `None` when the source has no tree for that event.
     pub async fn action_tree(
         &self,

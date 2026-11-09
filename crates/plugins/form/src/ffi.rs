@@ -1653,3 +1653,6 @@ mod tests {
 
 mod settings;
 pub use settings::*;
+
+mod editing;
+pub use editing::{FormCalculationPosition, FormWidgetRecord};

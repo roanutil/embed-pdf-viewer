@@ -19,6 +19,8 @@ public typealias FormSnapshot = EmbedPDFBindings.FormSnapshot
 public typealias FormField = EmbedPDFBindings.FormField
 public typealias FormFieldDetail = EmbedPDFBindings.FormFieldDetail
 public typealias FormWidget = EmbedPDFBindings.FormWidget
+public typealias FormWidgetRecord = EmbedPDFBindings.FormWidgetRecord
+public typealias FormCalculationPosition = EmbedPDFBindings.FormCalculationPosition
 public typealias FormToggleWidget = EmbedPDFBindings.FormToggleWidget
 public typealias FormChoiceOption = EmbedPDFBindings.FormChoiceOption
 public typealias FormChoiceOptionInput = EmbedPDFBindings.FormChoiceOptionInput
@@ -132,6 +134,38 @@ public struct FormCapability: Sendable {
 
   public func fields(_ filter: FormFilter? = nil) async throws(PDFError) -> [FormField] {
     try await bridged { try await handle.fields(filter: filter) }
+  }
+
+  public func widget(_ ref: AnnotationRef) async throws(PDFError) -> FormWidgetRecord? {
+    try await bridged { try await handle.widget(widget: ref) }
+  }
+
+  /// The field's widget annotation rows, in the field's order.
+  public func widgets(of field: FormFieldRef) async throws(PDFError) -> [FormWidgetRecord] {
+    try await bridged { try await handle.fieldWidgets(fieldRef: field) }
+  }
+
+  /// The field of the single selected widget in annotation design mode.
+  public func selectedField() async throws(PDFError) -> FormField? {
+    try await bridged { try await handle.selectedField() }
+  }
+
+  @discardableResult
+  /// Cancellation ends the wait; Rust still reconciles a change already admitted by the kernel.
+  public func reorderCalculations(_ fields: [FormFieldRef], to position: FormCalculationPosition) async throws(PDFError) -> [FormFieldRef?] {
+    try await bridgedCancellable { token in try await handle.reorderCalculations(fields: fields, position: position, cancel: token) }
+  }
+
+  /// The engine's open FormWidgetPatch JSON payload.
+  @discardableResult
+  public func updateWidget(_ widget: AnnotationRef, _ patchJSON: String) async throws(PDFError) -> FormWidgetRecord {
+    try await bridgedCancellable { token in try await handle.updateWidget(widget: widget, patchJson: patchJSON, cancel: token) }
+  }
+
+  /// Delete a widget from its page and field; a detached widget has no remaining field.
+  @discardableResult
+  public func deleteWidget(_ widget: AnnotationRef) async throws(PDFError) -> FormField? {
+    try await bridgedCancellable { token in try await handle.deleteWidget(widget: widget, cancel: token) }
   }
 
   public func value(of ref: FormFieldRef) async throws(PDFError) -> FormValueInput? {

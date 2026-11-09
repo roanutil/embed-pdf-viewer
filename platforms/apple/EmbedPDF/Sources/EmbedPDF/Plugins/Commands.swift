@@ -237,6 +237,31 @@ public struct CommandsCapability: Sendable {
     try await bridged { try await handle.disabledCategories() }
   }
 
+  public func disabledCommands() async throws(PDFError) -> [String] {
+    try await bridged { try await handle.disabledCommands() }
+  }
+
+  public func isCommandDisabled(_ id: String) async throws(PDFError) -> Bool {
+    try await bridged { try await handle.isCommandDisabled(id: id) }
+  }
+
+  public func disableCommand(_ id: String) async throws(PDFError) {
+    try await bridged { try await handle.disableCommand(id: id) }
+  }
+
+  public func enableCommand(_ id: String) async throws(PDFError) {
+    try await bridged { try await handle.enableCommand(id: id) }
+  }
+
+  public func setDisabledCommands(_ ids: [String]) async throws(PDFError) {
+    try await bridged { try await handle.setDisabledCommands(ids: ids) }
+  }
+
+  /// Why a command permanently refuses; nil for unknown or temporarily disabled commands.
+  public func refusal(_ id: String, document: DocumentInfo? = nil) async throws(PDFError) -> CommandRefusalInfo? {
+    try await bridged { try await handle.refusal(id: id, documentId: document?.id) }
+  }
+
   public func isCategoryDisabled(_ category: String) async throws(PDFError) -> Bool {
     try await bridged { try await handle.isCategoryDisabled(category: category) }
   }

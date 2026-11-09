@@ -171,6 +171,10 @@ public struct ActionsCapability: Sendable {
     try await bridged { try await handle.actionTree(source: source) }
   }
 
+  public func canExecuteNamed(_ name: String, context: PartialActionContext? = nil) async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canExecuteNamed(name: name, context: context) }
+  }
+
   public func dispatch(_ trigger: ActionTrigger) async throws(PDFError) -> ActionTriggerResult {
     try await bridged { try await handle.dispatch(trigger: trigger) }
   }

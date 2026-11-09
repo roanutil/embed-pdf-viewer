@@ -58,6 +58,121 @@ fn local_origin(op_id: &str) -> Value {
         "transaction": { "id": op_id, "index": 0, "count": 1 } })
 }
 
+#[test]
+fn cancelling_running_bundle_calls_ends_the_wait_and_aborts_engine_work() {
+    use std::future::Future;
+    use std::task::{Context, Poll};
+    let thread = KernelThread::spawn(|_| {
+        let mut spec = spec(vec![]);
+        spec.engine["documents"]["a"]["responses"] = json!([
+            {"path":"annotations.export","defer":"export"},
+            {"path":"annotations.import","defer":"import"}
+        ]);
+        TestKernel::open(
+            vec![interaction_plugin(InteractionConfig::default()), annotation_plugin(None)],
+            spec,
+        )
+    })
+    .unwrap();
+    let post = thread.post();
+    let annotation = block_on(
+        thread.call(move |k| AnnotationHandle::new(k.capability(&ANNOTATION).unwrap(), post)),
+    )
+    .unwrap();
+    let token = CancelToken::new();
+    let mut export = Box::pin(annotation.export(None, None, token.clone()));
+    let mut cx = Context::from_waker(futures::task::noop_waker_ref());
+    assert!(export.as_mut().poll(&mut cx).is_pending());
+    let reached = block_on(
+        thread.call(|k| k.engine.log_since(0).iter().any(|e| e["path"] == "annotations.export")),
+    )
+    .unwrap();
+    assert!(reached);
+    token.cancel();
+    block_on(thread.call(|_| ())).unwrap();
+    assert!(
+        matches!(export.as_mut().poll(&mut cx), Poll::Ready(Err(ViewerError::Kernel {code:Some(code),..})) if code == "operation-cancelled")
+    );
+    let token = CancelToken::new();
+    let mut import = Box::pin(annotation.import(json!({"format":"embedpdf/annotations","version":1,"pages":[],"items":[],"resources":{}}).to_string(), "{}".into(), token.clone()));
+    assert!(import.as_mut().poll(&mut cx).is_pending());
+    let reached = block_on(
+        thread.call(|k| k.engine.log_since(0).iter().any(|e| e["path"] == "annotations.import")),
+    )
+    .unwrap();
+    assert!(reached);
+    token.cancel();
+    block_on(thread.call(|_| ())).unwrap();
+    assert!(
+        matches!(import.as_mut().poll(&mut cx), Poll::Ready(Err(ViewerError::Kernel {code:Some(code),..})) if code == "operation-cancelled")
+    );
+    assert_eq!(
+        block_on(
+            thread.call(|k| k
+                .engine
+                .log_since(0)
+                .iter()
+                .filter(|e| e.get("abort").is_some())
+                .count())
+        )
+        .unwrap(),
+        2
+    );
+}
+
+#[test]
+fn cancelling_selected_link_edit_still_reconciles_a_late_refusal() {
+    use std::future::Future;
+    use std::task::{Context, Poll};
+    let thread = KernelThread::spawn(|_| {
+        let mut engine = spec(vec![]).engine;
+        engine["documents"]["a"]["responses"] = json!([{"path":"apply","defer":"link"}]);
+        let spec = TestSpec::new(engine).respond("annotations.list", |_| {
+            Ok(Reply::value(json!({"annotations":[square(10,json!({}))]})))
+        });
+        TestKernel::open(
+            vec![interaction_plugin(InteractionConfig::default()), annotation_plugin(None)],
+            spec,
+        )
+    })
+    .unwrap();
+    let post = thread.post();
+    let annotation = block_on(
+        thread.call(move |k| AnnotationHandle::new(k.capability(&ANNOTATION).unwrap(), post)),
+    )
+    .unwrap();
+    let reference = epdf_ffi::AnnotationRef::from_json(&ref_json(10)).unwrap();
+    block_on(annotation.selection().select(vec![reference.clone()], None)).unwrap();
+    let selection = annotation.selection();
+    let token = CancelToken::new();
+    let mut call = Box::pin(selection.update_link(
+        Some(epdf_ffi::PdfLinkTarget::Uri { uri: "https://example.test".into() }),
+        token.clone(),
+    ));
+    let mut cx = Context::from_waker(futures::task::noop_waker_ref());
+    assert!(call.as_mut().poll(&mut cx).is_pending());
+    assert!(
+        block_on(thread.call(|k| k.engine.log_since(0).iter().any(|e| e["path"] == "apply")))
+            .unwrap()
+    );
+    token.cancel();
+    block_on(thread.call(|_| ())).unwrap();
+    assert!(
+        matches!(call.as_mut().poll(&mut cx),Poll::Ready(Err(ViewerError::Kernel {code:Some(code),..})) if code == "operation-cancelled")
+    );
+    assert!(
+        block_on(thread.call(|k| {
+            k.engine.settle("link", Err(&json!({"code":"InvalidArg","message":"late refusal"})))
+        }))
+        .unwrap()
+    );
+    assert!(block_on(annotation.threads().link(reference.clone())).unwrap().is_none());
+    assert_eq!(
+        block_on(annotation.get(reference)).unwrap().unwrap().contents.as_deref(),
+        Some("Note")
+    );
+}
+
 /// The engine's answer to one op, and the event it publishes for it.
 fn answer(op: &Value, op_id: &str) -> Result<(Value, Value), epdf_kernel::Error> {
     let meta = |changed: Value| {

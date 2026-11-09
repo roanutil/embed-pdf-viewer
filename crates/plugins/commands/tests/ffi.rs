@@ -158,6 +158,106 @@ fn run_hooks() -> Vec<CommandHook> {
 }
 
 #[test]
+fn direct_command_controls_preserve_categories_and_permanent_refusals() {
+    use epdf_plugin_commands::ffi::CommandRefusalReason;
+    let (thread, commands) = handle();
+    let mut def = definition("edit:note", None, vec![]);
+    def.categories = vec!["edit.annotations".into()];
+    let _registration = block_on(commands.register_command(def, false)).unwrap();
+    assert!(block_on(commands.disabled_commands()).unwrap().is_empty());
+    assert!(block_on(commands.refusal("missing".into(), None)).unwrap().is_none());
+    assert!(block_on(commands.refusal("edit:note".into(), None)).unwrap().is_none());
+    block_on(commands.disable_command("edit:note".into())).unwrap();
+    let revision = block_on(thread.call(|k| k.kernel.state_revision())).unwrap();
+    block_on(commands.disable_command("edit:note".into())).unwrap();
+    assert_eq!(block_on(thread.call(|k| k.kernel.state_revision())).unwrap(), revision);
+    assert_eq!(block_on(commands.disabled_commands()).unwrap(), vec!["edit:note"]);
+    assert_eq!(
+        block_on(commands.refusal("edit:note".into(), None)).unwrap().unwrap().reason,
+        CommandRefusalReason::TurnedOff
+    );
+    block_on(commands.disable_category("edit".into())).unwrap();
+    block_on(commands.enable_command("edit:note".into())).unwrap();
+    assert!(block_on(commands.disabled_commands()).unwrap().is_empty());
+    assert!(block_on(commands.is_command_disabled("edit:note".into())).unwrap());
+    block_on(commands.enable_category("edit".into())).unwrap();
+    assert!(!block_on(commands.is_command_disabled("edit:note".into())).unwrap());
+    block_on(commands.set_disabled_commands(vec!["missing".into(), "".into()])).unwrap();
+    assert!(block_on(commands.is_command_disabled("missing".into())).unwrap());
+    assert!(block_on(commands.is_command_disabled("".into())).unwrap());
+    assert!(block_on(commands.refusal("missing".into(), None)).unwrap().is_none());
+    assert!(!block_on(commands.can_execute("missing".into(), None)).unwrap());
+    block_on(commands.set_disabled_commands(vec![])).unwrap();
+    block_on(thread.call(|k| plugin_conformance::test_kernel::settle(&k.kernel.destroy())))
+        .unwrap()
+        .unwrap();
+    assert_eq!(code(&block_on(commands.disabled_commands()).unwrap_err()), Some("instance-closed"));
+    assert!(block_on(commands.disable_command("x".into())).is_err());
+    assert!(block_on(commands.enable_command("x".into())).is_err());
+    assert!(block_on(commands.set_disabled_commands(vec![])).is_err());
+    assert!(block_on(commands.is_command_disabled("x".into())).is_err());
+    assert!(block_on(commands.refusal("x".into(), None)).is_err());
+}
+
+#[test]
+fn direct_refusals_distinguish_permission_lock_and_temporary_enablement() {
+    use epdf_plugin_commands::CommandDef;
+    use epdf_plugin_commands::ffi::CommandRefusalReason;
+    let thread = KernelThread::spawn(|_| {
+        let mut spec = one_document();
+        spec["documents"]["a"]["security"]["allows"] = serde_json::json!(["doc.open"]);
+        spec["documents"]["b"] = serde_json::json!({"id":"b","security":{"allows":"*"},"pages":[]});
+        let mut print = CommandDef::new("print", "Print");
+        print.requires = Some(vec!["doc.print".into()]);
+        let mut locked = CommandDef::new("locked", "Locked");
+        locked.locked = Some(std::rc::Rc::new(|_| {
+            Ok(Some(epdf_kernel::settings::SettingLock { by: "policy".into(), reason_key: None }))
+        }));
+        let mut temporary = CommandDef::new("temporary", "Temporary");
+        temporary.enabled = Some(std::rc::Rc::new(|_| Ok(false)));
+        TestKernel::open(
+            vec![commands_plugin(CommandsConfig {
+                commands: Some(vec![print.into(), locked.into(), temporary.into()]),
+                ..Default::default()
+            })],
+            spec,
+        )
+    })
+    .unwrap();
+    let post = thread.post();
+    let commands =
+        block_on(thread.call(move |k| CommandsHandle::new(k.capability(&COMMANDS).unwrap(), post)))
+            .unwrap();
+    let refused = block_on(commands.refusal("print".into(), None)).unwrap().unwrap();
+    assert_eq!(refused.reason, CommandRefusalReason::NotAllowed);
+    assert!(!refused.message.is_empty());
+    assert_eq!(
+        block_on(commands.refusal("locked".into(), None)).unwrap().unwrap().reason,
+        CommandRefusalReason::Locked
+    );
+    assert!(block_on(commands.refusal("temporary".into(), None)).unwrap().is_none());
+    assert!(!block_on(commands.can_execute("temporary".into(), None)).unwrap());
+    // Permanent refusal reflects the document passed to the workspace registry.
+    let document_id = block_on(thread.call(|k| k.document_id.clone())).unwrap();
+    assert_eq!(
+        block_on(commands.refusal("print".into(), Some(document_id))).unwrap().unwrap().reason,
+        CommandRefusalReason::NotAllowed
+    );
+    let other = block_on(thread.call(|k| {
+        let opened = plugin_conformance::test_kernel::settle(&k.kernel.documents().open(
+            epdf_kernel::OpenSource::Input(
+                serde_json::json!({"kind":"bytes","id":"b","bytes":{"$bytes":""}}),
+            ),
+            epdf_kernel::OpenOptions::default(),
+        ))
+        .unwrap();
+        opened["document"]["id"].as_str().unwrap().to_string()
+    }))
+    .unwrap();
+    assert!(block_on(commands.refusal("print".into(), Some(other))).unwrap().is_none());
+}
+
+#[test]
 fn a_swift_command_runs_with_its_context() {
     let (_thread, commands) = handle();
     let runner = Runner::new(Run::Finish, Ok(true));

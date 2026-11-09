@@ -17,13 +17,14 @@
 //! `listLinkItems`, `getAppearanceEpoch`, `renderAppearances`,
 //! `getCssFontFamily`, `getImageGhost`, `renderArmedStampPreview`), the
 //! rich-text editing members (`draftRichText`, `setTextSelection` ranges
-//! beyond a caret), import and export, and the hooks other plugins call
+//! beyond a caret), and the hooks other plugins call
 //! (`registerBehavior`, `pruneEngagedSelection`, `getBehaviorFor`,
 //! `commitScriptEffects`, `lend`, `setPageViewports`, `remeasurePage`,
 //! `distanceCreationPage`, `tools.register`).
 
 mod drafts;
 mod handle;
+mod interchange;
 mod picker;
 mod selection;
 mod threads;
@@ -41,6 +42,7 @@ pub use drafts::{
     AnnotationStampPlacement, AnnotationStampSource, AnnotationTextEndAnchor,
 };
 pub use handle::AnnotationHandle;
+pub use interchange::{AnnotationImportResult, AnnotationRefMapping};
 pub use picker::{AnnotationFilePicker, AnnotationFilePromptRequest, AnnotationPickedFile};
 pub use selection::{AnnotationSelectionHandle, AnnotationSelectionProps, AnnotationTextFormat};
 pub use threads::{

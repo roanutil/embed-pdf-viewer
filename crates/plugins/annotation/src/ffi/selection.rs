@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use epdf_ffi::{AnnotationRef, CancelToken, KernelBound, PageRef, Rect, ViewerError};
+use epdf_ffi::{
+    AnnotationRef, CancelToken, KernelBound, PageRef, PdfLinkTarget, Rect, ViewerError,
+};
 use serde_json::Value;
 
 use super::tools::{AnnotationProperty, properties_out};
@@ -149,6 +151,29 @@ impl AnnotationSelectionHandle {
             .call_promise_cancellable(
                 cancel,
                 |c| Ok(open(c)?.selection_delete(None)),
+                |b: Value| batch_out(&b).map_err(ViewerError::from),
+            )
+            .await?
+    }
+
+    /// Set or clear the selection's link targets in one core edit, respecting each kind's authority.
+    /// Cancellation ends the wait while an admitted edit still reconciles through the kernel.
+    pub async fn update_link(
+        &self,
+        target: Option<PdfLinkTarget>,
+        cancel: Arc<CancelToken>,
+    ) -> Result<AnnotationBatchResult, ViewerError> {
+        self.cap
+            .call_promise_cancellable(
+                cancel,
+                move |c| {
+                    super::interchange::cancellable_operation(|signal| {
+                        Ok(open(c)?.selection_update_link(
+                            target.as_ref().map(PdfLinkTarget::to_json).unwrap_or(Value::Null),
+                            Some(signal),
+                        ))
+                    })
+                },
                 |b: Value| batch_out(&b).map_err(ViewerError::from),
             )
             .await?
