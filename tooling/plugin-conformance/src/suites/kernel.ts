@@ -588,6 +588,61 @@ const cases: ScenarioCase[] = [
     ],
   },
   {
+    name: 'url-source',
+    covers:
+      "A `{ kind: 'url' }` source downloads under the loading tab with the host's fetch, called with the URL and the tab's signal: a PDF opens as bytes under the source's id; HTTP 404 fails not-found, 401 and 403 permission-denied, any other refusal operation-failed, each naming the URL and status; a file without a PDF header fails invalid-input; a fetch that rejects fails with its error; and closing the tab while it downloads cancels the open, which opens nothing when the file lands later.",
+    plugins: [],
+    engine: { documents: { remote: doc() } },
+    fetch: {
+      $fn: 'fetch',
+      seq: [
+        {
+          resolves: {
+            ok: true,
+            status: 200,
+            arrayBuffer: { $fn: 'arrayBuffer', resolves: { $bytes: 'JVBERi0xLjcKJSVFT0YK' } },
+          },
+        },
+        { resolves: { ok: false, status: 404 } },
+        { resolves: { ok: false, status: 401 } },
+        { resolves: { ok: false, status: 403 } },
+        { resolves: { ok: false, status: 500 } },
+        {
+          resolves: {
+            ok: true,
+            status: 200,
+            arrayBuffer: {
+              $fn: 'signInPage',
+              resolves: { $bytes: 'PGh0bWw+c2lnbiBpbjwvaHRtbD4=' },
+            },
+          },
+        },
+        { rejects: { name: 'TypeError', message: 'Failed to fetch' } },
+        { defer: 'download' },
+      ],
+    },
+    steps: [
+      start,
+      open({ kind: 'url', url: 'https://files.example/a.pdf', id: 'remote' }),
+      ...listing,
+      open({ kind: 'url', url: 'https://files.example/missing.pdf', id: 'missing' }),
+      open({ kind: 'url', url: 'https://files.example/private.pdf', id: 'signin' }),
+      open({ kind: 'url', url: 'https://files.example/secret.pdf', id: 'forbidden' }),
+      open({ kind: 'url', url: 'https://files.example/broken.pdf', id: 'broken' }),
+      open({ kind: 'url', url: 'https://files.example/page', id: 'html' }),
+      open({ kind: 'url', url: 'https://offline.example/a.pdf', id: 'offline' }),
+      open({ kind: 'url', url: 'https://files.example/slow.pdf', id: 'slow' }),
+      ...listing,
+      docs('close', 'slow'),
+      settle('download', {
+        ok: true,
+        status: 200,
+        arrayBuffer: { $fn: 'lateArrayBuffer', resolves: { $bytes: 'JVBERi0xLjcKJSVFT0YK' } },
+      }),
+      ...listing,
+    ],
+  },
+  {
     name: 'handle-id-differs',
     covers:
       'An engine that answers with a handle whose id differs from the requested one re-keys the session; a re-key onto an id already in use refuses and parks the tab as error.',

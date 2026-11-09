@@ -11,6 +11,7 @@ import {
   createCapabilityToken,
   createKernel,
   DocumentsToken,
+  type HostFetch,
   type AnyPlugin,
   type CapabilityToken,
   type Kernel,
@@ -102,6 +103,11 @@ interface ScenarioCaseBase {
   readonly awaitCalls?: boolean;
   /** A painting host: deterministic frames every 16 ms on the scenario clock. */
   readonly clock?: { readonly frames: true };
+  /** The host's `fetch` for `{ kind: 'url' }` sources (`createKernel`'s
+   *  `fetch`): a scripted callback answering `{ ok, status, arrayBuffer }`,
+   *  `arrayBuffer` a scripted callback of its own. Without one a URL source
+   *  would reach the network through the global `fetch`. */
+  readonly fetch?: FnSpec;
 }
 
 export type Outcome =
@@ -309,6 +315,7 @@ async function runInstalled(
             },
           }
         : {}),
+      ...(scenario.fetch ? { fetch: decode(scenario.fetch) as HostFetch } : {}),
       engine: fake.engine,
       plugins,
       report: (error) => entry.reports.push(canonicalError(error, snapshotHooks)),
@@ -684,6 +691,7 @@ function assertPlainAnswers(scenario: ScenarioCase): void {
     refuseLiveTags([document.security, document.pages, document.namedPages], `${where}: document ${key}`);
   }
   refuseInCallbackAnswers(scenario.plugins, where);
+  refuseInCallbackAnswers(scenario.fetch, where);
   for (const step of scenario.steps) {
     if (step.op === 'settle') refuseLiveTags(step.value, `${where}: settle ${step.label}`);
     if (step.op === 'emit') refuseLiveTags(step.event, `${where}: emit to ${step.doc}`);
