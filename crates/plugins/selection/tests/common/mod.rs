@@ -66,6 +66,7 @@ pub fn kernel(pages: u32, allows: &[&str], responses: Vec<Value>) -> (Kernel, Rc
             on_dispatch: None,
             release_closed_sessions: false,
             printer: None,
+            fetch: None,
         },
     )
     .unwrap();

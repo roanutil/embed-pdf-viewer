@@ -7,4 +7,5 @@ pub mod adapters;
 pub mod clock;
 pub mod engine;
 pub mod exports;
+pub mod fetch;
 pub mod runtime;

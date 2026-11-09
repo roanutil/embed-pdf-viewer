@@ -202,6 +202,7 @@ fn kernel_on(form: Value, pages: Vec<Value>, annotation: bool) -> (Kernel, Rc<Fa
             on_dispatch: None,
             release_closed_sessions: false,
             printer: None,
+            fetch: None,
         },
     )
     .expect("the kernel");

@@ -4,6 +4,8 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use epdf_kernel::bytes::Bytes;
+use epdf_kernel::fetch::{FetchResponse, FetchedBytes, HostFetch};
 use epdf_kernel::kernel::{InitialDocument, OpenSource};
 use epdf_kernel::rt::{self, Promise};
 use epdf_kernel::signal::AbortSignal;
@@ -15,7 +17,7 @@ use epdf_kernel::{
 use serde_json::{Value, json};
 
 use crate::fake_engine::FakeEngine;
-use crate::harness::{Answer, Harness, HarnessPlugin, Outcome};
+use crate::harness::{Answer, Callback, Harness, HarnessPlugin, Outcome};
 use crate::scrub;
 
 /// The adapters a run may use. Plugin crates add theirs.
@@ -556,6 +558,69 @@ pub fn install_case_entropy() -> CaseEntropy {
     )))
 }
 
+/// A case's `fetch`: a scripted callback, called as `fetch(url, { signal })`
+/// is (the signal as the TypeScript runner logs it), answering
+/// `{ok, status, arrayBuffer}`, `arrayBuffer` a scripted callback of its own
+/// whose answer is the file's `{"$bytes": ...}`.
+struct ScriptedFetch(Callback, Harness);
+
+/// A callback's answer as the promise an `async` caller awaits.
+fn answered(answer: Answer) -> Promise<Value> {
+    match answer {
+        Answer::Returns(value) => Promise::resolved(value),
+        Answer::Throws(error) => Promise::rejected(error),
+        Answer::Promise(promise) => promise,
+    }
+}
+
+impl HostFetch for ScriptedFetch {
+    fn fetch(&self, url: &str, signal: AbortSignal) -> Promise<Rc<dyn FetchResponse>> {
+        let init = json!({ "signal": { "$signal": { "aborted": signal.aborted() } } });
+        let h = self.1.clone();
+        answered(self.0.call(vec![json!(url), init])).convert(move |response| {
+            let array_buffer = response
+                .get("arrayBuffer")
+                .filter(|f| f.get("$fn").is_some())
+                .map(|spec| h.callback(spec));
+            Ok(Rc::new(ScriptedResponse {
+                ok: response.get("ok").and_then(Value::as_bool).unwrap_or(false),
+                status: response.get("status").and_then(Value::as_f64).unwrap_or(f64::NAN),
+                array_buffer,
+            }) as Rc<dyn FetchResponse>)
+        })
+    }
+}
+
+struct ScriptedResponse {
+    ok: bool,
+    status: f64,
+    array_buffer: Option<Callback>,
+}
+
+impl FetchResponse for ScriptedResponse {
+    fn ok(&self) -> bool {
+        self.ok
+    }
+
+    fn status(&self) -> f64 {
+        self.status
+    }
+
+    fn array_buffer(&self) -> Promise<FetchedBytes> {
+        let Some(callback) = &self.array_buffer else {
+            return Promise::rejected(Error::named(
+                "TypeError",
+                "response.arrayBuffer is not a function",
+            ));
+        };
+        answered(callback.call(vec![])).convert(|file| {
+            let bytes = Bytes::from_json(file)
+                .ok_or_else(|| Error::new("[scenario] arrayBuffer answered no $bytes"))?;
+            Ok(FetchedBytes::from_bytes(bytes.0))
+        })
+    }
+}
+
 /// Replay one case.
 pub fn run_case(case: &Value, registry: &Registry) -> Run {
     rt::reset();
@@ -618,6 +683,9 @@ pub fn run_case(case: &Value, registry: &Registry) -> Run {
         })),
         release_closed_sessions: false,
         printer: None,
+        fetch: case
+            .get("fetch")
+            .map(|spec| Rc::new(ScriptedFetch(h.callback(spec), h.clone())) as Rc<dyn HostFetch>),
     };
     let kernel = match Kernel::new_with_clock(
         Rc::new(crate::fake_engine::AsEngine(fake.clone())),

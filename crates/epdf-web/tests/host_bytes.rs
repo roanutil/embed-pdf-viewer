@@ -99,12 +99,26 @@ fn one_resolver_serves_every_live_kernel_with_unique_ids() {
     // Two live kernels over two different bridges. Neither installs
     // anything itself: the resolver above is the only one, and it is
     // shared, not tied to either kernel's construction.
-    let first_kernel =
-        WasmKernel::new("[]", eval(STUB_ENGINE), no_op_call_js(), no_op_release_js(), None, None)
-            .unwrap();
-    let second_kernel =
-        WasmKernel::new("[]", eval(STUB_ENGINE), no_op_call_js(), no_op_release_js(), None, None)
-            .unwrap();
+    let first_kernel = WasmKernel::new(
+        "[]",
+        eval(STUB_ENGINE),
+        no_op_call_js(),
+        no_op_release_js(),
+        None,
+        None,
+        None,
+    )
+    .unwrap();
+    let second_kernel = WasmKernel::new(
+        "[]",
+        eval(STUB_ENGINE),
+        no_op_call_js(),
+        no_op_release_js(),
+        None,
+        None,
+        None,
+    )
+    .unwrap();
 
     let first_id = hold(&source, &[1, 2, 3]);
     let second_id = hold(&source, &[4, 5, 6, 7]);

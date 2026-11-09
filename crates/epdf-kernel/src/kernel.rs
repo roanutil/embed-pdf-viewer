@@ -24,6 +24,7 @@ use crate::action::{Action, CoreAction};
 use crate::engine::{DocumentHandle, Engine, EngineCall};
 use crate::error::{Error, to_plugin_error};
 use crate::event_hook::EventHookSource;
+use crate::fetch::{HostFetch, fetch_url_source, is_url_source};
 use crate::geometry::PageRef;
 use crate::plan::{PluginPlan, plan_plugins};
 use crate::plugin::{
@@ -129,6 +130,11 @@ pub struct KernelOptions {
     /// The host's print dialog: where `documents.print()` sends the pages.
     /// Without one, nothing prints (`can_print()` is false).
     pub printer: Option<Rc<dyn HostPrinter>>,
+    /// How a `{ kind: 'url' }` source downloads (`createKernel`'s `fetch`),
+    /// called with the URL and the document's cancel signal, and again on
+    /// `retry()`. Without one, a URL source fails `unsupported`: a native
+    /// kernel has no global `fetch` to fall back on.
+    pub fetch: Option<Rc<dyn HostFetch>>,
 }
 
 impl Default for KernelOptions {
@@ -138,6 +144,7 @@ impl Default for KernelOptions {
             on_dispatch: None,
             release_closed_sessions: true,
             printer: None,
+            fetch: None,
         }
     }
 }
@@ -346,6 +353,7 @@ struct Inner {
     on_dispatch: Option<Rc<dyn Fn(&str, &dyn Action)>>,
     release_closed_sessions: bool,
     printer: Option<Rc<dyn HostPrinter>>,
+    fetch: Option<Rc<dyn HostFetch>>,
 }
 
 /// The kernel's lifecycle events, disposed at destroy.
@@ -1879,6 +1887,20 @@ impl Inner {
             members.retain(|_, member| !crate::is_undefined(member));
         }
         Self::checkpoint(&session)?;
+        // A URL is downloaded here, under the loading tab; closing the tab
+        // stops the download.
+        if is_url_source(&source) {
+            let download = fetch_url_source(&source, session.cancel.clone(), this.fetch.clone());
+            // A file that lands after close() won goes back to its host.
+            let on_late: Rc<dyn Fn(Value) -> Result<Option<Promise<()>>, Error>> =
+                Rc::new(|late: Value| {
+                    drop(HostHold::of_value(&late));
+                    Ok(None)
+                });
+            source = rt::returned(Self::engine_call(&session, download, Some(on_late))).await?;
+            *session.produced.borrow_mut() = HostHold::of_value(&source);
+            Self::checkpoint(&session)?;
+        }
         if let Some(source_id) = id_of_input(&source) {
             this.rekey_session(&session, &source_id)?;
         }
@@ -2192,6 +2214,7 @@ impl Kernel {
             on_dispatch: options.on_dispatch,
             release_closed_sessions,
             printer: options.printer,
+            fetch: options.fetch,
         });
         let documents: Rc<dyn Any> =
             Rc::new(Documents { inner: Rc::downgrade(&inner), scope: None });

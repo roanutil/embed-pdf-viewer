@@ -97,6 +97,7 @@ async fn a_getter_ref_returns() {
         no_release(),
         None,
         None,
+        None,
     )
     .unwrap();
     start_with_document(&kernel).await;
@@ -120,6 +121,7 @@ async fn a_document_capability_with_no_document_throws() {
         stub_engine(),
         call_js(&js_sys::Array::new(), "() => 0"),
         no_release(),
+        None,
         None,
         None,
     )
@@ -146,6 +148,7 @@ async fn a_config_callback_calls_into_javascript_and_its_promise_resolves() {
         stub_engine(),
         call_js(&log, "() => Promise.resolve(7)"),
         no_release(),
+        None,
         None,
         None,
     )
@@ -183,6 +186,7 @@ async fn a_promise_is_taken_once_and_a_second_take_throws() {
         stub_engine(),
         call_js(&js_sys::Array::new(), "() => Promise.resolve(7)"),
         no_release(),
+        None,
         None,
         None,
     )
@@ -228,6 +232,7 @@ async fn abort_promise_after_the_take_is_still_a_safe_call() {
         no_release(),
         None,
         None,
+        None,
     )
     .unwrap();
     JsFuture::from(kernel.start()).await.unwrap();
@@ -253,6 +258,7 @@ async fn a_subscriber_hears_a_store_change_until_it_unsubscribes() {
         stub_engine(),
         call_js(&js_sys::Array::new(), "() => 0"),
         no_release(),
+        None,
         None,
         None,
     )
@@ -288,6 +294,7 @@ async fn the_same_capability_describes_to_the_same_text() {
         no_release(),
         None,
         None,
+        None,
     )
     .unwrap();
     JsFuture::from(kernel.start()).await.unwrap();
@@ -310,6 +317,7 @@ async fn release_ref_frees_a_returned_ref_and_ignores_a_pinned_one() {
         stub_engine(),
         call_js(&js_sys::Array::new(), "() => 0"),
         no_release(),
+        None,
         None,
         None,
     )
@@ -345,6 +353,7 @@ async fn status_scope_and_try_capability_follow_the_kernel() {
         no_release(),
         None,
         None,
+        None,
     )
     .unwrap();
     assert_eq!(kernel.status(), "created");
@@ -374,6 +383,7 @@ async fn a_throw_in_javascript_is_the_callback_throwing() {
         stub_engine(),
         call_js(&log, "() => { throw new TypeError('boom'); }"),
         no_release(),
+        None,
         None,
         None,
     )
@@ -416,6 +426,7 @@ async fn a_run_callback_reenters_the_kernel_through_its_ctx_marker() {
         stub_engine(),
         call_js(&holder, answer),
         no_release(),
+        None,
         None,
         None,
     );
@@ -461,9 +472,16 @@ async fn an_export_reentered_from_a_callback_leaves_timers_and_the_queue_to_the_
       log.push('nested returned');
       return undefined;
     }"#;
-    let kernel =
-        WasmKernel::new(&plugins, stub_engine(), call_js(&order, answer), no_release(), None, None)
-            .unwrap();
+    let kernel = WasmKernel::new(
+        &plugins,
+        stub_engine(),
+        call_js(&order, answer),
+        no_release(),
+        None,
+        None,
+        None,
+    )
+    .unwrap();
     JsFuture::from(kernel.start()).await.unwrap();
     let commands = parse(&kernel.capability("commands".into(), None).unwrap());
     let execute = ref_of(&commands, "execute");
@@ -514,6 +532,7 @@ async fn an_unregistered_handler_releases_its_functions_once_each() {
         stub_engine(),
         call_js(&js_sys::Array::new(), "() => undefined"),
         release_into(&log),
+        None,
         None,
         None,
     )
@@ -570,6 +589,7 @@ async fn a_callback_dropped_and_remade_in_one_call_keeps_its_function() {
         release_into(&log),
         None,
         None,
+        None,
     )
     .unwrap();
     start_with_document(&kernel).await;
@@ -617,6 +637,7 @@ async fn closing_a_document_drops_its_capabilities_from_the_memo() {
         no_release(),
         None,
         None,
+        None,
     )
     .unwrap();
     start_with_document(&kernel).await;
@@ -652,6 +673,7 @@ async fn a_dropped_kernel_leaves_another_in_the_instance_working() {
             stub_engine(),
             call_js(&js_sys::Array::new(), "() => 0"),
             no_release(),
+            None,
             None,
             None,
         )
@@ -713,6 +735,7 @@ async fn a_closed_documents_plugins_go_once_their_refs_are_released() {
         release_into(&log),
         None,
         None,
+        None,
     )
     .unwrap();
     start_with_document(&kernel).await;
@@ -754,6 +777,7 @@ async fn a_behavior_described_again_keeps_its_functions() {
         stub_engine(),
         call_js(&calls, "() => true"),
         release_into(&log),
+        None,
         None,
         None,
     )
@@ -822,6 +846,7 @@ return bridge;
         bridge.clone(),
         call_js(&js_sys::Array::new(), "() => undefined"),
         no_release(),
+        None,
         None,
         None,
     )

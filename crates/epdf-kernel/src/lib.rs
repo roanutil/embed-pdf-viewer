@@ -24,6 +24,7 @@ pub mod compose;
 pub mod engine;
 pub mod error;
 pub mod event_hook;
+pub mod fetch;
 pub mod geometry;
 pub mod guarded;
 pub mod identity;

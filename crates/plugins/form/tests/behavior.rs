@@ -284,6 +284,7 @@ fn a_lost_object_number_leaves_the_held_pool() {
             on_dispatch: None,
             release_closed_sessions: false,
             printer: None,
+            fetch: None,
         },
     )
     .unwrap();
@@ -350,6 +351,7 @@ fn the_painter_draws_a_text_field_a_checkbox_and_a_listbox() {
             on_dispatch: None,
             release_closed_sessions: false,
             printer: None,
+            fetch: None,
         },
     )
     .unwrap();

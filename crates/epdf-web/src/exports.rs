@@ -56,6 +56,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Once;
 
+use epdf_kernel::fetch::HostFetch;
 use epdf_kernel::settings::{Settings, SettingsChanged};
 use epdf_kernel::types::PluginScope;
 use epdf_kernel::{
@@ -69,6 +70,7 @@ use wasm_bindgen::prelude::*;
 use crate::adapters::adapters;
 use crate::clock::PageClock;
 use crate::engine::{EngineBridge, JsEngine};
+use crate::fetch::JsFetch;
 use crate::runtime::{self, entry, js_to_error, js_to_value, value_to_js};
 
 #[wasm_bindgen]
@@ -306,6 +308,8 @@ impl WasmKernel {
     /// viewer settings the app registered (`createKernel`'s `settings`).
     /// `next_frame` is `createKernel`'s `clock.nextFrame`, the frames
     /// plugins animate on (`PageClock`); without it they skip animation.
+    /// `fetch_url` downloads a `{ kind: 'url' }` source ([`JsFetch`]);
+    /// without it, a URL source fails `unsupported`.
     #[wasm_bindgen(constructor)]
     pub fn new(
         plugins_json: &str,
@@ -314,6 +318,7 @@ impl WasmKernel {
         release_js: js_sys::Function,
         settings_json: Option<String>,
         next_frame: Option<js_sys::Function>,
+        fetch_url: Option<js_sys::Function>,
     ) -> Result<WasmKernel, JsValue> {
         report_panics();
         // Before anything can schedule a timer.
@@ -326,6 +331,7 @@ impl WasmKernel {
                 release_js,
                 settings_json.as_deref(),
                 next_frame,
+                fetch_url,
             )
             .map_err(|e| thrown(&e))
         })
@@ -338,6 +344,7 @@ impl WasmKernel {
         release_js: js_sys::Function,
         settings_json: Option<&str>,
         next_frame: Option<js_sys::Function>,
+        fetch_url: Option<js_sys::Function>,
     ) -> Result<WasmKernel, Error> {
         let adapters = adapters();
         let mut tokens: HashMap<String, AnyToken> = HashMap::new();
@@ -377,6 +384,7 @@ impl WasmKernel {
             on_dispatch: None,
             release_closed_sessions: true,
             printer: None,
+            fetch: fetch_url.map(|f| Rc::new(JsFetch(f)) as Rc<dyn HostFetch>),
         };
         let bridge: EngineBridge = engine.unchecked_into();
         let registered = settings_json

@@ -49,6 +49,7 @@ fn kernel() -> Kernel {
             on_dispatch: None,
             release_closed_sessions: false,
             printer: None,
+            fetch: None,
         },
     )
     .unwrap();
