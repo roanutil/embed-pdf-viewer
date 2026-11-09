@@ -19,6 +19,7 @@ use serde_json::{Value, json};
 use crate::paint_plan::{
     FullPageSettings, PageViewDemand, PrefetchOptions, Quantize, RenderFormat, TilesSettings,
 };
+use crate::pictures::PictureReport;
 use crate::raster_store::PageImageHandle;
 
 // ── settings ──────────────────────────────────────────────────────────────────
@@ -49,6 +50,11 @@ pub struct RenderConfig {
     /// `Some(None)` (`null`) is the engine's.
     #[serde(default, deserialize_with = "nullable", skip_serializing_if = "Option::is_none")]
     pub quality: Option<Option<f64>>,
+    /// How long a page waits for its first picture before its state turns
+    /// `slow`, in milliseconds: the moment to show a loading indicator
+    /// ([`crate::PictureState`]). `0` turns it on at once.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub slow_after_ms: Option<f64>,
     /// Diagnostic logging of tile scheduling and fetch outcomes.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub debug: Option<bool>,
@@ -154,6 +160,7 @@ pub fn render_defaults() -> RenderSettings {
         })),
         format: Some(None),
         quality: Some(None),
+        slow_after_ms: Some(400.0),
         debug: Some(false),
         snapshot: Some(SnapshotConfig {
             scale: Some(2.0),
@@ -384,8 +391,14 @@ pub trait PicturePainter {
     /// keeps the render plugin's.
     fn paints(&self, view: &str) -> bool;
     /// Paint `page`'s picture into `host`, an empty box over the page's
-    /// content, until `destroy()`.
-    fn paint(&self, host: &dyn Any, page: &PicturePage) -> Box<dyn PaintedPicture>;
+    /// content, until `destroy()`. The page is `loading` until
+    /// `report.shown()`: call it once the first picture is on screen.
+    fn paint(
+        &self,
+        host: &dyn Any,
+        page: &PicturePage,
+        report: Rc<dyn PictureReport>,
+    ) -> Box<dyn PaintedPicture>;
     /// The painter itself, for a host that handed over its own type.
     fn as_any(&self) -> &dyn Any;
 }

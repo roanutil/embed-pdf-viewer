@@ -20,7 +20,7 @@ use epdf_geometry::{PageRotation, Rect};
 use epdf_kernel::geometry::PageRef;
 use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::store::Unsubscribe;
-use epdf_kernel::{AnyPlugin, AnyToken, Error, Promise, Token, define, is_undefined};
+use epdf_kernel::{AnyPlugin, AnyToken, Error, Promise, Token, define, is_undefined, undefined};
 use plugin_conformance::js::{arg, from_value, to_value};
 use plugin_conformance::{Answer, Callback, FunctionTable, Harness, HarnessPlugin, Outcome};
 use serde::Serialize;
@@ -176,10 +176,21 @@ impl PicturePainter for WirePainter {
         }
     }
 
-    fn paint(&self, host: &dyn Any, page: &PicturePage) -> Box<dyn PaintedPicture> {
+    fn paint(
+        &self,
+        host: &dyn Any,
+        page: &PicturePage,
+        report: Rc<dyn PictureReport>,
+    ) -> Box<dyn PaintedPicture> {
         let host = host.downcast_ref::<Value>().cloned().unwrap_or(Value::Null);
-        let answer =
-            self.member("paint").map(|paint| paint.call(vec![host, picture_page_json(page)]));
+        // The report stays on the Rust side: a scripted painter is told one
+        // came, as an empty object. A live host lends its own painter, which
+        // the page layers call with their report in JavaScript.
+        drop(report);
+        let report = json!({});
+        let answer = self
+            .member("paint")
+            .map(|paint| paint.call(vec![host, picture_page_json(page), report]));
         let picture = match answer {
             Some(Answer::Returns(picture)) => picture,
             _ => Value::Null,
@@ -215,12 +226,15 @@ const MEMBERS: &[&str] = &[
     "getRenderEpoch",
     "invalidate",
     "onInvalidated",
+    "getPictureState",
+    "onPictureStateChanged",
     "renderSource",
     "getSourceKey",
     "conformViewport",
     "getPaintSettings",
     "getLayerRights",
     "createViewDemand",
+    "reportPicture",
     "renderAppearances",
     "getKeptAppearances",
     "getAppearanceScale",
@@ -232,6 +246,7 @@ const MEMBERS: &[&str] = &[
     "onSnapshotChanged",
     "getSnapshotBox",
 ];
+const REPORT_MEMBERS: &[&str] = &["shown", "failed", "close"];
 const VIEW_MEMBERS: &[&str] =
     &["setDemand", "getPlan", "markPainted", "markUnpainted", "release", "destroy"];
 
@@ -480,6 +495,14 @@ impl Render {
                 let cap = cap.clone();
                 hook(h, present(args, 0), move |f| cap.on_invalidated(f))
             }
+            "getPictureState" => {
+                let view = present(args, 1).and_then(Value::as_str).unwrap_or_default();
+                Outcome::Returned(to_value(&cap.get_picture_state(page_target_arg(args, 0)?, view)))
+            }
+            "onPictureStateChanged" => {
+                let cap = cap.clone();
+                hook(h, present(args, 0), move |f| cap.on_picture_state_changed(f))
+            }
             "renderSource" => {
                 let options = present(args, 1);
                 let options = RenderSourceOptions {
@@ -515,6 +538,15 @@ impl Render {
             "createViewDemand" => {
                 let view = present(args, 0).and_then(Value::as_str).unwrap_or_default();
                 let handle: Rc<dyn Any> = Rc::new(cap.create_view_demand(view));
+                match h.try_describe(handle) {
+                    Some(Ok(described)) => Outcome::Returned(described),
+                    Some(Err(error)) => Outcome::Threw(error),
+                    None => Outcome::Returned(json!({})),
+                }
+            }
+            "reportPicture" => {
+                let view = present(args, 0).and_then(Value::as_str).unwrap_or_default();
+                let handle: Rc<dyn Any> = Rc::new(cap.report_picture(view, page_ref_arg(args, 1)?));
                 match h.try_describe(handle) {
                     Some(Ok(described)) => Outcome::Returned(described),
                     Some(Err(error)) => Outcome::Threw(error),
@@ -652,6 +684,23 @@ impl HarnessPlugin for Render {
         if let Some(view) = capability.downcast_ref::<ViewDemand>() {
             return Some(self.call_view(view, method, &args).unwrap_or_else(Outcome::Threw));
         }
+        if let Some(report) = capability.downcast_ref::<OpenPictureReport>() {
+            return Some(match method {
+                "shown" => {
+                    report.shown();
+                    Outcome::undefined()
+                }
+                "failed" => {
+                    report.failed(present(&args, 0).unwrap_or(&undefined()));
+                    Outcome::undefined()
+                }
+                "close" => {
+                    report.close();
+                    Outcome::undefined()
+                }
+                other => not_a_function(other),
+            });
+        }
         capability.downcast_ref::<Signals>()?;
         Some(match method {
             "abort" => {
@@ -669,6 +718,9 @@ impl HarnessPlugin for Render {
         }
         if capability.downcast_ref::<ViewDemand>().is_some() {
             return Some(VIEW_MEMBERS.to_vec());
+        }
+        if capability.downcast_ref::<OpenPictureReport>().is_some() {
+            return Some(REPORT_MEMBERS.to_vec());
         }
         capability.downcast_ref::<Signals>()?;
         Some(vec!["abort"])

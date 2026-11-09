@@ -36,6 +36,7 @@ pub mod invalidation;
 pub mod js;
 pub mod model;
 pub mod paint_plan;
+pub mod pictures;
 pub mod policy;
 pub mod raster_store;
 pub mod snapshot;
@@ -76,6 +77,7 @@ pub use paint_plan::{
     RenderFormat, ResolvedRenderOptions, TilePaintPlan, TilePaintSource, TilesSettings, Velocity,
     empty_tile_plan, resolve_render_options, same_page_view_demand,
 };
+pub use pictures::{OpenPictureReport, PictureReport, PictureState, PictureStateChangedEvent};
 pub use policy::{
     CONTINUOUS_RENDER_POLICY, EngineRenderPolicy, LatticePolicy, PageRenderViewport, SnapOptions,
     snap_appearance_scale, snap_full_page_viewport, snap_tile_scale,

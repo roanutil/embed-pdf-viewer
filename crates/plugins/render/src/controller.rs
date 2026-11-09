@@ -57,6 +57,9 @@ use crate::paint_plan::{
     PageViewDemand, RenderFormat, ResolvedRenderOptions, TilePaintPlan, empty_tile_plan,
     resolve_render_options,
 };
+use crate::pictures::{
+    OpenPictureReport, PictureReports, PictureState, PictureStateChangedEvent, ReportsDeps,
+};
 use crate::policy::{CONTINUOUS_RENDER_POLICY, EngineRenderPolicy, PageRenderViewport};
 use crate::raster_store::{DEFAULT_MAX_COST, PageImageHandle, RasterStore};
 use crate::snapshot::{Snapshots, connect_snapshots};
@@ -180,6 +183,9 @@ pub(crate) struct Core {
     /// of state (a painter is behaviour, not data); `notify` tells the page
     /// layers, which read it through the capability.
     picture_painter: RefCell<Option<Rc<dyn PicturePainter>>>,
+    /// Whether each page's picture is on screen, per view.
+    pictures: PictureReports,
+    picture_state_changed: EventHookSource<PictureStateChangedEvent>,
 }
 
 impl Core {
@@ -1219,6 +1225,32 @@ impl RenderCapability {
         self.0.can_render()
     }
 
+    /// Whether a picture of the page is on screen in `view` (a page
+    /// context's `view`): `loading` until one is, and `slow` once it waited
+    /// `slowAfterMs`. Idle for a page that isn't in the document.
+    pub fn get_picture_state(&self, page: impl Into<PageArg>, view: &str) -> PictureState {
+        match self.0.find_page(page.into()) {
+            Some((page, _)) => self.0.pictures.state_in(view, page.page_object_number),
+            None => PictureState::IDLE,
+        }
+    }
+
+    /// `onPictureStateChanged`: a page's [`PictureState`] changed in a view.
+    pub fn on_picture_state_changed(
+        &self,
+        listener: impl Fn(&PictureStateChangedEvent) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        self.0.picture_state_changed.on(listener)
+    }
+
+    /// Report on a page's picture in a view: the page is `loading` from now
+    /// until `shown()`, and idle again once every report on it closed. A
+    /// page layer opens one when it mounts and closes it when it unmounts;
+    /// the box it lends a painter opens one and hands it to `paint`.
+    pub fn report_picture(&self, view: &str, page: PageRef) -> OpenPictureReport {
+        self.0.pictures.open(view, page)
+    }
+
     /// Let another plugin paint the pages' pictures until the returned
     /// function is called, or the document closes. While it holds them,
     /// every page layer in a view it paints lends it its box instead of
@@ -1632,6 +1664,7 @@ pub fn create_render_controller(
     let render_completed = cx.event_source::<RenderCompletedEvent>();
     let render_failed = cx.event_source::<RenderFailedEvent>();
     let snapshot_changed = cx.event_source::<SnapshotChangedEvent>();
+    let picture_state_changed = cx.event_source::<PictureStateChangedEvent>();
     let clock = cx.clock();
 
     let core = Rc::new_cyclic(|weak: &Weak<Core>| {
@@ -1710,8 +1743,34 @@ pub fn create_render_controller(
             views: RefCell::new(IndexMap::new()),
             snapshots: Snapshots::new(snapshot_changed),
             picture_painter: RefCell::new(None),
+            pictures: PictureReports::new(ReportsDeps {
+                notify: {
+                    let cx = cx.clone();
+                    Rc::new(move || cx.notify())
+                },
+                changed: {
+                    let source = picture_state_changed.clone();
+                    Rc::new(move |event| source.emit(event))
+                },
+                slow_after_ms: {
+                    let weak = weak.clone();
+                    Rc::new(move || {
+                        weak.upgrade().and_then(|c| c.get_settings().slow_after_ms).unwrap_or(400.0)
+                    })
+                },
+                after: {
+                    let clock = cx.clock();
+                    Rc::new(move |ms, run| clock.after(ms, run))
+                },
+            }),
+            picture_state_changed,
         }
     });
+
+    // Layers unmount after the document closed: their last reports change
+    // nothing then.
+    let pictures = core.pictures.clone();
+    cx.cleanup_fn(move || pictures.close());
 
     // A settings change reaches every view's plans at once.
     let listener = Rc::downgrade(&core);
