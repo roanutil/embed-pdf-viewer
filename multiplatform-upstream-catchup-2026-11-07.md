@@ -308,3 +308,13 @@ fork. Upstream has the same gap; take upstream's branch once it has one.
 
 Archives and logs: `/Users/andrew/repos/embed-pdf-runtime-builds/c7-4346c5131/` (`android/` for the
 AAR).
+
+### Picture states and URL sources (2026-11-09)
+
+Plugins moved from `4291e831d` to `d219adf46` (`research/catchup-1107-rb`): render picture states,
+URL sources through a host `fetch`, and `COPYFILE_DISABLE=1` on the payload `tar`. Cargo 3,218
+passed, `core-wasm` 102. The `wasm32` payload hash is unchanged (`1e16576964e0564b`); the Apple
+hash moved, so `apple-engine-d0ea0b74d8e4a58a` was published from the Mac with the cached
+`3c6e02297` fork slices (338 tests on each of the iOS simulator, macOS arm64 and macOS x86_64).
+Both `Package.swift` files pin it, checksum `2aef65b3…`. The bundle `rust-viewer-0.0.0-preview.1`
+on `roanutil/embed-pdf-viewer` is built from `d219adf46`.
