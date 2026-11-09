@@ -22,7 +22,7 @@ use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::store::Unsubscribe;
 use epdf_kernel::{AnyPlugin, AnyToken, Error, Promise, Token, define, is_undefined};
 use plugin_conformance::js::{arg, from_value, to_value};
-use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome};
+use plugin_conformance::{Answer, Callback, FunctionTable, Harness, HarnessPlugin, Outcome};
 use serde::Serialize;
 use serde_json::{Value, json};
 
@@ -71,6 +71,131 @@ fn live_host(host: &mut RenderHost, config: &Value, h: &Harness) {
     }
 }
 
+// ── a painter from the wire ───────────────────────────────────────────────────
+
+/// A [`PicturePainter`] handed over as a value: an object whose `paints`
+/// and `paint` members are callbacks (`$fn`), or, from a live host that
+/// keeps its painter itself, `{"$host": n}`, which goes back out as itself so
+/// the host reads the very object it handed over. Its host id is released
+/// with the last Rust hold on it.
+struct WirePainter {
+    spec: Value,
+    /// A callback per `$fn` member, in member order: one per member however
+    /// it is reached, as the TypeScript's one function per member.
+    members: Vec<(String, Callback)>,
+    harness: Harness,
+}
+
+impl WirePainter {
+    fn new(spec: Value, h: &Harness) -> WirePainter {
+        let members = spec
+            .as_object()
+            .filter(|object| !object.contains_key("$host"))
+            .into_iter()
+            .flatten()
+            .filter(|(_, member)| member.get("$fn").is_some())
+            .map(|(key, member)| (key.clone(), h.callback(member)))
+            .collect();
+        WirePainter { spec, members, harness: h.clone() }
+    }
+
+    fn member(&self, name: &str) -> Option<&Callback> {
+        self.members.iter().find(|(key, _)| key == name).map(|(_, callback)| callback)
+    }
+
+    /// How `getPicturePainter()` answers it: the host's own value, or the
+    /// object with each callback a function the caller can call.
+    fn describe(&self, h: &Harness) -> Value {
+        let Some(object) = self.spec.as_object().filter(|o| !o.contains_key("$host")) else {
+            return self.spec.clone();
+        };
+        let mut out = serde_json::Map::new();
+        for (key, member) in object {
+            let value = match self.member(key) {
+                Some(callback) => {
+                    let callback = callback.clone();
+                    h.register_fn(Rc::new(move |args| answered(callback.call(args))))
+                }
+                None => member.clone(),
+            };
+            out.insert(key.clone(), value);
+        }
+        Value::Object(out)
+    }
+}
+
+impl Drop for WirePainter {
+    fn drop(&mut self) {
+        epdf_kernel::bytes::release_host(&self.spec);
+    }
+}
+
+fn answered(answer: Answer) -> Outcome {
+    match answer {
+        Answer::Returns(value) => Outcome::Returned(value),
+        Answer::Throws(error) => Outcome::Threw(error),
+        Answer::Promise(promise) => Outcome::Promise(promise),
+    }
+}
+
+/// A [`PicturePage`] as JSON: its transform's data members, and no
+/// `getViewDemand`, which a value cannot carry.
+fn picture_page_json(page: &PicturePage) -> Value {
+    json!({
+        "ref": page.page.to_json(),
+        "pageIndex": page.page_index,
+        "view": page.view,
+        "transform": to_value(&page.transform),
+    })
+}
+
+/// The `{update, destroy}` a wire painter's `paint` answered.
+struct WirePicture {
+    update: Option<Callback>,
+    destroy: Option<Callback>,
+}
+
+impl PaintedPicture for WirePicture {
+    fn update(&self, page: &PicturePage) {
+        if let Some(update) = &self.update {
+            let _ = update.call(vec![picture_page_json(page)]);
+        }
+    }
+    fn destroy(&self) {
+        if let Some(destroy) = &self.destroy {
+            let _ = destroy.call(vec![]);
+        }
+    }
+}
+
+impl PicturePainter for WirePainter {
+    fn paints(&self, view: &str) -> bool {
+        match self.member("paints").map(|paints| paints.call(vec![json!(view)])) {
+            Some(Answer::Returns(value)) => truthy(&value),
+            _ => false,
+        }
+    }
+
+    fn paint(&self, host: &dyn Any, page: &PicturePage) -> Box<dyn PaintedPicture> {
+        let host = host.downcast_ref::<Value>().cloned().unwrap_or(Value::Null);
+        let answer =
+            self.member("paint").map(|paint| paint.call(vec![host, picture_page_json(page)]));
+        let picture = match answer {
+            Some(Answer::Returns(picture)) => picture,
+            _ => Value::Null,
+        };
+        let callback = |name: &str| {
+            let spec = picture.get(name).filter(|f| f.get("$fn").is_some())?;
+            Some(self.harness.callback(spec))
+        };
+        Box::new(WirePicture { update: callback("update"), destroy: callback("destroy") })
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
 // ── the scenario adapter ──────────────────────────────────────────────────────
 
 /// The api object literal's member order (the harness wrapper spreads it).
@@ -81,6 +206,8 @@ const MEMBERS: &[&str] = &[
     "onSettingsChanged",
     "canRender",
     "canRenderThumbnail",
+    "handOverPictures",
+    "getPicturePainter",
     "renderPage",
     "renderThumbnail",
     "renderPages",
@@ -287,6 +414,21 @@ impl Render {
             }
             "canRender" => Outcome::Returned(json!(cap.can_render())),
             "canRenderThumbnail" => Outcome::Returned(json!(cap.can_render_thumbnail())),
+            "handOverPictures" => {
+                let painter = WirePainter::new(present(args, 0).cloned().unwrap_or(Value::Null), h);
+                let give_back = cap.hand_over_pictures(Rc::new(painter))?;
+                Outcome::Returned(h.register_fn(Rc::new(move |_| {
+                    give_back();
+                    Outcome::undefined()
+                })))
+            }
+            "getPicturePainter" => Outcome::Returned(match cap.get_picture_painter() {
+                Some(painter) => match painter.as_any().downcast_ref::<WirePainter>() {
+                    Some(wire) => wire.describe(h),
+                    None => json!({}),
+                },
+                None => Value::Null,
+            }),
             "renderPage" => {
                 let options = present(args, 1);
                 let options = page_options(options, signal_of(options))?;

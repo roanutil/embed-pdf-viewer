@@ -54,9 +54,10 @@ uniffi::setup_scaffolding!();
 pub use appearance_store::{AppearanceStore, ITEMS_KEPT, RecentPictures, SETS_KEPT};
 pub use contract::{
     InvalidateOptions, InvalidateScope, PageArg, PageImage, PageLayerOptions, PageRender,
-    PageRenderFailure, RenderBatchResult, RenderConfig, RenderInvalidatedEvent, RenderPageOptions,
-    RenderPagesOptions, RenderSettings, RenderThumbnailOptions, SNAPSHOT_MAX_PIXELS, SNAPSHOT_TOOL,
-    Snapshot, SnapshotBoxLook, SnapshotChangedEvent, SnapshotConfig, TilesSetting, render_defaults,
+    PageRenderFailure, PaintedPicture, PicturePage, PicturePainter, RenderBatchResult,
+    RenderConfig, RenderInvalidatedEvent, RenderPageOptions, RenderPagesOptions, RenderSettings,
+    RenderThumbnailOptions, SNAPSHOT_MAX_PIXELS, SNAPSHOT_TOOL, Snapshot, SnapshotBoxLook,
+    SnapshotChangedEvent, SnapshotConfig, TilesSetting, render_defaults,
 };
 pub use controller::{
     RenderCapability, RenderSettingsChanged, ViewDemand, create_render_controller,

@@ -4,7 +4,10 @@
 //! in, `onInvalidated` out). What a view layer needs to paint is the host
 //! lens, [`crate::host_contract`].
 
-use epdf_geometry::{PageRotation, Rect};
+use std::any::Any;
+use std::rc::Rc;
+
+use epdf_geometry::{PageRotation, PageTransform, Rect};
 use epdf_kernel::geometry::PageRef;
 use epdf_kernel::rt::Promise;
 use epdf_kernel::signal::AbortSignal;
@@ -13,7 +16,9 @@ use serde::ser::SerializeSeq;
 use serde::{Deserialize, Serialize, Serializer};
 use serde_json::{Value, json};
 
-use crate::paint_plan::{FullPageSettings, PrefetchOptions, Quantize, RenderFormat, TilesSettings};
+use crate::paint_plan::{
+    FullPageSettings, PageViewDemand, PrefetchOptions, Quantize, RenderFormat, TilesSettings,
+};
 use crate::raster_store::PageImageHandle;
 
 // ── settings ──────────────────────────────────────────────────────────────────
@@ -338,6 +343,51 @@ pub struct Snapshot {
 #[derive(Clone)]
 pub struct SnapshotChangedEvent {
     pub snapshot: Option<Snapshot>,
+}
+
+// ── another plugin painting the pictures ──────────────────────────────────────
+
+/// `PicturePage`: the page a painter paints, as every framework's page layer
+/// knows it.
+#[derive(Clone)]
+pub struct PicturePage {
+    /// The page's address, the same for as long as the page is shown.
+    pub page: PageRef,
+    /// Its place in the document, from 0.
+    pub page_index: u32,
+    /// The view that shows it: a Stage's lens id.
+    pub view: String,
+    /// Its size, zoom and turn on screen, and its device pixels.
+    pub transform: PageTransform,
+    /// The part of it on screen, read when asked; `None` for a view without
+    /// a camera.
+    pub get_view_demand: Option<Rc<dyn Fn() -> PageViewDemand>>,
+}
+
+/// `PaintedPicture`: a picture a painter is painting.
+pub trait PaintedPicture {
+    /// The page's geometry changed (a zoom, a turn, a resize): `page` is how
+    /// it is now.
+    fn update(&self, page: &PicturePage);
+    /// The page left its view, or the painter was given back: take the
+    /// picture away.
+    fn destroy(&self);
+}
+
+/// `PicturePainter`: something that paints the pages' pictures instead of
+/// the render plugin ([`RenderCapability::hand_over_pictures`]). `host` is
+/// the box a page layer lends it, whatever a platform's layer is.
+///
+/// [`RenderCapability::hand_over_pictures`]: crate::RenderCapability::hand_over_pictures
+pub trait PicturePainter {
+    /// Whether it paints the pictures of this view; a view it doesn't paint
+    /// keeps the render plugin's.
+    fn paints(&self, view: &str) -> bool;
+    /// Paint `page`'s picture into `host`, an empty box over the page's
+    /// content, until `destroy()`.
+    fn paint(&self, host: &dyn Any, page: &PicturePage) -> Box<dyn PaintedPicture>;
+    /// The painter itself, for a host that handed over its own type.
+    fn as_any(&self) -> &dyn Any;
 }
 
 // ── events ────────────────────────────────────────────────────────────────────

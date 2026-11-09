@@ -39,9 +39,9 @@ use serde_json::{Map, Value, json};
 use crate::appearance_store::{AppearanceStore, RecentPictures};
 use crate::contract::{
     InvalidateOptions, InvalidateScope, PageArg, PageImage, PageLayerOptions, PageRender,
-    PageRenderFailure, RenderBatchResult, RenderConfig, RenderInvalidatedEvent, RenderPageOptions,
-    RenderPagesOptions, RenderSettings, RenderThumbnailOptions, Snapshot, SnapshotChangedEvent,
-    config_of, render_defaults,
+    PageRenderFailure, PicturePainter, RenderBatchResult, RenderConfig, RenderInvalidatedEvent,
+    RenderPageOptions, RenderPagesOptions, RenderSettings, RenderThumbnailOptions, Snapshot,
+    SnapshotChangedEvent, config_of, render_defaults,
 };
 use crate::host_contract::{
     AppearanceFamily, AppearancePicture, AppearancesOptions, PaintSettings, RenderCompletedEvent,
@@ -176,6 +176,10 @@ pub(crate) struct Core {
     views: RefCell<IndexMap<String, ViewRecord>>,
     /// The snapshot tool's held snapshot and its event.
     pub(crate) snapshots: Snapshots,
+    /// The plugin painting the pictures now (`handOverPictures`). Kept out
+    /// of state (a painter is behaviour, not data); `notify` tells the page
+    /// layers, which read it through the capability.
+    picture_painter: RefCell<Option<Rc<dyn PicturePainter>>>,
 }
 
 impl Core {
@@ -1215,6 +1219,56 @@ impl RenderCapability {
         self.0.can_render()
     }
 
+    /// Let another plugin paint the pages' pictures until the returned
+    /// function is called, or the document closes. While it holds them,
+    /// every page layer in a view it paints lends it its box instead of
+    /// drawing: no picture, no tiles, no renders. One painter at a time: a
+    /// second is refused (`conflict`) until the first is given back. Take
+    /// them over in a plugin's `connect()`, and no page shows this plugin's
+    /// picture first.
+    pub fn hand_over_pictures(
+        &self,
+        painter: Rc<dyn PicturePainter>,
+    ) -> Result<Rc<dyn Fn()>, Error> {
+        if self.0.picture_painter.borrow().is_some() {
+            return Err(plugin_error(
+                code::CONFLICT,
+                CAPABILITY,
+                "another plugin paints the pictures already",
+                None,
+                None,
+            ));
+        }
+        *self.0.picture_painter.borrow_mut() = Some(painter.clone());
+        self.0.cx.notify();
+        let core = Rc::downgrade(&self.0);
+        let held = Rc::downgrade(&painter);
+        drop(painter);
+        let given_back = Cell::new(false);
+        Ok(Rc::new(move || {
+            if given_back.replace(true) {
+                return;
+            }
+            let Some(core) = core.upgrade() else { return };
+            let current = core.picture_painter.borrow().clone();
+            let Some(current) = current else { return };
+            if !held
+                .upgrade()
+                .is_some_and(|held| std::ptr::addr_eq(Rc::as_ptr(&held), Rc::as_ptr(&current)))
+            {
+                return;
+            }
+            *core.picture_painter.borrow_mut() = None;
+            drop(current);
+            core.cx.notify();
+        }))
+    }
+
+    /// The plugin painting the pictures now, or `None` while this one does.
+    pub fn get_picture_painter(&self) -> Option<Rc<dyn PicturePainter>> {
+        self.0.picture_painter.borrow().clone()
+    }
+
     /// Render one page, by its ref or its index, at the requested size,
     /// exactly. Rejects `permission-denied` without `doc.render`,
     /// `not-found` for a page not in this document, `operation-cancelled`
@@ -1655,6 +1709,7 @@ pub fn create_render_controller(
             advance_scheduled: Cell::new(false),
             views: RefCell::new(IndexMap::new()),
             snapshots: Snapshots::new(snapshot_changed),
+            picture_painter: RefCell::new(None),
         }
     });
 
