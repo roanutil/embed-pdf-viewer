@@ -352,6 +352,11 @@ fn parts_of<'a>(entries: impl IntoIterator<Item = &'a HistoryEntry>) -> Vec<Stri
 pub struct HistoryCapability(Rc<Inner>);
 
 impl HistoryCapability {
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
+        self.0.cx.lifetime()
+    }
+
     // ── settings (`SettingsApi<HistorySettings>`) ─────────────────────────
 
     /// The settings in effect.

@@ -606,15 +606,18 @@ version = "0.0.0"
 dependencies = [
  "build-support",
  "epdf-annotation-core",
+ "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
  "epdf-plugin-annotation",
  "epdf-plugin-history",
  "epdf-plugin-interaction",
  "epdf-plugin-stage",
+ "futures",
  "plugin-conformance",
  "serde",
  "serde_json",
+ "uniffi",
 ]
 
 [[package]]
@@ -664,10 +667,13 @@ name = "epdf-plugin-history"
 version = "0.0.0"
 dependencies = [
  "build-support",
+ "epdf-ffi",
  "epdf-kernel",
+ "futures",
  "plugin-conformance",
  "serde",
  "serde_json",
+ "uniffi",
 ]
 
 [[package]]
@@ -755,6 +761,7 @@ name = "epdf-plugin-outline"
 version = "0.0.0"
 dependencies = [
  "build-support",
+ "epdf-ffi",
  "epdf-kernel",
  "epdf-plugin-actions",
  "epdf-plugin-history",
@@ -763,9 +770,11 @@ dependencies = [
  "epdf-plugin-link",
  "epdf-plugin-selection",
  "epdf-plugin-stage",
+ "futures",
  "plugin-conformance",
  "serde",
  "serde_json",
+ "uniffi",
 ]
 
 [[package]]

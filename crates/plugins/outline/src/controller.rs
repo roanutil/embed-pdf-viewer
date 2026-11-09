@@ -444,6 +444,11 @@ fn item_of(item: &Value) -> Result<Value, Error> {
 }
 
 impl OutlineCapability {
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
+        self.0.cx.lifetime()
+    }
+
     /// Every item, depth first, with this session's pending changes shown.
     /// Reference-stable until it changes; empty until the first read lands.
     pub fn list(&self) -> Rc<Vec<Value>> {

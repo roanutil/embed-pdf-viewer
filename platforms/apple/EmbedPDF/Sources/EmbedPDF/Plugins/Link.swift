@@ -28,6 +28,10 @@ public typealias LinkLoadedEvent = EmbedPDFBindings.LinkLoadedEvent
 /// `.destination` resolution or activation carries the `PageDestination`
 /// record.
 public struct LinkCapability: Sendable {
+  public func status(for page: PageRef) async throws(PDFError) -> String {
+    try await bridged { try await handle.status(page: page) }
+  }
+
   let handle: LinkHandle
   let viewer: PDFViewer
 

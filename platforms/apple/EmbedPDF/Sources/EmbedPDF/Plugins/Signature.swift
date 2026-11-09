@@ -69,6 +69,10 @@ extension SignatureSignCompletion {
 /// one. It keeps the viewer alive. After its document closes, every call
 /// throws `instance-closed`.
 public struct SignatureCapability: Sendable {
+  public func canReadRevision() async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canReadRevision() }
+  }
+
   let handle: SignatureHandle
   let viewer: PDFViewer
 

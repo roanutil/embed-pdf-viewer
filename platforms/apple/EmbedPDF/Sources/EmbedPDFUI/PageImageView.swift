@@ -3,9 +3,9 @@ import SwiftUI
 
 /// Renders one PDF page as a SwiftUI image with loading and error states.
 ///
-/// A task restarts when the page, scale, or visibility changes. Cancelled
-/// results are ignored; a previous image remains visible during a scale
-/// change. Render failures show an error only when no image is already held.
+/// The task restarts when page, scale, visibility or revision changes.
+/// Cancelled results are ignored. The previous image stays visible during
+/// scale or revision updates. Render failures show an error only when no image is already held.
 /// The image is decorative: hosts should provide a page accessibility label
 /// and any accessible document text needed by their interface.
 public struct PageImageView: View {
@@ -13,6 +13,7 @@ public struct PageImageView: View {
   let page: PageRef
   let scale: Double
   let isOnScreen: Bool
+  let revision: UInt64
   @State private var rendered: RenderedPage?
   @State private var error: PDFError?
   @State private var renderedPage: PageRef?
@@ -25,16 +26,18 @@ public struct PageImageView: View {
   ///   - scale: Positive device pixels per PDF point for an on-screen page.
   ///   - isOnScreen: Whether to use `scale`; defaults to `true`. When `false`,
   ///     renders at `PageRenderResolution.offScreenDeviceWidth` instead.
+  ///   - revision: A presentation revision from render invalidations; defaults to zero.
   ///
   /// Lazy scroll hosts can drive visibility with
-  /// ``SwiftUICore/View/trackingScrollVisibility(_:)``. Changing document pixels
-  /// alone does not restart this view's task; recreate its identity after
-  /// invalidation if the page, scale, and visibility remain unchanged.
-  public init(render: RenderCapability, page: PageRef, scale: Double, isOnScreen: Bool = true) {
+  /// ``SwiftUICore/View/trackingScrollVisibility(_:)``. Change `revision` when
+  /// Rust invalidates the page pixels. Recreate the view identity when switching
+  /// render capabilities between documents.
+  public init(render: RenderCapability, page: PageRef, scale: Double, isOnScreen: Bool = true, revision: UInt64 = 0) {
     self.render = render
     self.page = page
     self.scale = scale
     self.isOnScreen = isOnScreen
+    self.revision = revision
   }
 
   /// The current page image, loading indicator, or render error.
@@ -51,13 +54,14 @@ public struct PageImageView: View {
         ProgressView()
       }
     }
-    .task(id: TaskID(page: page, scale: scale, isOnScreen: isOnScreen)) { await task() }
+    .task(id: TaskID(page: page, scale: scale, isOnScreen: isOnScreen, revision: revision)) { await task() }
   }
 
   private struct TaskID: Hashable {
     let page: PageRef
     let scale: Double
     let isOnScreen: Bool
+    let revision: UInt64
   }
 
   private func task() async {
@@ -72,7 +76,7 @@ public struct PageImageView: View {
         : RenderPageOptions(width: PageRenderResolution.offScreenDeviceWidth)
       let image = try await render.renderPage(page, options: options)
       // A newer task owns the view now; this result is for a page or scale
-      // it no longer shows.
+      // or revision it no longer shows.
       guard !Task.isCancelled else { return }
       rendered = image
       renderedPage = page

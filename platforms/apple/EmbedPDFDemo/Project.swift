@@ -25,6 +25,8 @@ let project = Project(
         "CFBundleDisplayName": "EmbedPDF Demo",
         "CFBundleShortVersionString": "0.0.0",
         "UILaunchScreen": [:],
+        "UIFileSharingEnabled": true,
+        "LSSupportsOpeningDocumentsInPlace": true,
       ]),
       sources: ["EmbedPDFDemo/**"],
       resources: [

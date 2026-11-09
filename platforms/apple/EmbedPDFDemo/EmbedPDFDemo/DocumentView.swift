@@ -4,6 +4,8 @@ import SwiftUI
 
 struct DocumentView: View {
   @Bindable var model: DocumentModel
+  @State private var showingBookmarks = false
+  @State private var showingAttachments = false
 
   var body: some View {
     NavigationStack {
@@ -34,8 +36,24 @@ struct DocumentView: View {
     } message: { error in
       Text(error.detail)
     }
+    .sheet(isPresented: $showingBookmarks) {
+      if let opened = model.opened {
+        NavigationStack {
+          OutlinePanel(model: opened.outline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showingBookmarks = false } } }
+        }
+      }
+    }
+    .sheet(isPresented: $showingAttachments) {
+      if let opened = model.opened {
+        NavigationStack {
+          AttachmentPanel(model: opened.attachments)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showingAttachments = false } } }
+        }
+      }
+    }
     .sheet(item: $model.metadataSheet) { sheet in
-      MetadataView(metadata: sheet.metadata)
+      MetadataView(metadata: sheet.metadata, custom: sheet.custom)
     }
   }
 
@@ -51,6 +69,22 @@ struct DocumentView: View {
       }
     }
     ToolbarItem(placement: .topBarTrailing) {
+      Button("Add note", systemImage: "note.text.badge.plus") { Task { await model.addNoteButtonTapped() } }
+        .labelStyle(.iconOnly)
+        .disabled(!model.canAddNote)
+        .accessibilityIdentifier("addNote")
+    }
+    ToolbarItem(placement: .topBarTrailing) {
+      Button("Bookmarks", systemImage: "bookmark") { showingBookmarks = true }
+        .disabled(model.opened == nil)
+        .accessibilityIdentifier("showBookmarks")
+    }
+    ToolbarItem(placement: .topBarTrailing) {
+      Button("Attachments", systemImage: "paperclip") { showingAttachments = true }
+        .disabled(model.opened == nil)
+        .accessibilityIdentifier("showAttachments")
+    }
+    ToolbarItem(placement: .topBarTrailing) {
       Button("Info", systemImage: "info.circle") { Task { await model.metadataButtonTapped() } }
         .disabled(model.opened == nil)
     }
@@ -59,56 +93,16 @@ struct DocumentView: View {
 
 private struct PagesView: View {
   let opened: DocumentModel.Opened
-  @Environment(\.displayScale) private var displayScale
-
   var body: some View {
-    let search = opened.search
-    ScrollViewReader { proxy in
-      GeometryReader { geometry in
-        ScrollView {
-          LazyVStack(spacing: 12) {
-            ForEach(opened.pages, id: \.index) { page in
-              PageImageView(render: opened.render, page: page.page, scale: scale(for: page, width: geometry.size.width))
-                .aspectRatio(page.width / page.height, contentMode: .fit)
-                .background(.white)
-                .overlay { highlight(on: page) }
-                .shadow(radius: 2)
-                .id(page.index)
-            }
-          }
-          .padding()
-        }
-        .accessibilityIdentifier("pages")
-        .background(Color(.secondarySystemBackground))
-      }
+    StageReaderView(model: opened.reader)
+      .accessibilityIdentifier("pages")
       .safeAreaInset(edge: .bottom) {
-        SearchBar(search: search)
+        VStack(spacing: 0) {
+          HistoryControls(model: opened.history).padding([.horizontal, .top])
+          SearchBar(search: opened.search)
+        }.background(.bar)
       }
-      .onChange(of: search.activeIndex) { _, index in
-        scrollToHit(index, proxy: proxy)
-      }
-    }
-    .task(id: opened.document.id) { await search.task() }
-  }
-
-  private func scale(for page: PageInfo, width: CGFloat) -> Double {
-    let available = max(width - 32, 100)
-    return (available / page.width * displayScale).rounded(.up)
-  }
-
-  @ViewBuilder
-  private func highlight(on page: PageInfo) -> some View {
-    if let index = opened.search.activeIndex,
-      Int(index) < opened.search.hits.count,
-      opened.search.hits[Int(index)].pageIndex == page.index
-    {
-      RoundedRectangle(cornerRadius: 2).stroke(.yellow, lineWidth: 4)
-    }
-  }
-
-  private func scrollToHit(_ index: UInt32?, proxy: ScrollViewProxy) {
-    guard let index, Int(index) < opened.search.hits.count else { return }
-    withAnimation { proxy.scrollTo(opened.search.hits[Int(index)].pageIndex, anchor: .top) }
+      .task(id: opened.document.id) { await opened.search.task() }
   }
 }
 

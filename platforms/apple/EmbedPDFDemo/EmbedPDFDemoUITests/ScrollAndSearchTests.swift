@@ -12,7 +12,7 @@ final class ScrollAndSearchTests: XCTestCase {
     let app = XCUIApplication()
     app.launch()
 
-    let pages = app.scrollViews["pages"]
+    let pages = app.descendants(matching: .any)["pages"].firstMatch
     XCTAssertTrue(pages.waitForExistence(timeout: 30), "the document never opened")
 
     if let delay = ProcessInfo.processInfo.environment["EMBEDPDF_PROFILE_DELAY"].flatMap(Double.init) {

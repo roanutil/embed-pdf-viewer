@@ -221,7 +221,9 @@ check, which proves the arm exists and says nothing about what it does;
 ## The Swift plugins
 
 Every Rust plugin crate is wrapped for Swift in `platforms/apple/EmbedPDF`,
-per `docs/superpowers/plans/2026-10-06-swift-plugins/00-umbrella.md`. Each
+per `docs/superpowers/plans/2026-10-06-swift-plugins/00-umbrella.md` and the
+November 6 Swift parity additions. The latter require a local source or packaged
+engine until a matching public release is published and pinned. Each
 row is the plugin's `ViewerConfig` field, its Swift source under
 `Sources/EmbedPDF/Plugins/`, and the test file under `Tests/EmbedPDFTests/`
 that runs it on the iOS simulator. `every_plugin_builds_together` in
@@ -238,6 +240,9 @@ that runs it on the iOS simulator. `every_plugin_builds_together` in
 | selection | `selection` | `Selection.swift` | `SelectionTests.swift` |
 | link | `link` | `Link.swift` | `LinkTests.swift` |
 | annotation | `annotation` | `Annotation.swift` | `AnnotationTests.swift` |
+| history | `history` | `History.swift` | `HistoryTests.swift`, `EmbedPDFUITests/HistoryModelTests.swift` |
+| outline | `outline` | `Outline.swift` | `OutlineTests.swift`, `EmbedPDFUITests/OutlineModelTests.swift` |
+| attachment | `attachment` | `Attachment.swift` | `AttachmentTests.swift`, `EmbedPDFUITests/AttachmentModelTests.swift` |
 | form | `form` | `Form.swift` | `FormTests.swift` |
 | redaction | `redaction` | `Redaction.swift` | `RedactionTests.swift` |
 | measurement | `measurement` | `Measurement.swift` | `MeasurementTests.swift` |
@@ -249,6 +254,14 @@ that runs it on the iOS simulator. `every_plugin_builds_together` in
 | commands | `commands` | `Commands.swift` | `CommandsTests.swift` |
 | actions | `actions` | `Actions.swift`, `JavaScriptCoreEngine.swift` | `ActionsTests.swift`, `JavaScriptCoreEngineTests.swift` |
 | signature | `signature`, `scope` | `Signature.swift`, `KeychainSigner.swift` | `SignatureTests.swift`, `SecurityTests.swift`, `KeychainSignerTests.swift` |
+
+The current audit records 779 members across 30 plugin crates: 594 mapped and
+185 explicitly excluded, with no pending entries. See
+`platforms/apple/swift-api-coverage.json` for each member's disposition and
+`platforms/apple/README.md` for lifecycle, controls and remaining exclusions.
+Three controls use independent viewer revision streams; `PluginIntegrationTests`
+installs all plugins and covers concurrent observation, persistence, restricted
+scopes, locked documents, absent plugins and cancellation.
 
 The cost is in the archive. `libepdf_viewer_host.a` for
 `aarch64-apple-ios-sim` release was 94,029,176 bytes before the first plugin

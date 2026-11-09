@@ -21,6 +21,14 @@ public typealias RedactionEvent = EmbedPDFBindings.RedactionEvent
 /// interaction: true, annotation: "", redaction: RedactionConfig())`. It keeps the viewer alive. After its document
 /// closes, every call throws `instance-closed`.
 public struct RedactionCapability: Sendable {
+  public func canUnmark(_ ref: AnnotationRef) async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canUnmark(annotationRef: ref) }
+  }
+
+  public func canUpdateLabel(_ ref: AnnotationRef) async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canUpdateLabel(annotationRef: ref) }
+  }
+
   let handle: RedactionHandle
   let viewer: PDFViewer
 

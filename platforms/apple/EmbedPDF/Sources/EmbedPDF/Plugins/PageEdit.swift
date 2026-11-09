@@ -17,6 +17,18 @@ public typealias PageEditInsertion = EmbedPDFBindings.PageEditInsertion
 /// one that has started lands. After its document closes, every call
 /// throws `instance-closed`.
 public struct PageEditCapability: Sendable {
+  public func selectedPages() async throws(PDFError) -> [PageRef] {
+    try await bridged { try await handle.getSelected() }
+  }
+
+  public func select(_ pages: [PageRef]) async throws(PDFError) {
+    try await bridged { try await handle.select(pages: pages) }
+  }
+
+  public func canExtract() async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canExtract() }
+  }
+
   let handle: PageEditHandle
   let viewer: PDFViewer
 

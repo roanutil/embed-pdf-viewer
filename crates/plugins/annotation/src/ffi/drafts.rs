@@ -507,8 +507,7 @@ impl AnnotationDraftsHandle {
             .call_promise_cancellable(
                 cancel,
                 move |c| {
-                    let mut source =
-                        json!({ "data": Bytes(file.bytes).to_json(), "name": file.name });
+                    let mut source = json!({ "name": file.name });
                     if let Some(mime) = file.mime_type {
                         source["mimeType"] = mime.into();
                     }
@@ -518,10 +517,11 @@ impl AnnotationDraftsHandle {
                     let mut fields = Map::new();
                     fields.insert("subtype".into(), json!("file-attachment"));
                     fields.insert(
-                        "box".into(),
+                        "rect".into(),
                         json!({ "x": point.x, "y": point.y, "width": 24, "height": 24 }),
                     );
-                    let resources = json!({ "file": source });
+                    fields.insert("file".into(), source);
+                    let resources = json!({ "file": Bytes(file.bytes).to_json() });
                     Ok(open(c)?.create(
                         &page_json(page),
                         &fields,

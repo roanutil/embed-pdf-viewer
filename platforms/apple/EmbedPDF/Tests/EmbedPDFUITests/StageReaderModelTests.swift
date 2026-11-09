@@ -7,6 +7,31 @@ import Testing
 @MainActor
 @Suite(.serialized, .timeLimit(.minutes(1)))
 struct StageReaderModelTests {
+  @Test func rustInvalidationRefreshesOnlyItsPagesWithoutMovingTheCamera() async throws {
+    let viewer = try PDFViewer(ViewerConfig(render: RenderConfig(), stage: StageConfig()))
+    try await viewer.start()
+    let document = try await viewer.open(pluginFixture())
+    let pages = try await viewer.pages(of: document)
+    let stage = try await viewer.stage(for: document)
+    let render = try await viewer.render(in: document)
+    try await stage.setViewportSize(Size(width: 800, height: 600))
+    let model = StageReaderModel(stage: stage, render: render)
+    let observing = Task { await model.task() }
+    defer { observing.cancel() }
+    try await expectObserved({ !model.visiblePages.isEmpty }, equals: true) {}
+    let before = model.renderRevision(for: pages[0].page)
+    let other = model.renderRevision(for: pages[1].page)
+    let camera = try await stage.camera()
+    try await expectObserved({ model.renderRevision(for: pages[0].page) > before }, equals: true) {
+      try await render.invalidate([pages[0].page], scope: .annotations)
+    }
+    expectNoDifference(model.renderRevision(for: pages[1].page), other)
+    let after = try await stage.camera()
+    expectNoDifference(after, camera)
+    try await viewer.destroy()
+    await observing.value
+  }
+
   func model() async throws -> (StageReaderModel, Task<Void, Never>) {
     let viewer = try PDFViewer(ViewerConfig(render: RenderConfig(), stage: StageConfig()))
     try await viewer.start()

@@ -5,6 +5,7 @@
 pub mod annotation;
 pub mod bound;
 pub mod cancel;
+pub mod document;
 pub mod error;
 pub mod foreign;
 pub mod form;

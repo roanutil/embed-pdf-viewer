@@ -7,6 +7,8 @@
 
 pub mod contract;
 pub(crate) mod controller;
+#[cfg(feature = "uniffi")]
+pub mod ffi;
 pub(crate) mod model;
 pub mod state;
 
@@ -46,3 +48,6 @@ pub fn history_plugin_json(registered: Option<Value>) -> AnyPlugin {
         .create(&HISTORY, controller::create_history_controller)
         .build()
 }
+
+#[cfg(feature = "uniffi")]
+uniffi::setup_scaffolding!();

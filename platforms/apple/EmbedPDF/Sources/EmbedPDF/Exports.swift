@@ -39,3 +39,7 @@ extension HostFailure {
     }
   }
 }
+
+public typealias DocumentEventOrigin = EmbedPDFBindings.DocumentEventOrigin
+public typealias DocumentEventOriginKind = EmbedPDFBindings.DocumentEventOriginKind
+public typealias DocumentEventTransaction = EmbedPDFBindings.DocumentEventTransaction

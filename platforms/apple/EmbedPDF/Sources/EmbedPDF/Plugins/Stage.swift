@@ -1,5 +1,6 @@
 public import EmbedPDFBindings
 
+public typealias StagePageDestination = EmbedPDFBindings.StagePageDestination
 public typealias Camera = EmbedPDFBindings.Camera
 public typealias ZoomMode = EmbedPDFBindings.ZoomMode
 public typealias ZoomSpec = EmbedPDFBindings.ZoomSpec
@@ -59,6 +60,26 @@ public typealias StageViewportChangedEvent = EmbedPDFBindings.StageViewportChang
 /// `setCamera`, `panBy`, `scrollBy` and `zoomAround` return at once and run
 /// in order; their errors arrive on `PDFViewer.reportedErrors`.
 public struct StageCapability: Sendable {
+  public func pageCount() async throws(PDFError) -> UInt32 {
+    try await bridged { try await handle.pageCount() }
+  }
+
+  public func currentDestination() async throws(PDFError) -> StagePageDestination? {
+    try await bridged { try await handle.currentDestination() }
+  }
+
+  public func goToDestination(_ destination: StagePageDestination, behavior: StageScrollBehavior? = nil) async throws(PDFError) {
+    try await bridged { try await handle.goToDestination(destination: destination, behavior: behavior) }
+  }
+
+  public func canZoomIn() async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canZoomIn() }
+  }
+
+  public func canZoomOut() async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canZoomOut() }
+  }
+
   let handle: StageHandle
   let viewer: PDFViewer
 

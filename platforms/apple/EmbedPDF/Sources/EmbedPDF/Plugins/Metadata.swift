@@ -1,5 +1,7 @@
 public import EmbedPDFBindings
 
+public typealias CustomMetadata = [String: String]
+public typealias CustomMetadataUpdatedEvent = EmbedPDFBindings.CustomMetadataUpdatedEvent
 public typealias DocumentMetadata = EmbedPDFBindings.DocumentMetadata
 public typealias DocumentMetadataTrapped = EmbedPDFBindings.DocumentMetadataTrapped
 public typealias MetadataPatch = EmbedPDFBindings.MetadataPatch
@@ -13,6 +15,22 @@ public typealias MetadataEvent = EmbedPDFBindings.MetadataEvent
 /// It keeps the viewer alive. After its document closes, every call throws
 /// `instance-closed`.
 public struct MetadataCapability: Sendable {
+  public func customSnapshot() async throws(PDFError) -> CustomMetadata? {
+    try await bridged { try await handle.customSnapshot() }
+  }
+
+  public func customStatus() async throws(PDFError) -> ResourceStatus {
+    try await bridged { try await handle.customStatus() }
+  }
+
+  public func updateCustom(_ patch: [String: String?]) async throws(PDFError) -> CustomMetadata {
+    try await bridgedCancellable { token in try await handle.updateCustom(patch: patch, cancel: token) }
+  }
+
+  public func refreshCustom() async throws(PDFError) {
+    try await bridgedCancellable { token in try await handle.refreshCustom(cancel: token) }
+  }
+
   let handle: MetadataHandle
   let viewer: PDFViewer
 
