@@ -33,6 +33,12 @@ og-preview/
 # Rust
 /target
 
+# Swift and Xcode build caches and per-user settings
+.build/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+
 tmp/
 
 # bundler matrix: build outputs and results
