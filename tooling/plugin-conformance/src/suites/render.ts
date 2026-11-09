@@ -989,6 +989,32 @@ const capabilityCases: ScenarioCase[] = [
       cap('renderPage', 77, { scale: 0.5 }),
     ],
   },
+  {
+    name: 'hand-over-pictures',
+    covers:
+      "handOverPictures lends the pictures to one painter at a time: getPicturePainter answers it (its members are the ones handed over) until the returned function gives it back, a second painter is refused conflict while the first holds them, giving it back again does nothing, even while another painter holds them, and a reopened document starts with none.",
+    plugins: render(),
+    engine: { documents: { a: doc() } },
+    ...UNSNAPSHOTTED,
+    steps: [
+      start,
+      open(),
+      v3('getPicturePainter'),
+      v3('handOverPictures', { paints: { $fn: 'paints-a', returns: true }, paint: { $fn: 'paint-a', returns: {} } }),
+      v3('getPicturePainter'),
+      callRef(1, 'stage'),
+      v3('handOverPictures', { paints: { $fn: 'paints-b', returns: false }, paint: { $fn: 'paint-b', returns: {} } }),
+      v3('getPicturePainter'),
+      callRef(0),
+      v3('getPicturePainter'),
+      v3('handOverPictures', { paints: { $fn: 'paints-c', returns: true }, paint: { $fn: 'paint-c', returns: {} } }),
+      callRef(0),
+      v3('getPicturePainter'),
+      close(),
+      open(),
+      v3('getPicturePainter'),
+    ],
+  },
 ];
 
 // ── the tile plane ────────────────────────────────────────────────────────────
