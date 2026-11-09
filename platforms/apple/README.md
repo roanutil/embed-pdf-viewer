@@ -407,12 +407,13 @@ handling locked tabs/passwords.
 ## Audited API coverage
 
 `swift-api-coverage.json` accounts for 860 public members across 31 Rust plugin-directory
-crates and the kernel: 723 mapped members and 137 explicit exclusions. The nine
+crates and the kernel: 724 mapped members and 136 explicit exclusions. The nine
 pure libraries are classified as owner-consumed code without fictional plugin APIs.
 The checker inventories public kernel `Documents` operations and `Kernel` methods,
 including viewer settings; internal kernel types are classified separately.
 These are accounting counts, not an implementation parity percentage or a count
-of Swift methods. Open form payload overloads are checked alongside typed conveniences.
+of Swift methods. Open form payload overloads are checked alongside typed conveniences,
+matched by Swift argument label so removing one overload cannot hide behind the other.
 
 Delivered workflows include document lookup/order/retry/URL loading and layer
 save/open, live settings/read/update/reset for 13 plugins, command disabling and

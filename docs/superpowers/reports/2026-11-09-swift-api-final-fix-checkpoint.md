@@ -62,3 +62,7 @@ Use require_escalated for Cargo/native cache and git writes; redirect logs into 
 ## Accepted boundaries to retain
 
 Printing remains unimplemented pending a real HostPrinter prepared-representation/disposal contract. Default downloaded binaries and both pins remain unchanged; rebuilding/source commits are not runtime publication. Keep iOS17/macOS14 and dependencies unchanged. Private painters, cache resources, editor layout and sibling scripting seams remain with their Rust/native owners. Engine session authority and close-driven retry cancellation remain the approved contracts. The separately pushed parity merge/core-only-branch decision is not reopened. No new broad behavioral review, delegation, or scope expansion is authorized in this one fix wave.
+
+## Resumed and closed (2026-11-09)
+
+Source freeze `96bb9c519`. Affected Rust suites 351 passed; checker 10 tests; four slices rebuilt; macOS and iOS 427 passed each. Scoped rereview confirmed all four findings fixed. Evidence is in `docs/superpowers/reports/2026-11-09-swift-app-api-coverage.md` under "Final fix wave".

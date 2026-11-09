@@ -39,9 +39,9 @@ accounting, not implementation parity or independent Swift operations.
 
 | Inventory | Mapped | Excluded | Total |
 | --- | ---: | ---: | ---: |
-| Plugin controller/core/view demand | 685 | 107 | 792 |
+| Plugin controller/core/view demand | 686 | 106 | 792 |
 | Kernel Documents and Kernel | 38 | 30 | 68 |
-| Total | 723 | 137 | 860 |
+| Total | 724 | 136 | 860 |
 
 All 31 plugin-directory crates are classified. Nine pure libraries (acrojs,
 annotation-core, fonts, form-core, geometry, signature-core, stage-core,
@@ -52,7 +52,7 @@ internal resources rather than app capabilities.
 
 | Exclusion classification | Members |
 | --- | ---: |
-| Host presentation | 65 |
+| Host presentation | 64 |
 | Internal resource | 58 |
 | Equivalent representation | 9 |
 | Host integration (printer) | 4 |
@@ -106,6 +106,48 @@ complete suites below pass with those corrections.
 Final checks: inventory checker and all 7 checker tests pass; git diff --check
 passes. No native runtime failures remain. Broad Rust/native tests were not
 repeated after the final green runs because only this evidence report changed.
+
+### Final fix wave
+
+The whole-change review of `35b18b786..5e3236108` found one snapshot bug and
+three accounting issues. Source freeze `96bb9c519` fixes all four, and a scoped
+rereview of `5e3236108..96bb9c519` confirmed each one closed.
+
+The snapshot raster now divides by the resolved image's `point_width()`
+instead of a width captured before `changes.when_settled()`. Before the fix, a
+layout change between capture and render admission returned a 2x image labelled
+scale 1. `snapshot_uses_geometry_at_render_admission_after_the_settlement_gate`
+in `crates/plugins/render/tests/ffi_snapshot.rs` covers 0 and 90 degree pages;
+it failed with scale 1.0 before the fix. The checker now matches Swift argument
+labels, so dropping `create(draftJSON:)`, `update(_:patchJSON:)` or
+`addWidget(to:placementJSON:)` while keeping the typed overload is reported.
+`StageCapability.list_current_pages` maps to `currentPages()`, which moves one
+member from excluded to mapped. `Form.swift` no longer imports Foundation.
+
+Evidence for `96bb9c519`:
+
+- Affected Rust suites (render, stage, viewer host with uniffi features):
+  351 passed, 0 failed or ignored across 26 result groups. Clippy all-targets
+  with `-D warnings` and `cargo fmt --check` pass.
+- Checker: 10 tests pass, and the inventory reports 724 mapped, 136 excluded,
+  860 total.
+- Four Apple slices rebuilt and the native graph verified.
+- macOS: 427 passed (378 API, 41 UI/model, 8 binding smoke).
+- iOS 26.5 simulator: 427 passed, same breakdown, `TEST SUCCEEDED`.
+
+The fresh logs show no `UnusedImportAccess` warning. The iOS log still has
+three `Metadata extraction skipped, no AppIntents.framework dependency found`
+warnings. Xcode's `appintentsmetadataprocessor` emits them for any target that
+doesn't link AppIntents. They are not build problems, and adding the dependency
+to silence them would be the wrong fix.
+
+Known gaps left open. The label parser fails closed on a few Swift shapes no
+current entry uses: generic functions (`func f<T>(`), a `->` inside a generic
+argument, a bare `<` in a default value, and parentheses inside `//` comments in
+a parameter list. Each produces a false "missing Swift" error, never a false
+pass. Separately, `test_native_graph.RawBuilderTests.test_raw_builder_builds_all_four_explicit_fork_and_sdk_pairs`
+fails because it can't find `signature-compat/keys/TEST-ONLY-private-key.pem`.
+That test was last changed in `c15b9671e`, and this fix wave doesn't touch it.
 
 ## Distribution boundary
 
