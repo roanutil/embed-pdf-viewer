@@ -94,6 +94,22 @@ plan's ignored workspace. Do not use the obsolete default darwin-arm64 headers.
 
 **Interfaces:** Keep existing plugin inventory behavior, add explicit inventory of public kernel Documents operations and viewer settings. Map wrappers and exports; classify implementation resources and genuine host integration requirements separately. Audit is an accounting claim, never an implementation percentage.
 
+The payload audit also checks existing native convenience records against their
+open engine inputs. `FormCreateFieldInput` currently claims a `draft_json`
+escape hatch that does not exist, and typed field/placement patches omit
+app-facing options and action/script data. Add domain-specific JSON overloads
+for form draft creation, field updates and widget placement alongside the typed
+conveniences, forwarding to the same Rust capability owners. Swift labels are
+`create(draftJSON:)`, `update(_:patchJSON:)`, and
+`addWidget(to:placementJSON:)`. Test omitted/null fields, native action/script
+authoring and permission refusal, plus save/reopen. These are form-domain
+payloads explicitly allowed by the design, not a generic dispatch protocol.
+Expose `fieldSettings(_:)` as well: the existing Rust `get_field_settings`
+returns family-specific settings-panel descriptors and current values, not
+global appearance settings. Return typed descriptor records plus the open
+values JSON so a native panel need not reproduce Rust's field-family rules.
+The old inventory exclusion incorrectly describes this as viewer registration.
+
 - [ ] Write checker tests proving a new public core operation is detected, a missing Swift/core export fails, and pure-library resources do not create fictional plugin APIs. Run tests and observe the intended failures.
 - [ ] Extend the inventory, reconcile all current members and remove obsolete workflow exclusions for Tasks 1–4. Review every remaining exclusion against the approved app-facing scope and close any missed native workflow. Record printing as requiring HostPrinter integration; do not describe it as implemented.
 - [ ] Rebuild all four Apple slices with `build-xcframework.sh` using the local fork staging root and the Rust llvm-nm override. Expect generated graph comparison and framework creation to succeed.
