@@ -151,11 +151,10 @@ impl Default for KernelOptions {
 
 // ── sessions ──────────────────────────────────────────────────────────────────
 
-/// The `$host` values in an open source: what a web host kept on its side
+/// The `$host` values in an open source: what the host kept on its side
 /// instead of inlining (the PDF's bytes). Handed back to the host once no
 /// session records the source any more: a close drops its session's record,
 /// and a failed tab's `retry()` carries the same hold to the next session.
-/// A native source has none.
 struct HostHold(Vec<Value>);
 
 impl HostHold {
