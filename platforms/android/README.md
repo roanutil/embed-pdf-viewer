@@ -15,9 +15,11 @@ bash platforms/android/build-aar.sh test     # also run the smoke test on a devi
 ## The fork slices are prebuilt, and have to be
 
 `libembedpdf.a` for `android-arm64` and `android-x64` comes from fork commit
-`7f0fa5dbe`, the same commit the iOS slices come from, registered in
-`engine-runtime-build.local.json` as `file://` URLs. They are not built here and
-cannot be: `runtime-src/build/config/BUILDCONFIG.gn` asserts
+`3c6e02297`, the commit `runtime-src` pins, registered in
+`engine-runtime-build.local.json` as `file://` URLs. They were built in a
+`linux/amd64` container with the fork's own `build-target.sh` and
+`package-target.sh`, with `PDF_RUNTIME_TARGET_OS_LIST="linux android"`. They
+cannot be built on a Mac: `runtime-src/build/config/BUILDCONFIG.gn` asserts
 
 ```
 assert(host_os == "linux", "Android builds are only supported on Linux.")
