@@ -236,6 +236,16 @@ const OPENS = /^open(All)?$/;
  *  before them stay good while the store's revision holds. */
 const READS = /^(get|list|is|has|can|resolve)[A-Z]/;
 
+/**
+ * Members whose first argument the kernel keeps without reading and answers
+ * back unchanged: it crosses as the bridge's own `$host` value, so a later
+ * read decodes to the very object the caller handed over. render's
+ * `handOverPictures` painter is one: only the page layers call it, and
+ * `getPicturePainter()` must answer it by identity. The kernel releases the
+ * host id with its last hold on the value.
+ */
+const HELD_FIRST = new Set(['handOverPictures']);
+
 export class Wire {
   private attached!: RustKernel;
   /** Set by `dispose`, once the kernel is freed. */
@@ -767,7 +777,9 @@ export class Wire {
   }
 
   private call(id: number, member: string, args: unknown[]): unknown {
-    const prepared = prepareArgs(member, args);
+    const prepared = HELD_FIRST.has(member)
+      ? [{ $host: this.bridge.hold(args[0]) }, ...args.slice(1)]
+      : prepareArgs(member, args);
     return hasBlob(prepared)
       ? this.callWithBlobs(id, member, prepared)
       : this.invoke(id, member, prepared);
