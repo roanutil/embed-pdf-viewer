@@ -1,5 +1,13 @@
 public import EmbedPDFBindings
 
+public typealias SearchSettings = EmbedPDFBindings.SearchSettings
+public typealias SearchSettingsPatch = EmbedPDFBindings.SearchSettingsPatch
+public typealias SearchHighlightSettings = EmbedPDFBindings.SearchHighlightSettings
+public typealias SearchHighlightPatch = EmbedPDFBindings.SearchHighlightPatch
+public typealias SearchRevealSettings = EmbedPDFBindings.SearchRevealSettings
+public typealias SearchRevealPatch = EmbedPDFBindings.SearchRevealPatch
+public typealias SearchBlendMode = EmbedPDFBindings.SearchBlendMode
+
 public typealias SearchQuery = EmbedPDFBindings.SearchQuery
 public typealias SearchHit = EmbedPDFBindings.SearchHit
 public typealias TextSegment = EmbedPDFBindings.TextSegment
@@ -28,6 +36,22 @@ public typealias SearchActiveHitChangedEvent = EmbedPDFBindings.SearchActiveHitC
 /// `ViewerConfig(search: SearchConfig())`. It keeps the viewer alive. After
 /// its document closes, every call throws `instance-closed`.
 public struct SearchCapability: Sendable {
+
+  /// Current settings shared by every document using this plugin registration.
+  public func settings() async throws(PDFError) -> SearchSettings {
+    try await bridged { try await handle.settings() }
+  }
+
+  /// Merge the supplied fields. Clear flags remove nullable values; omission preserves them.
+  public func updateSettings(_ patch: SearchSettingsPatch) async throws(PDFError) {
+    try await bridged { try await handle.updateSettings(patch: patch) }
+  }
+
+  /// Restore the values supplied at registration, preserving registered host resources.
+  public func resetSettings() async throws(PDFError) {
+    try await bridged { try await handle.resetSettings() }
+  }
+
   let handle: SearchHandle
   let viewer: PDFViewer
 

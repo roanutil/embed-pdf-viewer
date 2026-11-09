@@ -1650,3 +1650,6 @@ mod tests {
         assert_eq!(field_ref_of(&field_ref_json(&field)).unwrap(), field);
     }
 }
+
+mod settings;
+pub use settings::*;

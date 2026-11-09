@@ -52,6 +52,20 @@ public typealias AnnotationFilePicker = EmbedPDFBindings.AnnotationFilePicker
 /// `InteractionCapability.dispatchPointer` and the plugin's own handlers
 /// draw, select and move annotations under the active tool.
 public struct AnnotationCapability: Sendable {
+  /// Current annotation settings, including the open per-tool engine field bags.
+  public func settings() async throws(PDFError) -> String {
+    try await bridged { try await handle.settings() }
+  }
+
+  /// Merge a settings JSON object using the shared Rust settings store.
+  public func updateSettings(_ changesJSON: String) async throws(PDFError) {
+    try await bridged { try await handle.updateSettings(changesJson: changesJSON) }
+  }
+
+  public func resetSettings() async throws(PDFError) {
+    try await bridged { try await handle.resetSettings() }
+  }
+
   let handle: AnnotationHandle
   let viewer: PDFViewer
 

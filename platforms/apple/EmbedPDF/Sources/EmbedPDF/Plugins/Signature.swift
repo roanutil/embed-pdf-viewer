@@ -1,4 +1,7 @@
 public import EmbedPDFBindings
+
+public typealias SignatureSettings = EmbedPDFBindings.SignatureSettings
+public typealias SignatureSettingsPatch = EmbedPDFBindings.SignatureSettingsPatch
 public import Foundation
 
 public typealias SignatureConfig = EmbedPDFBindings.SignatureConfig
@@ -69,6 +72,22 @@ extension SignatureSignCompletion {
 /// one. It keeps the viewer alive. After its document closes, every call
 /// throws `instance-closed`.
 public struct SignatureCapability: Sendable {
+
+  /// Current settings shared by every document using this plugin registration.
+  public func settings() async throws(PDFError) -> SignatureSettings {
+    try await bridged { try await handle.settings() }
+  }
+
+  /// Merge the supplied fields. Clear flags remove nullable values; omission preserves them.
+  public func updateSettings(_ patch: SignatureSettingsPatch) async throws(PDFError) {
+    try await bridged { try await handle.updateSettings(patch: patch) }
+  }
+
+  /// Restore the values supplied at registration, preserving registered host resources.
+  public func resetSettings() async throws(PDFError) {
+    try await bridged { try await handle.resetSettings() }
+  }
+
   public func canReadRevision() async throws(PDFError) -> Bool {
     try await bridged { try await handle.canReadRevision() }
   }

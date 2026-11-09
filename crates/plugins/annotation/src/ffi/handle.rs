@@ -31,6 +31,32 @@ impl AnnotationHandle {
 
 #[uniffi::export]
 impl AnnotationHandle {
+    /// The open annotation settings data, including per-tool engine defaults.
+    pub async fn settings(&self) -> Result<String, ViewerError> {
+        self.cap.call(|cap| Ok(open(cap)?.get_settings().to_string())).await
+    }
+
+    /// Merge a settings object using the kernel's shared settings store.
+    pub async fn update_settings(&self, changes_json: String) -> Result<(), ViewerError> {
+        self.cap
+            .call(move |cap| {
+                let cap = open(cap)?;
+                let changes = Value::Object(object_of(&changes_json)?);
+                cap.update_settings(&changes);
+                Ok(())
+            })
+            .await
+    }
+
+    pub async fn reset_settings(&self) -> Result<(), ViewerError> {
+        self.cap
+            .call(|cap| {
+                open(cap)?.reset_settings();
+                Ok(())
+            })
+            .await
+    }
+
     /// Install the host's file picker, or `None` to remove it. Without one,
     /// a tool that prompts for a file declines the click.
     pub async fn set_file_picker(

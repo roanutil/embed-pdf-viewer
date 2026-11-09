@@ -1,5 +1,7 @@
 public import CoreGraphics
 public import EmbedPDFBindings
+
+public typealias StampSettings = EmbedPDFBindings.StampSettings
 import Foundation
 import ImageIO
 
@@ -51,6 +53,22 @@ public struct StampPreview: @unchecked Sendable {
 /// (`createAsset(from:in:on:)`); the last two export through the engine's
 /// `page.annotations.exportAppearance`.
 public struct StampCapability: Sendable {
+
+  /// Current settings shared by every document using this plugin registration.
+  public func settings() async throws(PDFError) -> StampSettings {
+    try await bridged { try await handle.settings() }
+  }
+
+  /// Merge the supplied fields. Clear flags remove nullable values; omission preserves them.
+  public func updateSettings(_ patch: StampConfig) async throws(PDFError) {
+    try await bridged { try await handle.updateSettings(patch: patch) }
+  }
+
+  /// Restore the values supplied at registration, preserving registered host resources.
+  public func resetSettings() async throws(PDFError) {
+    try await bridged { try await handle.resetSettings() }
+  }
+
   public func canCreateFromAnnotations(in document: DocumentInfo? = nil) async throws(PDFError) -> Bool {
     try await bridged { try await handle.canCreateFromAnnotations(documentId: document?.id) }
   }

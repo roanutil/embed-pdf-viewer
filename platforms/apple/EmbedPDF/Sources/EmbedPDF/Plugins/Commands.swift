@@ -1,4 +1,8 @@
 public import EmbedPDFBindings
+
+public typealias CommandsSettings = EmbedPDFBindings.CommandsSettings
+public typealias CommandsSettingsPatch = EmbedPDFBindings.CommandsSettingsPatch
+public typealias NotAllowedMode = EmbedPDFBindings.NotAllowedMode
 import Foundation
 
 public typealias CommandDefinition = EmbedPDFBindings.CommandDefinition
@@ -134,6 +138,22 @@ extension CommandDefinition {
 /// The workspace command registry. Get it with `PDFViewer.commands()`; the
 /// viewer needs `ViewerConfig(commands: true)`.
 public struct CommandsCapability: Sendable {
+
+  /// Current settings shared by every document using this plugin registration.
+  public func settings() async throws(PDFError) -> CommandsSettings {
+    try await bridged { try await handle.settings() }
+  }
+
+  /// Merge the supplied fields. Clear flags remove nullable values; omission preserves them.
+  public func updateSettings(_ patch: CommandsSettingsPatch) async throws(PDFError) {
+    try await bridged { try await handle.updateSettings(patch: patch) }
+  }
+
+  /// Restore the values supplied at registration, preserving registered host resources.
+  public func resetSettings() async throws(PDFError) {
+    try await bridged { try await handle.resetSettings() }
+  }
+
   let handle: CommandsHandle
   let viewer: PDFViewer
 

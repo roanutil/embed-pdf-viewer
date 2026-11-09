@@ -1,5 +1,17 @@
 public import CoreGraphics
 public import EmbedPDFBindings
+
+public typealias RenderSettings = EmbedPDFBindings.RenderSettings
+public typealias RenderSettingsPatch = EmbedPDFBindings.RenderSettingsPatch
+public typealias RenderEncodingFormat = EmbedPDFBindings.RenderEncodingFormat
+public typealias RenderTilesSettings = EmbedPDFBindings.RenderTilesSettings
+public typealias RenderTilesPatch = EmbedPDFBindings.RenderTilesPatch
+public typealias RenderTilesSetting = EmbedPDFBindings.RenderTilesSetting
+public typealias RenderTilesOptions = EmbedPDFBindings.RenderTilesOptions
+public typealias RenderPrefetchOptions = EmbedPDFBindings.RenderPrefetchOptions
+public typealias RenderSnapshotSettings = EmbedPDFBindings.RenderSnapshotSettings
+public typealias RenderSnapshotPatch = EmbedPDFBindings.RenderSnapshotPatch
+public typealias RenderSnapshotBox = EmbedPDFBindings.RenderSnapshotBox
 import Foundation
 
 public typealias RenderConfig = EmbedPDFBindings.RenderConfig
@@ -44,6 +56,23 @@ public struct RenderBatchResult: Sendable {
 /// viewer needs `ViewerConfig(render: RenderConfig())`. It keeps the viewer
 /// alive. After its document closes, every call throws `instance-closed`.
 public struct RenderCapability: Sendable {
+
+  /// Current settings shared by every document using this plugin registration.
+  /// Encoding preferences are stored; native page images remain raw pixels and this host provides no encoder.
+  public func settings() async throws(PDFError) -> RenderSettings {
+    try await bridged { try await handle.settings() }
+  }
+
+  /// Merge the supplied fields. Clear flags remove nullable values; omission preserves them.
+  public func updateSettings(_ patch: RenderSettingsPatch) async throws(PDFError) {
+    try await bridged { try await handle.updateSettings(patch: patch) }
+  }
+
+  /// Restore the values supplied at registration, preserving registered host resources.
+  public func resetSettings() async throws(PDFError) {
+    try await bridged { try await handle.resetSettings() }
+  }
+
   let handle: RenderHandle
   let viewer: PDFViewer
 

@@ -122,6 +122,12 @@ impl StampCapability {
         self.0.settings.get()
     }
 
+    /// The workspace lifetime used by retained native settings handles.
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
+        self.0.cx.lifetime()
+    }
+
     /// `getSettings()`: the settings in effect.
     pub fn get_settings(&self) -> StampSettings {
         self.0.table.decode(&self.0.settings.get())

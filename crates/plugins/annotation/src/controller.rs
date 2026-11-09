@@ -128,6 +128,16 @@ impl Core {
         self.settings.get()
     }
 
+    /// Merge settings for every document sharing this registration.
+    pub fn update_settings(&self, changes: &Value) {
+        self.settings.store.update_settings(changes);
+    }
+
+    /// Restore registered values while keeping tools and behaviors registered at runtime.
+    pub fn reset_settings(&self) {
+        self.settings.store.reset_settings();
+    }
+
     /// `ctx.doc`, or `None` while there is none.
     pub(crate) fn doc(&self) -> Option<Rc<dyn DocumentHandle>> {
         self.cx.doc().ok()

@@ -25,7 +25,7 @@ use crate::ActionsCapability;
 use crate::contract::{
     self as plugin, ActionDiagnostic, ActionDiagnosticCode, ActionNodeStatus, ActionOrigin,
     ActionPolicy, ActionPolicyPatch, ActionResultStatus, ActionTriggerEvent, DocumentTriggerEvent,
-    OpenSequence, PageEventKind, PdfAnnotationEventKind, PdfFieldEventKind, TriggerGates,
+    PageEventKind, PdfAnnotationEventKind, PdfFieldEventKind,
 };
 
 fn invalid(message: String) -> Error {
@@ -812,3 +812,6 @@ impl ActionsConfig {
         }
     }
 }
+
+mod settings;
+pub use settings::*;

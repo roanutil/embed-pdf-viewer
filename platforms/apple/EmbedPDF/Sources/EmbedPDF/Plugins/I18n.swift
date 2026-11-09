@@ -1,4 +1,7 @@
 public import EmbedPDFBindings
+
+public typealias I18nSettings = EmbedPDFBindings.I18nSettings
+public typealias I18nSettingsPatch = EmbedPDFBindings.I18nSettingsPatch
 import Foundation
 
 public typealias I18nConfig = EmbedPDFBindings.I18nConfig
@@ -27,6 +30,22 @@ extension LocalePack {
 /// it works before any document opens. Get it with `PDFViewer.i18n()`; the
 /// viewer needs `ViewerConfig(i18n: I18nConfig(...))`.
 public struct I18nCapability: Sendable {
+
+  /// Current settings shared by every document using this plugin registration.
+  public func settings() async throws(PDFError) -> I18nSettings {
+    try await bridged { try await handle.settings() }
+  }
+
+  /// Merge the supplied fields. Clear flags remove nullable values; omission preserves them.
+  public func updateSettings(_ patch: I18nSettingsPatch) async throws(PDFError) {
+    try await bridged { try await handle.updateSettings(patch: patch) }
+  }
+
+  /// Restore the values supplied at registration, preserving registered host resources.
+  public func resetSettings() async throws(PDFError) {
+    try await bridged { try await handle.resetSettings() }
+  }
+
   let handle: I18nHandle
   let viewer: PDFViewer
 

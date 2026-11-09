@@ -1195,7 +1195,12 @@ impl RenderCapability {
     /// Fires `on_settings_changed` once when a setting changed.
     pub fn update_settings(&self, changes: &RenderConfig) {
         let changes = serde_json::to_value(changes).expect("plain data");
-        self.0.settings.store.update_settings(&changes);
+        self.update_settings_json(&changes);
+    }
+
+    /// The typed native patch retains explicit nulls for optional strategy values.
+    pub(crate) fn update_settings_json(&self, changes: &Value) {
+        self.0.settings.store.update_settings(changes);
     }
 
     /// `resetSettings()`: back to what the app registered.

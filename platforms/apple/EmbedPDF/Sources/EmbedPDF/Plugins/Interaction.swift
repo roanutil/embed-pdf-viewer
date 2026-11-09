@@ -1,5 +1,8 @@
 public import EmbedPDFBindings
 
+public typealias InteractionSettings = EmbedPDFBindings.InteractionSettings
+public typealias InteractionSettingsPatch = EmbedPDFBindings.InteractionSettingsPatch
+
 public typealias InteractionTool = EmbedPDFBindings.InteractionTool
 public typealias InteractionEvent = EmbedPDFBindings.InteractionEvent
 public typealias InteractionToolChangedEvent = EmbedPDFBindings.InteractionToolChangedEvent
@@ -27,6 +30,22 @@ extension InteractionHandler {
 /// viewer needs `ViewerConfig(interaction: true)`. It keeps the viewer
 /// alive. After its document closes, every call throws `instance-closed`.
 public struct InteractionCapability: Sendable {
+
+  /// Current settings shared by every document using this plugin registration.
+  public func settings() async throws(PDFError) -> InteractionSettings {
+    try await bridged { try await handle.settings() }
+  }
+
+  /// Merge the supplied fields. Clear flags remove nullable values; omission preserves them.
+  public func updateSettings(_ patch: InteractionSettingsPatch) async throws(PDFError) {
+    try await bridged { try await handle.updateSettings(patch: patch) }
+  }
+
+  /// Restore the values supplied at registration, preserving registered host resources.
+  public func resetSettings() async throws(PDFError) {
+    try await bridged { try await handle.resetSettings() }
+  }
+
   public func hasCursorClaim() async throws(PDFError) -> Bool {
     try await bridged { try await handle.hasCursorClaim() }
   }

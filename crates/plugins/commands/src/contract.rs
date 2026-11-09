@@ -398,6 +398,7 @@ pub struct MatchStrokeOptions {
 /// disabled with its reason.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 pub enum NotAllowedMode {
     #[default]
     Hide,

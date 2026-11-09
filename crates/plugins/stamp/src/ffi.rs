@@ -1031,3 +1031,6 @@ fn subscribe_all(c: &StampCapability, l: Arc<dyn StampEventListener>) -> Vec<Uns
         }),
     ]
 }
+
+mod settings;
+pub use settings::*;

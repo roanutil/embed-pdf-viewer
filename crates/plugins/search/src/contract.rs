@@ -178,6 +178,7 @@ pub struct SearchReveal {
 /// `SearchBlendMode`: a CSS `mix-blend-mode` keyword.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 pub enum SearchBlendMode {
     Normal,
     Multiply,

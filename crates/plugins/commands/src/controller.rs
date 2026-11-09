@@ -295,8 +295,13 @@ impl CommandsCapability {
         settings
     }
 
-    /// `getSettings()`: the settings in effect, the same `Rc` until a
-    /// setting changes.
+    /// The workspace lifetime used by retained native settings handles.
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
+        self.inner.cx.lifetime()
+    }
+
+    /// `getSettings()`: the settings in effect, the same `Rc` until a setting changes.
     pub fn get_settings(&self) -> Rc<CommandsSettings> {
         self.current_settings()
     }

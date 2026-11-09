@@ -1,4 +1,12 @@
 public import EmbedPDFBindings
+
+public typealias FormSettings = EmbedPDFBindings.FormSettings
+public typealias FormSettingsPatch = EmbedPDFBindings.FormSettingsPatch
+public typealias FormFocusSettings = EmbedPDFBindings.FormFocusSettings
+public typealias FormFocusSettingsPatch = EmbedPDFBindings.FormFocusSettingsPatch
+public typealias FormFieldSettings = EmbedPDFBindings.FormFieldSettings
+public typealias FormFieldSettingsPatch = EmbedPDFBindings.FormFieldSettingsPatch
+public typealias FormFillable = EmbedPDFBindings.FormFillable
 public import Foundation
 
 public typealias FormValidationResult = EmbedPDFBindings.FormValidationResult
@@ -45,6 +53,22 @@ public typealias FormWidgetEvent = EmbedPDFBindings.FormWidgetEvent
 /// viewer alive. After its document closes, every call throws
 /// `instance-closed`.
 public struct FormCapability: Sendable {
+
+  /// Current settings shared by every document using this plugin registration.
+  public func settings() async throws(PDFError) -> FormSettings {
+    try await bridged { try await handle.settings() }
+  }
+
+  /// Merge the supplied fields. Clear flags remove nullable values; omission preserves them.
+  public func updateSettings(_ patch: FormSettingsPatch) async throws(PDFError) {
+    try await bridged { try await handle.updateSettings(patch: patch) }
+  }
+
+  /// Restore the values supplied at registration, preserving registered host resources.
+  public func resetSettings() async throws(PDFError) {
+    try await bridged { try await handle.resetSettings() }
+  }
+
   public func validate() async throws(PDFError) -> FormValidationResult {
     try await bridged { try await handle.validate() }
   }

@@ -314,3 +314,62 @@ fn a_javascript_node_runs_in_the_foreign_engine_and_alerts() {
     assert!(programs.iter().any(|p| p.contains("__acrojsBoot")), "{programs:?}");
     assert!(programs.iter().any(|p| p.contains("__acrojsRun(\"app.alert('hi')\"")), "{programs:?}");
 }
+
+#[test]
+fn scalar_settings_updates_and_reset_preserve_the_registered_script_factory() {
+    let engine = engine(|_| ScriptEvaluation::Value {
+        json: output(json!([{ "type": "alert", "message": "hi", "icon": 0 }])),
+    });
+    // `sandbox_factory` returns an `Rc`, so it's built on the kernel thread.
+    let shared = engine.clone();
+    let thread = KernelThread::spawn(move |_| {
+        let factory = sandbox_factory(Arc::new(Factory(shared)));
+        let config = ActionsConfig {
+            open_sequence: Some(OpenSequence::Off),
+            javascript: Some(JavaScriptConfig {
+                enabled: Some(true),
+                sandbox_factory: Some(factory),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        TestKernel::open(vec![actions_plugin(config)], spec())
+    })
+    .unwrap();
+    let post = thread.post();
+    let actions =
+        block_on(thread.call(move |k| ActionsHandle::new(k.capability(&ACTIONS).unwrap(), post)))
+            .unwrap();
+    assert!(block_on(actions.is_scripting_enabled()).unwrap());
+    let alerts = Arc::new(Alerts::default());
+    let _ui = block_on(
+        actions
+            .set_ui_adapter(Some(alerts.clone()), ActionUiSupport { alert: true, goto_page: true }),
+    )
+    .unwrap();
+    let script = PdfActionTree::from_json(
+        json!({
+            "root": { "type": "javascript", "subtype": "JavaScript", "script": "app.alert('hi')", "next": [] },
+            "incomplete": false, "warnings": []
+        })
+        .to_string(),
+    )
+    .unwrap();
+    block_on(actions.update_settings(epdf_plugin_actions::ffi::ActionsSettingsPatch {
+        triggers: Some(epdf_plugin_actions::TriggerGates {
+            page: Some(false),
+            ..Default::default()
+        }),
+        ..Default::default()
+    }))
+    .unwrap();
+    let result = block_on(actions.execute(script.clone(), user())).unwrap();
+    assert_eq!(result.nodes[0].status, ActionNodeStatus::Executed, "{result:?}");
+    block_on(actions.reset_settings()).unwrap();
+    let result = block_on(actions.execute(script, user())).unwrap();
+    assert_eq!(result.nodes[0].status, ActionNodeStatus::Executed, "{result:?}");
+    assert_eq!(*alerts.0.lock().unwrap(), ["hi", "hi"]);
+    let programs = engine.programs.lock().unwrap();
+    assert!(programs.iter().any(|p| p.contains("__acrojsBoot")), "{programs:?}");
+    assert!(programs.iter().any(|p| p.contains("__acrojsRun(\"app.alert('hi')\"")), "{programs:?}");
+}

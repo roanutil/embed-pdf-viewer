@@ -1,4 +1,12 @@
 public import EmbedPDFBindings
+
+public typealias ActionsSettings = EmbedPDFBindings.ActionsSettings
+public typealias ActionsSettingsPatch = EmbedPDFBindings.ActionsSettingsPatch
+public typealias ActionsJavaScriptSettings = EmbedPDFBindings.ActionsJavaScriptSettings
+public typealias ActionsJavaScriptSettingsPatch = EmbedPDFBindings.ActionsJavaScriptSettingsPatch
+public typealias ActionsScriptIdentitySetting = EmbedPDFBindings.ActionsScriptIdentitySetting
+public typealias ActionsScriptIdentity = EmbedPDFBindings.ActionsScriptIdentity
+public typealias ActionTriggers = EmbedPDFBindings.ActionTriggers
 import Foundation
 
 public typealias ActionsConfig = EmbedPDFBindings.ActionsConfig
@@ -114,6 +122,22 @@ final class ClosureDocumentVerb: DocumentVerbOperation, Sendable {
 /// After its document closes, every call throws `instance-closed`. No call
 /// is cancellable: a dispatch is a transaction on the document's queue.
 public struct ActionsCapability: Sendable {
+
+  /// Current settings shared by every document using this plugin registration.
+  public func settings() async throws(PDFError) -> ActionsSettings {
+    try await bridged { try await handle.settings() }
+  }
+
+  /// Merge the supplied fields. Clear flags remove nullable values; omission preserves them.
+  public func updateSettings(_ patch: ActionsSettingsPatch) async throws(PDFError) {
+    try await bridged { try await handle.updateSettings(patch: patch) }
+  }
+
+  /// Restore the values supplied at registration, preserving registered host resources.
+  public func resetSettings() async throws(PDFError) {
+    try await bridged { try await handle.resetSettings() }
+  }
+
   let handle: ActionsHandle
   let viewer: PDFViewer
 

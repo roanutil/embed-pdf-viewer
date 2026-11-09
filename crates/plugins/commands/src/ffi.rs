@@ -737,3 +737,6 @@ impl CommandsHandle {
         subscription
     }
 }
+
+mod settings;
+pub use settings::*;

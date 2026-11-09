@@ -1,5 +1,7 @@
 public import EmbedPDFBindings
 
+public typealias MeasurementSettings = EmbedPDFBindings.MeasurementSettings
+
 public typealias MeasurementConfig = EmbedPDFBindings.MeasurementConfig
 public typealias MeasurementDefaultScale = EmbedPDFBindings.MeasurementDefaultScale
 public typealias PdfMeasurement = EmbedPDFBindings.PdfMeasurement
@@ -34,6 +36,22 @@ public typealias MeasurementEvent = EmbedPDFBindings.MeasurementEvent
 /// MeasurementConfig())`. It keeps the viewer alive. After its
 /// document closes, every call throws `instance-closed`.
 public struct MeasurementCapability: Sendable {
+
+  /// Current settings shared by every document using this plugin registration.
+  public func settings() async throws(PDFError) -> MeasurementSettings {
+    try await bridged { try await handle.settings() }
+  }
+
+  /// Merge the supplied fields. Clear flags remove nullable values; omission preserves them.
+  public func updateSettings(_ patch: MeasurementConfig) async throws(PDFError) {
+    try await bridged { try await handle.updateSettings(patch: patch) }
+  }
+
+  /// Restore the values supplied at registration, preserving registered host resources.
+  public func resetSettings() async throws(PDFError) {
+    try await bridged { try await handle.resetSettings() }
+  }
+
   let handle: MeasurementHandle
   let viewer: PDFViewer
 

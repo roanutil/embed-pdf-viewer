@@ -591,3 +591,6 @@ impl SearchHandle {
         subscription
     }
 }
+
+mod settings;
+pub use settings::*;

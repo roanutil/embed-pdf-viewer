@@ -330,3 +330,25 @@ fn configs_compare_their_loader_by_presence() {
     lazy.loader = Some(Loader::new(Answer::Pack));
     assert_ne!(lazy, config(None));
 }
+
+#[test]
+fn scalar_settings_patches_and_reset_preserve_the_registered_locale_loader() {
+    use epdf_plugin_i18n::ffi::I18nSettingsPatch;
+    let loader = Loader::new(Answer::Pack);
+    let (thread, i18n) = handle(config(Some(loader.clone())));
+    block_on(i18n.update_settings(I18nSettingsPatch {
+        fallback_locale: Some("es".into()),
+        ..Default::default()
+    }))
+    .unwrap();
+    block_on(i18n.set_locale("es".into())).unwrap();
+    assert_eq!(*loader.asked.lock().unwrap(), ["es"]);
+    block_on(i18n.reset_settings()).unwrap();
+    assert_eq!(block_on(i18n.settings()).unwrap().locale.as_deref(), Some("en"));
+    assert_eq!(
+        block_on(thread.call(|k| k.capability(&I18N).unwrap().retained_loaders())).unwrap(),
+        1
+    );
+    block_on(i18n.set_locale("es".into())).unwrap();
+    assert_eq!(block_on(i18n.t("hello".into(), HashMap::new(), None)).unwrap(), "Hola");
+}

@@ -168,8 +168,13 @@ impl I18nCapability {
 
     // ── settings (`SettingsApi<I18nSettings>`) ──
 
-    /// `getSettings()`: the settings in effect, the same `Rc` until a
-    /// setting changes.
+    /// The workspace lifetime used by retained native settings handles.
+    #[cfg(feature = "uniffi")]
+    pub(crate) fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
+        self.0.cx.lifetime()
+    }
+
+    /// `getSettings()`: the settings in effect, the same `Rc` until a setting changes.
     pub fn get_settings(&self) -> Rc<I18nSettings> {
         self.current_settings()
     }

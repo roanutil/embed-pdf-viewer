@@ -517,3 +517,6 @@ impl I18nHandle {
         subscription
     }
 }
+
+mod settings;
+pub use settings::*;

@@ -1,5 +1,10 @@
 public import EmbedPDFBindings
 
+public typealias SelectionSettings = EmbedPDFBindings.SelectionSettings
+public typealias SelectionSettingsPatch = EmbedPDFBindings.SelectionSettingsPatch
+public typealias SelectionHandleSettings = EmbedPDFBindings.SelectionHandleSettings
+public typealias SelectionHandleSettingsPatch = EmbedPDFBindings.SelectionHandleSettingsPatch
+
 public typealias SelectionTextPosition = EmbedPDFBindings.SelectionTextPosition
 public typealias SelectionTextRange = EmbedPDFBindings.SelectionTextRange
 public typealias SelectionInput = EmbedPDFBindings.SelectionInput
@@ -22,6 +27,22 @@ public typealias SelectionCommittedEvent = EmbedPDFBindings.SelectionCommittedEv
 /// Indices are PDFium character indices, the space search hits use, not
 /// offsets into a Swift `String`.
 public struct SelectionCapability: Sendable {
+
+  /// Current settings shared by every document using this plugin registration.
+  public func settings() async throws(PDFError) -> SelectionSettings {
+    try await bridged { try await handle.settings() }
+  }
+
+  /// Merge the supplied fields. Clear flags remove nullable values; omission preserves them.
+  public func updateSettings(_ patch: SelectionSettingsPatch) async throws(PDFError) {
+    try await bridged { try await handle.updateSettings(patch: patch) }
+  }
+
+  /// Restore the values supplied at registration, preserving registered host resources.
+  public func resetSettings() async throws(PDFError) {
+    try await bridged { try await handle.resetSettings() }
+  }
+
   let handle: SelectionHandle
   let viewer: PDFViewer
 
