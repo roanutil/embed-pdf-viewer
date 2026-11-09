@@ -85,7 +85,7 @@ plan's ignored workspace. Do not use the obsolete default darwin-arm64 headers.
 - [ ] Write tests for a held image promise: metadata/event visible before image resolution, cancelled reader leaves another reader alive, clear/close cancels the shared render, resolved pixels survive clear/close. Test permission refusal and pointer coordinate/zoom-box behavior.
 - [ ] Run affected new FFI suites; expect missing-API failures.
 - [ ] Implement snapshot handle storage on the kernel thread. Copy native pixels before resolving foreign calls; no JSON/host-table id escapes to Swift. Preserve subscription completion and avoid making snapshot reads start a new render.
-- [ ] Add Swift tests for CGImage lifetime and snapshot event/metadata behavior. Expose the currently missing rect/rotation on render-page options for programmatic crop/rotation as well as snapshot workflows; verify the resulting pixel dimensions and orientation.
+- [ ] Add Swift tests for CGImage lifetime and snapshot event/metadata behavior. Expose the currently missing rect/rotation on render-page options for programmatic crop/rotation as well as snapshot workflows; verify pixel dimensions, orientation and pixels-per-point scale for cropped/rotated images.
 - [ ] Run render/stage/host suites and clippy; expect zero failures. Commit task source/tests.
 
 ### Task 5: Core-inclusive audit, native verification and handoff
