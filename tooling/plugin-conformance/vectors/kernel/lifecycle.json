@@ -18542,6 +18542,4362 @@
       ]
     },
     {
+      "name": "url-source",
+      "covers": "A `{ kind: 'url' }` source downloads under the loading tab with the host's fetch, called with the URL and the tab's signal: a PDF opens as bytes under the source's id; HTTP 404 fails not-found, 401 and 403 permission-denied, any other refusal operation-failed, each naming the URL and status; a file without a PDF header fails invalid-input; a fetch that rejects fails with its error; and closing the tab while it downloads cancels the open, which opens nothing when the file lands later.",
+      "plugins": [],
+      "engine": {
+        "documents": {
+          "remote": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
+                "boxes": {
+                  "media": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "crop": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "fetch": {
+        "$fn": "fetch",
+        "seq": [
+          {
+            "resolves": {
+              "ok": true,
+              "status": 200,
+              "arrayBuffer": {
+                "$fn": "arrayBuffer",
+                "resolves": {
+                  "$bytes": "JVBERi0xLjcKJSVFT0YK"
+                }
+              }
+            }
+          },
+          {
+            "resolves": {
+              "ok": false,
+              "status": 404
+            }
+          },
+          {
+            "resolves": {
+              "ok": false,
+              "status": 401
+            }
+          },
+          {
+            "resolves": {
+              "ok": false,
+              "status": 403
+            }
+          },
+          {
+            "resolves": {
+              "ok": false,
+              "status": 500
+            }
+          },
+          {
+            "resolves": {
+              "ok": true,
+              "status": 200,
+              "arrayBuffer": {
+                "$fn": "signInPage",
+                "resolves": {
+                  "$bytes": "PGh0bWw+c2lnbiBpbjwvaHRtbD4="
+                }
+              }
+            }
+          },
+          {
+            "rejects": {
+              "name": "TypeError",
+              "message": "Failed to fetch"
+            }
+          },
+          {
+            "defer": "download"
+          }
+        ]
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "url",
+              "url": "https://files.example/a.pdf",
+              "id": "remote"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "getOrder",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "getCount",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "getActiveId",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "url",
+              "url": "https://files.example/missing.pdf",
+              "id": "missing"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "url",
+              "url": "https://files.example/private.pdf",
+              "id": "signin"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "url",
+              "url": "https://files.example/secret.pdf",
+              "id": "forbidden"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "url",
+              "url": "https://files.example/broken.pdf",
+              "id": "broken"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "url",
+              "url": "https://files.example/page",
+              "id": "html"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "url",
+              "url": "https://offline.example/a.pdf",
+              "id": "offline"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "url",
+              "url": "https://files.example/slow.pdf",
+              "id": "slow"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "getOrder",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "getCount",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "getActiveId",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "close",
+          "args": [
+            "slow"
+          ]
+        },
+        {
+          "op": "settle",
+          "label": "download",
+          "value": {
+            "ok": true,
+            "status": 200,
+            "arrayBuffer": {
+              "$fn": "lateArrayBuffer",
+              "resolves": {
+                "$bytes": "JVBERi0xLjcKJSVFT0YK"
+              }
+            }
+          }
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "getOrder",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "getCount",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "getActiveId",
+          "args": []
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "document": {
+                  "id": "remote",
+                  "status": "ready",
+                  "pageCount": 1,
+                  "hasUnsavedChanges": false
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "activeChanged",
+              "value": {
+                "documentId": "remote",
+                "previousDocumentId": null
+              }
+            },
+            {
+              "event": "opened",
+              "value": {
+                "documentId": "remote",
+                "info": {
+                  "id": "remote",
+                  "status": "ready",
+                  "pageCount": 1,
+                  "hasUnsavedChanges": false
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "remote",
+                  "bytes": {
+                    "$bytes": "JVBERi0xLjcKJSVFT0YK"
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "remote",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "remote",
+              "path": "render.getPolicy",
+              "args": []
+            }
+          ],
+          "callbacks": [
+            {
+              "fn": "fetch",
+              "args": [
+                "https://files.example/a.pdf",
+                {
+                  "signal": {
+                    "$signal": {
+                      "aborted": false
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "arrayBuffer",
+              "args": []
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "remote"
+              ],
+              "activeId": "remote"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "remote",
+                "status": "ready",
+                "pageCount": 1,
+                "hasUnsavedChanges": false
+              }
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "remote"
+              ],
+              "activeId": "remote"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": [
+              "remote"
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "remote"
+              ],
+              "activeId": "remote"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": 1
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "remote"
+              ],
+              "activeId": "remote"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": "remote"
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "remote"
+              ],
+              "activeId": "remote"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                  "code": "not-found",
+                  "capability": "documents",
+                  "permission": null
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "activeChanged",
+              "value": {
+                "documentId": "missing",
+                "previousDocumentId": "remote"
+              }
+            },
+            {
+              "event": "openFailed",
+              "value": {
+                "documentId": "missing",
+                "error": {
+                  "code": "not-found",
+                  "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                  "capability": "documents",
+                  "permission": null
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "fetch",
+              "args": [
+                "https://files.example/missing.pdf",
+                {
+                  "signal": {
+                    "$signal": {
+                      "aborted": false
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {
+                "missing": {
+                  "id": "missing",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                      "code": "not-found",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                }
+              },
+              "order": [
+                "remote",
+                "missing"
+              ],
+              "activeId": "missing"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                  "code": "permission-denied",
+                  "capability": "documents",
+                  "permission": null
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "activeChanged",
+              "value": {
+                "documentId": "signin",
+                "previousDocumentId": "missing"
+              }
+            },
+            {
+              "event": "openFailed",
+              "value": {
+                "documentId": "signin",
+                "error": {
+                  "code": "permission-denied",
+                  "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                  "capability": "documents",
+                  "permission": null
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "fetch",
+              "args": [
+                "https://files.example/private.pdf",
+                {
+                  "signal": {
+                    "$signal": {
+                      "aborted": false
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {
+                "missing": {
+                  "id": "missing",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                      "code": "not-found",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "signin": {
+                  "id": "signin",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                }
+              },
+              "order": [
+                "remote",
+                "missing",
+                "signin"
+              ],
+              "activeId": "signin"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "couldn't download https://files.example/secret.pdf (HTTP 403)",
+                  "code": "permission-denied",
+                  "capability": "documents",
+                  "permission": null
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "activeChanged",
+              "value": {
+                "documentId": "forbidden",
+                "previousDocumentId": "signin"
+              }
+            },
+            {
+              "event": "openFailed",
+              "value": {
+                "documentId": "forbidden",
+                "error": {
+                  "code": "permission-denied",
+                  "message": "couldn't download https://files.example/secret.pdf (HTTP 403)",
+                  "capability": "documents",
+                  "permission": null
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "fetch",
+              "args": [
+                "https://files.example/secret.pdf",
+                {
+                  "signal": {
+                    "$signal": {
+                      "aborted": false
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 4
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {
+                "missing": {
+                  "id": "missing",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                      "code": "not-found",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "signin": {
+                  "id": "signin",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "forbidden": {
+                  "id": "forbidden",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/secret.pdf (HTTP 403)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                }
+              },
+              "order": [
+                "remote",
+                "missing",
+                "signin",
+                "forbidden"
+              ],
+              "activeId": "forbidden"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 5,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "couldn't download https://files.example/broken.pdf (HTTP 500)",
+                  "code": "operation-failed",
+                  "capability": "documents",
+                  "permission": null
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "activeChanged",
+              "value": {
+                "documentId": "broken",
+                "previousDocumentId": "forbidden"
+              }
+            },
+            {
+              "event": "openFailed",
+              "value": {
+                "documentId": "broken",
+                "error": {
+                  "code": "operation-failed",
+                  "message": "couldn't download https://files.example/broken.pdf (HTTP 500)",
+                  "capability": "documents",
+                  "permission": null
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "fetch",
+              "args": [
+                "https://files.example/broken.pdf",
+                {
+                  "signal": {
+                    "$signal": {
+                      "aborted": false
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 5
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {
+                "missing": {
+                  "id": "missing",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                      "code": "not-found",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "signin": {
+                  "id": "signin",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "forbidden": {
+                  "id": "forbidden",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/secret.pdf (HTTP 403)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "broken": {
+                  "id": "broken",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/broken.pdf (HTTP 500)",
+                      "code": "operation-failed",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                }
+              },
+              "order": [
+                "remote",
+                "missing",
+                "signin",
+                "forbidden",
+                "broken"
+              ],
+              "activeId": "broken"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 6,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "https://files.example/page isn't a PDF",
+                  "code": "invalid-input",
+                  "capability": "documents",
+                  "permission": null
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "activeChanged",
+              "value": {
+                "documentId": "html",
+                "previousDocumentId": "broken"
+              }
+            },
+            {
+              "event": "openFailed",
+              "value": {
+                "documentId": "html",
+                "error": {
+                  "code": "invalid-input",
+                  "message": "https://files.example/page isn't a PDF",
+                  "capability": "documents",
+                  "permission": null
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "fetch",
+              "args": [
+                "https://files.example/page",
+                {
+                  "signal": {
+                    "$signal": {
+                      "aborted": false
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "signInPage",
+              "args": []
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 6
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {
+                "missing": {
+                  "id": "missing",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                      "code": "not-found",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "signin": {
+                  "id": "signin",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "forbidden": {
+                  "id": "forbidden",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/secret.pdf (HTTP 403)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "broken": {
+                  "id": "broken",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/broken.pdf (HTTP 500)",
+                      "code": "operation-failed",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "html": {
+                  "id": "html",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "https://files.example/page isn't a PDF",
+                      "code": "invalid-input",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                }
+              },
+              "order": [
+                "remote",
+                "missing",
+                "signin",
+                "forbidden",
+                "broken",
+                "html"
+              ],
+              "activeId": "html"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 7,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "Failed to fetch",
+                  "code": "operation-failed",
+                  "capability": "documents",
+                  "permission": null,
+                  "cause": {
+                    "$error": {
+                      "name": "TypeError",
+                      "message": "Failed to fetch"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "activeChanged",
+              "value": {
+                "documentId": "offline",
+                "previousDocumentId": "html"
+              }
+            },
+            {
+              "event": "openFailed",
+              "value": {
+                "documentId": "offline",
+                "error": {
+                  "code": "operation-failed",
+                  "message": "Failed to fetch",
+                  "capability": "documents",
+                  "permission": null
+                }
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "fetch",
+              "args": [
+                "https://offline.example/a.pdf",
+                {
+                  "signal": {
+                    "$signal": {
+                      "aborted": false
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 7
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {
+                "missing": {
+                  "id": "missing",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                      "code": "not-found",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "signin": {
+                  "id": "signin",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "forbidden": {
+                  "id": "forbidden",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/secret.pdf (HTTP 403)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "broken": {
+                  "id": "broken",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/broken.pdf (HTTP 500)",
+                      "code": "operation-failed",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "html": {
+                  "id": "html",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "https://files.example/page isn't a PDF",
+                      "code": "invalid-input",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "offline": {
+                  "id": "offline",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "TypeError",
+                      "message": "Failed to fetch"
+                    }
+                  }
+                }
+              },
+              "order": [
+                "remote",
+                "missing",
+                "signin",
+                "forbidden",
+                "broken",
+                "html",
+                "offline"
+              ],
+              "activeId": "offline"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "activeChanged",
+              "value": {
+                "documentId": "slow",
+                "previousDocumentId": "offline"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "fetch",
+              "args": [
+                "https://files.example/slow.pdf",
+                {
+                  "signal": {
+                    "$signal": {
+                      "aborted": false
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 8
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {
+                "missing": {
+                  "id": "missing",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                      "code": "not-found",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "signin": {
+                  "id": "signin",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "forbidden": {
+                  "id": "forbidden",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/secret.pdf (HTTP 403)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "broken": {
+                  "id": "broken",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/broken.pdf (HTTP 500)",
+                      "code": "operation-failed",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "html": {
+                  "id": "html",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "https://files.example/page isn't a PDF",
+                      "code": "invalid-input",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "offline": {
+                  "id": "offline",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "TypeError",
+                      "message": "Failed to fetch"
+                    }
+                  }
+                },
+                "slow": {
+                  "id": "slow",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "remote",
+                "missing",
+                "signin",
+                "forbidden",
+                "broken",
+                "html",
+                "offline",
+                "slow"
+              ],
+              "activeId": "slow"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "remote",
+                "status": "ready",
+                "pageCount": 1,
+                "hasUnsavedChanges": false
+              },
+              {
+                "id": "missing",
+                "status": "error",
+                "pageCount": 0,
+                "hasUnsavedChanges": false,
+                "error": {
+                  "code": "not-found",
+                  "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                  "capability": "documents",
+                  "permission": null
+                }
+              },
+              {
+                "id": "signin",
+                "status": "error",
+                "pageCount": 0,
+                "hasUnsavedChanges": false,
+                "error": {
+                  "code": "permission-denied",
+                  "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                  "capability": "documents",
+                  "permission": null
+                }
+              },
+              {
+                "id": "forbidden",
+                "status": "error",
+                "pageCount": 0,
+                "hasUnsavedChanges": false,
+                "error": {
+                  "code": "permission-denied",
+                  "message": "couldn't download https://files.example/secret.pdf (HTTP 403)",
+                  "capability": "documents",
+                  "permission": null
+                }
+              },
+              {
+                "id": "broken",
+                "status": "error",
+                "pageCount": 0,
+                "hasUnsavedChanges": false,
+                "error": {
+                  "code": "operation-failed",
+                  "message": "couldn't download https://files.example/broken.pdf (HTTP 500)",
+                  "capability": "documents",
+                  "permission": null
+                }
+              },
+              {
+                "id": "html",
+                "status": "error",
+                "pageCount": 0,
+                "hasUnsavedChanges": false,
+                "error": {
+                  "code": "invalid-input",
+                  "message": "https://files.example/page isn't a PDF",
+                  "capability": "documents",
+                  "permission": null
+                }
+              },
+              {
+                "id": "offline",
+                "status": "error",
+                "pageCount": 0,
+                "hasUnsavedChanges": false,
+                "error": {
+                  "code": "operation-failed",
+                  "message": "Failed to fetch",
+                  "capability": "documents",
+                  "permission": null
+                }
+              },
+              {
+                "id": "slow",
+                "status": "loading",
+                "pageCount": 0,
+                "hasUnsavedChanges": false
+              }
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {
+                "missing": {
+                  "id": "missing",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                      "code": "not-found",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "signin": {
+                  "id": "signin",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "forbidden": {
+                  "id": "forbidden",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/secret.pdf (HTTP 403)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "broken": {
+                  "id": "broken",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/broken.pdf (HTTP 500)",
+                      "code": "operation-failed",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "html": {
+                  "id": "html",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "https://files.example/page isn't a PDF",
+                      "code": "invalid-input",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "offline": {
+                  "id": "offline",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "TypeError",
+                      "message": "Failed to fetch"
+                    }
+                  }
+                },
+                "slow": {
+                  "id": "slow",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "remote",
+                "missing",
+                "signin",
+                "forbidden",
+                "broken",
+                "html",
+                "offline",
+                "slow"
+              ],
+              "activeId": "slow"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": [
+              "remote",
+              "missing",
+              "signin",
+              "forbidden",
+              "broken",
+              "html",
+              "offline",
+              "slow"
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {
+                "missing": {
+                  "id": "missing",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                      "code": "not-found",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "signin": {
+                  "id": "signin",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "forbidden": {
+                  "id": "forbidden",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/secret.pdf (HTTP 403)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "broken": {
+                  "id": "broken",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/broken.pdf (HTTP 500)",
+                      "code": "operation-failed",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "html": {
+                  "id": "html",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "https://files.example/page isn't a PDF",
+                      "code": "invalid-input",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "offline": {
+                  "id": "offline",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "TypeError",
+                      "message": "Failed to fetch"
+                    }
+                  }
+                },
+                "slow": {
+                  "id": "slow",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "remote",
+                "missing",
+                "signin",
+                "forbidden",
+                "broken",
+                "html",
+                "offline",
+                "slow"
+              ],
+              "activeId": "slow"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": 8
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {
+                "missing": {
+                  "id": "missing",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                      "code": "not-found",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "signin": {
+                  "id": "signin",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "forbidden": {
+                  "id": "forbidden",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/secret.pdf (HTTP 403)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "broken": {
+                  "id": "broken",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/broken.pdf (HTTP 500)",
+                      "code": "operation-failed",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "html": {
+                  "id": "html",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "https://files.example/page isn't a PDF",
+                      "code": "invalid-input",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "offline": {
+                  "id": "offline",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "TypeError",
+                      "message": "Failed to fetch"
+                    }
+                  }
+                },
+                "slow": {
+                  "id": "slow",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "remote",
+                "missing",
+                "signin",
+                "forbidden",
+                "broken",
+                "html",
+                "offline",
+                "slow"
+              ],
+              "activeId": "slow"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": "slow"
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {
+                "missing": {
+                  "id": "missing",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                      "code": "not-found",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "signin": {
+                  "id": "signin",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "forbidden": {
+                  "id": "forbidden",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/secret.pdf (HTTP 403)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "broken": {
+                  "id": "broken",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/broken.pdf (HTTP 500)",
+                      "code": "operation-failed",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "html": {
+                  "id": "html",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "https://files.example/page isn't a PDF",
+                      "code": "invalid-input",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "offline": {
+                  "id": "offline",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "TypeError",
+                      "message": "Failed to fetch"
+                    }
+                  }
+                },
+                "slow": {
+                  "id": "slow",
+                  "status": "loading"
+                }
+              },
+              "order": [
+                "remote",
+                "missing",
+                "signin",
+                "forbidden",
+                "broken",
+                "html",
+                "offline",
+                "slow"
+              ],
+              "activeId": "slow"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 8,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "operation cancelled",
+                  "code": "operation-cancelled",
+                  "capability": "documents",
+                  "permission": null,
+                  "cause": {
+                    "$error": {
+                      "name": "CancelledError",
+                      "message": "[kernel] cancelled: closed while opening: slow"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "promise": 9,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "activeChanged",
+              "value": {
+                "documentId": "offline",
+                "previousDocumentId": "slow"
+              }
+            },
+            {
+              "event": "closed",
+              "value": {
+                "documentId": "slow"
+              }
+            }
+          ],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 9
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {
+                "missing": {
+                  "id": "missing",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                      "code": "not-found",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "signin": {
+                  "id": "signin",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "forbidden": {
+                  "id": "forbidden",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/secret.pdf (HTTP 403)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "broken": {
+                  "id": "broken",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/broken.pdf (HTTP 500)",
+                      "code": "operation-failed",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "html": {
+                  "id": "html",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "https://files.example/page isn't a PDF",
+                      "code": "invalid-input",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "offline": {
+                  "id": "offline",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "TypeError",
+                      "message": "Failed to fetch"
+                    }
+                  }
+                }
+              },
+              "order": [
+                "remote",
+                "missing",
+                "signin",
+                "forbidden",
+                "broken",
+                "html",
+                "offline"
+              ],
+              "activeId": "offline"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "lateArrayBuffer",
+              "args": []
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {
+                "missing": {
+                  "id": "missing",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                      "code": "not-found",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "signin": {
+                  "id": "signin",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "forbidden": {
+                  "id": "forbidden",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/secret.pdf (HTTP 403)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "broken": {
+                  "id": "broken",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/broken.pdf (HTTP 500)",
+                      "code": "operation-failed",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "html": {
+                  "id": "html",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "https://files.example/page isn't a PDF",
+                      "code": "invalid-input",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "offline": {
+                  "id": "offline",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "TypeError",
+                      "message": "Failed to fetch"
+                    }
+                  }
+                }
+              },
+              "order": [
+                "remote",
+                "missing",
+                "signin",
+                "forbidden",
+                "broken",
+                "html",
+                "offline"
+              ],
+              "activeId": "offline"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "remote",
+                "status": "ready",
+                "pageCount": 1,
+                "hasUnsavedChanges": false
+              },
+              {
+                "id": "missing",
+                "status": "error",
+                "pageCount": 0,
+                "hasUnsavedChanges": false,
+                "error": {
+                  "code": "not-found",
+                  "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                  "capability": "documents",
+                  "permission": null
+                }
+              },
+              {
+                "id": "signin",
+                "status": "error",
+                "pageCount": 0,
+                "hasUnsavedChanges": false,
+                "error": {
+                  "code": "permission-denied",
+                  "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                  "capability": "documents",
+                  "permission": null
+                }
+              },
+              {
+                "id": "forbidden",
+                "status": "error",
+                "pageCount": 0,
+                "hasUnsavedChanges": false,
+                "error": {
+                  "code": "permission-denied",
+                  "message": "couldn't download https://files.example/secret.pdf (HTTP 403)",
+                  "capability": "documents",
+                  "permission": null
+                }
+              },
+              {
+                "id": "broken",
+                "status": "error",
+                "pageCount": 0,
+                "hasUnsavedChanges": false,
+                "error": {
+                  "code": "operation-failed",
+                  "message": "couldn't download https://files.example/broken.pdf (HTTP 500)",
+                  "capability": "documents",
+                  "permission": null
+                }
+              },
+              {
+                "id": "html",
+                "status": "error",
+                "pageCount": 0,
+                "hasUnsavedChanges": false,
+                "error": {
+                  "code": "invalid-input",
+                  "message": "https://files.example/page isn't a PDF",
+                  "capability": "documents",
+                  "permission": null
+                }
+              },
+              {
+                "id": "offline",
+                "status": "error",
+                "pageCount": 0,
+                "hasUnsavedChanges": false,
+                "error": {
+                  "code": "operation-failed",
+                  "message": "Failed to fetch",
+                  "capability": "documents",
+                  "permission": null
+                }
+              }
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {
+                "missing": {
+                  "id": "missing",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                      "code": "not-found",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "signin": {
+                  "id": "signin",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "forbidden": {
+                  "id": "forbidden",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/secret.pdf (HTTP 403)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "broken": {
+                  "id": "broken",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/broken.pdf (HTTP 500)",
+                      "code": "operation-failed",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "html": {
+                  "id": "html",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "https://files.example/page isn't a PDF",
+                      "code": "invalid-input",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "offline": {
+                  "id": "offline",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "TypeError",
+                      "message": "Failed to fetch"
+                    }
+                  }
+                }
+              },
+              "order": [
+                "remote",
+                "missing",
+                "signin",
+                "forbidden",
+                "broken",
+                "html",
+                "offline"
+              ],
+              "activeId": "offline"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": [
+              "remote",
+              "missing",
+              "signin",
+              "forbidden",
+              "broken",
+              "html",
+              "offline"
+            ]
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {
+                "missing": {
+                  "id": "missing",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                      "code": "not-found",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "signin": {
+                  "id": "signin",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "forbidden": {
+                  "id": "forbidden",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/secret.pdf (HTTP 403)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "broken": {
+                  "id": "broken",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/broken.pdf (HTTP 500)",
+                      "code": "operation-failed",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "html": {
+                  "id": "html",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "https://files.example/page isn't a PDF",
+                      "code": "invalid-input",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "offline": {
+                  "id": "offline",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "TypeError",
+                      "message": "Failed to fetch"
+                    }
+                  }
+                }
+              },
+              "order": [
+                "remote",
+                "missing",
+                "signin",
+                "forbidden",
+                "broken",
+                "html",
+                "offline"
+              ],
+              "activeId": "offline"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": 7
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {
+                "missing": {
+                  "id": "missing",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                      "code": "not-found",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "signin": {
+                  "id": "signin",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "forbidden": {
+                  "id": "forbidden",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/secret.pdf (HTTP 403)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "broken": {
+                  "id": "broken",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/broken.pdf (HTTP 500)",
+                      "code": "operation-failed",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "html": {
+                  "id": "html",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "https://files.example/page isn't a PDF",
+                      "code": "invalid-input",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "offline": {
+                  "id": "offline",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "TypeError",
+                      "message": "Failed to fetch"
+                    }
+                  }
+                }
+              },
+              "order": [
+                "remote",
+                "missing",
+                "signin",
+                "forbidden",
+                "broken",
+                "html",
+                "offline"
+              ],
+              "activeId": "offline"
+            },
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "remote": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": "offline"
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "remote": {
+                  "id": "remote",
+                  "instanceId": "remote#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {
+                "missing": {
+                  "id": "missing",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/missing.pdf (HTTP 404)",
+                      "code": "not-found",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "signin": {
+                  "id": "signin",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/private.pdf (HTTP 401)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "forbidden": {
+                  "id": "forbidden",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/secret.pdf (HTTP 403)",
+                      "code": "permission-denied",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "broken": {
+                  "id": "broken",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "couldn't download https://files.example/broken.pdf (HTTP 500)",
+                      "code": "operation-failed",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "html": {
+                  "id": "html",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "PluginError",
+                      "message": "https://files.example/page isn't a PDF",
+                      "code": "invalid-input",
+                      "capability": "documents",
+                      "permission": null
+                    }
+                  }
+                },
+                "offline": {
+                  "id": "offline",
+                  "status": "error",
+                  "error": {
+                    "$error": {
+                      "name": "TypeError",
+                      "message": "Failed to fetch"
+                    }
+                  }
+                }
+              },
+              "order": [
+                "remote",
+                "missing",
+                "signin",
+                "forbidden",
+                "broken",
+                "html",
+                "offline"
+              ],
+              "activeId": "offline"
+            },
+            "plugins": {}
+          }
+        }
+      ]
+    },
+    {
       "name": "handle-id-differs",
       "covers": "An engine that answers with a handle whose id differs from the requested one re-keys the session; a re-key onto an id already in use refuses and parks the tab as error.",
       "plugins": [
