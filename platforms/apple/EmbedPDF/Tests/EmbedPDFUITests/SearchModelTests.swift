@@ -109,6 +109,60 @@ struct SearchModelTests {
     let refused = try #require(model.error)
     await model.refresh()
     expectNoDifference(model.error, refused)
+    expectNoDifference(model.status, .error)
+    try await viewer.destroy()
+  }
+
+  @Test func clearingAfterARefusedSearchLeavesTheErrorStatus() async throws {
+    let viewer = try PDFViewer(ViewerConfig(scope: ["doc.open", "doc.render"], search: SearchConfig()))
+    try await viewer.start()
+    let model = SearchModel(search: try await viewer.search(in: try await viewer.open(pluginFixture())))
+    model.text = "the"
+    await model.searchSubmitted()
+    expectNoDifference(model.status, .error)
+    await model.clearButtonTapped()
+    expectNoDifference(model.status, .idle)
+    try await viewer.destroy()
+  }
+
+  @Test func thePluginsOwnRerunAfterAnEditReachesTheObservingModel() async throws {
+    let (viewer, document, search, model) = try await opened()
+    model.text = "the"
+    await model.searchSubmitted()
+    let before = model.hits
+    let page = try #require(before.first).page
+    let deadline = ContinuousClock.now + .seconds(10)
+    func rerunFinished() async -> Bool {
+      guard (try? await search.status()) == .complete, let hits = try? await search.hits() else { return false }
+      return hits != before
+    }
+    // Hold every read until the rerun has finished, so the model never applies
+    // the searching state in between: the count, query and status it then reads
+    // are the ones it already holds, and only the search events say the hits
+    // moved.
+    model.snapshots.readFinished = {
+      while ContinuousClock.now < deadline, !(await rerunFinished()) {
+        try? await Task.sleep(for: .milliseconds(20))
+      }
+    }
+    let task = Task { await model.task() }
+    defer { task.cancel() }
+    // Nobody resubmits: the plugin reruns the query 250 ms after the move.
+    _ = try await viewer.pageEdit(for: document).movePages([page], to: .end)
+    let kernel = try await {
+      while ContinuousClock.now < deadline, !(await rerunFinished()) {
+        try await Task.sleep(for: .milliseconds(20))
+      }
+      return try await search.hits()
+    }()
+    while ContinuousClock.now < deadline, model.hits != kernel {
+      try await Task.sleep(for: .milliseconds(20))
+    }
+    model.snapshots.readFinished = nil
+    // The rerun finds as many hits, at other positions.
+    expectNoDifference(kernel.count, before.count)
+    #expect(kernel != before)
+    expectNoDifference(model.hits, kernel)
     try await viewer.destroy()
   }
 

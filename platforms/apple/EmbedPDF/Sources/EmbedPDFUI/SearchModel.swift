@@ -15,7 +15,13 @@ import Observation
 ///
 /// ``error`` is the latest failure of an action or a read. A successful
 /// background refresh does not clear it; a successful ``searchSubmitted()``
-/// does.
+/// does. After a refused ``searchSubmitted()``, ``status`` stays
+/// `SearchStatus.error` through background refreshes until the next submitted
+/// search or ``clearButtonTapped()``.
+///
+/// The search plugin reruns its query by itself after every confirmed edit.
+/// Each search event rereads ``hits``, so a rerun that finds as many hits in
+/// other places still reaches the model.
 @MainActor
 @Observable
 public final class SearchModel {
@@ -36,6 +42,9 @@ public final class SearchModel {
   /// Set by a submitted search and cleared only when a hit list is applied,
   /// so a refresh that supersedes the submitted one still rereads it.
   @ObservationIgnored private var hitsOutdated = false
+  /// Set by a refused ``searchSubmitted()``, so a background refresh keeps
+  /// `status` at `.error` until the next submitted search or clear.
+  @ObservationIgnored private var submissionRefused = false
   @ObservationIgnored let search: SearchCapability
   @ObservationIgnored let snapshots = SnapshotRefresh()
   @ObservationIgnored private var observation: UInt64 = 0
@@ -55,7 +64,14 @@ public final class SearchModel {
       viewer: search.viewer, events: search.events,
       initial: { if self.observation == session { await self.refresh() } },
       refresh: { if self.observation == session { await self.refresh() } },
-      receive: { _ in if self.observation == session { await self.refresh() } })
+      receive: { event in
+        guard self.observation == session else { return }
+        // A run started, finished or was cleared, the plugin's own rerun after
+        // an edit included: the hit list may have moved even when its count
+        // didn't.
+        if event.changesHits { self.hitsOutdated = true }
+        await self.refresh()
+      })
     if observation == session { await refresh() }
   }
 
@@ -75,7 +91,7 @@ public final class SearchModel {
       let hits: [SearchHit]? = unchanged ? nil : try await self.search.hits()
       return (status, activeHitIndex, hitCount, progress, query, hits)
     }, apply: { snapshot in
-      self.status = snapshot.0
+      self.status = self.submissionRefused ? .error : snapshot.0
       self.activeHitIndex = snapshot.1
       self.hitCount = snapshot.2
       self.progress = snapshot.3
@@ -101,9 +117,11 @@ public final class SearchModel {
     do {
       _ = try await search.search(SearchQuery(text: text))
       error = nil
+      submissionRefused = false
     } catch {
       snapshots.invalidate()
       self.error = error
+      submissionRefused = true
       status = .error
       return
     }
@@ -134,10 +152,22 @@ public final class SearchModel {
   public func clearButtonTapped() async {
     do {
       try await search.clear()
+      submissionRefused = false
     } catch {
       self.error = error
       return
     }
     await refresh()
+  }
+}
+
+extension SearchEvent {
+  /// Whether the hit list can differ after this event: a run started, ended
+  /// or was cleared. Progress and active-hit moves leave the list alone.
+  fileprivate var changesHits: Bool {
+    switch self {
+    case .started, .completed, .cancelled, .failed, .cleared: true
+    case .progressChanged, .activeHitChanged: false
+    }
   }
 }
