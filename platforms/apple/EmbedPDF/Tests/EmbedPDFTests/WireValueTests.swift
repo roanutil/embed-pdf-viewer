@@ -296,7 +296,7 @@ extension BaseSuite {
       try await drafts.clearPlacementPreview()
       try await selection.selectPage(page)
       #expect(!(try await drafts.createFromSelection(tool: .highlight)).isEmpty)
-      let subtypes = try await annotations.list().map { AnnotationSubtype(rawValue: $0.subtype) }
+      let subtypes = try await annotations.list().map(\.subtype)
       expectNoDifference(Set(subtypes), [.square, .underline, .strikeout, .caret, .highlight])
     }
 
@@ -357,7 +357,7 @@ extension BaseSuite {
       try await selection.ensureLoaded(page)
       try await selection.selectPage(page)
       #expect(!(try await drafts.createFromSelection(tool: "highlight")).isEmpty)
-      let subtypes = try await annotations.list().map(\.subtype)
+      let subtypes = try await annotations.list().map(\.subtype.rawValue)
       expectNoDifference(Set(subtypes), ["square", "squiggly", "strikeout", "caret", "highlight"])
     }
   }

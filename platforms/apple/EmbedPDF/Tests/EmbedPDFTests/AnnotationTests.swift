@@ -78,7 +78,7 @@ extension BaseSuite {
         AnnotationStampSource(bytes: try tinyPng(), mimeType: "image/png"),
         at: AnnotationStampPlacement(page: page, center: Point(x: 200, y: 200)), targetWidth: 80)
       let read = try await annotations.get(stamp)
-      expectNoDifference(read?.subtype, "stamp")
+      expectNoDifference(read?.subtype, .stamp)
     }
 
     @Test func aSwiftFilePickerSuppliesARequestedStamp() async throws {
@@ -93,12 +93,12 @@ extension BaseSuite {
       // after it. A placed stamp is selected, not announced as `.created`
       // (the TypeScript's stamp path doesn't emit it either), so poll.
       let deadline = ContinuousClock.now + .seconds(5)
-      var subtypes: [String] = []
+      var subtypes: [AnnotationSubtype] = []
       while subtypes.isEmpty, ContinuousClock.now < deadline {
         try await Task.sleep(for: .milliseconds(20))
         subtypes = try await annotations.list().map(\.subtype)
       }
-      expectNoDifference(subtypes, ["stamp"])
+      expectNoDifference(subtypes, [.stamp])
       expectNoDifference(picker.prompts, 1)
     }
 
@@ -129,7 +129,7 @@ extension BaseSuite {
       let refs = try await annotations.drafts.createFromSelection(tool: .highlight)
       #expect(!refs.isEmpty)
       let marked = try await annotations.get(try #require(refs.first))
-      expectNoDifference(marked?.subtype, "highlight")
+      expectNoDifference(marked?.subtype, .highlight)
     }
 
     static let square = #"{"subtype": "square", "box": {"x": 72, "y": 72, "width": 100, "height": 50}}"#

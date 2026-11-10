@@ -82,12 +82,12 @@ extension BaseSuite {
       let resources = try #require(exported["resources"] as? [String: [String: String]])
       #expect(resources.values.contains { Data(base64Encoded: $0["$bytes"] ?? "") == bytes })
       let copied = try await target.import(bundle, optionsJSON: #"{"pages":"by-position","attribution":"stamp"}"#)
-      expectNoDifference(copied.annotations.count, 2)
+      expectNoDifference(copied.annotationInfos.count, 2)
       #expect(copied.refMap.contains { $0.from == file })
-      for record in copied.annotations {
-        #expect(try await target.get(record.annotationRef) != nil)
+      for annotation in copied.annotationInfos {
+        #expect(try await target.get(annotation.annotationRef) != nil)
       }
-      let again = try object(try await target.export(refs: copied.annotations.map(\.annotationRef)))
+      let again = try object(try await target.export(refs: copied.annotationInfos.map(\.annotationRef)))
       expectNoDifference(again["resources"] as? [String: [String: String]], resources)
       try await source.selection.select([square])
       let result = try await source.selection.updateLink(.uri(uri: "https://example.test/selected"))
@@ -98,11 +98,11 @@ extension BaseSuite {
       let savedBytes = try await viewer.save(second)
       let saved = try await viewer.open(savedBytes)
       let reopened = try await viewer.annotations(for: saved)
-      let persisted = try object(try await reopened.export(refs: copied.annotations.map(\.annotationRef)))
+      let persisted = try object(try await reopened.export(refs: copied.annotationInfos.map(\.annotationRef)))
       expectNoDifference(persisted["resources"] as? [String: [String: String]], resources)
       try await viewer.close(first)
       await #expect { try await source.export() } throws: { ($0 as? PDFError)?.code == .instanceClosed }
-      #expect(try await target.get(copied.annotations[0].annotationRef) != nil)
+      #expect(try await target.get(copied.annotationInfos[0].annotationRef) != nil)
     }
 
     @Test func independentWidgetEditsAndCalculationOrderPersist() async throws {

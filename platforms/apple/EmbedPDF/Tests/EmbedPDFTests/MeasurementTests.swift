@@ -85,7 +85,7 @@ extension BaseSuite {
       let annotations = try await viewer.annotations(for: document)
       let found = try #require(
         try await annotations.get(.objectNumber(page: page, annotObjectNumber: objectNumber)))
-      expectNoDifference(found.subtype, "line")
+      expectNoDifference(found.subtype, .line)
       // `epdf-engine`'s line create now writes `/IT /LineDimension` and
       // `/Measure`, so the read-back line is a dimension: 72 points, one
       // inch, in the page's default metric scale.

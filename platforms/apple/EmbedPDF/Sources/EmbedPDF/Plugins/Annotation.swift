@@ -6,7 +6,9 @@ public import Foundation
 //
 // The plugin speaks the engine's records: a record carries its ref, page,
 // subtype, rect, text members and authority typed, and the rest as JSON
-// (`AnnotationRecord.fieldsJson`). Create fields, patches, tool defaults and
+// (`AnnotationRecord.fieldsJson`). Reads hand it out as `AnnotationInfo`,
+// which types the timestamps, the subtype and the common subtypes' members
+// (AnnotationInfo.swift). Create fields, patches, tool defaults and
 // selection values are the engine's field bags, passed as JSON objects.
 public typealias CreationDraftAnchor = EmbedPDFBindings.CreationDraftAnchor
 public typealias AnnotationRecord = EmbedPDFBindings.AnnotationRecord
@@ -96,15 +98,45 @@ public struct AnnotationCapability: Sendable {
     AnnotationThreadsCapability(handle: handle.threads(), viewer: viewer)
   }
 
+  public func get(_ ref: AnnotationRef) async throws(PDFError) -> AnnotationInfo? {
+    try await record(ref).map(AnnotationInfo.init)
+  }
+
+  public func list(_ filter: AnnotationFilter? = nil) async throws(PDFError) -> [AnnotationInfo] {
+    try await records(filter).map(AnnotationInfo.init)
+  }
+
+  public func selected() async throws(PDFError) -> [AnnotationInfo] {
+    try await selectedRecords().map(AnnotationInfo.init)
+  }
+
+  @available(*, deprecated, message: "Read the AnnotationInfo overload; its generated property is this record.")
+  @_disfavoredOverload
   public func get(_ ref: AnnotationRef) async throws(PDFError) -> AnnotationRecord? {
+    try await record(ref)
+  }
+
+  @available(*, deprecated, message: "Read the AnnotationInfo overload; each one's generated property is its record.")
+  @_disfavoredOverload
+  public func list(_ filter: AnnotationFilter? = nil) async throws(PDFError) -> [AnnotationRecord] {
+    try await records(filter)
+  }
+
+  @available(*, deprecated, message: "Read the AnnotationInfo overload; each one's generated property is its record.")
+  @_disfavoredOverload
+  public func selected() async throws(PDFError) -> [AnnotationRecord] {
+    try await selectedRecords()
+  }
+
+  private func record(_ ref: AnnotationRef) async throws(PDFError) -> AnnotationRecord? {
     try await bridged { try await handle.get(annotationRef: ref) }
   }
 
-  public func list(_ filter: AnnotationFilter? = nil) async throws(PDFError) -> [AnnotationRecord] {
+  private func records(_ filter: AnnotationFilter?) async throws(PDFError) -> [AnnotationRecord] {
     try await bridged { try await handle.list(filter: filter) }
   }
 
-  public func selected() async throws(PDFError) -> [AnnotationRecord] {
+  private func selectedRecords() async throws(PDFError) -> [AnnotationRecord] {
     try await bridged { try await handle.selected() }
   }
 
@@ -121,7 +153,17 @@ public struct AnnotationCapability: Sendable {
   }
 
   /// The topmost annotation under a page-space point (`getAt`).
+  public func hitTest(at point: Point, on page: PageRef) async throws(PDFError) -> AnnotationInfo? {
+    try await hitRecord(at: point, on: page).map(AnnotationInfo.init)
+  }
+
+  @available(*, deprecated, message: "Read the AnnotationInfo overload; its generated property is this record.")
+  @_disfavoredOverload
   public func hitTest(at point: Point, on page: PageRef) async throws(PDFError) -> AnnotationRecord? {
+    try await hitRecord(at: point, on: page)
+  }
+
+  private func hitRecord(at point: Point, on page: PageRef) async throws(PDFError) -> AnnotationRecord? {
     try await bridged { try await handle.hitTestAt(page: page, point: point) }
   }
 
@@ -250,7 +292,9 @@ public struct AnnotationCapability: Sendable {
 
   /// Confirmed changes, whoever made them, and selection, draft, editing
   /// and comment-thread changes. Finishes when the document closes (at
-  /// once if it already has) or the viewer is destroyed.
+  /// once if it already has) or the viewer is destroyed. A `.created` or
+  /// `.updated` event's `annotationInfo` is its annotation as an
+  /// `AnnotationInfo`.
   public var events: AsyncStream<AnnotationEvent> {
     viewer.registry.stream { handle.subscribe(listener: $0) }
   }
