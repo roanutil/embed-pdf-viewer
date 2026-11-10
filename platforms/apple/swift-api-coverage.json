@@ -4123,7 +4123,7 @@
       },
       "swift": {
         "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Interaction.swift",
-        "symbol": "activeToolId"
+        "symbol": "activeToolID"
       }
     },
     {
@@ -4137,7 +4137,7 @@
       },
       "swift": {
         "path": "platforms/apple/EmbedPDF/Sources/EmbedPDF/Plugins/Interaction.swift",
-        "symbol": "defaultToolId"
+        "symbol": "defaultToolID"
       }
     },
     {

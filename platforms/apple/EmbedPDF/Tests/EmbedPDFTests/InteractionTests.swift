@@ -65,7 +65,7 @@ extension BaseSuite {
         expectNoDifference(event.previousToolId, "pointer")
         break
       }
-      let active = try await interaction.activeToolId()
+      let active = try await interaction.activeToolID()
       expectNoDifference(active, "pan")
     }
 
@@ -161,7 +161,7 @@ extension BaseSuite {
       let (viewer, document, interaction, _) = try await opened()
       try await viewer.close(document)
       await #expect {
-        _ = try await interaction.activeToolId()
+        _ = try await interaction.activeToolID()
       } throws: { error in
         (error as? PDFError)?.code == .instanceClosed
       }

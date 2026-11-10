@@ -173,7 +173,7 @@ extension BaseSuite {
       try await interaction.updateSettings(InteractionSettingsPatch(defaultTool: "pan"))
       let second = try await viewer.open(Fixture.data("report"))
       let other = try await viewer.interaction(for: second)
-      let newDocumentTool = try await other.activeToolId()
+      let newDocumentTool = try await other.activeToolID()
       expectNoDifference(newDocumentTool, "pan")
       try await other.resetSettings()
       let resetInteraction = try await interaction.settings()

@@ -1,3 +1,5 @@
+public import EmbedPDFBindings
+
 /// A tool's id in a document's interaction hub, which every plugin's tools
 /// join: the annotation plugin's authoring tools, the form plugin's field
 /// tools, and the hub's own. `rawValue` is the wire string.
@@ -73,4 +75,14 @@ public struct ToolID: RawRepresentable, Hashable, Sendable, Codable,
     .freeTextCallout, .highlight, .redact, .underline, .strikeout, .squiggly, .insertText,
     .replaceText, .stamp, .link, .note, .attachment,
   ]
+}
+
+extension InteractionTool {
+  /// `id` as a ``ToolID``.
+  public var toolID: ToolID { ToolID(rawValue: id) }
+}
+
+extension AnnotationTool {
+  /// `id` as a ``ToolID``.
+  public var toolID: ToolID { ToolID(rawValue: id) }
 }

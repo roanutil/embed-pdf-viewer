@@ -57,12 +57,25 @@ public struct InteractionCapability: Sendable {
     try await bridged { try await handle.activeTool() }
   }
 
-  public func activeToolId() async throws(PDFError) -> String {
-    try await bridged { try await handle.activeToolId() }
+  /// The active tool's id. ``activeTool()`` gives the whole tool.
+  public func activeToolID() async throws(PDFError) -> ToolID {
+    ToolID(rawValue: try await bridged { try await handle.activeToolId() })
   }
 
+  /// The tool the hub falls back to, `pointer` unless the settings name
+  /// another.
+  public func defaultToolID() async throws(PDFError) -> ToolID {
+    ToolID(rawValue: try await bridged { try await handle.defaultToolId() })
+  }
+
+  @available(*, deprecated, message: "Use activeToolID(), which returns a ToolID; its rawValue is this string.")
+  public func activeToolId() async throws(PDFError) -> String {
+    try await activeToolID().rawValue
+  }
+
+  @available(*, deprecated, message: "Use defaultToolID(), which returns a ToolID; its rawValue is this string.")
   public func defaultToolId() async throws(PDFError) -> String {
-    try await bridged { try await handle.defaultToolId() }
+    try await defaultToolID().rawValue
   }
 
   public func tools() async throws(PDFError) -> [InteractionTool] {

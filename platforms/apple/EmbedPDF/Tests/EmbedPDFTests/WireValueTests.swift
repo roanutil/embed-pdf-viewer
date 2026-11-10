@@ -254,7 +254,7 @@ extension BaseSuite {
       try await viewer.start()
       let document = try await viewer.open(Fixture.data("report"))
       let interaction = try await viewer.interaction(for: document)
-      let registered = try await interaction.tools().map { ToolID(rawValue: $0.id) }
+      let registered = try await interaction.tools().map(\.toolID)
       expectNoDifference(registered.filter { !ToolID.named.contains($0) }, [])
       expectNoDifference(Set(registered), Set(ToolID.named))
       for tool in ToolID.named {
@@ -262,11 +262,25 @@ extension BaseSuite {
       }
       #expect(try await !interaction.hasTool("laser"))
       try await interaction.activateTool(.formEdit)
-      let active = try await interaction.activeToolId()
-      expectNoDifference(active, "form-edit")
+      let active = try await interaction.activeToolID()
+      expectNoDifference(active, .formEdit)
+      let fallback = try await interaction.defaultToolID()
+      expectNoDifference(fallback, .pointer)
 
       let annotationTools = try await viewer.annotations(for: document).tools.tools()
-      expectNoDifference(annotationTools.map { ToolID(rawValue: $0.id) }.filter { !ToolID.named.contains($0) }, [])
+      expectNoDifference(annotationTools.map(\.toolID).filter { !ToolID.named.contains($0) }, [])
+      #expect(annotationTools.contains { $0.toolID == .highlight })
+    }
+
+    @available(*, deprecated)
+    @Test func theStringToolIdReadsMatchTheTypedOnes() async throws {
+      let viewer = try PDFViewer(ViewerConfig(interaction: true))
+      try await viewer.start()
+      let interaction = try await viewer.interaction(for: try await viewer.open(Fixture.data("report")))
+      try await interaction.activateTool(.pan)
+      let active = try await interaction.activeToolId()
+      let fallback = try await interaction.defaultToolId()
+      expectNoDifference([active, fallback], ["pan", "pointer"])
     }
 
     @Test func aTypedToolReachesTheAnnotationTools() async throws {
@@ -347,10 +361,10 @@ extension BaseSuite {
       let panID = try await interaction.tool("pan")?.id
       expectNoDifference(panID, "pan")
       try await interaction.activateTool("highlight")
-      let activated = try await interaction.activeToolId()
+      let activated = try await interaction.activeToolID()
       expectNoDifference(activated, "highlight")
       try await interaction.pushTool("pan")
-      let pushed = try await interaction.activeToolId()
+      let pushed = try await interaction.activeToolID()
       expectNoDifference(pushed, "pan")
       try await interaction.setToolCursor("pan", cursors: nil)
 
