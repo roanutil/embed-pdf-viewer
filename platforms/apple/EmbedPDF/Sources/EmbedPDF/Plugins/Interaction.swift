@@ -73,7 +73,8 @@ public struct InteractionCapability: Sendable {
     try await bridged { try await handle.tool(id: id.rawValue) }
   }
 
-  @available(*, deprecated, message: "Pass a ToolID: .pan for \"pan\", or ToolID(rawValue:) for a string.")
+  @available(*, deprecated, message: "Pass a ToolID: .pan for \"pan\", or ToolID(_:) for a string.")
+  @_disfavoredOverload
   public func tool(_ id: String) async throws(PDFError) -> InteractionTool? {
     try await tool(ToolID(rawValue: id))
   }
@@ -82,7 +83,8 @@ public struct InteractionCapability: Sendable {
     try await bridged { try await handle.hasTool(id: id.rawValue) }
   }
 
-  @available(*, deprecated, message: "Pass a ToolID: .pan for \"pan\", or ToolID(rawValue:) for a string.")
+  @available(*, deprecated, message: "Pass a ToolID: .pan for \"pan\", or ToolID(_:) for a string.")
+  @_disfavoredOverload
   public func hasTool(_ id: String) async throws(PDFError) -> Bool {
     try await hasTool(ToolID(rawValue: id))
   }
@@ -96,7 +98,8 @@ public struct InteractionCapability: Sendable {
     try await bridged { try await handle.activateTool(id: id.rawValue) }
   }
 
-  @available(*, deprecated, message: "Pass a ToolID: .pan for \"pan\", or ToolID(rawValue:) for a string.")
+  @available(*, deprecated, message: "Pass a ToolID: .pan for \"pan\", or ToolID(_:) for a string.")
+  @_disfavoredOverload
   public func activateTool(_ id: String) async throws(PDFError) {
     try await activateTool(ToolID(rawValue: id))
   }
@@ -109,7 +112,8 @@ public struct InteractionCapability: Sendable {
     try await bridged { try await handle.pushTool(id: id.rawValue) }
   }
 
-  @available(*, deprecated, message: "Pass a ToolID: .pan for \"pan\", or ToolID(rawValue:) for a string.")
+  @available(*, deprecated, message: "Pass a ToolID: .pan for \"pan\", or ToolID(_:) for a string.")
+  @_disfavoredOverload
   public func pushTool(_ id: String) async throws(PDFError) {
     try await pushTool(ToolID(rawValue: id))
   }
@@ -123,7 +127,8 @@ public struct InteractionCapability: Sendable {
     try await bridged { try await handle.setToolCursor(id: id.rawValue, cursors: cursors) }
   }
 
-  @available(*, deprecated, message: "Pass a ToolID: .pan for \"pan\", or ToolID(rawValue:) for a string.")
+  @available(*, deprecated, message: "Pass a ToolID: .pan for \"pan\", or ToolID(_:) for a string.")
+  @_disfavoredOverload
   public func setToolCursor(_ id: String, cursors: [String: String]?) async throws(PDFError) {
     try await setToolCursor(ToolID(rawValue: id), cursors: cursors)
   }

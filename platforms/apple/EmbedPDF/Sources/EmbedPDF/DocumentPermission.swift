@@ -1,106 +1,63 @@
-/// A right `PDFViewer.allows(_:in:)` asks the document's scope about.
-/// `rawValue` is the wire string, and every string round-trips: one this
-/// enum doesn't name becomes `unknown`.
+/// A permission `PDFViewer.allows(_:in:)` asks the document's scope about.
+/// `rawValue` is the wire string.
 ///
-/// The set is open. The named cases are the engine's document capabilities
-/// (`doc.*`) and `annotations:create`; a plugin's own permission
-/// (`protected-display.view`) passes as `unknown`, and a newer engine can
-/// add capabilities.
-public enum DocumentCapability: Sendable, Hashable, RawRepresentable, Codable {
-  case open
-  case render
+/// The set is open, so this is a struct rather than an enum: the constants
+/// are the engine's document capabilities (`doc.*`) and `annotations:create`,
+/// a plugin's own permission is a string literal
+/// (`"protected-display.view"`), and a newer engine can add permissions
+/// without breaking a caller's `switch`.
+public struct DocumentPermission: RawRepresentable, Hashable, Sendable, Codable,
+  ExpressibleByStringLiteral, CustomStringConvertible
+{
+  public let rawValue: String
+
+  public init(rawValue: String) { self.rawValue = rawValue }
+
+  public init(_ rawValue: String) { self.rawValue = rawValue }
+
+  public init(stringLiteral rawValue: String) { self.rawValue = rawValue }
+
+  public var description: String { rawValue }
+
+  public static let open = DocumentPermission("doc.open")
+  public static let render = DocumentPermission("doc.render")
   /// The thumbnail pictures only; `render` implies it.
-  case renderThumbnail
-  case textSelect
-  case textCopy
-  case textSearch
-  case contentCopy
-  case download
-  case downloadFlattened
-  case print
-  case printHigh
-  case pagesModify
-  case pagesAssemble
-  case formsRead
-  case formsFill
-  case formsModify
-  case formsImport
-  case formsScript
-  case formsSubmit
-  case annotateRead
-  case annotateModify
-  case annotateImport
-  case metadataModify
-  case attachmentsModify
-  case outlineModify
-  case redact
-  case sign
-  case signCertify
+  public static let renderThumbnail = DocumentPermission("doc.render.thumbnail")
+  public static let textSelect = DocumentPermission("doc.text.select")
+  public static let textCopy = DocumentPermission("doc.text.copy")
+  public static let textSearch = DocumentPermission("doc.text.search")
+  public static let contentCopy = DocumentPermission("doc.content.copy")
+  public static let download = DocumentPermission("doc.download")
+  public static let downloadFlattened = DocumentPermission("doc.download.flattened")
+  public static let print = DocumentPermission("doc.print")
+  public static let printHigh = DocumentPermission("doc.print.high")
+  public static let pagesModify = DocumentPermission("doc.pages.modify")
+  public static let pagesAssemble = DocumentPermission("doc.pages.assemble")
+  public static let formsRead = DocumentPermission("doc.forms.read")
+  public static let formsFill = DocumentPermission("doc.forms.fill")
+  public static let formsModify = DocumentPermission("doc.forms.modify")
+  public static let formsImport = DocumentPermission("doc.forms.import")
+  public static let formsScript = DocumentPermission("doc.forms.script")
+  public static let formsSubmit = DocumentPermission("doc.forms.submit")
+  public static let annotateRead = DocumentPermission("doc.annotate.read")
+  public static let annotateModify = DocumentPermission("doc.annotate.modify")
+  public static let annotateImport = DocumentPermission("doc.annotate.import")
+  public static let metadataModify = DocumentPermission("doc.metadata.modify")
+  public static let attachmentsModify = DocumentPermission("doc.attachments.modify")
+  public static let outlineModify = DocumentPermission("doc.outline.modify")
+  public static let redact = DocumentPermission("doc.redact")
+  public static let sign = DocumentPermission("doc.sign")
+  public static let signCertify = DocumentPermission("doc.sign.certify")
   /// `annotations:create`: whether this caller may create annotations of
   /// their own.
-  case annotationsCreate
-  /// A capability this enum doesn't name, kept as the engine spells it.
-  case unknown(String)
+  public static let annotationsCreate = DocumentPermission("annotations:create")
 
-  /// Every named case, the `doc.*` ones in the engine's order.
-  public static let named: [DocumentCapability] = [
+  /// Every constant this type names, the `doc.*` ones in the engine's order.
+  public static let named: [DocumentPermission] = [
     .open, .render, .renderThumbnail, .textSelect, .textCopy, .textSearch, .contentCopy, .download,
     .downloadFlattened, .print, .printHigh, .pagesModify, .pagesAssemble, .formsRead, .formsFill,
     .formsModify, .formsImport, .formsScript, .formsSubmit, .annotateRead, .annotateModify,
     .annotateImport, .metadataModify, .attachmentsModify, .outlineModify, .redact, .sign,
     .signCertify, .annotationsCreate,
   ]
-
-  public init(rawValue: String) {
-    self = Self.named.first { $0.rawValue == rawValue } ?? .unknown(rawValue)
-  }
-
-  public var rawValue: String {
-    switch self {
-    case .open: "doc.open"
-    case .render: "doc.render"
-    case .renderThumbnail: "doc.render.thumbnail"
-    case .textSelect: "doc.text.select"
-    case .textCopy: "doc.text.copy"
-    case .textSearch: "doc.text.search"
-    case .contentCopy: "doc.content.copy"
-    case .download: "doc.download"
-    case .downloadFlattened: "doc.download.flattened"
-    case .print: "doc.print"
-    case .printHigh: "doc.print.high"
-    case .pagesModify: "doc.pages.modify"
-    case .pagesAssemble: "doc.pages.assemble"
-    case .formsRead: "doc.forms.read"
-    case .formsFill: "doc.forms.fill"
-    case .formsModify: "doc.forms.modify"
-    case .formsImport: "doc.forms.import"
-    case .formsScript: "doc.forms.script"
-    case .formsSubmit: "doc.forms.submit"
-    case .annotateRead: "doc.annotate.read"
-    case .annotateModify: "doc.annotate.modify"
-    case .annotateImport: "doc.annotate.import"
-    case .metadataModify: "doc.metadata.modify"
-    case .attachmentsModify: "doc.attachments.modify"
-    case .outlineModify: "doc.outline.modify"
-    case .redact: "doc.redact"
-    case .sign: "doc.sign"
-    case .signCertify: "doc.sign.certify"
-    case .annotationsCreate: "annotations:create"
-    case let .unknown(capability): capability
-    }
-  }
-
-  /// `unknown("doc.print")` and `.print` are the same capability.
-  public static func == (lhs: Self, rhs: Self) -> Bool { lhs.rawValue == rhs.rawValue }
-
-  public func hash(into hasher: inout Hasher) { hasher.combine(rawValue) }
-
-  public init(from decoder: any Decoder) throws {
-    self.init(rawValue: try decoder.singleValueContainer().decode(String.self))
-  }
-
-  public func encode(to encoder: any Encoder) throws {
-    var container = encoder.singleValueContainer()
-    try container.encode(rawValue)
-  }
 }

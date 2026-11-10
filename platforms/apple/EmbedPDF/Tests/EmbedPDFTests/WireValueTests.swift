@@ -36,7 +36,7 @@ extension BaseSuite {
       (.stamp, "stamp"), (.link, "link"), (.note, "note"), (.attachment, "attachment"),
     ]
 
-    static let capabilities: [(DocumentCapability, String)] = [
+    static let capabilities: [(DocumentPermission, String)] = [
       (.open, "doc.open"), (.render, "doc.render"), (.renderThumbnail, "doc.render.thumbnail"),
       (.textSelect, "doc.text.select"), (.textCopy, "doc.text.copy"),
       (.textSearch, "doc.text.search"), (.contentCopy, "doc.content.copy"),
@@ -55,13 +55,13 @@ extension BaseSuite {
     @Test func everyNamedCaseIsListed() {
       expectNoDifference(AnnotationSubtype.named.map(\.rawValue), Self.subtypes.map(\.1))
       expectNoDifference(ToolID.named.map(\.rawValue), Self.tools.map(\.1))
-      expectNoDifference(DocumentCapability.named.map(\.rawValue), Self.capabilities.map(\.1))
+      expectNoDifference(DocumentPermission.named.map(\.rawValue), Self.capabilities.map(\.1))
     }
 
     @Test(arguments: subtypes) func eachSubtypeRoundTripsItsWireString(subtype: AnnotationSubtype, wire: String) throws {
       expectNoDifference(subtype.rawValue, wire)
       expectNoDifference(AnnotationSubtype(rawValue: wire), subtype)
-      #expect(AnnotationSubtype(rawValue: wire) != .unknown("\(wire)-x"))
+      #expect(AnnotationSubtype(rawValue: wire) != AnnotationSubtype("\(wire)-x"))
       let (json, decoded) = try codableRoundTrip(subtype)
       expectNoDifference(json, "\"\(wire)\"")
       expectNoDifference(decoded, subtype)
@@ -76,37 +76,57 @@ extension BaseSuite {
     }
 
     @Test(arguments: capabilities) func eachCapabilityRoundTripsItsWireString(
-      capability: DocumentCapability, wire: String
+      capability: DocumentPermission, wire: String
     ) throws {
       expectNoDifference(capability.rawValue, wire)
-      expectNoDifference(DocumentCapability(rawValue: wire), capability)
+      expectNoDifference(DocumentPermission(rawValue: wire), capability)
       let (json, decoded) = try codableRoundTrip(capability)
       expectNoDifference(json, "\"\(wire)\"")
       expectNoDifference(decoded, capability)
     }
 
-    @Test func anUnknownStringRoundTripsAsItself() throws {
+    @Test func anUnnamedStringRoundTripsAsItself() throws {
       let subtype = AnnotationSubtype(rawValue: "sound")
-      expectNoDifference(subtype, .unknown("sound"))
+      expectNoDifference(subtype, "sound")
       expectNoDifference(subtype.rawValue, "sound")
-      expectNoDifference(try codableRoundTrip(subtype).decoded, .unknown("sound"))
+      #expect(!AnnotationSubtype.named.contains(subtype))
+      expectNoDifference(try codableRoundTrip(subtype).decoded, "sound")
 
       let tool = ToolID(rawValue: "laser")
-      expectNoDifference(tool, .unknown("laser"))
+      expectNoDifference(tool, "laser")
       expectNoDifference(tool.rawValue, "laser")
-      expectNoDifference(try codableRoundTrip(tool).decoded, .unknown("laser"))
+      #expect(!ToolID.named.contains(tool))
+      expectNoDifference(try codableRoundTrip(tool).decoded, "laser")
 
-      let capability = DocumentCapability(rawValue: "protected-display.view")
-      expectNoDifference(capability, .unknown("protected-display.view"))
-      expectNoDifference(capability.rawValue, "protected-display.view")
-      expectNoDifference(try codableRoundTrip(capability).decoded, .unknown("protected-display.view"))
+      let permission = DocumentPermission(rawValue: "protected-display.view")
+      expectNoDifference(permission, "protected-display.view")
+      expectNoDifference(permission.rawValue, "protected-display.view")
+      #expect(!DocumentPermission.named.contains(permission))
+      expectNoDifference(try codableRoundTrip(permission).decoded, "protected-display.view")
     }
 
-    @Test func aKnownStringInUnknownIsTheNamedCase() {
-      expectNoDifference(AnnotationSubtype.unknown("ink"), .ink)
-      expectNoDifference(ToolID.unknown("pan"), .pan)
-      expectNoDifference(DocumentCapability.unknown("doc.print"), .print)
-      expectNoDifference(Set([ToolID.unknown("pan"), .pan]).count, 1)
+    @Test func aStringLiteralIsTheNamedConstant() {
+      expectNoDifference("ink" as AnnotationSubtype, .ink)
+      expectNoDifference("pan" as ToolID, .pan)
+      expectNoDifference("doc.print" as DocumentPermission, .print)
+      expectNoDifference(Set([ToolID("pan"), .pan]).count, 1)
+    }
+
+    @Test func aSwitchMatchesTheNamedConstantsAndFallsBackForTheRest() {
+      func kind(_ tool: ToolID) -> String {
+        switch tool {
+        case .pan, .zoom: "camera"
+        case .ink: "ink"
+        default: "other"
+        }
+      }
+      expectNoDifference(["pan", "zoom", "ink", "laser"].map { kind(ToolID($0)) }, ["camera", "camera", "ink", "other"])
+    }
+
+    @Test func descriptionIsTheWireString() {
+      expectNoDifference("\(ToolID.inkHighlight)", "ink-highlight")
+      expectNoDifference("\(AnnotationSubtype.fileAttachment)", "file-attachment")
+      expectNoDifference("\(DocumentPermission.printHigh)", "doc.print.high")
     }
 
     // MARK: AnnotationPosition
@@ -240,7 +260,7 @@ extension BaseSuite {
       for tool in ToolID.named {
         #expect(try await interaction.hasTool(tool), "\(tool.rawValue)")
       }
-      #expect(try await !interaction.hasTool(.unknown("laser")))
+      #expect(try await !interaction.hasTool("laser"))
       try await interaction.activateTool(.formEdit)
       let active = try await interaction.activeToolId()
       expectNoDifference(active, "form-edit")
@@ -259,7 +279,7 @@ extension BaseSuite {
       try await tools.updateDefaults(##"{"color": "#00ff00"}"##, for: .highlight)
       #expect(try await tools.defaults(for: .highlight).contains("#00ff00"))
       _ = try await tools.properties(for: .highlight)
-      let laserID = try await tools.tool(.unknown("laser"))?.id
+      let laserID = try await tools.tool("laser")?.id
       expectNoDifference(laserID, nil)
     }
 
@@ -306,7 +326,7 @@ extension BaseSuite {
       let document = try await viewer.open(Fixture.data("report"))
       #expect(try await viewer.allows(.render, in: document))
       #expect(try await !viewer.allows(.download, in: document))
-      #expect(try await !viewer.allows(.unknown("no.such-capability"), in: document))
+      #expect(try await !viewer.allows("no.such-capability", in: document))
     }
 
     @available(*, deprecated)

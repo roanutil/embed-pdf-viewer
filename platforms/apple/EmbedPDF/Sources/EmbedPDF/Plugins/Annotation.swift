@@ -224,7 +224,7 @@ public struct AnnotationCapability: Sendable {
     try await create(fieldsJSON, on: page, tool: tool, engineSelect: select)
   }
 
-  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(_:) for a string.")
   @_disfavoredOverload
   public func create(
     _ fieldsJSON: String, on page: PageRef, tool: String?, select: Bool = false
@@ -232,7 +232,7 @@ public struct AnnotationCapability: Sendable {
     try await create(fieldsJSON, on: page, tool: tool.map(ToolID.init(rawValue:)), engineSelect: select)
   }
 
-  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(_:) for a string.")
   @_disfavoredOverload
   public func create(
     _ fieldsJSON: String, on page: PageRef, tool: String?, select: Bool?
@@ -414,7 +414,8 @@ public struct AnnotationToolsCapability: Sendable {
     try await bridged { try await handle.tool(id: id.rawValue) }
   }
 
-  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(_:) for a string.")
+  @_disfavoredOverload
   public func tool(_ id: String) async throws(PDFError) -> AnnotationTool? {
     try await tool(ToolID(rawValue: id))
   }
@@ -425,7 +426,8 @@ public struct AnnotationToolsCapability: Sendable {
     try await bridged { try await handle.defaults(toolId: toolID.rawValue) }
   }
 
-  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(_:) for a string.")
+  @_disfavoredOverload
   public func defaults(for toolID: String) async throws(PDFError) -> String {
     try await defaults(for: ToolID(rawValue: toolID))
   }
@@ -447,7 +449,8 @@ public struct AnnotationToolsCapability: Sendable {
     try await bridged { try await handle.updateDefaults(toolId: toolID.rawValue, changesJson: changesJSON) }
   }
 
-  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(_:) for a string.")
+  @_disfavoredOverload
   public func updateDefaults(_ changesJSON: String, for toolID: String) async throws(PDFError) {
     try await updateDefaults(changesJSON, for: ToolID(rawValue: toolID))
   }
@@ -457,7 +460,8 @@ public struct AnnotationToolsCapability: Sendable {
     try await bridged { try await handle.properties(toolId: toolID.rawValue) }
   }
 
-  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(_:) for a string.")
+  @_disfavoredOverload
   public func properties(for toolID: String) async throws(PDFError) -> AnnotationSelectionProps {
     try await properties(for: ToolID(rawValue: toolID))
   }
@@ -551,7 +555,8 @@ public struct AnnotationDraftsCapability: Sendable {
     }
   }
 
-  @available(*, deprecated, message: "Pass an AnnotationSubtype: .highlight for \"highlight\", or AnnotationSubtype(rawValue:) for a string.")
+  @available(*, deprecated, message: "Pass an AnnotationSubtype: .highlight for \"highlight\", or AnnotationSubtype(_:) for a string.")
+  @_disfavoredOverload
   public func createMarkup(
     _ subtype: String, quadsJSON: String, on page: PageRef, preset: String? = nil
   ) async throws(PDFError) {
@@ -578,7 +583,7 @@ public struct AnnotationDraftsCapability: Sendable {
     }
   }
 
-  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(_:) for a string.")
   @_disfavoredOverload
   public func createReplaceText(
     quadsJSON: String, caretAt anchor: AnnotationTextEndAnchor, on page: PageRef,
@@ -596,7 +601,8 @@ public struct AnnotationDraftsCapability: Sendable {
     }
   }
 
-  @available(*, deprecated, message: "Pass an AnnotationSubtype: .highlight for \"highlight\", or AnnotationSubtype(rawValue:) for a string.")
+  @available(*, deprecated, message: "Pass an AnnotationSubtype: .highlight for \"highlight\", or AnnotationSubtype(_:) for a string.")
+  @_disfavoredOverload
   public func previewMarkup(
     _ subtype: String, pages: [AnnotationPageQuads], preset: String? = nil
   ) async throws(PDFError) {
@@ -627,14 +633,16 @@ public struct AnnotationDraftsCapability: Sendable {
     try await createFromSelection(toolID, engineClear: clear)
   }
 
-  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(_:) for a string.")
+  @_disfavoredOverload
   public func createFromSelection(tool toolID: String, clear: Bool = true)
     async throws(PDFError) -> [AnnotationRef]
   {
     try await createFromSelection(ToolID(rawValue: toolID), engineClear: clear)
   }
 
-  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(_:) for a string.")
+  @_disfavoredOverload
   public func createFromSelection(tool toolID: String, clear: Bool?)
     async throws(PDFError) -> [AnnotationRef]
   {
@@ -708,7 +716,8 @@ public struct AnnotationDraftsCapability: Sendable {
     }
   }
 
-  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(_:) for a string.")
+  @_disfavoredOverload
   public func hoverGhost(
     tool toolID: String, at point: Point, on page: PageRef, displayRotation: Double? = nil,
     zoom: Double? = nil
@@ -730,7 +739,8 @@ public struct AnnotationDraftsCapability: Sendable {
     }
   }
 
-  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(_:) for a string.")
+  @_disfavoredOverload
   public func previewPlacement(tool toolID: String, from: Point, to: Point, on page: PageRef)
     async throws(PDFError)
   {

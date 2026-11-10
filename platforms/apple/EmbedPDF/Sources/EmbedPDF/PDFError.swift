@@ -5,82 +5,81 @@ import Foundation
 ///
 /// `code` is a ``Code``: one of the kernel's nine plugin error codes, the
 /// `PluginErrorCode` vocabulary of the TypeScript kernel's `toPluginError`,
-/// the bindings' own `invalid-state`, or `unknown` for a code the kernel
-/// adds later. See ``Code`` for what each one means.
+/// the bindings' own `invalid-state`, or any other string the kernel adds
+/// later. See ``Code`` for what each one means.
 ///
 /// An engine's own code (`NotFound`, `DocPasswordIncorrect`) never appears
 /// here: it maps as `toPluginError` maps it, and `detail` is the engine's
 /// message with no code in front. `name` says what raised the error (`PluginError`,
 /// `EngineError`, `AbortError`, or a foreign error's type), and is for
 /// logging rather than matching.
+///
+/// Match a code in a `catch` the way `URLError` allows:
+///
+/// ```swift
+/// do {
+///   try await viewer.unlock(document, password: password)
+/// } catch PDFError.Code.permissionDenied {
+///   // Wrong password.
+/// }
+/// ```
 public struct PDFError: Error, Sendable, Equatable {
-  /// A kernel error code. `rawValue` is the wire string, and every string
-  /// round-trips: one this enum doesn't name becomes `unknown`.
-  public enum Code: Sendable, Hashable, RawRepresentable {
+  /// A kernel error code. `rawValue` is the wire string.
+  ///
+  /// The set is open, so this is a struct rather than an enum, the way
+  /// `URLError.Code` is: a code the kernel adds later needs no new constant
+  /// to round-trip, and adding one breaks no caller's `switch`. A string
+  /// literal is a code: `error.code == "quota-exceeded"`.
+  public struct Code: RawRepresentable, Hashable, Sendable, Codable, ExpressibleByStringLiteral,
+    CustomStringConvertible
+  {
+    public let rawValue: String
+
+    public init(rawValue: String) { self.rawValue = rawValue }
+
+    public init(_ rawValue: String) { self.rawValue = rawValue }
+
+    public init(stringLiteral rawValue: String) { self.rawValue = rawValue }
+
+    public var description: String { rawValue }
+
     /// `permission-denied`: the scope, the document's permissions or its
     /// password refused it (a wrong `unlock` password is this).
-    case permissionDenied
+    public static let permissionDenied = Code("permission-denied")
     /// `unsupported`: the plugin isn't in the `ViewerConfig`, or the engine
     /// can't do it.
-    case unsupported
+    public static let unsupported = Code("unsupported")
     /// `not-found`: no such document, page, annotation or other resource.
-    case notFound
+    public static let notFound = Code("not-found")
     /// `not-ready`: the document is still loading, is locked, or failed.
-    case notReady
+    public static let notReady = Code("not-ready")
     /// `invalid-input`: an argument, or bytes that aren't a PDF.
-    case invalidInput
+    public static let invalidInput = Code("invalid-input")
     /// `conflict`: the document changed under the call.
-    case conflict
+    public static let conflict = Code("conflict")
     /// `instance-closed`: the document closed or the viewer shut down.
-    case instanceClosed
+    public static let instanceClosed = Code("instance-closed")
     /// `operation-cancelled`: the task was cancelled.
-    case operationCancelled
+    public static let operationCancelled = Code("operation-cancelled")
     /// `operation-failed`: anything else.
-    case operationFailed
+    public static let operationFailed = Code("operation-failed")
     /// `invalid-state`, the bindings' own code: a value that didn't survive
     /// the trip across the boundary (a record the kernel answered without a
     /// field, a count past `UInt32`, a raster Core Graphics refused). It is
     /// a bug to report, not something a caller did.
-    case invalidState
-    /// A code this enum doesn't name, kept as the kernel sent it.
-    case unknown(String)
+    public static let invalidState = Code("invalid-state")
 
-    public init(rawValue: String) {
-      switch rawValue {
-      case "permission-denied": self = .permissionDenied
-      case "unsupported": self = .unsupported
-      case "not-found": self = .notFound
-      case "not-ready": self = .notReady
-      case "invalid-input": self = .invalidInput
-      case "conflict": self = .conflict
-      case "instance-closed": self = .instanceClosed
-      case "operation-cancelled": self = .operationCancelled
-      case "operation-failed": self = .operationFailed
-      case "invalid-state": self = .invalidState
-      default: self = .unknown(rawValue)
-      }
+    /// Matches a thrown error whose code is this one, so a `catch` can name
+    /// the code: `catch PDFError.Code.notFound`.
+    public static func ~= (code: Code, error: any Error) -> Bool {
+      (error as? PDFError)?.code == code
     }
 
-    public var rawValue: String {
-      switch self {
-      case .permissionDenied: "permission-denied"
-      case .unsupported: "unsupported"
-      case .notFound: "not-found"
-      case .notReady: "not-ready"
-      case .invalidInput: "invalid-input"
-      case .conflict: "conflict"
-      case .instanceClosed: "instance-closed"
-      case .operationCancelled: "operation-cancelled"
-      case .operationFailed: "operation-failed"
-      case .invalidState: "invalid-state"
-      case let .unknown(code): code
-      }
+    /// Matches a `PDFError` whose code is this one, for a `catch` in a
+    /// `throws(PDFError)` context and a `switch` over the error.
+    public static func ~= (code: Code, error: PDFError) -> Bool {
+      error.code == code
     }
-
-    /// `unknown("not-found")` and `.notFound` are the same code.
-    public static func == (lhs: Code, rhs: Code) -> Bool { lhs.rawValue == rhs.rawValue }
-
-    public func hash(into hasher: inout Hasher) { hasher.combine(rawValue) }
   }
 
   public let name: String
@@ -114,6 +113,12 @@ public struct PDFError: Error, Sendable, Equatable {
 
   /// For a handler or port that fails with a kernel code of its own, such
   /// as `permission-denied`. The completion it fails passes the code on.
+  /// `name` is for logging; most callers keep `PluginError`.
+  public init(_ code: Code, detail: String, name: String = "PluginError") {
+    self.init(name: name, code: code, detail: detail)
+  }
+
+  /// ``init(_:detail:name:)`` with every member named.
   public init(name: String, code: Code, detail: String) {
     self.name = name
     self.code = code
@@ -122,10 +127,22 @@ public struct PDFError: Error, Sendable, Equatable {
 
   /// The pre-``Code`` spelling, for a handler or port that still passes a
   /// string. A `nil` code becomes ``Code/operationFailed``.
-  @available(*, deprecated, message: "Pass a PDFError.Code: init(name:code:detail:) with .notFound, or Code(rawValue:) for a string.")
+  @available(*, deprecated, message: "Pass a PDFError.Code: PDFError(.notFound, detail:), or a string literal.")
+  @_disfavoredOverload
   public init(name: String, code: String?, detail: String) {
     self.init(name: name, code: code.map(Code.init(rawValue:)) ?? .operationFailed, detail: detail)
   }
+}
+
+extension PDFError: LocalizedError {
+  /// `detail`, so `localizedDescription` and SwiftUI's `alert(isPresented:error:)`
+  /// show the engine's message rather than a bridged error number.
+  public var errorDescription: String? { detail }
+}
+
+extension PDFError: CustomStringConvertible {
+  /// The code and the detail, for logs: `not-found: no page p9`.
+  public var description: String { "\(code.rawValue): \(detail)" }
 }
 
 /// A message for an error nobody gave a code: never a struct dump.

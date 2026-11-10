@@ -72,7 +72,7 @@ extension BaseSuite {
     @Test func anUnknownToolThrowsNotFound() async throws {
       let (_, _, interaction, _) = try await opened()
       await #expect {
-        try await interaction.activateTool(.unknown("laser"))
+        try await interaction.activateTool("laser")
       } throws: { error in
         (error as? PDFError)?.code == .notFound
       }

@@ -113,7 +113,7 @@ extension BaseSuite {
     @Test func anUnknownSubtypeKeepsItsName() {
       let json = ##"{"subtype":"sparkle","glow":3}"##
       let info = AnnotationInfo(Self.record(subtype: "sparkle", fieldsJSON: json))
-      expectNoDifference(info.subtype, .unknown("sparkle"))
+      expectNoDifference(info.subtype, "sparkle")
       expectNoDifference(info.details, .untyped)
       expectNoDifference(info.generated.subtype, "sparkle")
       expectNoDifference(info.generated, Self.record(subtype: "sparkle", fieldsJSON: json))
