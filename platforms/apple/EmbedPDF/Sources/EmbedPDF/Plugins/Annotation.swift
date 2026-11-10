@@ -16,10 +16,10 @@ public typealias CreationDraftAnchor = EmbedPDFBindings.CreationDraftAnchor
 public typealias AnnotationRecord = EmbedPDFBindings.AnnotationRecord
 public typealias AnnotationCreationDraft = EmbedPDFBindings.AnnotationCreationDraft
 public typealias AnnotationProperty = EmbedPDFBindings.AnnotationProperty
-/// The pre-rename name of `AnnotationRecord`, kept for one release. It
+/// The pre-rename name of `AnnotationRecord`, kept until 0.0.0-swift.6. It
 /// collides with MapKit's SwiftUI `Annotation` (iOS 17) in any file that
 /// imports EmbedPDF, SwiftUI and MapKit.
-@available(*, deprecated, renamed: "AnnotationRecord")
+@available(*, deprecated, renamed: "AnnotationRecord", message: "Annotation is removed in 0.0.0-swift.6.")
 public typealias Annotation = AnnotationRecord
 public typealias AnnotationFilter = EmbedPDFBindings.AnnotationFilter
 public typealias AnnotationBatchResult = EmbedPDFBindings.AnnotationBatchResult

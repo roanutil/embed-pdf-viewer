@@ -282,8 +282,8 @@ unsupported and can change with every regeneration.
 The document record is `DocumentInfo`, the name the bindings give it. It was
 `PDFDocument` until 2026-10-16, which PDFKit also declares, so any file that
 imported both modules got "'PDFDocument' is ambiguous for type lookup in this
-context". `PDFDocument` is still there as a deprecated typealias for one
-release. The deprecated alias collides exactly as before: it keeps old code
+context". `PDFDocument` is still there as a deprecated typealias, removed in
+0.0.0-swift.6. The deprecated alias collides exactly as before: it keeps old code
 compiling only in files that don't import PDFKit.
 
 The annotation read record is `AnnotationRecord` for the same reason. It was
@@ -329,6 +329,7 @@ The deprecated spellings, with their replacements:
 | `PDFError(name:code:detail:)` with a `String?` code | `PDFError(_:detail:name:)` |
 | `allows(_:in:)` with a `String` | a `DocumentPermission`, or a string literal |
 | tool ids as `String` | a `ToolID`, or a string literal |
+| annotation subtypes as `String` (`createMarkup`, `previewMarkup`) | an `AnnotationSubtype`, or `AnnotationSubtype(_:)` for a string |
 | `activeToolId()`, `defaultToolId()` | `activeToolID()`, `defaultToolID()`, which return a `ToolID` |
 | `reorder(_:to:)` with a JSON string | an `AnnotationPosition` |
 | `Bool?` parameters whose `nil` meant the engine default | a plain `Bool`, or a `ContentInclusion` where the default follows the session's scope |
@@ -336,8 +337,46 @@ The deprecated spellings, with their replacements:
 | `SearchModel.activeIndex` | `activeHitIndex` |
 | `StageReaderModel.currentPageIndex` | `pageIndex` |
 | `AnnotationInfo.fieldsJson`, `groupId` | `fieldsJSON`, `groupID` |
+| `get(_:)`, `list(_:)`, `selected()` and `hitTest(at:on:)` returning `AnnotationRecord` | the overloads returning `AnnotationInfo`; `AnnotationInfo.record` gives the record |
 
-The deprecated overloads go away in a later tag. We haven't picked which.
+The two renamed types go in 0.0.0-swift.6, and their deprecation messages say so:
+
+| Deprecated | Use | Removed in |
+|---|---|---|
+| `PDFDocument` | `DocumentInfo` | 0.0.0-swift.6 |
+| `Annotation` | `AnnotationRecord` | 0.0.0-swift.6 |
+
+Every other shim above is removed no earlier than 0.0.0-swift.6. The rule is
+that a deprecated shim survives at least one tagged release: 0.0.0-swift.5
+ships with all of them in place, so a project can build against it, read the
+warnings and move over before anything is deleted. We haven't picked a release
+for the overloads beyond that floor. `AliasRemovalTests` fails if `PDFDocument`
+or `Annotation` is deleted early or stops naming its release.
+
+## Names that overlap Apple frameworks
+
+We compiled a probe that imports `EmbedPDF` and an Apple framework and uses
+each unqualified public type name in a type position. It covered the 600
+top-level public names `EmbedPDF` and `EmbedPDFUI` declare or re-export,
+including `Rect`, `Point`, `Size`, `PageInfo`, `Quad` and `Camera`, and the 687
+further public names in `EmbedPDFBindings`, which `Exports.swift` imports
+publicly. The frameworks were Foundation, CoreGraphics, CoreImage, CoreText,
+SwiftUI, PDFKit, AppKit, UIKit (iOS 17 simulator SDK), MapKit, Combine,
+Observation, UniformTypeIdentifiers, Security and Vision, then SwiftUI, MapKit,
+PDFKit and AppKit together. The probe ran on Xcode 27.2 (Swift 6.4.2) against
+a stub module that declares the same names, so it tests name lookup and not
+the types themselves.
+
+| Name | Framework | What happens | Workaround |
+|---|---|---|---|
+| `PDFDocument` (deprecated alias) | PDFKit | ambiguous for type lookup | `EmbedPDF.PDFDocument`, or use `DocumentInfo`; removed in 0.0.0-swift.6 |
+| `Annotation` (deprecated alias) | MapKit with SwiftUI (iOS 17, macOS 14) | ambiguous for type lookup | `EmbedPDF.Annotation`, or use `AnnotationRecord`; removed in 0.0.0-swift.6 |
+| every other name, including `Rect`, `Point`, `Size`, `PageInfo` | none | no clash | none needed |
+
+No name collides with the Swift standard library. `Point`, `Size` and `Rect`
+are not CoreGraphics' `CGPoint`, `CGSize` and `CGRect`, so they never meet
+them. A clash only shows when a file imports both modules. When one does, write
+the module name: `EmbedPDF.Rect`.
 
 ## The demo app
 
