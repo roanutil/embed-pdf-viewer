@@ -14,7 +14,7 @@ public final class StageReaderModel {
   public private(set) var pageIndex = 0
   /// ``pageIndex`` as the engine's `UInt32`, which always holds it: the
   /// stage reports it as one.
-  @available(*, deprecated, renamed: "pageIndex")
+  @available(*, deprecated, message: "Use pageIndex, an Int; this is the same position as a UInt32.")
   public var currentPageIndex: UInt32 { UInt32(exactly: pageIndex) ?? 0 }
   public private(set) var error: PDFError?
   private var renderRevisions: [PageRef: UInt64] = [:]

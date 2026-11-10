@@ -175,7 +175,7 @@ public struct RenderCapability: Sendable {
 
   /// `nil` is ``ContentInclusion/whenPermitted``, `true` ``ContentInclusion/always`` and
   /// `false` ``ContentInclusion/never``.
-  @available(*, deprecated, message: "Pass an ContentInclusion: leave it out for nil, .always for true, .never for false.")
+  @available(*, deprecated, message: "Pass a ContentInclusion: leave it out for nil, .always for true, .never for false.")
   @_disfavoredOverload
   public func renderThumbnail(
     _ page: PageRef, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil
@@ -207,7 +207,7 @@ public struct RenderCapability: Sendable {
     return try await renderPages(pages, options: options, wireConcurrency: concurrency)
   }
 
-  @available(*, deprecated, message: "Pass an Int: renderPages(_:options:concurrency:) takes an Int concurrency.")
+  @available(*, deprecated, message: "Pass an Int: renderPages(_:options:concurrency:) takes an Int concurrency. Leave it out for the engine's default of 4.")
   @_disfavoredOverload
   public func renderPages(
     _ pages: [PageRef], options: RenderPageOptions = RenderPageOptions(),
@@ -241,7 +241,7 @@ public struct RenderCapability: Sendable {
 
   /// `nil` is ``ContentInclusion/whenPermitted``, `true` ``ContentInclusion/always`` and
   /// `false` ``ContentInclusion/never``.
-  @available(*, deprecated, message: "Pass an ContentInclusion: leave it out for nil, .always for true, .never for false.")
+  @available(*, deprecated, message: "Pass a ContentInclusion: leave it out for nil, .always for true, .never for false.")
   @_disfavoredOverload
   public func renderEpoch(_ page: PageRef, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil) async throws(PDFError)
     -> UInt64
@@ -286,7 +286,7 @@ public struct RenderCapability: Sendable {
 
   /// `nil` layers are ``ContentInclusion/whenPermitted``, `true` ``ContentInclusion/always``
   /// and `false` ``ContentInclusion/never``; a `nil` `thumbnail` is `false`.
-  @available(*, deprecated, message: "Pass an ContentInclusion for each layer (leave it out for nil) and a Bool thumbnail (nil is false).")
+  @available(*, deprecated, message: "Pass a ContentInclusion for each layer (leave it out for nil) and a Bool thumbnail (nil is false).")
   @_disfavoredOverload
   public func renderSource(
     _ page: PageRef, scale: Double, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil,
@@ -322,7 +322,7 @@ public struct RenderCapability: Sendable {
 
   /// `nil` layers are ``ContentInclusion/whenPermitted``, `true` ``ContentInclusion/always``
   /// and `false` ``ContentInclusion/never``; a `nil` `thumbnail` is `false`.
-  @available(*, deprecated, message: "Pass an ContentInclusion for each layer (leave it out for nil) and a Bool thumbnail (nil is false).")
+  @available(*, deprecated, message: "Pass a ContentInclusion for each layer (leave it out for nil) and a Bool thumbnail (nil is false).")
   @_disfavoredOverload
   public func sourceKey(
     _ page: PageRef, scale: Double, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil,
@@ -380,7 +380,7 @@ public struct RenderViewDemand: Sendable {
 
   /// `nil` is ``ContentInclusion/whenPermitted``, `true` ``ContentInclusion/always`` and
   /// `false` ``ContentInclusion/never``.
-  @available(*, deprecated, message: "Pass an ContentInclusion: leave it out for nil, .always for true, .never for false.")
+  @available(*, deprecated, message: "Pass a ContentInclusion: leave it out for nil, .always for true, .never for false.")
   @_disfavoredOverload
   public func setDemand(_ page: PageRef, _ demand: RenderPageViewDemand, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil) async throws(PDFError) {
     try await setDemand(page, demand, engineAnnotations: includeAnnotations, engineFormFields: includeFormFields)

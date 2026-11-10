@@ -30,7 +30,7 @@ public final class SearchModel {
   /// The active hit's position in `hits`, `nil` when no hit is active.
   public private(set) var activeHitIndex: Int?
   /// ``activeHitIndex`` as the engine's `UInt32`.
-  @available(*, deprecated, renamed: "activeHitIndex")
+  @available(*, deprecated, message: "Use activeHitIndex, an Int?; this is the same position as a UInt32.")
   public var activeIndex: UInt32? { activeHitIndex.flatMap { UInt32(exactly: $0) } }
   public private(set) var status: SearchStatus = .idle
   /// Hits found so far in the whole document.

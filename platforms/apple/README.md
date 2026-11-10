@@ -278,8 +278,9 @@ need an edit:
 
 - `PDFError.code` is a non-optional `PDFError.Code`, not `String?`.
   `error.code == "not-found"` still compiles, because a string literal is a
-  code; `if let code = error.code` and `error.code == nil` don't. Prefer
-  `catch PDFError.Code.notFound`.
+  code, and `if let code = error.code` doesn't. `error.code == nil` compiles
+  with only a warning and is always false, so a branch behind it silently
+  never runs: delete it. Prefer `catch PDFError.Code.notFound`.
 - `AnnotationInfo`, the new read result, types what `AnnotationRecord` kept
   as text: `createdAt` and `modifiedAt` are `Date?` (the engine's text is
   `rawCreatedAt` and `rawModifiedAt`), `subtype` is an `AnnotationSubtype`,

@@ -196,7 +196,7 @@ public struct SearchCapability: Sendable {
 
   /// `nil` is ``ContentInclusion/whenPermitted``, `true` ``ContentInclusion/always`` and
   /// `false` ``ContentInclusion/never``.
-  @available(*, deprecated, message: "Pass an ContentInclusion: findAll(_:) for nil, snippets: .always for true, .never for false.")
+  @available(*, deprecated, message: "Pass a ContentInclusion: findAll(_:) for nil, snippets: .always for true, .never for false.")
   public func findAll(_ query: SearchQuery, snippets: Bool?) async throws(PDFError) -> [SearchHit] {
     try await findAll(query, engineSnippets: snippets)
   }
