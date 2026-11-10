@@ -59,6 +59,12 @@ public struct RedactionCapability: Sendable {
     try await bridged { try await handle.pendingItem(annotationRef: ref) }
   }
 
+  public func pendingCount(on page: PageRef? = nil) async throws(PDFError) -> Int {
+    try await bridged { try await handle.pendingCount(page: page) }.toInt("pending count")
+  }
+
+  @available(*, deprecated, message: "pendingCount(on:) returns an Int.")
+  @_disfavoredOverload
   public func pendingCount(on page: PageRef? = nil) async throws(PDFError) -> UInt32 {
     try await bridged { try await handle.pendingCount(page: page) }
   }

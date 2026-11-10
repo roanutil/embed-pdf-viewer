@@ -195,10 +195,27 @@ public struct RenderCapability: Sendable {
 
   /// Render several pages, `concurrency` at a time (4 when `nil`). A page
   /// that fails is in `failed`; cancelling the task throws
-  /// `operation-cancelled` for the whole batch.
+  /// `operation-cancelled` for the whole batch. A `concurrency` below zero
+  /// or past `UInt32.max` throws `invalid-input`.
   public func renderPages(
     _ pages: [PageRef], options: RenderPageOptions = RenderPageOptions(),
-    concurrency: UInt32? = nil
+    concurrency: Int? = nil
+  ) async throws(PDFError) -> RenderBatchResult {
+    let concurrency: UInt32? = try concurrency.map { (value) throws(PDFError) in try value.toWire("concurrency") }
+    return try await renderPages(pages, options: options, wireConcurrency: concurrency)
+  }
+
+  @available(*, deprecated, message: "Pass an Int: renderPages(_:options:concurrency:) takes an Int concurrency.")
+  @_disfavoredOverload
+  public func renderPages(
+    _ pages: [PageRef], options: RenderPageOptions = RenderPageOptions(),
+    concurrency: UInt32?
+  ) async throws(PDFError) -> RenderBatchResult {
+    try await renderPages(pages, options: options, wireConcurrency: concurrency)
+  }
+
+  private func renderPages(
+    _ pages: [PageRef], options: RenderPageOptions, wireConcurrency concurrency: UInt32?
   ) async throws(PDFError) -> RenderBatchResult {
     let batch = try await bridgedCancellable { token in
       try await handle.renderPages(

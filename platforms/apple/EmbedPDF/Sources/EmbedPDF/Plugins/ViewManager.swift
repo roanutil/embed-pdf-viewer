@@ -54,7 +54,15 @@ public struct ViewManagerCapability: Sendable {
     try await bridged { try await handle.removePane(id: id, moveDocumentsTo: target) }
   }
 
-  /// Clamped into the order.
+  /// Clamped into the order. An index below zero or past `UInt32.max`
+  /// throws `invalid-input`.
+  public func movePane(_ id: String, to index: Int) async throws(PDFError) {
+    let index: UInt32 = try index.toWire("pane index")
+    try await bridged { try await handle.movePane(id: id, toIndex: index) }
+  }
+
+  @available(*, deprecated, message: "Pass an Int: movePane(_:to:) takes an Int index.")
+  @_disfavoredOverload
   public func movePane(_ id: String, to index: UInt32) async throws(PDFError) {
     try await bridged { try await handle.movePane(id: id, toIndex: index) }
   }
@@ -75,8 +83,18 @@ public struct ViewManagerCapability: Sendable {
     try await bridged { try await handle.setActiveDocument(paneId: paneId, documentId: document?.id) }
   }
 
-  /// A document another pane holds moves. `nil` appends.
-  public func addDocument(_ document: DocumentInfo, to paneId: String, at index: UInt32? = nil)
+  /// A document another pane holds moves. `nil` appends. An index below
+  /// zero or past `UInt32.max` throws `invalid-input`.
+  public func addDocument(_ document: DocumentInfo, to paneId: String, at index: Int? = nil)
+    async throws(PDFError)
+  {
+    let index: UInt32? = try index.map { (index) throws(PDFError) in try index.toWire("tab index") }
+    try await bridged { try await handle.addDocument(paneId: paneId, documentId: document.id, index: index) }
+  }
+
+  @available(*, deprecated, message: "Pass an Int: addDocument(_:to:at:) takes an Int index.")
+  @_disfavoredOverload
+  public func addDocument(_ document: DocumentInfo, to paneId: String, at index: UInt32?)
     async throws(PDFError)
   {
     try await bridged { try await handle.addDocument(paneId: paneId, documentId: document.id, index: index) }
@@ -86,7 +104,19 @@ public struct ViewManagerCapability: Sendable {
     try await bridged { try await handle.removeDocument(paneId: paneId, documentId: document.id) }
   }
 
-  /// Reorder a tab inside its pane.
+  /// Reorder a tab inside its pane. An index below zero or past
+  /// `UInt32.max` throws `invalid-input`.
+  public func moveDocument(_ document: DocumentInfo, within paneId: String, to index: Int)
+    async throws(PDFError)
+  {
+    let index: UInt32 = try index.toWire("tab index")
+    try await bridged {
+      try await handle.moveDocumentWithin(paneId: paneId, documentId: document.id, toIndex: index)
+    }
+  }
+
+  @available(*, deprecated, message: "Pass an Int: moveDocument(_:within:to:) takes an Int index.")
+  @_disfavoredOverload
   public func moveDocument(_ document: DocumentInfo, within paneId: String, to index: UInt32)
     async throws(PDFError)
   {
@@ -95,9 +125,22 @@ public struct ViewManagerCapability: Sendable {
     }
   }
 
-  /// Drag a tab into another pane, where it becomes active.
+  /// Drag a tab into another pane, where it becomes active. An index below
+  /// zero or past `UInt32.max` throws `invalid-input`.
   public func moveDocument(
-    _ document: DocumentInfo, from source: String, to destination: String, at index: UInt32? = nil
+    _ document: DocumentInfo, from source: String, to destination: String, at index: Int? = nil
+  ) async throws(PDFError) {
+    let index: UInt32? = try index.map { (index) throws(PDFError) in try index.toWire("tab index") }
+    try await bridged {
+      try await handle.moveDocumentBetween(
+        fromPaneId: source, toPaneId: destination, documentId: document.id, toIndex: index)
+    }
+  }
+
+  @available(*, deprecated, message: "Pass an Int: moveDocument(_:from:to:at:) takes an Int index.")
+  @_disfavoredOverload
+  public func moveDocument(
+    _ document: DocumentInfo, from source: String, to destination: String, at index: UInt32?
   ) async throws(PDFError) {
     try await bridged {
       try await handle.moveDocumentBetween(

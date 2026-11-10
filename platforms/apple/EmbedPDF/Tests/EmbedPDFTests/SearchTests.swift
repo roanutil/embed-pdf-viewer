@@ -28,7 +28,7 @@ extension BaseSuite {
       expectNoDifference(active, next)
       #expect(next?.snippet?.matched.localizedCaseInsensitiveContains("the") == true)
       let count = try await search.hitCount()
-      expectNoDifference(count, result.hitCount)
+      expectNoDifference(count, Int(result.hitCount))
     }
 
     @Test func completionIsObserved() async throws {

@@ -67,7 +67,7 @@ extension BaseSuite {
     @Test func anIndexPastTheEndAppends() async throws {
       let (_, _, manager) = try await opened()
       let second = try await manager.createPane()
-      try await manager.movePane("pane-1", to: .max)
+      try await manager.movePane("pane-1", to: Int(UInt32.max))
       let order = try await manager.paneOrder()
       expectNoDifference(order, [second, "pane-1"])
     }

@@ -6,7 +6,11 @@ import Observation
 public final class SearchModel {
   public var text = ""
   public private(set) var hits: [SearchHit] = []
-  public private(set) var activeIndex: UInt32?
+  /// The active hit's position in `hits`, `nil` when no hit is active.
+  public private(set) var activeHitIndex: Int?
+  /// ``activeHitIndex`` as the engine's `UInt32`.
+  @available(*, deprecated, renamed: "activeHitIndex")
+  public var activeIndex: UInt32? { activeHitIndex.flatMap { UInt32(exactly: $0) } }
   public private(set) var status: SearchStatus = .idle
   public private(set) var error: PDFError?
   @ObservationIgnored let search: SearchCapability
@@ -19,13 +23,17 @@ public final class SearchModel {
     let events = search.events
     do {
       status = try await search.status()
-      activeIndex = try await search.activeHitIndex()
+      activeHitIndex = try await search.activeHitIndex()
     } catch {
       self.error = error
     }
     for await event in events {
       if case let .activeHitChanged(event) = event {
-        activeIndex = event.index
+        do {
+          activeHitIndex = try event.index?.toInt("active hit index")
+        } catch {
+          self.error = error
+        }
       }
     }
   }
@@ -35,7 +43,7 @@ public final class SearchModel {
       _ = try await search.search(SearchQuery(text: text))
       hits = try await search.hits()
       status = try await search.status()
-      activeIndex = try await search.activeHitIndex()
+      activeHitIndex = try await search.activeHitIndex()
       error = nil
     } catch {
       self.error = error
@@ -46,7 +54,7 @@ public final class SearchModel {
   public func nextButtonTapped() async {
     do {
       _ = try await search.nextHit()
-      activeIndex = try await search.activeHitIndex()
+      activeHitIndex = try await search.activeHitIndex()
     } catch {
       self.error = error
     }
@@ -55,7 +63,7 @@ public final class SearchModel {
   public func previousButtonTapped() async {
     do {
       _ = try await search.previousHit()
-      activeIndex = try await search.activeHitIndex()
+      activeHitIndex = try await search.activeHitIndex()
     } catch {
       self.error = error
     }
@@ -65,7 +73,7 @@ public final class SearchModel {
     do {
       try await search.clear()
       hits = []
-      activeIndex = nil
+      activeHitIndex = nil
       status = try await search.status()
     } catch {
       self.error = error

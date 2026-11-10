@@ -49,7 +49,7 @@ extension BaseSuite {
       let stage = try await viewer.stage(for: document)
       try await stage.setViewportSize(Size(width: 800, height: 600))
       let count = try await stage.pageCount()
-      expectNoDifference(count, document.pageCount)
+      expectNoDifference(count, Int(document.pageCount))
       _ = try await stage.canZoomIn()
       _ = try await stage.canZoomOut()
       if let destination = try await stage.currentDestination() {

@@ -193,7 +193,19 @@ public struct SignatureCapability: Sendable {
   }
 
   /// What changed after signature `since` (its index), up to the saved
-  /// bytes or the working copy.
+  /// bytes or the working copy. An index below zero or past `UInt32.max`
+  /// throws `invalid-input`.
+  public func analyzeChanges(since: Int, until: SignatureModificationsBasis = .workingCopy)
+    async throws(PDFError) -> SignatureChangeAnalysis
+  {
+    let since: UInt32 = try since.toWire("signature index")
+    return try await bridgedCancellable { token in
+      try await handle.analyzeChanges(since: since, until: until, cancel: token)
+    }
+  }
+
+  @available(*, deprecated, message: "Pass an Int: analyzeChanges(since:until:) takes an Int index.")
+  @_disfavoredOverload
   public func analyzeChanges(since: UInt32, until: SignatureModificationsBasis = .workingCopy)
     async throws(PDFError) -> SignatureChangeAnalysis
   {

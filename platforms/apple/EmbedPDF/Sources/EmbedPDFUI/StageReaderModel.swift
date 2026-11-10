@@ -10,7 +10,12 @@ import Observation
 public final class StageReaderModel {
   public private(set) var visiblePages: [StageVisiblePage] = []
   public private(set) var camera: Camera?
-  public private(set) var currentPageIndex: UInt32 = 0
+  /// The stage's current page as a zero-based display position.
+  public private(set) var pageIndex = 0
+  /// ``pageIndex`` as the engine's `UInt32`, which always holds it: the
+  /// stage reports it as one.
+  @available(*, deprecated, renamed: "pageIndex")
+  public var currentPageIndex: UInt32 { UInt32(exactly: pageIndex) ?? 0 }
   public private(set) var error: PDFError?
   private var renderRevisions: [PageRef: UInt64] = [:]
   @ObservationIgnored public let stage: StageCapability
@@ -72,7 +77,11 @@ public final class StageReaderModel {
     case .cameraChanged, .motionEnded, .viewportChanged, .zoomChanged, .settingsChanged:
       await refresh()
     case let .pageChanged(event):
-      currentPageIndex = event.pageIndex
+      do {
+        pageIndex = try event.pageIndex.toInt("page index")
+      } catch {
+        self.error = error
+      }
     }
   }
 
@@ -85,7 +94,7 @@ public final class StageReaderModel {
     do {
       try await stage.setDevicePixelRatio(Double(displayScale))
       try await stage.setViewportSize(Size(width: size.width, height: size.height))
-      currentPageIndex = try await stage.currentPageIndex()
+      pageIndex = try await stage.currentPageIndex()
     } catch {
       self.error = error
     }
@@ -142,7 +151,7 @@ public final class StageReaderModel {
       if velocity != .zero {
         try await stage.fling(velocityX: velocity.width, velocityY: velocity.height)
       }
-      currentPageIndex = try await stage.currentPageIndex()
+      pageIndex = try await stage.currentPageIndex()
     } catch {
       self.error = error
     }

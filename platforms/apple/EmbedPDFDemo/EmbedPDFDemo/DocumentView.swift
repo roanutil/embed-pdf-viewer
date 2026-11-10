@@ -139,7 +139,7 @@ private struct SearchBar: View {
     case .searching: "…"
     case .idle: ""
     default:
-      if let index = search.activeIndex, !search.hits.isEmpty {
+      if let index = search.activeHitIndex, !search.hits.isEmpty {
         "\(index + 1)/\(search.hits.count)"
       } else {
         "\(search.hits.count) hits"

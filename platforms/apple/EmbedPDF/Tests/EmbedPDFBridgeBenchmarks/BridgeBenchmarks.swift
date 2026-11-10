@@ -161,7 +161,7 @@ struct BridgeBenchmarks {
     let o = try await Opened("report")
     let found = try await o.search.search(SearchQuery(text: "the"))
     #expect(try await o.manualSearch.hitCount() == found.hitCount)
-    #expect(try await o.search.hitCount() == found.hitCount)
+    #expect(try await o.search.hitCount() == Int(found.hitCount))
     _ = try await measure("hit_count", "uniffi", n: 10_000) { _ = try await o.search.hitCount() }
     _ = try await measure("hit_count", "manual", n: 10_000) {
       _ = try await o.manualSearch.hitCount()

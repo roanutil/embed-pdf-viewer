@@ -108,7 +108,17 @@ public struct SearchCapability: Sendable {
     try await bridged { try await handle.previousHit(reveal: reveal) }
   }
 
-  /// Wraps modulo the hit count.
+  /// Wraps modulo the hit count. An index below zero or past `UInt32.max`
+  /// throws `invalid-input`.
+  public func goToHit(_ index: Int, reveal: SearchRevealOptions? = nil) async throws(PDFError)
+    -> SearchHit?
+  {
+    let index: UInt32 = try index.toWire("hit index")
+    return try await bridged { try await handle.goToHit(index: index, reveal: reveal) }
+  }
+
+  @available(*, deprecated, message: "Pass an Int: goToHit(_:reveal:) takes an Int index.")
+  @_disfavoredOverload
   public func goToHit(_ index: UInt32, reveal: SearchRevealOptions? = nil) async throws(PDFError)
     -> SearchHit?
   {
@@ -134,6 +144,12 @@ public struct SearchCapability: Sendable {
     }
   }
 
+  public func hitCount(on page: PageRef? = nil) async throws(PDFError) -> Int {
+    try await bridged { try await handle.hitCount(page: page) }.toInt("hit count")
+  }
+
+  @available(*, deprecated, message: "hitCount(on:) returns an Int.")
+  @_disfavoredOverload
   public func hitCount(on page: PageRef? = nil) async throws(PDFError) -> UInt32 {
     try await bridged { try await handle.hitCount(page: page) }
   }
@@ -143,6 +159,12 @@ public struct SearchCapability: Sendable {
   }
 
   /// `nil` when no hit is active.
+  public func activeHitIndex() async throws(PDFError) -> Int? {
+    try await bridged { try await handle.activeHitIndex() }?.toInt("active hit index")
+  }
+
+  @available(*, deprecated, message: "activeHitIndex() returns an Int?.")
+  @_disfavoredOverload
   public func activeHitIndex() async throws(PDFError) -> UInt32? {
     try await bridged { try await handle.activeHitIndex() }
   }

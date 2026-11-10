@@ -121,6 +121,12 @@ public final class PDFViewer: Sendable {
     try await bridged { try await host.hasDocument(documentId: id) }
   }
 
+  public func documentCount() async throws(PDFError) -> Int {
+    try await bridged { try await host.documentCount() }.toInt("document count")
+  }
+
+  @available(*, deprecated, message: "documentCount() returns an Int.")
+  @_disfavoredOverload
   public func documentCount() async throws(PDFError) -> UInt64 {
     try await bridged { try await host.documentCount() }
   }
@@ -146,6 +152,14 @@ public final class PDFViewer: Sendable {
     try await bridged { try await host.setDocumentOrder(documentIds: ids) }
   }
 
+  /// Clamped into the order.
+  public func move(_ document: DocumentInfo, to index: Int) async throws(PDFError) {
+    let index: Int64 = try index.toWire("document index")
+    try await bridged { try await host.moveDocument(documentId: document.id, toIndex: index) }
+  }
+
+  @available(*, deprecated, message: "Pass an Int: move(_:to:) takes an Int index.")
+  @_disfavoredOverload
   public func move(_ document: DocumentInfo, to index: Int64) async throws(PDFError) {
     try await bridged { try await host.moveDocument(documentId: document.id, toIndex: index) }
   }
@@ -160,11 +174,25 @@ public final class PDFViewer: Sendable {
     try await bridged { try await host.page(page: page, documentId: document?.id) }
   }
 
+  /// `nil` for an index past the last page, or below zero.
+  public func page(at index: Int, in document: DocumentInfo? = nil) async throws(PDFError) -> PageInfo? {
+    let index: Int64 = try index.toWire("page index")
+    return try await bridged { try await host.pageAt(index: index, documentId: document?.id) }
+  }
+
+  @available(*, deprecated, message: "Pass an Int: page(at:in:) takes an Int index.")
+  @_disfavoredOverload
   public func page(at index: Int64, in document: DocumentInfo? = nil) async throws(PDFError) -> PageInfo? {
     try await bridged { try await host.pageAt(index: index, documentId: document?.id) }
   }
 
   /// Returns -1 for a missing page or document.
+  public func index(of page: PageRef, in document: DocumentInfo? = nil) async throws(PDFError) -> Int {
+    try await bridged { try await host.pageIndex(page: page, documentId: document?.id) }.toInt("page index")
+  }
+
+  @available(*, deprecated, message: "index(of:in:) returns an Int.")
+  @_disfavoredOverload
   public func index(of page: PageRef, in document: DocumentInfo? = nil) async throws(PDFError) -> Int64 {
     try await bridged { try await host.pageIndex(page: page, documentId: document?.id) }
   }

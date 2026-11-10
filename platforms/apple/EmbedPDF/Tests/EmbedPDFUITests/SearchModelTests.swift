@@ -23,11 +23,23 @@ struct SearchModelTests {
     await model.searchSubmitted()
     expectNoDifference(model.status, .complete)
     #expect(model.hits.count > 1)
-    expectNoDifference(model.activeIndex, 0)
+    expectNoDifference(model.activeHitIndex, 0)
     await model.nextButtonTapped()
-    expectNoDifference(model.activeIndex, 1)
+    expectNoDifference(model.activeHitIndex, 1)
     await model.previousButtonTapped()
-    expectNoDifference(model.activeIndex, 0)
+    expectNoDifference(model.activeHitIndex, 0)
+  }
+
+  /// The `UInt32` spelling reads the same hit as ``SearchModel/activeHitIndex``.
+  @available(*, deprecated)
+  @Test func theUInt32ActiveIndexFollowsActiveHitIndex() async throws {
+    let (model, _) = try await model()
+    expectNoDifference(model.activeIndex, nil)
+    model.text = "the"
+    await model.searchSubmitted()
+    await model.nextButtonTapped()
+    expectNoDifference(model.activeHitIndex, 1)
+    expectNoDifference(model.activeIndex, 1)
   }
 
   @Test func clearingEmptiesTheModel() async throws {
@@ -36,7 +48,7 @@ struct SearchModelTests {
     await model.searchSubmitted()
     await model.clearButtonTapped()
     expectNoDifference(model.hits, [])
-    expectNoDifference(model.activeIndex, nil)
+    expectNoDifference(model.activeHitIndex, nil)
     expectNoDifference(model.status, .idle)
   }
 
@@ -48,9 +60,9 @@ struct SearchModelTests {
     defer { task.cancel() }
     _ = try await search.goToHit(2)
     let deadline = ContinuousClock.now + .seconds(10)
-    while model.activeIndex != 2, ContinuousClock.now < deadline {
+    while model.activeHitIndex != 2, ContinuousClock.now < deadline {
       try await Task.sleep(for: .milliseconds(20))
     }
-    expectNoDifference(model.activeIndex, 2)
+    expectNoDifference(model.activeHitIndex, 2)
   }
 }

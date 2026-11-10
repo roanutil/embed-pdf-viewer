@@ -48,7 +48,21 @@ struct StageReaderModelTests {
     defer { task.cancel() }
     await model.sizeChanged(CGSize(width: 390, height: 844), displayScale: 3)
     #expect(!model.visiblePages.isEmpty)
-    expectNoDifference(model.currentPageIndex, 0)
+    expectNoDifference(model.pageIndex, 0)
+  }
+
+  /// The `UInt32` spelling reads the same page as ``StageReaderModel/pageIndex``.
+  @available(*, deprecated)
+  @Test func theUInt32CurrentPageIndexFollowsPageIndex() async throws {
+    let (model, task) = try await model()
+    defer { task.cancel() }
+    await model.sizeChanged(CGSize(width: 390, height: 844), displayScale: 3)
+    for _ in 0..<12 {
+      await model.dragChanged(translation: CGSize(width: 0, height: -800))
+      await model.dragEnded(velocity: .zero)
+    }
+    #expect(model.pageIndex > 0)
+    expectNoDifference(Int(model.currentPageIndex), model.pageIndex)
   }
 
   @Test func draggingScrollsAndUpdatesTheVisiblePages() async throws {
@@ -69,10 +83,10 @@ struct StageReaderModelTests {
       await model.dragChanged(translation: CGSize(width: 0, height: -800))
       await model.dragEnded(velocity: .zero)
     }
-    let page = model.currentPageIndex
+    let page = model.pageIndex
     #expect(page > 0)
     await model.sizeChanged(CGSize(width: 844, height: 390), displayScale: 3)
-    expectNoDifference(model.currentPageIndex, page)
+    expectNoDifference(model.pageIndex, page)
     #expect(!model.visiblePages.isEmpty)
   }
 

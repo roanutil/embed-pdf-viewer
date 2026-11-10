@@ -60,6 +60,12 @@ public typealias StageViewportChangedEvent = EmbedPDFBindings.StageViewportChang
 /// `setCamera`, `panBy`, `scrollBy` and `zoomAround` return at once and run
 /// in order; their errors arrive on `PDFViewer.observeReportedErrors()`.
 public struct StageCapability: Sendable {
+  public func pageCount() async throws(PDFError) -> Int {
+    try await bridged { try await handle.pageCount() }.toInt("page count")
+  }
+
+  @available(*, deprecated, message: "pageCount() returns an Int.")
+  @_disfavoredOverload
   public func pageCount() async throws(PDFError) -> UInt32 {
     try await bridged { try await handle.pageCount() }
   }
@@ -90,6 +96,11 @@ public struct StageCapability: Sendable {
   public func scrollMetrics() async throws(PDFError) -> StageScrollMetrics { try await bridged { try await handle.scrollMetrics() } }
   public func visiblePages() async throws(PDFError) -> [StageVisiblePage] { try await bridged { try await handle.visiblePages() } }
   public func isPageVisible(_ page: PageRef) async throws(PDFError) -> Bool { try await bridged { try await handle.isPageVisible(page: page) } }
+  public func currentPageIndex() async throws(PDFError) -> Int {
+    try await bridged { try await handle.currentPageIndex() }.toInt("current page index")
+  }
+  @available(*, deprecated, message: "currentPageIndex() returns an Int.")
+  @_disfavoredOverload
   public func currentPageIndex() async throws(PDFError) -> UInt32 { try await bridged { try await handle.currentPageIndex() } }
   public func currentPage() async throws(PDFError) -> PageRef? { try await bridged { try await handle.currentPage() } }
   public func currentItemPages() async throws(PDFError) -> [PageInfo] { try await bridged { try await handle.currentItemPages() } }
@@ -162,6 +173,13 @@ public struct StageCapability: Sendable {
 
   // MARK: Navigation
 
+  /// An index below zero or past `UInt32.max` throws `invalid-input`.
+  public func goToPageIndex(_ index: Int, options: StageGoToOptions? = nil) async throws(PDFError) {
+    let index: UInt32 = try index.toWire("page index")
+    try await bridged { try await handle.goToPageIndex(index: index, options: options) }
+  }
+  @available(*, deprecated, message: "Pass an Int: goToPageIndex(_:options:) takes an Int index.")
+  @_disfavoredOverload
   public func goToPageIndex(_ index: UInt32, options: StageGoToOptions? = nil) async throws(PDFError) { try await bridged { try await handle.goToPageIndex(index: index, options: options) } }
   public func goToPage(_ page: PageRef, options: StageGoToOptions? = nil) async throws(PDFError) { try await bridged { try await handle.goToPage(page: page, options: options) } }
   public func goToFirstPage(options: StageGoToOptions? = nil) async throws(PDFError) { try await bridged { try await handle.goToFirstPage(options: options) } }
@@ -172,6 +190,13 @@ public struct StageCapability: Sendable {
   public func previousPage(options: StageGoToOptions? = nil) async throws(PDFError) { try await bridged { try await handle.previousPage(options: options) } }
   public func resetView() async throws(PDFError) { try await bridged { try await handle.resetView() } }
   public func reveal(_ page: PageRef, options: StageRevealOptions? = nil) async throws(PDFError) { try await bridged { try await handle.reveal(page: page, options: options) } }
+  /// An index below zero or past `UInt32.max` throws `invalid-input`.
+  public func revealIndex(_ index: Int, options: StageRevealOptions? = nil) async throws(PDFError) {
+    let index: UInt32 = try index.toWire("page index")
+    try await bridged { try await handle.revealIndex(index: index, options: options) }
+  }
+  @available(*, deprecated, message: "Pass an Int: revealIndex(_:options:) takes an Int index.")
+  @_disfavoredOverload
   public func revealIndex(_ index: UInt32, options: StageRevealOptions? = nil) async throws(PDFError) { try await bridged { try await handle.revealIndex(index: index, options: options) } }
 
   // MARK: Settings
