@@ -185,13 +185,22 @@ extension BaseSuite {
       let events = annotations.events
 
       let ink = try await annotations.create(
-        ##"{"subtype":"ink","inkList":[[{"x":100,"y":100},{"x":140,"y":120},{"x":180,"y":100}]],"color":"#1f6feb","opacity":0.75,"strokeWidth":3}"##,
+        InkAnnotationDraft(
+          inkList: [[Point(x: 100, y: 100), Point(x: 140, y: 120), Point(x: 180, y: 100)]],
+          color: "#1f6feb", opacity: 0.75, strokeWidth: 3),
         on: page)
       let highlight = try await annotations.create(
-        ##"{"subtype":"highlight","quadPoints":[{"upperLeft":{"x":72,"y":300},"upperRight":{"x":200,"y":300},"lowerLeft":{"x":72,"y":312},"lowerRight":{"x":200,"y":312}}],"color":"#ffcd45"}"##,
+        HighlightAnnotationDraft(
+          quadPoints: [
+            Quad(
+              upperLeft: Point(x: 72, y: 300), upperRight: Point(x: 200, y: 300),
+              lowerLeft: Point(x: 72, y: 312), lowerRight: Point(x: 200, y: 312))
+          ],
+          color: "#ffcd45"),
         on: page)
       let note = try await annotations.create(
-        ##"{"subtype":"text","rect":{"x":40,"y":40,"width":24,"height":24},"contents":"Typed note","icon":"key"}"##,
+        NoteAnnotationDraft(
+          rect: Rect(x: 40, y: 40, width: 24, height: 24), icon: .key, contents: "Typed note"),
         on: page)
 
       let readInk = try #require(try await annotations.get(ink))

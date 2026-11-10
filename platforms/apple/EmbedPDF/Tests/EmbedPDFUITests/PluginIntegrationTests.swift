@@ -50,7 +50,8 @@ struct PluginIntegrationTests {
       _ = try await attachments.add([AttachmentFileSource(data: bytes, name: "Saved.bin")])
     }
     let page = try await viewer.pages(of: document)[0].page
-    let note = try await annotations.create(#"{"subtype":"text","rect":{"x":40,"y":40,"width":24,"height":24},"contents":"Saved note"}"#, on: page)
+    let note = try await annotations.create(
+      NoteAnnotationDraft(rect: Rect(x: 40, y: 40, width: 24, height: 24), contents: "Saved note"), on: page)
     let undoEvents = history.events
     await historyModel.undo()
     for await event in undoEvents { if case .undone = event { break } }

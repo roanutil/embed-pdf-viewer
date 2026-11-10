@@ -9,7 +9,9 @@ public import Foundation
 // (`AnnotationRecord.fieldsJson`). Reads hand it out as `AnnotationInfo`,
 // which types the timestamps, the subtype and the common subtypes' members
 // (AnnotationInfo.swift). Create fields, patches, tool defaults and
-// selection values are the engine's field bags, passed as JSON objects.
+// selection values are the engine's field bags, passed as JSON objects;
+// ink, highlight and note drafts and patches also come typed
+// (AnnotationDraft.swift).
 public typealias CreationDraftAnchor = EmbedPDFBindings.CreationDraftAnchor
 public typealias AnnotationRecord = EmbedPDFBindings.AnnotationRecord
 public typealias AnnotationCreationDraft = EmbedPDFBindings.AnnotationCreationDraft
@@ -189,8 +191,22 @@ public struct AnnotationCapability: Sendable {
   }
 
   /// Resolves with the created annotation's ref once the engine confirmed
+  /// it. `draft` is an ink, highlight or note annotation
+  /// (`InkAnnotationDraft`, `HighlightAnnotationDraft`,
+  /// `NoteAnnotationDraft`). `tool` picks the tool whose defaults it starts
+  /// from; `select` selects it afterwards. Throws `invalid-input` for a
+  /// value the engine refuses, naming the field.
+  public func create(
+    _ draft: some AnnotationDraft, on page: PageRef, tool: ToolID? = nil, select: Bool = false
+  ) async throws(PDFError) -> AnnotationRef {
+    try await create(try draft.json(), on: page, tool: tool, engineSelect: select)
+  }
+
+  /// Resolves with the created annotation's ref once the engine confirmed
   /// it. `fieldsJSON` is the engine's field bag for the subtype
-  /// (`{"subtype": "square", "box": …}`). `tool` picks the tool whose
+  /// (`{"subtype": "square", "box": …}`): the way to create a subtype, or
+  /// set a field, the typed drafts (`create(_:on:tool:select:)` with an
+  /// `AnnotationDraft`) don't cover. `tool` picks the tool whose
   /// defaults it starts from; `select` selects it afterwards, and leaving it
   /// out is `false`, as in the engine (`AnnotationHandle::create` in
   /// `crates/plugins/annotation/src/ffi/handle.rs`).
@@ -233,7 +249,17 @@ public struct AnnotationCapability: Sendable {
     }
   }
 
-  /// `patchJSON` is the engine's field bag.
+  /// Change an ink, highlight or note annotation (`InkAnnotationPatch`,
+  /// `HighlightAnnotationPatch`, `NoteAnnotationPatch`). Members the patch
+  /// leaves `nil` keep their values. Throws `invalid-input` for a value the
+  /// engine refuses, including a patch of another subtype's fields.
+  public func update(_ ref: AnnotationRef, _ patch: some AnnotationPatch) async throws(PDFError) {
+    try await update(ref, try patch.json())
+  }
+
+  /// `patchJSON` is the engine's field bag: the way to change a subtype, or
+  /// a field, the typed patches (`update(_:_:)` with an `AnnotationPatch`)
+  /// don't cover.
   public func update(_ ref: AnnotationRef, _ patchJSON: String) async throws(PDFError) {
     try await bridgedCancellable { token in
       try await handle.update(annotationRef: ref, patchJson: patchJSON, cancel: token)
@@ -404,7 +430,19 @@ public struct AnnotationToolsCapability: Sendable {
     try await defaults(for: ToolID(rawValue: toolID))
   }
 
-  /// `changesJSON` is a field bag merged over the tool's defaults.
+  /// Merge `changes` over the tool's defaults, which every annotation the
+  /// tool creates starts from. Pass the patch of the tool's subtype
+  /// (`InkAnnotationPatch` for `.ink`); a create keeps only the defaults
+  /// its subtype declares, and drops the rest without a word.
+  public func updateDefaults(_ changes: some AnnotationPatch, for toolID: ToolID)
+    async throws(PDFError)
+  {
+    try await updateDefaults(try changes.json(), for: toolID)
+  }
+
+  /// `changesJSON` is a field bag merged over the tool's defaults: the way
+  /// to set a default the typed patches (`updateDefaults(_:for:)` with an
+  /// `AnnotationPatch`) don't cover.
   public func updateDefaults(_ changesJSON: String, for toolID: ToolID) async throws(PDFError) {
     try await bridged { try await handle.updateDefaults(toolId: toolID.rawValue, changesJson: changesJSON) }
   }

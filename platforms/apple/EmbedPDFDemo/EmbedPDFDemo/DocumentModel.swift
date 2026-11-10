@@ -97,7 +97,7 @@ final class DocumentModel {
     guard let opened, let page = opened.pages.first?.page else { return }
     do {
       _ = try await opened.annotations.create(
-        #"{"subtype":"text","rect":{"x":72,"y":72,"width":24,"height":24},"contents":"A note"}"#, on: page)
+        NoteAnnotationDraft(rect: Rect(x: 72, y: 72, width: 24, height: 24), contents: "A note"), on: page)
       error = nil
     } catch { self.error = error }
     canAddNote = (try? await opened.annotations.canCreate()) ?? false
