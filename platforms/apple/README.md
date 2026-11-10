@@ -38,6 +38,61 @@ The packaged engine ZIP is approximately 332 MiB with all four slices.
 Generated bindings and binaries are verified build outputs, not reviewable
 handwritten sources.
 
+## Products, and why the generated layer isn't one
+
+The package exports two products, `EmbedPDF` and `EmbedPDFUI`
+(`platforms/apple/EmbedPDF/Package.swift:17-20`, and the repository-root `Package.swift:8-11`).
+`EmbedPDFBindings`, the UniFFI-generated Swift, is a target only. Use `PDFViewer` and its typed
+capabilities. For a field the typed layer doesn't cover, use the JSON-string entry points, which
+take the engine's own payload: `ViewerConfigBuilder.annotation(settingsJSON:)`, the annotation
+`update(_:_:)` field bag (`patchJSON`), and the form `create(draftJSON:)`, `update(_:patchJSON:)`
+and `addWidget(to:placementJSON:)` overloads. Needing the raw generated API means asking us for a
+typed member, not importing the bindings.
+
+We decided against an `EmbedPDFBindings` library product, on 2026-11-10. It would make all 685
+public generated types API. Every Rust change to a record, method or callback interface would then
+be a break consumers see, where today only the 515 types that `EmbedPDF` re-exports are. It would
+also leave the module half-usable: the linker settings (`c++`, `CoreFoundation`, `CoreGraphics`,
+`Foundation`, and `AppKit` on macOS) live on the `EmbedPDFBindings` target in the source layout
+(`Package.swift:34-40`), but in the binary layouts that target is a `.binaryTarget` with no
+settings, and the loop that adds them (`Package.swift:116-124`) only touches `EmbedPDF`. The
+root `Package.swift` declares the same settings inline on its `EmbedPDF` target (lines 22-28). A
+direct importer of the binary would have to repeat them. We'll revisit this
+if a typed member can't cover a real use.
+
+This isn't a hard wall. `EmbedPDF` writes `public import EmbedPDFBindings` in the files that
+re-export, so a client that imports only `EmbedPDF` sees the generated types below, and
+`ProductsTests` fails if either manifest gains a `.library`. We checked by compiling a file that
+imports only `EmbedPDF` and names each of the 685 generated public types unqualified:
+
+- 515 resolve, through the same-name `public typealias X = EmbedPDFBindings.X` lines in
+  `Sources/EmbedPDF/Exports.swift` and `Sources/EmbedPDF/Plugins/*.swift`. (The deprecated
+  `PDFDocument` and `Annotation` aren't among them: they alias `DocumentInfo` and
+  `AnnotationRecord`.) `RenderSnapshot` also resolves, but to the handwritten
+  `EmbedPDF.RenderSnapshot` (`Plugins/Render.swift:58`), not the generated type.
+- 169 don't: `ViewerHost`, `CancelToken`, `Subscription` and `PdfError`, 60 `*Handle` and
+  `*HandleProtocol` types, 23 `*EventListener` types, 42 `*Impl` types, 15 other `*Protocol`
+  types, and 25 more records and callback types such as `PdfEngine`, `RenderBatch` and
+  `ViewerDelegate`.
+
+Three of those 169 do appear in a public signature: `DocumentFetcher`, `DocumentFetchCompletion`
+and `DocumentFetchCancellation`, in `PDFViewer.init(_:documentFetcher:)` and
+`URLSessionDocumentFetcher.fetch(url:completion:)`. A caller can pass the default fetcher, but
+can't write their own without importing the bindings module, which isn't a product. We haven't
+changed that here. It needs either three more typealiases or a handwritten protocol, and either
+is new API.
+
+Could UniFFI hide the generated layer instead, so we'd get this by construction? Not with 0.32.0,
+the version pinned as `=0.32.0` in `crates/uniffi-bindgen/Cargo.toml:14`, each plugin crate
+(for example `crates/plugins/form/Cargo.toml:44`) and `Cargo.lock:2343-2344`. The Swift `Config`
+(`uniffi_bindgen-0.32.0/src/bindings/swift/gen_swift/mod.rs:167-189`) has `module_name`,
+`ffi_module_name`, `generate_immutable_records`, `omit_argument_labels`, `exclude`, `rename` and
+the conformance switches, but no access-level option. The templates write `public` literally
+(`RecordTemplate.swift:5,11,16`, `EnumTemplate.swift:5`, `ObjectTemplate.swift:68`,
+`TopLevelFunctionTemplate.swift:1`, `Protocol.swift:2`). Hiding the types means rewriting the
+generated files after `uniffi-bindgen generate`, and then `Exports.swift` and the hand-written
+layer, which re-export and conform them publicly, stop compiling.
+
 ## Where the engine comes from
 
 `Package.swift` gets the engine one of three ways, chosen by environment variables when the
@@ -274,8 +329,10 @@ signature in `PDFViewer.swift` that uses an alias reports "'DocumentInfo' aliase
 `PDFViewer.swift` use `public import EmbedPDFBindings`, and every other file
 keeps `internal import`.
 
-The cost is that the generated objects (`ViewerHost`, each plugin's handle)
-become visible to clients that go looking for them. The supported API is
+The cost is that the generated records, enums and callback protocols
+re-exported by `Exports.swift` and `Plugins/*.swift` become API. `ViewerHost` and the plugin
+handles don't resolve from `import EmbedPDF` alone; see "Products, and why the generated layer
+isn't one". The supported API is
 `PDFViewer` and the capabilities; anything else from the bindings module is
 unsupported and can change with every regeneration.
 
