@@ -153,7 +153,7 @@ public struct AnnotationCapability: Sendable {
   /// out is `false`, as in the engine (`AnnotationHandle::create` in
   /// `crates/plugins/annotation/src/ffi/handle.rs`).
   public func create(
-    _ fieldsJSON: String, on page: PageRef, tool: String? = nil, select: Bool = false
+    _ fieldsJSON: String, on page: PageRef, tool: ToolID? = nil, select: Bool = false
   ) async throws(PDFError) -> AnnotationRef {
     try await create(fieldsJSON, on: page, tool: tool, engineSelect: select)
   }
@@ -161,16 +161,33 @@ public struct AnnotationCapability: Sendable {
   /// `nil` is `false`.
   @available(*, deprecated, message: "Pass a Bool: leave select out for nil, which is false.")
   public func create(
-    _ fieldsJSON: String, on page: PageRef, tool: String? = nil, select: Bool?
+    _ fieldsJSON: String, on page: PageRef, tool: ToolID? = nil, select: Bool?
   ) async throws(PDFError) -> AnnotationRef {
     try await create(fieldsJSON, on: page, tool: tool, engineSelect: select)
   }
 
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
+  @_disfavoredOverload
+  public func create(
+    _ fieldsJSON: String, on page: PageRef, tool: String?, select: Bool = false
+  ) async throws(PDFError) -> AnnotationRef {
+    try await create(fieldsJSON, on: page, tool: tool.map(ToolID.init(rawValue:)), engineSelect: select)
+  }
+
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
+  @_disfavoredOverload
+  public func create(
+    _ fieldsJSON: String, on page: PageRef, tool: String?, select: Bool?
+  ) async throws(PDFError) -> AnnotationRef {
+    try await create(fieldsJSON, on: page, tool: tool.map(ToolID.init(rawValue:)), engineSelect: select)
+  }
+
   private func create(
-    _ fieldsJSON: String, on page: PageRef, tool: String?, engineSelect: Bool?
+    _ fieldsJSON: String, on page: PageRef, tool: ToolID?, engineSelect: Bool?
   ) async throws(PDFError) -> AnnotationRef {
     try await bridgedCancellable { token in
-      try await handle.create(page: page, fieldsJson: fieldsJSON, tool: tool, select: engineSelect, cancel: token)
+      try await handle.create(
+        page: page, fieldsJson: fieldsJSON, tool: tool?.rawValue, select: engineSelect, cancel: token)
     }
   }
 
@@ -187,9 +204,22 @@ public struct AnnotationCapability: Sendable {
     }
   }
 
-  /// `positionJSON` is `"front"`, `"back"`, `"forward"`, `"backward"` (each
-  /// a JSON string, quoted) or `{"above": ref}` / `{"below": ref}`.
+  /// Move `refs` together, in the order given, to `position` among their
+  /// page's annotations. The annotations and the neighbour a position names
+  /// must be on one page (`invalid-input` otherwise), and the neighbour must
+  /// exist (`not-found`).
+  public func reorder(_ refs: [AnnotationRef], to position: AnnotationPosition) async throws(PDFError) {
+    try await reorder(refs, positionJSON: position.json)
+  }
+
+  /// `positionJSON` is the engine's `AnnotationPosition` JSON, as
+  /// ``AnnotationPosition/json`` spells it.
+  @available(*, deprecated, message: "Pass an AnnotationPosition: .end for \"end\", .before(annotation:) for {\"before\": ref}.")
   public func reorder(_ refs: [AnnotationRef], to positionJSON: String) async throws(PDFError) {
+    try await reorder(refs, positionJSON: positionJSON)
+  }
+
+  private func reorder(_ refs: [AnnotationRef], positionJSON: String) async throws(PDFError) {
     try await bridgedCancellable { token in
       try await handle.reorder(refs: refs, positionJson: positionJSON, cancel: token)
     }
@@ -310,24 +340,44 @@ public struct AnnotationToolsCapability: Sendable {
     try await bridged { try await handle.tools() }
   }
 
+  public func tool(_ id: ToolID) async throws(PDFError) -> AnnotationTool? {
+    try await bridged { try await handle.tool(id: id.rawValue) }
+  }
+
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
   public func tool(_ id: String) async throws(PDFError) -> AnnotationTool? {
-    try await bridged { try await handle.tool(id: id) }
+    try await tool(ToolID(rawValue: id))
   }
 
   /// The engine's field bag a new annotation from this tool starts with,
   /// as JSON.
+  public func defaults(for toolID: ToolID) async throws(PDFError) -> String {
+    try await bridged { try await handle.defaults(toolId: toolID.rawValue) }
+  }
+
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
   public func defaults(for toolID: String) async throws(PDFError) -> String {
-    try await bridged { try await handle.defaults(toolId: toolID) }
+    try await defaults(for: ToolID(rawValue: toolID))
   }
 
   /// `changesJSON` is a field bag merged over the tool's defaults.
+  public func updateDefaults(_ changesJSON: String, for toolID: ToolID) async throws(PDFError) {
+    try await bridged { try await handle.updateDefaults(toolId: toolID.rawValue, changesJson: changesJSON) }
+  }
+
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
   public func updateDefaults(_ changesJSON: String, for toolID: String) async throws(PDFError) {
-    try await bridged { try await handle.updateDefaults(toolId: toolID, changesJson: changesJSON) }
+    try await updateDefaults(changesJSON, for: ToolID(rawValue: toolID))
   }
 
   /// What the tool's style panel shows.
+  public func properties(for toolID: ToolID) async throws(PDFError) -> AnnotationSelectionProps {
+    try await bridged { try await handle.properties(toolId: toolID.rawValue) }
+  }
+
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
   public func properties(for toolID: String) async throws(PDFError) -> AnnotationSelectionProps {
-    try await bridged { try await handle.properties(toolId: toolID) }
+    try await properties(for: ToolID(rawValue: toolID))
   }
 }
 
@@ -411,11 +461,21 @@ public struct AnnotationDraftsCapability: Sendable {
   /// other than the subtype's own. The new annotation arrives on
   /// `AnnotationCapability.events`.
   public func createMarkup(
-    _ subtype: String, quadsJSON: String, on page: PageRef, preset: String? = nil
+    _ subtype: AnnotationSubtype, quadsJSON: String, on page: PageRef, preset: ToolID? = nil
   ) async throws(PDFError) {
     try await bridged {
-      try await handle.createMarkup(page: page, subtype: subtype, quadsJson: quadsJSON, preset: preset)
+      try await handle.createMarkup(
+        page: page, subtype: subtype.rawValue, quadsJson: quadsJSON, preset: preset?.rawValue)
     }
+  }
+
+  @available(*, deprecated, message: "Pass an AnnotationSubtype: .highlight for \"highlight\", or AnnotationSubtype(rawValue:) for a string.")
+  public func createMarkup(
+    _ subtype: String, quadsJSON: String, on page: PageRef, preset: String? = nil
+  ) async throws(PDFError) {
+    try await createMarkup(
+      AnnotationSubtype(rawValue: subtype), quadsJSON: quadsJSON, on: page,
+      preset: preset.map(ToolID.init(rawValue:)))
   }
 
   /// An insert caret at the end of a run of text.
@@ -428,19 +488,38 @@ public struct AnnotationDraftsCapability: Sendable {
   /// A strikeout over `quads` paired with an insert caret at `anchor`.
   public func createReplaceText(
     quadsJSON: String, caretAt anchor: AnnotationTextEndAnchor, on page: PageRef,
-    preset: String? = nil
+    preset: ToolID? = nil
   ) async throws(PDFError) {
     try await bridged {
-      try await handle.createReplaceText(page: page, quadsJson: quadsJSON, anchor: anchor, preset: preset)
+      try await handle.createReplaceText(
+        page: page, quadsJson: quadsJSON, anchor: anchor, preset: preset?.rawValue)
     }
   }
 
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
+  @_disfavoredOverload
+  public func createReplaceText(
+    quadsJSON: String, caretAt anchor: AnnotationTextEndAnchor, on page: PageRef,
+    preset: String?
+  ) async throws(PDFError) {
+    try await createReplaceText(
+      quadsJSON: quadsJSON, caretAt: anchor, on: page, preset: preset.map(ToolID.init(rawValue:)))
+  }
+
+  public func previewMarkup(
+    _ subtype: AnnotationSubtype, pages: [AnnotationPageQuads], preset: ToolID? = nil
+  ) async throws(PDFError) {
+    try await bridged {
+      try await handle.previewMarkup(subtype: subtype.rawValue, pages: pages, preset: preset?.rawValue)
+    }
+  }
+
+  @available(*, deprecated, message: "Pass an AnnotationSubtype: .highlight for \"highlight\", or AnnotationSubtype(rawValue:) for a string.")
   public func previewMarkup(
     _ subtype: String, pages: [AnnotationPageQuads], preset: String? = nil
   ) async throws(PDFError) {
-    try await bridged {
-      try await handle.previewMarkup(subtype: subtype, pages: pages, preset: preset)
-    }
+    try await previewMarkup(
+      AnnotationSubtype(rawValue: subtype), pages: pages, preset: preset.map(ToolID.init(rawValue:)))
   }
 
   public func clearMarkupPreview() async throws(PDFError) {
@@ -452,7 +531,7 @@ public struct AnnotationDraftsCapability: Sendable {
   /// selected. `clear` drops the text selection afterwards; leaving it out
   /// is `true`, as in the engine (`AnnotationDraftsHandle::create_from_selection`
   /// in `crates/plugins/annotation/src/ffi/drafts.rs`).
-  public func createFromSelection(tool toolID: String, clear: Bool = true)
+  public func createFromSelection(tool toolID: ToolID, clear: Bool = true)
     async throws(PDFError) -> [AnnotationRef]
   {
     try await createFromSelection(toolID, engineClear: clear)
@@ -460,17 +539,31 @@ public struct AnnotationDraftsCapability: Sendable {
 
   /// `nil` is `true`.
   @available(*, deprecated, message: "Pass a Bool: leave clear out for nil, which is true.")
-  public func createFromSelection(tool toolID: String, clear: Bool?)
+  public func createFromSelection(tool toolID: ToolID, clear: Bool?)
     async throws(PDFError) -> [AnnotationRef]
   {
     try await createFromSelection(toolID, engineClear: clear)
   }
 
-  private func createFromSelection(_ toolID: String, engineClear: Bool?)
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
+  public func createFromSelection(tool toolID: String, clear: Bool = true)
+    async throws(PDFError) -> [AnnotationRef]
+  {
+    try await createFromSelection(ToolID(rawValue: toolID), engineClear: clear)
+  }
+
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
+  public func createFromSelection(tool toolID: String, clear: Bool?)
+    async throws(PDFError) -> [AnnotationRef]
+  {
+    try await createFromSelection(ToolID(rawValue: toolID), engineClear: clear)
+  }
+
+  private func createFromSelection(_ toolID: ToolID, engineClear: Bool?)
     async throws(PDFError) -> [AnnotationRef]
   {
     try await bridgedCancellable { token in
-      try await handle.createFromSelection(toolId: toolID, clear: engineClear, cancel: token)
+      try await handle.createFromSelection(toolId: toolID.rawValue, clear: engineClear, cancel: token)
     }
   }
 
@@ -524,13 +617,22 @@ public struct AnnotationDraftsCapability: Sendable {
   }
 
   public func hoverGhost(
-    tool toolID: String, at point: Point, on page: PageRef, displayRotation: Double? = nil,
+    tool toolID: ToolID, at point: Point, on page: PageRef, displayRotation: Double? = nil,
     zoom: Double? = nil
   ) async throws(PDFError) {
     try await bridged {
       try await handle.hoverGhostAt(
-        toolId: toolID, page: page, point: point, displayRotation: displayRotation, zoom: zoom)
+        toolId: toolID.rawValue, page: page, point: point, displayRotation: displayRotation, zoom: zoom)
     }
+  }
+
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
+  public func hoverGhost(
+    tool toolID: String, at point: Point, on page: PageRef, displayRotation: Double? = nil,
+    zoom: Double? = nil
+  ) async throws(PDFError) {
+    try await hoverGhost(
+      tool: ToolID(rawValue: toolID), at: point, on: page, displayRotation: displayRotation, zoom: zoom)
   }
 
   public func clearGhost() async throws(PDFError) {
@@ -538,12 +640,19 @@ public struct AnnotationDraftsCapability: Sendable {
   }
 
   /// A sibling's drag-to-place gesture with one of this plugin's tools.
-  public func previewPlacement(tool toolID: String, from: Point, to: Point, on page: PageRef)
+  public func previewPlacement(tool toolID: ToolID, from: Point, to: Point, on page: PageRef)
     async throws(PDFError)
   {
     try await bridged {
-      try await handle.previewPlacement(toolId: toolID, page: page, from: from, to: to)
+      try await handle.previewPlacement(toolId: toolID.rawValue, page: page, from: from, to: to)
     }
+  }
+
+  @available(*, deprecated, message: "Pass a ToolID: .highlight for \"highlight\", or ToolID(rawValue:) for a string.")
+  public func previewPlacement(tool toolID: String, from: Point, to: Point, on page: PageRef)
+    async throws(PDFError)
+  {
+    try await previewPlacement(tool: ToolID(rawValue: toolID), from: from, to: to, on: page)
   }
 
   public func clearPlacementPreview() async throws(PDFError) {

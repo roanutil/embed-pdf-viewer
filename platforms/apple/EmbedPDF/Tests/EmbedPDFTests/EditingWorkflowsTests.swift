@@ -133,7 +133,7 @@ extension BaseSuite {
       let widget = try #require(a.widgets[0].annotationRef)
       let interaction = try await viewer.interaction(for: document)
       let annotations = try await viewer.annotations(for: document)
-      try await interaction.activateTool("form-edit")
+      try await interaction.activateTool(.formEdit)
       try await annotations.selection.select([widget])
       let selectedField = try await form.selectedField()?.fieldRef
       expectNoDifference(selectedField, a.fieldRef)

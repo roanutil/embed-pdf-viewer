@@ -15,7 +15,7 @@ extension BaseSuite {
       #expect(try await render.canSnapshot())
       #expect(try await render.snapshot() == nil)
       var changes = render.snapshotChanges.makeAsyncIterator()
-      try await interaction.activateTool("snapshot")
+      try await interaction.activateTool(.snapshot)
       let from = Point(x: 20, y: 0)
       let to = Point(x: 60, y: 20)
       interaction.dispatchPointer(PointerSample(phase: .down, viewport: from,

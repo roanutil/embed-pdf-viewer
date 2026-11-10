@@ -86,7 +86,7 @@ extension BaseSuite {
       let page = try await viewer.pages(of: document)[0].page
       let picker = TinyPngPicker(png: try tinyPng())
       try await annotations.setFilePicker(picker)
-      try await viewer.interaction(for: document).activateTool("stamp")
+      try await viewer.interaction(for: document).activateTool(.stamp)
       let asked = try await annotations.drafts.requestStamp(at: Point(x: 200, y: 200), on: page)
       #expect(asked)
       // The pick answers off the kernel thread and the stamp is placed
@@ -126,7 +126,7 @@ extension BaseSuite {
       // selection has no segments to mark.
       try await selection.ensureLoaded(page)
       try await selection.selectPage(page)
-      let refs = try await annotations.drafts.createFromSelection(tool: "highlight")
+      let refs = try await annotations.drafts.createFromSelection(tool: .highlight)
       #expect(!refs.isEmpty)
       let marked = try await annotations.get(try #require(refs.first))
       expectNoDifference(marked?.subtype, "highlight")
@@ -163,13 +163,13 @@ extension BaseSuite {
     @Test func createFromSelectionLeftOutClearsTheTextSelection() async throws {
       let (annotations, selection, page) = try await selectedText()
       try await selection.selectPage(page)
-      #expect(!(try await annotations.drafts.createFromSelection(tool: "highlight")).isEmpty)
+      #expect(!(try await annotations.drafts.createFromSelection(tool: .highlight)).isEmpty)
       let omitted = try await selection.hasSelection()
       try await selection.selectPage(page)
-      _ = try await annotations.drafts.createFromSelection(tool: "highlight", clear: true)
+      _ = try await annotations.drafts.createFromSelection(tool: .highlight, clear: true)
       let cleared = try await selection.hasSelection()
       try await selection.selectPage(page)
-      _ = try await annotations.drafts.createFromSelection(tool: "highlight", clear: false)
+      _ = try await annotations.drafts.createFromSelection(tool: .highlight, clear: false)
       let kept = try await selection.hasSelection()
       expectNoDifference([omitted, cleared, kept], [false, false, true])
     }
@@ -182,7 +182,7 @@ extension BaseSuite {
       let selected = try await annotations.selection.refs()
       expectNoDifference(selected, [])
       try await selection.selectPage(page)
-      _ = try await annotations.drafts.createFromSelection(tool: "highlight", clear: unset)
+      _ = try await annotations.drafts.createFromSelection(tool: .highlight, clear: unset)
       let cleared = try await selection.hasSelection()
       expectNoDifference(cleared, false)
     }
@@ -294,7 +294,7 @@ extension BaseSuite {
 
     @Test func reorderCancelsWhenTheTaskIsCancelled() async throws {
       let (annotations, ref, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await annotations.reorder([ref], to: #""front""#) }
+      await expectCancelledBeforeItStarts { try await annotations.reorder([ref], to: .end) }
     }
 
     @Test func updateRotationCancelsWhenTheTaskIsCancelled() async throws {
@@ -398,7 +398,7 @@ extension BaseSuite {
 
     @Test func createFromSelectionCancelsWhenTheTaskIsCancelled() async throws {
       let (annotations, _, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await annotations.drafts.createFromSelection(tool: "highlight") }
+      await expectCancelledBeforeItStarts { try await annotations.drafts.createFromSelection(tool: .highlight) }
     }
 
     @Test func armStampCancelsWhenTheTaskIsCancelled() async throws {

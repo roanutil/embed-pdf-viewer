@@ -58,7 +58,7 @@ extension BaseSuite {
       let ids = try await interaction.tools().map(\.id)
       expectNoDifference(ids, ["pointer", "pan", "zoom"])
       let events = interaction.events
-      try await interaction.activateTool("pan")
+      try await interaction.activateTool(.pan)
       for await event in events {
         guard case let .toolChanged(event) = event else { continue }
         expectNoDifference(event.toolId, "pan")
@@ -72,7 +72,7 @@ extension BaseSuite {
     @Test func anUnknownToolThrowsNotFound() async throws {
       let (_, _, interaction, _) = try await opened()
       await #expect {
-        try await interaction.activateTool("laser")
+        try await interaction.activateTool(.unknown("laser"))
       } throws: { error in
         (error as? PDFError)?.code == .notFound
       }
@@ -133,13 +133,13 @@ extension BaseSuite {
         _ = try await interaction.registerTool(
           InteractionTool(id: "ink", cursor: "crosshair", enables: ["annotation-create"]))
       }
-      let kept = try await interaction.hasTool("ink")
+      let kept = try await interaction.hasTool(.ink)
       expectNoDifference(kept, true)
       let registration = try await interaction.registerTool(
         InteractionTool(id: "ink", cursor: "crosshair", enables: []), replace: true)
       registration.unregister()
       _ = try await interaction.cursor()
-      let removed = try await interaction.hasTool("ink")
+      let removed = try await interaction.hasTool(.ink)
       expectNoDifference(removed, false)
     }
 
@@ -173,7 +173,7 @@ extension BaseSuite {
       try await Task.sleep(for: .milliseconds(20))
       task.cancel()
       _ = await task.value
-      try await interaction.activateTool("pan")
+      try await interaction.activateTool(.pan)
     }
   }
 }

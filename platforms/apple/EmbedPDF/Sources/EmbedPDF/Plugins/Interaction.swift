@@ -69,12 +69,22 @@ public struct InteractionCapability: Sendable {
     try await bridged { try await handle.tools() }
   }
 
-  public func tool(_ id: String) async throws(PDFError) -> InteractionTool? {
-    try await bridged { try await handle.tool(id: id) }
+  public func tool(_ id: ToolID) async throws(PDFError) -> InteractionTool? {
+    try await bridged { try await handle.tool(id: id.rawValue) }
   }
 
+  @available(*, deprecated, message: "Pass a ToolID: .pan for \"pan\", or ToolID(rawValue:) for a string.")
+  public func tool(_ id: String) async throws(PDFError) -> InteractionTool? {
+    try await tool(ToolID(rawValue: id))
+  }
+
+  public func hasTool(_ id: ToolID) async throws(PDFError) -> Bool {
+    try await bridged { try await handle.hasTool(id: id.rawValue) }
+  }
+
+  @available(*, deprecated, message: "Pass a ToolID: .pan for \"pan\", or ToolID(rawValue:) for a string.")
   public func hasTool(_ id: String) async throws(PDFError) -> Bool {
-    try await bridged { try await handle.hasTool(id: id) }
+    try await hasTool(ToolID(rawValue: id))
   }
 
   public func activeToolEnables(_ behavior: String) async throws(PDFError) -> Bool {
@@ -82,16 +92,26 @@ public struct InteractionCapability: Sendable {
   }
 
   /// Throws `not-found` for an id nobody registered.
+  public func activateTool(_ id: ToolID) async throws(PDFError) {
+    try await bridged { try await handle.activateTool(id: id.rawValue) }
+  }
+
+  @available(*, deprecated, message: "Pass a ToolID: .pan for \"pan\", or ToolID(rawValue:) for a string.")
   public func activateTool(_ id: String) async throws(PDFError) {
-    try await bridged { try await handle.activateTool(id: id) }
+    try await activateTool(ToolID(rawValue: id))
   }
 
   public func activateDefaultTool() async throws(PDFError) {
     try await bridged { try await handle.activateDefaultTool() }
   }
 
+  public func pushTool(_ id: ToolID) async throws(PDFError) {
+    try await bridged { try await handle.pushTool(id: id.rawValue) }
+  }
+
+  @available(*, deprecated, message: "Pass a ToolID: .pan for \"pan\", or ToolID(rawValue:) for a string.")
   public func pushTool(_ id: String) async throws(PDFError) {
-    try await bridged { try await handle.pushTool(id: id) }
+    try await pushTool(ToolID(rawValue: id))
   }
 
   public func popTool() async throws(PDFError) {
@@ -99,8 +119,13 @@ public struct InteractionCapability: Sendable {
   }
 
   /// Replace a tool's cursors by name; `nil` brings the tool's own back.
+  public func setToolCursor(_ id: ToolID, cursors: [String: String]?) async throws(PDFError) {
+    try await bridged { try await handle.setToolCursor(id: id.rawValue, cursors: cursors) }
+  }
+
+  @available(*, deprecated, message: "Pass a ToolID: .pan for \"pan\", or ToolID(rawValue:) for a string.")
   public func setToolCursor(_ id: String, cursors: [String: String]?) async throws(PDFError) {
-    try await bridged { try await handle.setToolCursor(id: id, cursors: cursors) }
+    try await setToolCursor(ToolID(rawValue: id), cursors: cursors)
   }
 
   /// Throws `conflict` for an id already registered unless `replace`.

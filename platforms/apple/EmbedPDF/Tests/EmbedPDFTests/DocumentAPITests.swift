@@ -100,7 +100,7 @@ extension BaseSuite {
       #expect(try await viewer.settings() == initial)
       let document = try await viewer.open(Fixture.data("report"))
       #expect(try await !viewer.canDownload(document))
-      #expect(try await !viewer.allows("doc.download", in: document))
+      #expect(try await !viewer.allows(.download, in: document))
       await #expect { _ = try await viewer.saveLayer(document) } throws: { ($0 as? PDFError)?.code == .permissionDenied }
       try await viewer.destroy()
     }

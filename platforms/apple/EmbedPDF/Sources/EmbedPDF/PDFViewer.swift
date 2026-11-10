@@ -202,8 +202,13 @@ public final class PDFViewer: Sendable {
     try await bridged { try await host.pageRevision(documentId: document?.id) }
   }
 
+  public func allows(_ capability: DocumentCapability, in document: DocumentInfo? = nil) async throws(PDFError) -> Bool {
+    try await bridged { try await host.allows(capability: capability.rawValue, documentId: document?.id) }
+  }
+
+  @available(*, deprecated, message: "Pass a DocumentCapability: .download for \"doc.download\", or DocumentCapability(rawValue:) for a string.")
   public func allows(_ capability: String, in document: DocumentInfo? = nil) async throws(PDFError) -> Bool {
-    try await bridged { try await host.allows(capability: capability, documentId: document?.id) }
+    try await allows(DocumentCapability(rawValue: capability), in: document)
   }
 
   public func canDownload(_ document: DocumentInfo? = nil) async throws(PDFError) -> Bool {
