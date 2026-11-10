@@ -265,6 +265,50 @@ write `[Annotation]`. This one was renamed at the source,
 both say `AnnotationRecord`. The deprecated `Annotation` alias has the same
 limit as `PDFDocument`.
 
+Reads no longer hand out `AnnotationRecord` itself. `get(_:)`, `list(_:)`,
+`selected()` and `hitTest(at:on:)` return `AnnotationInfo`, a hand-written
+struct over it with `Date` timestamps and typed ink, highlight and note
+members, and `AnnotationInfo.record` gives the generated record back.
+
+## Moving from 0.0.0-swift.4
+
+Most renames since `0.0.0-swift.4` keep the old spelling as a deprecated
+shim, so the compiler names the replacement. These changes have no shim and
+need an edit:
+
+- `PDFError.code` is a non-optional `PDFError.Code`, not `String?`.
+  `error.code == "not-found"` still compiles, because a string literal is a
+  code; `if let code = error.code` and `error.code == nil` don't. Prefer
+  `catch PDFError.Code.notFound`.
+- `AnnotationInfo`, the new read result, types what `AnnotationRecord` kept
+  as text: `createdAt` and `modifiedAt` are `Date?` (the engine's text is
+  `rawCreatedAt` and `rawModifiedAt`), `subtype` is an `AnnotationSubtype`,
+  and ink, highlight and note colours are `AnnotationColor`. Code that names
+  `AnnotationRecord` as the result type still compiles against a deprecated
+  overload.
+- Counts and indexes are `Int`. An untyped `let count = try await
+  viewer.documentCount()` is now an `Int`, so arithmetic that mixed it with
+  `UInt64` or `UInt32` needs a conversion. A value out of the engine's range
+  throws `.invalidInput` instead of trapping.
+
+The deprecated spellings, with their replacements:
+
+| Deprecated | Use |
+|---|---|
+| `PDFViewer.stateRevisions`, `reportedErrors` | `observeStateRevisions()`, `observeReportedErrors()` |
+| `PDFError(name:code:detail:)` with a `String?` code | `PDFError(_:detail:name:)` |
+| `allows(_:in:)` with a `String` | a `DocumentPermission`, or a string literal |
+| tool ids as `String` | a `ToolID`, or a string literal |
+| `activeToolId()`, `defaultToolId()` | `activeToolID()`, `defaultToolID()`, which return a `ToolID` |
+| `reorder(_:to:)` with a JSON string | an `AnnotationPosition` |
+| `Bool?` parameters whose `nil` meant the engine default | a plain `Bool`, or a `ContentInclusion` where the default follows the session's scope |
+| `UInt32`, `UInt64` and `Int64` counts and indexes | `Int` |
+| `SearchModel.activeIndex` | `activeHitIndex` |
+| `StageReaderModel.currentPageIndex` | `pageIndex` |
+| `AnnotationInfo.fieldsJson`, `groupId` | `fieldsJSON`, `groupID` |
+
+The deprecated overloads go away in a later tag. We haven't picked which.
+
 ## The demo app
 
 `EmbedPDFDemo/` is a small SwiftUI app over the package. It opens `report.pdf` on launch,
