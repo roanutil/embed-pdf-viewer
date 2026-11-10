@@ -58,7 +58,7 @@ extension BaseSuite {
       do {
         _ = try await task.value
       } catch {
-        expectNoDifference((error as? PDFError)?.code, "operation-cancelled")
+        expectNoDifference((error as? PDFError)?.code, .operationCancelled)
       }
       #expect(try await selection.readText().isEmpty == false)
     }
@@ -73,7 +73,7 @@ extension BaseSuite {
       do {
         _ = try await task.value
       } catch {
-        expectNoDifference((error as? PDFError)?.code, "operation-cancelled")
+        expectNoDifference((error as? PDFError)?.code, .operationCancelled)
       }
       let text = try await selection.readText(in: range)
       expectNoDifference(text.utf16.count, 20)
@@ -85,7 +85,7 @@ extension BaseSuite {
       await #expect {
         _ = try await selection.hasSelection()
       } throws: { error in
-        (error as? PDFError)?.code == "instance-closed"
+        (error as? PDFError)?.code == .instanceClosed
       }
     }
 

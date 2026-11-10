@@ -41,6 +41,6 @@ func expectCancelledBeforeItStarts<T: Sendable>(
   case .success:
     Issue.record("a call made in a cancelled task finished", sourceLocation: sourceLocation)
   case let .failure(error):
-    #expect((error as? PDFError)?.code == "operation-cancelled", "\(error)", sourceLocation: sourceLocation)
+    #expect((error as? PDFError)?.code == .operationCancelled, "\(error)", sourceLocation: sourceLocation)
   }
 }

@@ -52,7 +52,7 @@ extension BaseSuite {
     @Test func aLoaderFailureKeepsItsCodeInTheEvent() async throws {
       final class Refusing: LocaleLoader, Sendable {
         func load(code: String, completion: LocaleLoadCompletion) {
-          completion.fail(PDFError(name: "PluginError", code: "permission-denied", detail: "offline policy"))
+          completion.fail(PDFError(name: "PluginError", code: .permissionDenied, detail: "offline policy"))
         }
       }
       let viewer = try PDFViewer(
@@ -77,7 +77,7 @@ extension BaseSuite {
       await #expect {
         try await i18n.setLocale("es")
       } throws: { error in
-        (error as? PDFError)?.code == "operation-failed"
+        (error as? PDFError)?.code == .operationFailed
       }
       let locale = try await i18n.locale()
       expectNoDifference(locale, "en")
@@ -88,7 +88,7 @@ extension BaseSuite {
       await #expect {
         try await i18n.setLocale("fr")
       } throws: { error in
-        (error as? PDFError)?.code == "not-found"
+        (error as? PDFError)?.code == .notFound
       }
     }
 
@@ -134,7 +134,7 @@ extension BaseSuite {
       await #expect {
         _ = try await i18n.locale()
       } throws: { error in
-        (error as? PDFError)?.code == "instance-closed"
+        (error as? PDFError)?.code == .instanceClosed
       }
     }
   }

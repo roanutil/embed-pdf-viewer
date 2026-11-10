@@ -74,7 +74,7 @@ extension BaseSuite {
       await #expect {
         try await interaction.activateTool("laser")
       } throws: { error in
-        (error as? PDFError)?.code == "not-found"
+        (error as? PDFError)?.code == .notFound
       }
     }
 
@@ -162,7 +162,7 @@ extension BaseSuite {
       await #expect {
         _ = try await interaction.activeToolId()
       } throws: { error in
-        (error as? PDFError)?.code == "instance-closed"
+        (error as? PDFError)?.code == .instanceClosed
       }
     }
 

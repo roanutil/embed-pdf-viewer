@@ -49,7 +49,7 @@ extension BaseSuite {
       expectNoDifference(defaults.limit, 100)
       try await history.clear()
       try await viewer.close(document)
-      await #expect { _ = try await history.canUndo() } throws: { ($0 as? PDFError)?.code == "instance-closed" }
+      await #expect { _ = try await history.canUndo() } throws: { ($0 as? PDFError)?.code == .instanceClosed }
       var ended = history.events.makeAsyncIterator()
       let event = await ended.next()
       expectNoDifference(event, nil)
@@ -60,7 +60,7 @@ extension BaseSuite {
       let viewer = try PDFViewer(ViewerConfig())
       try await viewer.start()
       let document = try await viewer.open(Fixture.data("report"))
-      await #expect { _ = try await viewer.history(for: document) } throws: { ($0 as? PDFError)?.code == "unsupported" }
+      await #expect { _ = try await viewer.history(for: document) } throws: { ($0 as? PDFError)?.code == .unsupported }
       try await viewer.destroy()
     }
   }

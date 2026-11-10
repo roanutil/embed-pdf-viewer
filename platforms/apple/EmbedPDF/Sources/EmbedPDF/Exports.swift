@@ -28,10 +28,10 @@ extension HostFailure {
   public init(_ error: any Error) {
     switch error {
     case let error as PDFError:
-      self.init(name: error.name, code: error.code, detail: error.detail)
+      self.init(name: error.name, code: error.code.rawValue, detail: error.detail)
     case let error as ViewerError:
       let error = PDFError(error)
-      self.init(name: error.name, code: error.code, detail: error.detail)
+      self.init(name: error.name, code: error.code.rawValue, detail: error.detail)
     case is CancellationError:
       self.init(name: "AbortError", code: "operation-cancelled", detail: "operation cancelled")
     default:

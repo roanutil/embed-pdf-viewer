@@ -139,7 +139,7 @@ extension BaseSuite {
         _ = try await annotations.list()
       } throws: { error in
         let error = error as? PDFError
-        return error?.code == "instance-closed" && error?.name == "PluginError"
+        return error?.code == .instanceClosed && error?.name == "PluginError"
       }
     }
 
@@ -150,7 +150,7 @@ extension BaseSuite {
       await #expect {
         try await annotations.drafts.setTextSelection(range, in: ref)
       } throws: { error in
-        (error as? PDFError)?.code == "invalid-input"
+        (error as? PDFError)?.code == .invalidInput
       }
     }
 
@@ -197,7 +197,7 @@ extension BaseSuite {
       do {
         try await task.value
       } catch {
-        expectNoDifference((error as? PDFError)?.code, "operation-cancelled")
+        expectNoDifference((error as? PDFError)?.code, .operationCancelled)
       }
       _ = try await annotations.list()
     }

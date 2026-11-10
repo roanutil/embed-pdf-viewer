@@ -29,7 +29,7 @@ extension BaseSuite {
       let resetSelection = try await selection.settings()
       expectNoDifference(resetSelection, registered)
       try await viewer.close(first)
-      await #expect { try await selection.settings() } throws: { ($0 as? PDFError)?.code == "instance-closed" }
+      await #expect { try await selection.settings() } throws: { ($0 as? PDFError)?.code == .instanceClosed }
       let survivingSelection = try await other.settings()
       expectNoDifference(survivingSelection, registered)
     }

@@ -72,10 +72,10 @@ extension BaseSuite {
       let (_, _, actions) = try await opened()
       await #expect {
         try await actions.runDocumentVerb(.save) {
-          throw PDFError(name: "PluginError", code: "permission-denied", detail: "no doc.download")
+          throw PDFError(name: "PluginError", code: .permissionDenied, detail: "no doc.download")
         }
       } throws: { error in
-        (error as? PDFError)?.code == "permission-denied" && (error as? PDFError)?.detail == "no doc.download"
+        (error as? PDFError)?.code == .permissionDenied && (error as? PDFError)?.detail == "no doc.download"
       }
     }
 
@@ -86,7 +86,7 @@ extension BaseSuite {
         _ = try await actions.policy()
       } throws: { error in
         let error = error as? PDFError
-        return error?.code == "instance-closed" && error?.name == "PluginError"
+        return error?.code == .instanceClosed && error?.name == "PluginError"
       }
     }
 

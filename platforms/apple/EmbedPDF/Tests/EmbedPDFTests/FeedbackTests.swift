@@ -38,7 +38,7 @@ extension BaseSuite {
       await #expect {
         try await feedback.selection()
       } throws: { error in
-        (error as? PDFError)?.code == "instance-closed"
+        (error as? PDFError)?.code == .instanceClosed
       }
     }
 

@@ -51,7 +51,7 @@ extension BaseSuite {
         _ = try await redaction.pending()
       } throws: { error in
         let error = error as? PDFError
-        return error?.code == "instance-closed" && error?.name == "PluginError"
+        return error?.code == .instanceClosed && error?.name == "PluginError"
       }
     }
 
@@ -71,7 +71,7 @@ extension BaseSuite {
       do {
         _ = try await task.value
       } catch {
-        expectNoDifference((error as? PDFError)?.code, "operation-cancelled")
+        expectNoDifference((error as? PDFError)?.code, .operationCancelled)
       }
       _ = try await redaction.pending()
     }
@@ -83,7 +83,7 @@ extension BaseSuite {
       do {
         _ = try await task.value
       } catch {
-        expectNoDifference((error as? PDFError)?.code, "operation-cancelled")
+        expectNoDifference((error as? PDFError)?.code, .operationCancelled)
       }
       _ = try await redaction.pending()
     }

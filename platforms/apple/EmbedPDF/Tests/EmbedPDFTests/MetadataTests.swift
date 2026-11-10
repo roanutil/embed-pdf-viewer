@@ -36,7 +36,7 @@ extension BaseSuite {
       } throws: { error in
         // `PluginError`, not `Closed`: the viewer is still running.
         let error = error as? PDFError
-        return error?.code == "instance-closed" && error?.name == "PluginError"
+        return error?.code == .instanceClosed && error?.name == "PluginError"
       }
     }
 
@@ -56,7 +56,7 @@ extension BaseSuite {
       do {
         try await task.value
       } catch {
-        expectNoDifference((error as? PDFError)?.code, "operation-cancelled")
+        expectNoDifference((error as? PDFError)?.code, .operationCancelled)
       }
       try await metadata.refresh()
     }

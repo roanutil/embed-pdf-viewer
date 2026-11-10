@@ -299,7 +299,7 @@ extension RenderedPage {
         shouldInterpolate: true, intent: .defaultIntent)
     else {
       throw PDFError(
-        name: "InvalidState", code: "invalid-state",
+        name: "InvalidState", code: .invalidState,
         detail: "Core Graphics refused a \(rendered.width)x\(rendered.height) raster")
     }
     self.init(

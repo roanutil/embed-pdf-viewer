@@ -49,7 +49,7 @@ extension BaseSuite {
       await #expect {
         _ = try await task.value
       } throws: { error in
-        (error as? PDFError)?.code == "operation-cancelled"
+        (error as? PDFError)?.code == .operationCancelled
       }
       // The capability still answers after a cancelled call.
       let hits = try await search.findAll(SearchQuery(text: "Report"))
@@ -83,7 +83,7 @@ extension BaseSuite {
         _ = try await search.search(SearchQuery(text: "the"))
       } throws: { error in
         let error = error as? PDFError
-        return error?.code == "instance-closed" && error?.name == "PluginError"
+        return error?.code == .instanceClosed && error?.name == "PluginError"
       }
     }
   }

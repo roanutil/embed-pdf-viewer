@@ -52,7 +52,7 @@ final class DocumentModel {
       try await viewer.start()
       self.viewer = viewer
     } catch {
-      self.error = error as? PDFError ?? PDFError(name: "FileError", code: "operation-failed", detail: error.localizedDescription)
+      self.error = error as? PDFError ?? PDFError(name: "FileError", code: .operationFailed, detail: error.localizedDescription)
       return
     }
     await open(bundled: "report")

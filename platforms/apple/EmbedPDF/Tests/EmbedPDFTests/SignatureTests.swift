@@ -82,7 +82,7 @@ extension BaseSuite {
       await #expect {
         _ = try await signatures.sign(try signInput(field))
       } throws: { error in
-        (error as? PDFError)?.code == "operation-cancelled"
+        (error as? PDFError)?.code == .operationCancelled
       }
       let got2 = try await signatures.pending()
       expectNoDifference(got2, nil)
@@ -117,7 +117,7 @@ extension BaseSuite {
       await #expect {
         _ = try await signatures.sign(try signInput(field))
       } throws: { error in
-        (error as? PDFError)?.code == "invalid-input"
+        (error as? PDFError)?.code == .invalidInput
       }
       viewer.setSigner(try KeychainSignerTests.testSigner())
       let got7 = try await signatures.canSign(field)
@@ -198,7 +198,7 @@ extension BaseSuite {
         _ = try await signatures.snapshot()
       } throws: { error in
         let error = error as? PDFError
-        return error?.code == "instance-closed" && error?.name == "PluginError"
+        return error?.code == .instanceClosed && error?.name == "PluginError"
       }
     }
 
@@ -245,7 +245,7 @@ extension BaseSuite {
     ) async throws {
       let task = Task { try await body() }
       task.cancel()
-      do { _ = try await task.value } catch { expectNoDifference((error as? PDFError)?.code, "operation-cancelled") }
+      do { _ = try await task.value } catch { expectNoDifference((error as? PDFError)?.code, .operationCancelled) }
       _ = try await signatures.status()
     }
 
@@ -331,7 +331,7 @@ final class CancellingSigner: SignatureSigner, Sendable {
   func algorithm() -> SignatureKeyAlgorithm { .rsaPkcs1 }
   func digest() -> SignatureDigest { .sha256 }
   func sign(message: Data, completion: SignatureSignCompletion) {
-    completion.fail(PDFError(name: "UserCancelled", code: "operation-cancelled", detail: "the user cancelled"))
+    completion.fail(PDFError(name: "UserCancelled", code: .operationCancelled, detail: "the user cancelled"))
   }
 }
 

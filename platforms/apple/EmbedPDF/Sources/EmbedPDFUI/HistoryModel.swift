@@ -67,7 +67,7 @@ public final class HistoryModel {
   func receive(_ event: HistoryEvent) async {
     switch event {
     case let .undoFailed(_, _, _, failure):
-      error = PDFError(name: "PluginError", code: failure.code, detail: failure.message)
+      error = PDFError(name: "PluginError", code: PDFError.Code(rawValue: failure.code), detail: failure.message)
       notice = nil
     case let .undone(_, redo, skipped):
       error = nil

@@ -101,7 +101,7 @@ extension BaseSuite {
       let document = try await viewer.open(Fixture.data("report"))
       #expect(try await !viewer.canDownload(document))
       #expect(try await !viewer.allows("doc.download", in: document))
-      await #expect { _ = try await viewer.saveLayer(document) } throws: { ($0 as? PDFError)?.code == "permission-denied" }
+      await #expect { _ = try await viewer.saveLayer(document) } throws: { ($0 as? PDFError)?.code == .permissionDenied }
       try await viewer.destroy()
     }
 
@@ -113,7 +113,7 @@ extension BaseSuite {
       defer { session.invalidateAndCancel() }
       let viewer = try PDFViewer(ViewerConfig(), documentFetcher: URLSessionDocumentFetcher(session: session))
       try await viewer.start()
-      await #expect { _ = try await viewer.open(URL(string: "https://embedpdf.test/report.pdf")!) } throws: { ($0 as? PDFError)?.code == "not-found" }
+      await #expect { _ = try await viewer.open(URL(string: "https://embedpdf.test/report.pdf")!) } throws: { ($0 as? PDFError)?.code == .notFound }
       let failed = try #require(try await viewer.documents().first)
       #expect(failed.status == .failed)
       let retried = try await viewer.retry(failed)
@@ -138,7 +138,7 @@ extension BaseSuite {
       #expect(DocumentURLProtocol.transport.counts.requests == 1)
       #expect(try await viewer.documents().first?.status == .loading)
       opening.cancel()
-      await #expect { _ = try await opening.value } throws: { ($0 as? PDFError)?.code == "operation-cancelled" }
+      await #expect { _ = try await opening.value } throws: { ($0 as? PDFError)?.code == .operationCancelled }
       #expect(try await viewer.documents().isEmpty)
       for _ in 0..<500 {
         if DocumentURLProtocol.transport.counts.stops == 1 { break }

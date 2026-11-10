@@ -112,13 +112,13 @@ struct AttachmentModelTests {
     expectNoDifference(model.performing, false)
     let task = Task { withUnsafeCurrentTask { $0?.cancel() }; await model.add([AttachmentFileSource(data: Data(), name: "Cancelled")]) }
     await task.value
-    expectNoDifference(model.error?.code, "operation-cancelled")
+    expectNoDifference(model.error?.code, .operationCancelled)
     try await viewer.destroy()
     let (restricted, _, _, denied) = try await opened(scope: ["doc.open"])
     await denied.reload()
     #expect(!denied.canAdd)
     await denied.add([AttachmentFileSource(data: Data(), name: "Denied")])
-    expectNoDifference(denied.error?.code, "permission-denied")
+    expectNoDifference(denied.error?.code, .permissionDenied)
     try await restricted.destroy()
   }
 }

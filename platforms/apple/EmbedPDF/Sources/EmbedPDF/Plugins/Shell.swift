@@ -113,7 +113,7 @@ public struct ShellCapability: Sendable {
     do {
       return String(decoding: try JSONEncoder().encode(props), as: UTF8.self)
     } catch {
-      throw PDFError(name: "EncodingError", code: "invalid-input", detail: "\(error)")
+      throw PDFError(name: "EncodingError", code: .invalidInput, detail: "\(error)")
     }
   }
 }

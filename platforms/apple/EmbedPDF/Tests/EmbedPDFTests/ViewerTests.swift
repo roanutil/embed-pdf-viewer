@@ -72,7 +72,7 @@ extension BaseSuite {
         try await viewer.unlock(locked, password: "nope")
       } throws: { error in
         let error = error as? PDFError
-        return error?.code == "permission-denied" && error?.detail == "incorrect document password"
+        return error?.code == .permissionDenied && error?.detail == "incorrect document password"
       }
       let tab = try #require(try await viewer.documents().first { $0.id == locked.id })
       expectNoDifference(tab.status, .locked)
@@ -85,7 +85,7 @@ extension BaseSuite {
       await #expect {
         _ = try await viewer.pages(of: document)
       } throws: { error in
-        (error as? PDFError)?.code == "not-found"
+        (error as? PDFError)?.code == .notFound
       }
     }
 
@@ -96,12 +96,12 @@ extension BaseSuite {
       await #expect {
         _ = try await viewer.metadata(for: locked)
       } throws: { error in
-        (error as? PDFError)?.code == "not-ready"
+        (error as? PDFError)?.code == .notReady
       }
       await #expect {
         _ = try await viewer.search(in: locked)
       } throws: { error in
-        (error as? PDFError)?.code == "unsupported"
+        (error as? PDFError)?.code == .unsupported
       }
     }
 
@@ -136,7 +136,7 @@ extension BaseSuite {
       await #expect {
         _ = try await viewer.save(document, mode: .rewrite)
       } throws: { error in
-        (error as? PDFError)?.code == "permission-denied"
+        (error as? PDFError)?.code == .permissionDenied
       }
       _ = try await viewer.save(document, mode: .incremental)
     }
@@ -146,7 +146,7 @@ extension BaseSuite {
       let document = try await viewer.open(Fixture.data("report"))
       let task = Task { try await viewer.save(document, mode: .rewrite) }
       task.cancel()
-      do { _ = try await task.value } catch { expectNoDifference((error as? PDFError)?.code, "operation-cancelled") }
+      do { _ = try await task.value } catch { expectNoDifference((error as? PDFError)?.code, .operationCancelled) }
       _ = try await viewer.save(document)
     }
 
@@ -198,7 +198,7 @@ extension BaseSuite {
       await #expect {
         _ = try await viewer.documents()
       } throws: { error in
-        (error as? PDFError)?.code == "instance-closed"
+        (error as? PDFError)?.code == .instanceClosed
       }
     }
 

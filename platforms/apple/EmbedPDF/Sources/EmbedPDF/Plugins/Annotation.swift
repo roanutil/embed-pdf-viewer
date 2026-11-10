@@ -380,7 +380,7 @@ public struct AnnotationDraftsCapability: Sendable {
       guard let lower = UInt32(exactly: range.lowerBound), let upper = UInt32(exactly: range.upperBound)
       else {
         throw PDFError(
-          name: "RangeError", code: "invalid-input",
+          name: "RangeError", code: .invalidInput,
           detail: "text selection \(range) is outside 0..<\(UInt32.max)")
       }
       (start, end) = (lower, upper)

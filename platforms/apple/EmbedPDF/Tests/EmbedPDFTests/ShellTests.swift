@@ -46,7 +46,7 @@ extension BaseSuite {
       await #expect {
         try await shell.open("style", props: [1, 2, 3])
       } throws: { error in
-        (error as? PDFError)?.code == "invalid-input"
+        (error as? PDFError)?.code == .invalidInput
       }
       let isOpen = try await shell.isOpen("style")
       expectNoDifference(isOpen, false)
@@ -117,7 +117,7 @@ extension BaseSuite {
         _ = try await shell.isOpen("sidebar")
       } throws: { error in
         let error = error as? PDFError
-        return error?.code == "instance-closed" && error?.name == "PluginError"
+        return error?.code == .instanceClosed && error?.name == "PluginError"
       }
     }
   }

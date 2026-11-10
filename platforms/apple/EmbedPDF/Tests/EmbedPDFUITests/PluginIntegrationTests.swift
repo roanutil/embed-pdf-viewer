@@ -85,16 +85,16 @@ struct PluginIntegrationTests {
     try await viewer.start()
     let locked = try await viewer.open(pluginFixture("encrypted-hello"))
     expectNoDifference(locked.status, .locked)
-    await #expect { _ = try await viewer.history(for: locked) } throws: { ($0 as? PDFError)?.code == "not-ready" }
-    await #expect { _ = try await viewer.outline(for: locked) } throws: { ($0 as? PDFError)?.code == "not-ready" }
-    await #expect { _ = try await viewer.attachments(for: locked) } throws: { ($0 as? PDFError)?.code == "not-ready" }
+    await #expect { _ = try await viewer.history(for: locked) } throws: { ($0 as? PDFError)?.code == .notReady }
+    await #expect { _ = try await viewer.outline(for: locked) } throws: { ($0 as? PDFError)?.code == .notReady }
+    await #expect { _ = try await viewer.attachments(for: locked) } throws: { ($0 as? PDFError)?.code == .notReady }
     try await viewer.destroy()
     let bare = try PDFViewer(ViewerConfig())
     try await bare.start()
     let document = try await bare.open(pluginFixture())
-    await #expect { _ = try await bare.history(for: document) } throws: { ($0 as? PDFError)?.code == "unsupported" }
-    await #expect { _ = try await bare.outline(for: document) } throws: { ($0 as? PDFError)?.code == "unsupported" }
-    await #expect { _ = try await bare.attachments(for: document) } throws: { ($0 as? PDFError)?.code == "unsupported" }
+    await #expect { _ = try await bare.history(for: document) } throws: { ($0 as? PDFError)?.code == .unsupported }
+    await #expect { _ = try await bare.outline(for: document) } throws: { ($0 as? PDFError)?.code == .unsupported }
+    await #expect { _ = try await bare.attachments(for: document) } throws: { ($0 as? PDFError)?.code == .unsupported }
     try await bare.destroy()
   }
 
@@ -106,7 +106,7 @@ struct PluginIntegrationTests {
     let attachments = try await viewer.attachments(for: document)
     #expect(try await !outline.canEdit())
     #expect(try await !attachments.canAdd())
-    await #expect { _ = try await outline.create(OutlineItemInput(title: "Denied")) } throws: { ($0 as? PDFError)?.code == "permission-denied" }
+    await #expect { _ = try await outline.create(OutlineItemInput(title: "Denied")) } throws: { ($0 as? PDFError)?.code == .permissionDenied }
     try await viewer.destroy()
     let allowed = try PDFViewer(config())
     try await allowed.start()
@@ -114,7 +114,7 @@ struct PluginIntegrationTests {
     let files = try await allowed.attachments(for: next)
     let cancelled = Task {
       withUnsafeCurrentTask { $0?.cancel() }
-      await #expect { _ = try await files.add([AttachmentFileSource(data: Data(), name: "Cancelled")]) } throws: { ($0 as? PDFError)?.code == "operation-cancelled" }
+      await #expect { _ = try await files.add([AttachmentFileSource(data: Data(), name: "Cancelled")]) } throws: { ($0 as? PDFError)?.code == .operationCancelled }
     }
     await cancelled.value
     try await files.ensureLoaded()

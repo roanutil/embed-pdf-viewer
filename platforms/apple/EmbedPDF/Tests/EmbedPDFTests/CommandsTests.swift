@@ -121,7 +121,7 @@ extension BaseSuite {
       expectNoDifference(before?.enabled, true)
       if fails {
         await #expect { _ = try await commands.execute("app:update") } throws: { error in
-          (error as? PDFError)?.code == "operation-failed"
+          (error as? PDFError)?.code == .operationFailed
         }
       } else {
         let result = try await commands.execute("app:update")
@@ -148,7 +148,7 @@ extension BaseSuite {
       try await commands.setAppState(Data(#"{"kept":true}"#.utf8))
       for invalid in [Data("{broken".utf8), Data([0x80])] {
         await #expect { try await commands.setAppState(invalid) } throws: { error in
-          (error as? PDFError)?.code == "invalid-input"
+          (error as? PDFError)?.code == .invalidInput
         }
         seen.withValue { $0 = [] }
         _ = try await commands.resolve("app:inspect")
@@ -187,7 +187,7 @@ extension BaseSuite {
       await #expect {
         _ = try await commands.execute("doc:save", args: args)
       } throws: { error in
-        (error as? PDFError)?.code == "invalid-input"
+        (error as? PDFError)?.code == .invalidInput
       }
       expectNoDifference(ran.value, false)
     }
@@ -200,21 +200,21 @@ extension BaseSuite {
       await #expect {
         _ = try await commands.execute("doc:save")
       } throws: { error in
-        (error as? PDFError)?.code == "operation-failed"
+        (error as? PDFError)?.code == .operationFailed
       }
     }
 
     @Test func aThrownPDFErrorKeepsItsCode() async throws {
       let (_, commands) = try await started()
       let handler = CommandHandler(run: { _ in
-        throw PDFError(name: "PluginError", code: "permission-denied", detail: "no doc.annotate")
+        throw PDFError(name: "PluginError", code: .permissionDenied, detail: "no doc.annotate")
       })
       _ = try await commands.register(CommandDefinition(id: "doc:save", labelKey: "Save", handler: handler))
       let events = commands.events
       await #expect {
         _ = try await commands.execute("doc:save")
       } throws: { error in
-        (error as? PDFError)?.code == "permission-denied" && (error as? PDFError)?.detail == "no doc.annotate"
+        (error as? PDFError)?.code == .permissionDenied && (error as? PDFError)?.detail == "no doc.annotate"
       }
       for await event in events {
         guard case let .executionFailed(event) = event else { continue }
@@ -231,7 +231,7 @@ extension BaseSuite {
       await #expect {
         _ = try await commands.execute("doc:save")
       } throws: { error in
-        (error as? PDFError)?.code == "operation-cancelled"
+        (error as? PDFError)?.code == .operationCancelled
       }
     }
 
@@ -246,7 +246,7 @@ extension BaseSuite {
       await #expect {
         _ = try await commands.execute("doc:save")
       } throws: { error in
-        (error as? PDFError)?.code == "operation-failed" && (error as? PDFError)?.detail == "the disk is full"
+        (error as? PDFError)?.code == .operationFailed && (error as? PDFError)?.detail == "the disk is full"
       }
     }
 
@@ -259,7 +259,7 @@ extension BaseSuite {
         _ = try await commands.execute("doc:save")
       } throws: { error in
         guard let error = error as? PDFError else { return false }
-        return error.code == "operation-failed" && !error.detail.contains("bytes: 512")
+        return error.code == .operationFailed && !error.detail.contains("bytes: 512")
       }
     }
 
@@ -322,7 +322,7 @@ extension BaseSuite {
       await #expect {
         _ = try await commands.commandIds()
       } throws: { error in
-        (error as? PDFError)?.code == "instance-closed"
+        (error as? PDFError)?.code == .instanceClosed
       }
     }
   }

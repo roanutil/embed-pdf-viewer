@@ -50,7 +50,7 @@ struct HistoryModelTests {
     try await viewer.close(document)
     await observing.value
     expectNoDifference(model.canUndo, false)
-    expectNoDifference(model.error?.code, "instance-closed")
+    expectNoDifference(model.error?.code, .instanceClosed)
     let replacement = try await viewer.open(pluginFixture())
     let next = HistoryModel(viewer: viewer, history: try await viewer.history(for: replacement))
     await next.refresh()
@@ -64,7 +64,7 @@ struct HistoryModelTests {
     let label = HistoryChangeLabel(key: "test.edit", values: [:])
     await model.receive(.undoFailed(label: label, redo: false, reason: .refused,
       error: PluginErrorInfo(code: "permission-denied", message: "Editing is not allowed", capability: "history", permission: nil)))
-    expectNoDifference(model.error?.code, "permission-denied")
+    expectNoDifference(model.error?.code, .permissionDenied)
     await model.receive(.undone(label: label, redo: false, skipped: 2))
     #expect(model.notice != nil)
     expectNoDifference(model.error, nil)

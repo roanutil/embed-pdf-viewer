@@ -76,7 +76,7 @@ extension BaseSuite {
       await #expect {
         _ = try await render.renderPage(page, options: RenderPageOptions(scale: 0))
       } throws: { error in
-        (error as? PDFError)?.code == "invalid-input"
+        (error as? PDFError)?.code == .invalidInput
       }
     }
 
@@ -117,7 +117,7 @@ extension BaseSuite {
       await #expect {
         _ = try await render.renderPage(page)
       } throws: { error in
-        (error as? PDFError)?.code == "instance-closed"
+        (error as? PDFError)?.code == .instanceClosed
       }
     }
 

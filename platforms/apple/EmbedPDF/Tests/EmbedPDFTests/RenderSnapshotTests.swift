@@ -43,7 +43,7 @@ extension BaseSuite {
       #expect(cleared! == nil)
       try await viewer.close(document)
       #expect(await changes.next() == nil)
-      await #expect { _ = try await snapshot.image() } throws: { ($0 as? PDFError)?.code == "instance-closed" }
+      await #expect { _ = try await snapshot.image() } throws: { ($0 as? PDFError)?.code == .instanceClosed }
       try await viewer.destroy()
       #expect(pixels.image.dataProvider?.data == before)
     }

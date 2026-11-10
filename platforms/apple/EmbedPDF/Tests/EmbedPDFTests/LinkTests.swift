@@ -90,7 +90,7 @@ extension BaseSuite {
       await #expect {
         _ = try await link.links(on: page)
       } throws: { error in
-        (error as? PDFError)?.code == "instance-closed"
+        (error as? PDFError)?.code == .instanceClosed
       }
     }
 

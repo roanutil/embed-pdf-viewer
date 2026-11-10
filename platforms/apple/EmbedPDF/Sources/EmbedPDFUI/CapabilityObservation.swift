@@ -23,6 +23,6 @@ func controlError(_ error: any Error) -> PDFError {
   if let error = error as? PDFError { return error }
   return PDFError(
     name: String(describing: type(of: error)),
-    code: error is CancellationError ? "operation-cancelled" : "operation-failed",
+    code: error is CancellationError ? .operationCancelled : .operationFailed,
     detail: error.localizedDescription)
 }

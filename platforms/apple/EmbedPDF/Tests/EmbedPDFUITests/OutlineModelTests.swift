@@ -90,7 +90,7 @@ struct OutlineModelTests {
     await task.value
     expectNoDifference(model.rows.count, 0)
     expectNoDifference(model.canEdit, false)
-    expectNoDifference(model.error?.code, "instance-closed")
+    expectNoDifference(model.error?.code, .instanceClosed)
     let next = try await viewer.open(pluginFixture())
     let nextModel = OutlineModel(viewer: viewer, outline: try await viewer.outline(for: next))
     await nextModel.reload()
@@ -121,7 +121,7 @@ struct OutlineModelTests {
     expectNoDifference(restricted.canEdit, false)
     let refused = await restricted.create(OutlineItemInput(title: "Denied"))
     #expect(refused == nil)
-    expectNoDifference(restricted.error?.code, "permission-denied")
+    expectNoDifference(restricted.error?.code, .permissionDenied)
     try await restrictedViewer.destroy()
   }
 }

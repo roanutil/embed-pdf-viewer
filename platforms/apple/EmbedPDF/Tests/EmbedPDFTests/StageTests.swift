@@ -108,7 +108,7 @@ extension BaseSuite {
       await #expect {
         _ = try await stage.zoomLevel()
       } throws: { error in
-        (error as? PDFError)?.code == "instance-closed"
+        (error as? PDFError)?.code == .instanceClosed
       }
     }
 

@@ -28,7 +28,7 @@ extension BaseSuite {
       do {
         _ = try await task.value
       } catch {
-        expectNoDifference((error as? PDFError)?.code, "operation-cancelled")
+        expectNoDifference((error as? PDFError)?.code, .operationCancelled)
       }
     }
 
@@ -58,7 +58,7 @@ extension BaseSuite {
       await #expect {
         _ = try await stamps.importLibrary(png)
       } throws: { error in
-        (error as? PDFError)?.code == "invalid-input"
+        (error as? PDFError)?.code == .invalidInput
       }
       let count = try await stamps.libraries().count
       expectNoDifference(count, 0)
@@ -88,7 +88,7 @@ extension BaseSuite {
         // A closed document grants nothing: the placement's
         // `annotations:create` check refuses it first, as the TypeScript
         // does (`stamp-placement.json`, `arming-what-is-not-there`).
-        (error as? PDFError)?.code == "permission-denied"
+        (error as? PDFError)?.code == .permissionDenied
       }
       let armed = try await stamps.armedAsset(in: document)
       expectNoDifference(armed, nil)
@@ -121,7 +121,7 @@ extension BaseSuite {
       await #expect {
         _ = try await stamps.createAsset(from: [], in: document, on: page)
       } throws: { error in
-        (error as? PDFError)?.code == "invalid-input"
+        (error as? PDFError)?.code == .invalidInput
       }
       let square = try await viewer.annotations(for: document).create(
         #"{"subtype": "square", "box": {"x": 72, "y": 72, "width": 40, "height": 40}}"#, on: page)
@@ -172,7 +172,7 @@ extension BaseSuite {
       await #expect {
         _ = try await stamps.persist(to: store)
       } throws: { error in
-        (error as? PDFError)?.code == "instance-closed"
+        (error as? PDFError)?.code == .instanceClosed
       }
     }
 
@@ -214,7 +214,7 @@ extension BaseSuite {
       await #expect {
         _ = try await stamps.libraries()
       } throws: { error in
-        (error as? PDFError)?.code == "instance-closed"
+        (error as? PDFError)?.code == .instanceClosed
       }
     }
 

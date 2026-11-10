@@ -99,7 +99,7 @@ extension BaseSuite {
       } throws: { error in
         // `destroy` stops the kernel and then the thread, so the call
         // answers either the plugin's `instance-closed` or the viewer's.
-        (error as? PDFError)?.code == "instance-closed"
+        (error as? PDFError)?.code == .instanceClosed
       }
     }
   }

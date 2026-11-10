@@ -68,7 +68,7 @@ extension BaseSuite {
         _ = try await measurement.calibrate(
           MeasurementCalibrateInput(page: page, from: Point(x: 5, y: 5), to: Point(x: 5, y: 5), value: 1, unit: "m"))
       } throws: { error in
-        (error as? PDFError)?.code == "invalid-input"
+        (error as? PDFError)?.code == .invalidInput
       }
     }
 
@@ -105,7 +105,7 @@ extension BaseSuite {
         _ = try await measurement.pageScale(page)
       } throws: { error in
         let error = error as? PDFError
-        return error?.code == "instance-closed" && error?.name == "PluginError"
+        return error?.code == .instanceClosed && error?.name == "PluginError"
       }
     }
 
@@ -127,7 +127,7 @@ extension BaseSuite {
       do {
         _ = try await task.value
       } catch {
-        expectNoDifference((error as? PDFError)?.code, "operation-cancelled")
+        expectNoDifference((error as? PDFError)?.code, .operationCancelled)
       }
       _ = try await measurement.pageScale(page)
     }
@@ -186,7 +186,7 @@ extension BaseSuite {
       do {
         try await task.value
       } catch {
-        expectNoDifference((error as? PDFError)?.code, "operation-cancelled")
+        expectNoDifference((error as? PDFError)?.code, .operationCancelled)
       }
     }
 

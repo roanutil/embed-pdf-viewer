@@ -99,7 +99,7 @@ extension BaseSuite {
         _ = try await task.value
       } catch {
         // Cancelled before it started. Once started, the edit lands.
-        expectNoDifference((error as? PDFError)?.code, "operation-cancelled")
+        expectNoDifference((error as? PDFError)?.code, .operationCancelled)
       }
       // The capability still answers after a cancelled call.
       #expect(try await edit.canEdit())
@@ -166,7 +166,7 @@ extension BaseSuite {
         _ = try await edit.canEdit()
       } throws: { error in
         let error = error as? PDFError
-        return error?.code == "instance-closed" && error?.name == "PluginError"
+        return error?.code == .instanceClosed && error?.name == "PluginError"
       }
     }
   }

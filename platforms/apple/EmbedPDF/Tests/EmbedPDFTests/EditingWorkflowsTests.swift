@@ -49,7 +49,7 @@ extension BaseSuite {
       #expect(try await commands.refusal("missing") == nil)
       try await commands.setDisabledCommands([])
       try await viewer.destroy()
-      await #expect { try await commands.disabledCommands() } throws: { ($0 as? PDFError)?.code == "instance-closed" }
+      await #expect { try await commands.disabledCommands() } throws: { ($0 as? PDFError)?.code == .instanceClosed }
     }
 
     @Test func namedActionProbeReflectsPolicyAndClosedDocuments() async throws {
@@ -61,7 +61,7 @@ extension BaseSuite {
       try await actions.updatePolicy(ActionPolicyPatch(named: PartialActionPolicyRow(user: .block)))
       #expect(try await !actions.canExecuteNamed("NextPage"))
       try await viewer.close(document)
-      await #expect { try await actions.canExecuteNamed("NextPage") } throws: { ($0 as? PDFError)?.code == "instance-closed" }
+      await #expect { try await actions.canExecuteNamed("NextPage") } throws: { ($0 as? PDFError)?.code == .instanceClosed }
     }
 
     @Test func annotationBundlesPreserveOwnedResourcesAndTypedMappings() async throws {
@@ -101,7 +101,7 @@ extension BaseSuite {
       let persisted = try object(try await reopened.export(refs: copied.annotations.map(\.annotationRef)))
       expectNoDifference(persisted["resources"] as? [String: [String: String]], resources)
       try await viewer.close(first)
-      await #expect { try await source.export() } throws: { ($0 as? PDFError)?.code == "instance-closed" }
+      await #expect { try await source.export() } throws: { ($0 as? PDFError)?.code == .instanceClosed }
       #expect(try await target.get(copied.annotations[0].annotationRef) != nil)
     }
 
@@ -158,8 +158,8 @@ extension BaseSuite {
       let reopenedWidgetX = try await reopened.widget(widget)?.bounds.x
       expectNoDifference(reopenedWidgetX, 60)
       try await viewer.close(document)
-      await #expect { try await form.selectedField() } throws: { ($0 as? PDFError)?.code == "instance-closed" }
-      await #expect { try await form.deleteWidget(widget) } throws: { ($0 as? PDFError)?.code == "instance-closed" }
+      await #expect { try await form.selectedField() } throws: { ($0 as? PDFError)?.code == .instanceClosed }
+      await #expect { try await form.deleteWidget(widget) } throws: { ($0 as? PDFError)?.code == .instanceClosed }
     }
 
     @Test func directFormPayloadsAuthorOptionsScriptsAndPersistNullEdits() async throws {
@@ -199,9 +199,9 @@ extension BaseSuite {
       #expect(try object(added.widgetJson)["fontSize"] as? Double == 19)
       let count = try await form.fields().count
       for malformed in ["{", "[]", "null", "42"] {
-        await #expect { try await form.create(draftJSON: malformed) } throws: { ($0 as? PDFError)?.code == "invalid-input" }
-        await #expect { try await form.update(field.fieldRef, patchJSON: malformed) } throws: { ($0 as? PDFError)?.code == "invalid-input" }
-        await #expect { try await form.addWidget(to: field.fieldRef, placementJSON: malformed) } throws: { ($0 as? PDFError)?.code == "invalid-input" }
+        await #expect { try await form.create(draftJSON: malformed) } throws: { ($0 as? PDFError)?.code == .invalidInput }
+        await #expect { try await form.update(field.fieldRef, patchJSON: malformed) } throws: { ($0 as? PDFError)?.code == .invalidInput }
+        await #expect { try await form.addWidget(to: field.fieldRef, placementJSON: malformed) } throws: { ($0 as? PDFError)?.code == .invalidInput }
       }
       let currentFieldCount = try await form.fields().count
       expectNoDifference(currentFieldCount, count)
@@ -218,7 +218,7 @@ extension BaseSuite {
       let reopenedWidgetCount = try await reopened.widgets(of: found.fieldRef).count
       expectNoDifference(reopenedWidgetCount, 2)
       try await viewer.close(document)
-      await #expect { try await form.fieldSettings(field.fieldRef) } throws: { ($0 as? PDFError)?.code == "instance-closed" }
+      await #expect { try await form.fieldSettings(field.fieldRef) } throws: { ($0 as? PDFError)?.code == .instanceClosed }
     }
 
     @Test func directFormPayloadsRespectScriptPermission() async throws {
@@ -227,20 +227,20 @@ extension BaseSuite {
       let document = try await viewer.open(Fixture.data("report"))
       let form = try await viewer.form(for: document)
       let actions = #"{"calculate":{"type":"javascript","script":"event.value = 1"}}"#
-      await #expect { try await form.create(draftJSON: "{\"kind\":\"text\",\"name\":\"denied\",\"widgets\":[],\"actions\":" + actions + "}") } throws: { ($0 as? PDFError)?.code == "permission-denied" }
+      await #expect { try await form.create(draftJSON: "{\"kind\":\"text\",\"name\":\"denied\",\"widgets\":[],\"actions\":" + actions + "}") } throws: { ($0 as? PDFError)?.code == .permissionDenied }
       let missing = FormFieldRef.fqn(name: "missing")
-      await #expect { try await form.update(missing, patchJSON: "{\"actions\":" + actions + "}") } throws: { ($0 as? PDFError)?.code == "permission-denied" }
-      await #expect { try await form.addWidget(to: missing, placementJSON: "{\"actions\":" + actions + "}") } throws: { ($0 as? PDFError)?.code == "permission-denied" }
+      await #expect { try await form.update(missing, patchJSON: "{\"actions\":" + actions + "}") } throws: { ($0 as? PDFError)?.code == .permissionDenied }
+      await #expect { try await form.addWidget(to: missing, placementJSON: "{\"actions\":" + actions + "}") } throws: { ($0 as? PDFError)?.code == .permissionDenied }
     }
 
     @Test func optionalEditingPluginsReportUnsupported() async throws {
       let viewer = try PDFViewer(ViewerConfig())
       try await viewer.start()
       let document = try await viewer.open(Fixture.data("report"))
-      await #expect { try await viewer.annotations(for: document) } throws: { ($0 as? PDFError)?.code == "unsupported" }
-      await #expect { try await viewer.form(for: document) } throws: { ($0 as? PDFError)?.code == "unsupported" }
-      await #expect { try await viewer.actions(for: document) } throws: { ($0 as? PDFError)?.code == "unsupported" }
-      await #expect { try await viewer.commands() } throws: { ($0 as? PDFError)?.code == "unsupported" }
+      await #expect { try await viewer.annotations(for: document) } throws: { ($0 as? PDFError)?.code == .unsupported }
+      await #expect { try await viewer.form(for: document) } throws: { ($0 as? PDFError)?.code == .unsupported }
+      await #expect { try await viewer.actions(for: document) } throws: { ($0 as? PDFError)?.code == .unsupported }
+      await #expect { try await viewer.commands() } throws: { ($0 as? PDFError)?.code == .unsupported }
     }
   }
 }

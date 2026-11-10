@@ -178,7 +178,7 @@ public struct CommandsCapability: Sendable {
   /// The reserved `{"$undefined":true}` marker leaves state unchanged; `null` replaces it.
   public func setAppState(_ appState: Data) async throws(PDFError) {
     guard let json = String(bytes: appState, encoding: .utf8) else {
-      throw PDFError(name: "EncodingError", code: "invalid-input", detail: "appState is not valid UTF-8")
+      throw PDFError(name: "EncodingError", code: .invalidInput, detail: "appState is not valid UTF-8")
     }
     try await bridged { try await handle.setAppStateJson(appStateJson: json) }
   }
@@ -222,7 +222,7 @@ public struct CommandsCapability: Sendable {
     var json: String?
     if let args {
       guard let text = String(bytes: args, encoding: .utf8) else {
-        throw PDFError(name: "EncodingError", code: "invalid-input", detail: "args are not valid UTF-8")
+        throw PDFError(name: "EncodingError", code: .invalidInput, detail: "args are not valid UTF-8")
       }
       json = text
     }

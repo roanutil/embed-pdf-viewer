@@ -44,7 +44,7 @@ extension BaseSuite {
       let document = try await viewer.open(Fixture.data("report"))
       let outline = try await viewer.outline(for: document)
       #expect(try await !outline.canEdit())
-      await #expect { _ = try await outline.create(OutlineItemInput(title: "Denied")) } throws: { ($0 as? PDFError)?.code == "permission-denied" }
+      await #expect { _ = try await outline.create(OutlineItemInput(title: "Denied")) } throws: { ($0 as? PDFError)?.code == .permissionDenied }
       try await viewer.destroy()
     }
   }

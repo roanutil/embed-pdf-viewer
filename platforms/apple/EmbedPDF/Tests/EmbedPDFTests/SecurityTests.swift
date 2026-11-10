@@ -45,7 +45,7 @@ extension BaseSuite {
       await #expect {
         _ = try await viewer.save(document)
       } throws: { error in
-        (error as? PDFError)?.code == "permission-denied"
+        (error as? PDFError)?.code == .permissionDenied
       }
     }
 

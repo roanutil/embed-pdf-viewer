@@ -28,7 +28,7 @@ extension BaseSuite {
       do {
         _ = try await task.value
       } catch {
-        expectNoDifference((error as? PDFError)?.code, "operation-cancelled")
+        expectNoDifference((error as? PDFError)?.code, .operationCancelled)
       }
       _ = try await render.renderSource(page, scale: 1)
     }
@@ -56,7 +56,7 @@ extension BaseSuite {
       await #expect {
         _ = try await view.plan(page)
       } throws: { error in
-        (error as? PDFError)?.code == "instance-closed"
+        (error as? PDFError)?.code == .instanceClosed
       }
     }
   }
