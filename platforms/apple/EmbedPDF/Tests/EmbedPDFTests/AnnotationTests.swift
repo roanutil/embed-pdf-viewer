@@ -132,6 +132,61 @@ extension BaseSuite {
       expectNoDifference(marked?.subtype, "highlight")
     }
 
+    static let square = #"{"subtype": "square", "box": {"x": 72, "y": 72, "width": 100, "height": 50}}"#
+
+    @Test func createLeftOutDoesNotSelect() async throws {
+      let (viewer, document, annotations) = try await opened("report")
+      let page = try await viewer.pages(of: document)[0].page
+      _ = try await annotations.create(Self.square, on: page)
+      let omitted = try await annotations.selection.refs()
+      _ = try await annotations.create(Self.square, on: page, select: false)
+      let unselected = try await annotations.selection.refs()
+      let selected = try await annotations.create(Self.square, on: page, select: true)
+      let chosen = try await annotations.selection.refs()
+      expectNoDifference(omitted, [])
+      expectNoDifference(unselected, [])
+      expectNoDifference(chosen, [selected])
+    }
+
+    func selectedText() async throws -> (AnnotationCapability, SelectionCapability, PageRef) {
+      let viewer = try PDFViewer(ViewerConfig(interaction: true, selection: true, annotation: ""))
+      try await viewer.start()
+      let document = try await viewer.open(Fixture.data("report"))
+      let page = try await viewer.pages(of: document)[0].page
+      let annotations = try await viewer.annotations(for: document)
+      try await annotations.refresh()
+      let selection = try await viewer.selection(for: document)
+      try await selection.ensureLoaded(page)
+      return (annotations, selection, page)
+    }
+
+    @Test func createFromSelectionLeftOutClearsTheTextSelection() async throws {
+      let (annotations, selection, page) = try await selectedText()
+      try await selection.selectPage(page)
+      #expect(!(try await annotations.drafts.createFromSelection(tool: "highlight")).isEmpty)
+      let omitted = try await selection.hasSelection()
+      try await selection.selectPage(page)
+      _ = try await annotations.drafts.createFromSelection(tool: "highlight", clear: true)
+      let cleared = try await selection.hasSelection()
+      try await selection.selectPage(page)
+      _ = try await annotations.drafts.createFromSelection(tool: "highlight", clear: false)
+      let kept = try await selection.hasSelection()
+      expectNoDifference([omitted, cleared, kept], [false, false, true])
+    }
+
+    @available(*, deprecated)
+    @Test func theBoolOverloadsPassNilThrough() async throws {
+      let (annotations, selection, page) = try await selectedText()
+      let unset: Bool? = nil
+      _ = try await annotations.create(Self.square, on: page, select: unset)
+      let selected = try await annotations.selection.refs()
+      expectNoDifference(selected, [])
+      try await selection.selectPage(page)
+      _ = try await annotations.drafts.createFromSelection(tool: "highlight", clear: unset)
+      let cleared = try await selection.hasSelection()
+      expectNoDifference(cleared, false)
+    }
+
     @Test func aClosedDocumentsCapabilityThrows() async throws {
       let (viewer, document, annotations) = try await opened()
       try await viewer.close(document)

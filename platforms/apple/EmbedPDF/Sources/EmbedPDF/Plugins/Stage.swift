@@ -107,7 +107,16 @@ public struct StageCapability: Sendable {
   }
 
   /// Zoom into the box, or one step for a click (out with `zoomOut`).
-  public func endZoomDrag(zoomOut: Bool? = nil) async throws(PDFError) {
+  /// Leaving `zoomOut` out is `false`, as in the engine
+  /// (`StageCapability::end_zoom_drag` in
+  /// `crates/plugins/stage/src/navigation/zoom_drag.rs`).
+  public func endZoomDrag(zoomOut: Bool = false) async throws(PDFError) {
+    try await bridged { try await handle.endZoomDrag(zoomOut: zoomOut) }
+  }
+
+  /// `nil` is `false`.
+  @available(*, deprecated, message: "Pass a Bool: leave zoomOut out for nil, which is false.")
+  public func endZoomDrag(zoomOut: Bool?) async throws(PDFError) {
     try await bridged { try await handle.endZoomDrag(zoomOut: zoomOut) }
   }
 
@@ -141,7 +150,14 @@ public struct StageCapability: Sendable {
   public func scrollTo(_ options: StageScrollToOptions) async throws(PDFError) { try await bridged { try await handle.scrollTo(options: options) } }
   public func scrollBy(_ options: StageScrollToOptions) { handle.scrollBy(options: options) }
   public func zoomAround(_ point: Point, factor: Double) { handle.zoomAround(point: point, factor: factor) }
-  public func beginGesture(elastic: Bool? = nil) async throws(PDFError) { try await bridged { try await handle.beginGesture(elastic: elastic) } }
+  /// Open a direct-manipulation bracket. `elastic` turns on rubber-band
+  /// overscroll for it; leaving it out is `false`, as in the engine
+  /// (`StageCapability::begin_gesture` in
+  /// `crates/plugins/stage/src/camera/gestures.rs`).
+  public func beginGesture(elastic: Bool = false) async throws(PDFError) { try await bridged { try await handle.beginGesture(elastic: elastic) } }
+  /// `nil` is `false`.
+  @available(*, deprecated, message: "Pass a Bool: leave elastic out for nil, which is false.")
+  public func beginGesture(elastic: Bool?) async throws(PDFError) { try await bridged { try await handle.beginGesture(elastic: elastic) } }
   public func endGesture() async throws(PDFError) { try await bridged { try await handle.endGesture() } }
 
   // MARK: Navigation
@@ -202,10 +218,17 @@ public struct StageCapability: Sendable {
 
   /// Let a pan tool drag this lens: registers the stage's pan-scroll
   /// handler with the document's pointer hub, scoped to `lensId()`, as the
-  /// web's `<Stage>` does. `panFallback` (`nil` is true) lets any other tool
-  /// pan over the gaps between pages. Throws `unsupported` without
-  /// `ViewerConfig(interaction: true)`.
-  public func registerScrollHandler(panFallback: Bool? = nil) async throws(PDFError) -> Registration {
+  /// web's `<Stage>` does. `panFallback` lets any other tool pan over the
+  /// gaps between pages; leaving it out is `true`, as in the engine
+  /// (`create_scroll_handler` in `crates/plugins/stage/src/scroll_handler.rs`).
+  /// Throws `unsupported` without `ViewerConfig(interaction: true)`.
+  public func registerScrollHandler(panFallback: Bool = true) async throws(PDFError) -> Registration {
+    Registration(handle: try await bridged { try await handle.registerScrollHandler(panFallback: panFallback) })
+  }
+
+  /// `nil` is `true`.
+  @available(*, deprecated, message: "Pass a Bool: leave panFallback out for nil, which is true.")
+  public func registerScrollHandler(panFallback: Bool?) async throws(PDFError) -> Registration {
     Registration(handle: try await bridged { try await handle.registerScrollHandler(panFallback: panFallback) })
   }
 

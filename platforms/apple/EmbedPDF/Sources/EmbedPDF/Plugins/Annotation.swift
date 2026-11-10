@@ -149,12 +149,28 @@ public struct AnnotationCapability: Sendable {
   /// Resolves with the created annotation's ref once the engine confirmed
   /// it. `fieldsJSON` is the engine's field bag for the subtype
   /// (`{"subtype": "square", "box": …}`). `tool` picks the tool whose
-  /// defaults it starts from; `select` selects it afterwards.
+  /// defaults it starts from; `select` selects it afterwards, and leaving it
+  /// out is `false`, as in the engine (`AnnotationHandle::create` in
+  /// `crates/plugins/annotation/src/ffi/handle.rs`).
   public func create(
-    _ fieldsJSON: String, on page: PageRef, tool: String? = nil, select: Bool? = nil
+    _ fieldsJSON: String, on page: PageRef, tool: String? = nil, select: Bool = false
+  ) async throws(PDFError) -> AnnotationRef {
+    try await create(fieldsJSON, on: page, tool: tool, engineSelect: select)
+  }
+
+  /// `nil` is `false`.
+  @available(*, deprecated, message: "Pass a Bool: leave select out for nil, which is false.")
+  public func create(
+    _ fieldsJSON: String, on page: PageRef, tool: String? = nil, select: Bool?
+  ) async throws(PDFError) -> AnnotationRef {
+    try await create(fieldsJSON, on: page, tool: tool, engineSelect: select)
+  }
+
+  private func create(
+    _ fieldsJSON: String, on page: PageRef, tool: String?, engineSelect: Bool?
   ) async throws(PDFError) -> AnnotationRef {
     try await bridgedCancellable { token in
-      try await handle.create(page: page, fieldsJson: fieldsJSON, tool: tool, select: select, cancel: token)
+      try await handle.create(page: page, fieldsJson: fieldsJSON, tool: tool, select: engineSelect, cancel: token)
     }
   }
 
@@ -433,13 +449,28 @@ public struct AnnotationDraftsCapability: Sendable {
 
   /// Mark the current text selection (needs `ViewerConfig.selection`) with
   /// a markup tool, one annotation per page. Empty when nothing is
-  /// selected. `clear` (default `true`) drops the text selection
-  /// afterwards.
-  public func createFromSelection(tool toolID: String, clear: Bool? = nil)
+  /// selected. `clear` drops the text selection afterwards; leaving it out
+  /// is `true`, as in the engine (`AnnotationDraftsHandle::create_from_selection`
+  /// in `crates/plugins/annotation/src/ffi/drafts.rs`).
+  public func createFromSelection(tool toolID: String, clear: Bool = true)
+    async throws(PDFError) -> [AnnotationRef]
+  {
+    try await createFromSelection(toolID, engineClear: clear)
+  }
+
+  /// `nil` is `true`.
+  @available(*, deprecated, message: "Pass a Bool: leave clear out for nil, which is true.")
+  public func createFromSelection(tool toolID: String, clear: Bool?)
+    async throws(PDFError) -> [AnnotationRef]
+  {
+    try await createFromSelection(toolID, engineClear: clear)
+  }
+
+  private func createFromSelection(_ toolID: String, engineClear: Bool?)
     async throws(PDFError) -> [AnnotationRef]
   {
     try await bridgedCancellable { token in
-      try await handle.createFromSelection(toolId: toolID, clear: clear, cancel: token)
+      try await handle.createFromSelection(toolId: toolID, clear: engineClear, cancel: token)
     }
   }
 

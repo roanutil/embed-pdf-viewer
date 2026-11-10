@@ -56,8 +56,17 @@ public struct SearchCapability: Sendable {
   let viewer: PDFViewer
 
   /// Whether a search would be served now: `doc.text.search`, and with
-  /// `snippets: true` also `doc.text.copy`.
-  public func canSearch(snippets: Bool? = nil) async throws(PDFError) -> Bool {
+  /// `snippets: true` also `doc.text.copy`. Leaving `snippets` out is
+  /// `false`, as in the engine (`SearchCapability::can_search` in
+  /// `crates/plugins/search/src/controller.rs` needs `doc.text.copy` only
+  /// for `Some(true)`).
+  public func canSearch(snippets: Bool = false) async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canSearch(snippets: snippets) }
+  }
+
+  /// `nil` is `false`.
+  @available(*, deprecated, message: "Pass a Bool: canSearch() or canSearch(snippets: true). nil is false.")
+  public func canSearch(snippets: Bool?) async throws(PDFError) -> Bool {
     try await bridged { try await handle.canSearch(snippets: snippets) }
   }
 
@@ -151,14 +160,28 @@ public struct SearchCapability: Sendable {
     try await bridged { try await handle.error() }
   }
 
-  /// Every hit, in page order, touching no session state. `snippets: nil`
-  /// asks for snippets and falls back to none when they are denied.
-  /// Cancelling the task throws `operation-cancelled`.
-  public func findAll(_ query: SearchQuery, snippets: Bool? = nil) async throws(PDFError)
+  /// Every hit, in page order, touching no session state. With
+  /// ``Inclusion/whenPermitted`` the hits carry snippets when the session
+  /// may copy text (`doc.text.copy`), and none when it may not or the
+  /// engine still denies them; ``Inclusion/always`` throws
+  /// `permission-denied` without `doc.text.copy`. Cancelling the task
+  /// throws `operation-cancelled`.
+  public func findAll(_ query: SearchQuery, snippets: Inclusion = .whenPermitted) async throws(PDFError)
     -> [SearchHit]
   {
+    try await findAll(query, engineSnippets: snippets.engineValue)
+  }
+
+  /// `nil` is ``Inclusion/whenPermitted``, `true` ``Inclusion/always`` and
+  /// `false` ``Inclusion/never``.
+  @available(*, deprecated, message: "Pass an Inclusion: findAll(_:) for nil, snippets: .always for true, .never for false.")
+  public func findAll(_ query: SearchQuery, snippets: Bool?) async throws(PDFError) -> [SearchHit] {
+    try await findAll(query, engineSnippets: snippets)
+  }
+
+  private func findAll(_ query: SearchQuery, engineSnippets: Bool?) async throws(PDFError) -> [SearchHit] {
     try await bridgedCancellable { token in
-      try await handle.findAll(query: query, snippets: snippets, cancel: token)
+      try await handle.findAll(query: query, snippets: engineSnippets, cancel: token)
     }
   }
 

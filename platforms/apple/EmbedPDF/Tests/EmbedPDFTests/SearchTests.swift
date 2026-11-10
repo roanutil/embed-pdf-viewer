@@ -76,6 +76,60 @@ extension BaseSuite {
       _ = try await search.search(SearchQuery(text: "the"))
     }
 
+    /// May search, may not copy: the scope where `snippets` changes answers.
+    func openedWithoutCopy() async throws -> SearchCapability {
+      let viewer = try PDFViewer(ViewerConfig(scope: ["doc.open", "doc.text.search"], search: SearchConfig()))
+      try await viewer.start()
+      return try await viewer.search(in: try await viewer.open(Fixture.data("report")))
+    }
+
+    @Test func canSearchLeftOutIsWithoutSnippets() async throws {
+      let search = try await openedWithoutCopy()
+      let omitted = try await search.canSearch()
+      let without = try await search.canSearch(snippets: false)
+      let with = try await search.canSearch(snippets: true)
+      expectNoDifference([omitted, without, with], [true, true, false])
+    }
+
+    @Test func findAllLeftOutCarriesSnippetsWhenTheSessionMayCopy() async throws {
+      let (_, _, search) = try await opened()
+      let omitted = try await search.findAll(SearchQuery(text: "Report"))
+      let always = try await search.findAll(SearchQuery(text: "Report"), snippets: .always)
+      let never = try await search.findAll(SearchQuery(text: "Report"), snippets: .never)
+      #expect(!omitted.isEmpty)
+      expectNoDifference(omitted, always)
+      #expect(never.allSatisfy { $0.snippet == nil })
+      #expect(omitted.allSatisfy { $0.snippet != nil })
+    }
+
+    @Test func findAllLeftOutDropsSnippetsWhenTheSessionMayNotCopy() async throws {
+      let search = try await openedWithoutCopy()
+      let omitted = try await search.findAll(SearchQuery(text: "Report"))
+      let never = try await search.findAll(SearchQuery(text: "Report"), snippets: .never)
+      #expect(!omitted.isEmpty)
+      expectNoDifference(omitted, never)
+      await #expect {
+        _ = try await search.findAll(SearchQuery(text: "Report"), snippets: .always)
+      } throws: { error in
+        (error as? PDFError)?.code == .permissionDenied
+      }
+    }
+
+    @available(*, deprecated)
+    @Test func theBoolOverloadsPassNilThrough() async throws {
+      let search = try await openedWithoutCopy()
+      let nilSnippets: Bool? = nil
+      let can = try await search.canSearch(snippets: nilSnippets)
+      let omitted = try await search.canSearch()
+      expectNoDifference(can, omitted)
+      let hits = try await search.findAll(SearchQuery(text: "Report"), snippets: nilSnippets)
+      let defaulted = try await search.findAll(SearchQuery(text: "Report"))
+      expectNoDifference(hits, defaulted)
+      let pinned = try await search.findAll(SearchQuery(text: "Report"), snippets: false as Bool?)
+      let never = try await search.findAll(SearchQuery(text: "Report"), snippets: .never)
+      expectNoDifference(pinned, never)
+    }
+
     @Test func aClosedDocumentsCapabilityThrows() async throws {
       let (viewer, document, search) = try await opened()
       try await viewer.close(document)

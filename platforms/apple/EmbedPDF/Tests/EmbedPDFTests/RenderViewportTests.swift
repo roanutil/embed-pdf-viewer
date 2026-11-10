@@ -15,7 +15,7 @@ extension BaseSuite {
     @Test func renderSourceMatchesItsSourceKey() async throws {
       let (_, _, render, page) = try await opened()
       let a = try await render.sourceKey(page, scale: 2)
-      let b = try await render.sourceKey(page, scale: 2, includeAnnotations: true)
+      let b = try await render.sourceKey(page, scale: 2, includeAnnotations: .always)
       expectNoDifference(a, b)
       let rendered = try await render.renderSource(page, scale: 2)
       #expect(rendered.width > 0)
@@ -46,6 +46,74 @@ extension BaseSuite {
       let tile = try await view.tileImage(page, key: "no-such-key")
       #expect(tile == nil)
       try await view.release(page)
+      try await view.dispose()
+    }
+
+    @Test func layersLeftOutDrawWhatTheSessionMayRead() async throws {
+      let (_, _, render, page) = try await opened()
+      let omitted = try await render.sourceKey(page, scale: 2)
+      let always = try await render.sourceKey(page, scale: 2, includeAnnotations: .always, includeFormFields: .always)
+      let never = try await render.sourceKey(page, scale: 2, includeAnnotations: .never)
+      expectNoDifference(omitted, always)
+      #expect(omitted != never)
+      // Form fields left out follow annotations turned off.
+      let fieldsNever = try await render.sourceKey(
+        page, scale: 2, includeAnnotations: .never, includeFormFields: .never)
+      expectNoDifference(never, fieldsNever)
+    }
+
+    @Test func layersLeftOutAreOmittedWhenTheSessionMayNotReadThem() async throws {
+      let viewer = try PDFViewer(ViewerConfig(scope: ["doc.open", "doc.render"], render: RenderConfig()))
+      try await viewer.start()
+      let document = try await viewer.open(Fixture.data("colors"))
+      let page = try await viewer.pages(of: document)[0].page
+      let render = try await viewer.render(in: document)
+      let omitted = try await render.sourceKey(page, scale: 2)
+      let never = try await render.sourceKey(page, scale: 2, includeAnnotations: .never, includeFormFields: .never)
+      expectNoDifference(omitted, never)
+      #expect(try await render.renderSource(page, scale: 2).width > 0)
+      await #expect {
+        _ = try await render.renderSource(page, scale: 2, includeAnnotations: .always)
+      } throws: { error in
+        (error as? PDFError)?.code == .permissionDenied
+      }
+      await #expect {
+        _ = try await render.renderThumbnail(page, includeAnnotations: .always)
+      } throws: { error in
+        (error as? PDFError)?.code == .permissionDenied
+      }
+    }
+
+    @Test func thumbnailLeftOutIsTheRaster() async throws {
+      let (_, _, render, page) = try await opened()
+      let omitted = try await render.sourceKey(page, scale: 2)
+      let raster = try await render.sourceKey(page, scale: 2, thumbnail: false)
+      let thumbnail = try await render.sourceKey(page, scale: 2, thumbnail: true)
+      expectNoDifference(omitted, raster)
+      #expect(omitted != thumbnail)
+    }
+
+    @available(*, deprecated)
+    @Test func theBoolOverloadsPassNilThrough() async throws {
+      let (_, _, render, page) = try await opened()
+      let unset: Bool? = nil
+      let key = try await render.sourceKey(page, scale: 2, includeAnnotations: unset, includeFormFields: unset, thumbnail: unset)
+      let omitted = try await render.sourceKey(page, scale: 2)
+      expectNoDifference(key, omitted)
+      let off = try await render.sourceKey(page, scale: 2, includeAnnotations: false)
+      let never = try await render.sourceKey(page, scale: 2, includeAnnotations: .never)
+      expectNoDifference(off, never)
+      let epoch = try await render.renderEpoch(page, includeAnnotations: unset)
+      let omittedEpoch = try await render.renderEpoch(page)
+      expectNoDifference(epoch, omittedEpoch)
+      let rendered = try await render.renderSource(page, scale: 2, thumbnail: unset)
+      #expect(rendered.width > 0)
+      let thumbnail = try await render.renderThumbnail(page, includeAnnotations: unset)
+      #expect(thumbnail.width > 0)
+      let view = try await render.viewDemand("main")
+      try await view.setDemand(page, RenderPageViewDemand(desiredDeviceWidth: 80), includeAnnotations: unset)
+      let plan = try await view.plan(page)
+      expectNoDifference(plan.engaged, false)
       try await view.dispose()
     }
 

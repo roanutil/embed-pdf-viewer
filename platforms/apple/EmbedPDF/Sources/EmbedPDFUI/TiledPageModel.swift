@@ -160,16 +160,17 @@ public final class TiledPageModel {
     onPainted: (@MainActor () -> Void)?
   ) async {
     do {
+      let annotations: Inclusion = includeAnnotations ? .always : .never
       try await demand.setDemand(
         page,
         RenderPageViewDemand(desiredDeviceWidth: deviceScale * unrotatedWidth, visibleRect: visibleRect),
-        includeAnnotations: includeAnnotations)
+        includeAnnotations: annotations)
       guard !Task.isCancelled else { return }
-      let key = try await render.sourceKey(page, scale: deviceScale, includeAnnotations: includeAnnotations)
+      let key = try await render.sourceKey(page, scale: deviceScale, includeAnnotations: annotations)
       guard !Task.isCancelled else { return }
       if key != baseKey {
         let rendered = try await render.renderSource(
-          page, scale: deviceScale, includeAnnotations: includeAnnotations)
+          page, scale: deviceScale, includeAnnotations: annotations)
         guard !Task.isCancelled else { return }
         base = rendered.image
         baseKey = key
