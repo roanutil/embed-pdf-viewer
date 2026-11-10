@@ -58,7 +58,7 @@ public typealias StageViewportChangedEvent = EmbedPDFBindings.StageViewportChang
 /// its document closes, every call throws `instance-closed`.
 ///
 /// `setCamera`, `panBy`, `scrollBy` and `zoomAround` return at once and run
-/// in order; their errors arrive on `PDFViewer.reportedErrors`.
+/// in order; their errors arrive on `PDFViewer.observeReportedErrors()`.
 public struct StageCapability: Sendable {
   public func pageCount() async throws(PDFError) -> UInt32 {
     try await bridged { try await handle.pageCount() }

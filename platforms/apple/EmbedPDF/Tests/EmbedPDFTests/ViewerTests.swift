@@ -170,7 +170,7 @@ extension BaseSuite {
     @Test func destroyingFinishesTheStreams() async throws {
       let viewer = try await started()
       let events = Task { for await _ in viewer.documentEvents {} }
-      let revisions = Task { for await _ in viewer.stateRevisions {} }
+      let revisions = Task { for await _ in viewer.observeStateRevisions() {} }
       try await Task.sleep(for: .milliseconds(100))
       try await viewer.destroy()
       let finished = await withTaskGroup(of: Bool.self) { group in
@@ -206,7 +206,7 @@ extension BaseSuite {
       let viewer = try await started()
       let drained = Task {
         var count = 0
-        for await _ in viewer.reportedErrors { count += 1 }
+        for await _ in viewer.observeReportedErrors() { count += 1 }
         return count
       }
       try await viewer.destroy()

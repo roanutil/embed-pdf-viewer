@@ -7,8 +7,6 @@ extension BaseSuite {
     @Test func independentObserversSurviveAnotherConsumersCancellation() async throws {
       let (viewer, _, metadata) = try await MetadataTests().opened()
       try await metadata.ensureLoaded()
-      var legacy = viewer.stateRevisions.makeAsyncIterator()
-      let baseline = await legacy.next()
       let first = viewer.observeStateRevisions()
       let second = viewer.observeStateRevisions()
       let cancelled = Task { for await _ in viewer.observeStateRevisions() {} }
@@ -21,8 +19,6 @@ extension BaseSuite {
       let secondValue = await secondIterator.next()
       #expect(firstValue != nil)
       #expect(secondValue != nil)
-      let legacyValue = await legacy.next()
-      #expect(try #require(legacyValue) > #require(baseline))
       try await viewer.destroy()
       for await _ in first {}
       for await _ in second {}

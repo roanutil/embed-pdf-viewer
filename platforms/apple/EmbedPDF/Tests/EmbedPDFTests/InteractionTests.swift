@@ -94,10 +94,11 @@ extension BaseSuite {
       let (viewer, _, interaction, page) = try await opened()
       let handler = RecordingHandler(throwsOnDown: true)
       _ = try await interaction.registerHandler(handler, id: "throws", priority: 5)
+      let errors = viewer.observeReportedErrors()
       interaction.dispatchPointer(sample(.down, page: page))
       interaction.dispatchPointer(sample(.move, page: page, x: 20))
       var reported: PDFError?
-      for await error in viewer.reportedErrors {
+      for await error in errors {
         reported = error
         break
       }

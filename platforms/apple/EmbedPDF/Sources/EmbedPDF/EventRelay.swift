@@ -19,11 +19,18 @@ final class StateRelay: ViewerDelegate, @unchecked Sendable {
   let continuation: AsyncStream<UInt64>.Continuation
   let errors: AsyncStream<PDFError>.Continuation
   let revisions: StateRevisionHub
+  let errorHub: ReportedErrorHub
 
-  init(_ continuation: AsyncStream<UInt64>.Continuation, revisions: StateRevisionHub, errors: AsyncStream<PDFError>.Continuation) {
+  init(
+    _ continuation: AsyncStream<UInt64>.Continuation,
+    revisions: StateRevisionHub,
+    errors: AsyncStream<PDFError>.Continuation,
+    errorHub: ReportedErrorHub
+  ) {
     self.continuation = continuation
     self.errors = errors
     self.revisions = revisions
+    self.errorHub = errorHub
   }
 
   func stateChanged(revision: UInt64) {
@@ -32,7 +39,9 @@ final class StateRelay: ViewerDelegate, @unchecked Sendable {
   }
 
   func report(error: ViewerError) {
-    errors.yield(PDFError(error))
+    let reported = PDFError(error)
+    errors.yield(reported)
+    errorHub.yield(reported)
   }
 }
 

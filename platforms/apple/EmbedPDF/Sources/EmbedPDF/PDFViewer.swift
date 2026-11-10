@@ -7,14 +7,19 @@ public final class PDFViewer: Sendable {
   private let stateContinuation: AsyncStream<UInt64>.Continuation
   private let errorContinuation: AsyncStream<PDFError>.Continuation
   private let revisionHub: StateRevisionHub
+  private let errorHub: ReportedErrorHub
+  private let storedReportedErrors: AsyncStream<PDFError>
+  private let storedStateRevisions: AsyncStream<UInt64>
 
-  /// Errors the kernel reports rather than throws: a listener that failed,
-  /// a foreign handler that threw (`HostError`). Keeps the newest 16. The
-  /// stream supports a single consumer.
-  public let reportedErrors: AsyncStream<PDFError>
+  /// Errors the kernel reports rather than throws. Keeps the newest 16. The
+  /// stream supports a single consumer: a second `for await` gets nothing.
+  @available(*, deprecated, message: "Supports one consumer. Use observeReportedErrors(), which gives every caller its own stream.")
+  public var reportedErrors: AsyncStream<PDFError> { storedReportedErrors }
 
-  /// Revisions of the viewer's state. The stream supports a single consumer.
-  public let stateRevisions: AsyncStream<UInt64>
+  /// Revisions of the viewer's state. The stream supports a single consumer:
+  /// a second `for await` gets nothing.
+  @available(*, deprecated, message: "Supports one consumer. Use observeStateRevisions(), which gives every caller its own stream.")
+  public var stateRevisions: AsyncStream<UInt64> { storedStateRevisions }
 
   /// A fresh subscription installed before this method returns. Read an initial
   /// snapshot after subscribing; subsequent revisions invalidate that snapshot.
@@ -22,20 +27,34 @@ public final class PDFViewer: Sendable {
   /// finishes when the viewer is destroyed.
   public func observeStateRevisions() -> AsyncStream<UInt64> { revisionHub.stream() }
 
+  /// A fresh subscription to the errors the kernel reports rather than throws:
+  /// a listener that failed, a foreign handler that threw (`HostError`). It is
+  /// installed before this method returns and sees only errors reported after
+  /// that, so subscribe before the call that might report one. Each consumer
+  /// keeps the newest 16, cancellation affects this consumer only, and the
+  /// stream finishes when the viewer is destroyed.
+  public func observeReportedErrors() -> AsyncStream<PDFError> { errorHub.stream() }
+
   public init(_ config: ViewerConfig, documentFetcher: any DocumentFetcher = URLSessionDocumentFetcher()) throws(PDFError) {
     let (stream, continuation) = AsyncStream<UInt64>.makeStream(bufferingPolicy: .bufferingNewest(1))
     let (errors, errorContinuation) = AsyncStream<PDFError>.makeStream(bufferingPolicy: .bufferingNewest(16))
     let revisions = StateRevisionHub()
+    let reported = ReportedErrorHub()
     do {
-      host = try ViewerHost.newWithFetcher(config: config, delegate: StateRelay(continuation, revisions: revisions, errors: errorContinuation), fetcher: documentFetcher)
+      host = try ViewerHost.newWithFetcher(
+        config: config,
+        delegate: StateRelay(continuation, revisions: revisions, errors: errorContinuation, errorHub: reported),
+        fetcher: documentFetcher
+      )
     } catch {
       throw PDFError(error)
     }
-    stateRevisions = stream
+    storedStateRevisions = stream
     stateContinuation = continuation
-    reportedErrors = errors
+    storedReportedErrors = errors
     self.errorContinuation = errorContinuation
     revisionHub = revisions
+    errorHub = reported
   }
 
   public func start() async throws(PDFError) {
@@ -231,6 +250,7 @@ public final class PDFViewer: Sendable {
   func finishStreams() {
     registry.finishAll()
     revisionHub.finish()
+    errorHub.finish()
     stateContinuation.finish()
     errorContinuation.finish()
   }

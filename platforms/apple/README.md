@@ -157,8 +157,14 @@ It installs synchronously, keeps the newest revision, and finishes on viewer
 destruction. Subscribe before reading the initial snapshot so a change during
 that read is queued. Revisions invalidate reads; they are not an event log and
 there is no initial revision emission. Cancelling a consuming task cancels only
-that subscription. The existing `stateRevisions` property keeps its original
-single-consumer contract.
+that subscription. The stored `stateRevisions` property supports one consumer
+and is deprecated in favor of this method.
+
+`PDFViewer.observeReportedErrors()` follows the same rule for errors the kernel
+reports rather than throws. Each call is its own subscription that keeps the
+newest 16 errors and sees only errors reported after it returns, so subscribe
+before the call that might report one. The stored `reportedErrors` property
+supports one consumer and is deprecated.
 
 ```swift
 let revisions = viewer.observeStateRevisions()
@@ -327,8 +333,8 @@ or its renders are mostly cache hits and the comparison is meaningless.
 Construct one set of models per open document, and retain them in your host's
 observable state. Each control owns its observation with `.task`; changing its
 model identity cancels the old subscription. All three can observe one viewer
-without consuming each other's revisions. The original `stateRevisions` property
-remains a single-consumer stream; create `observeStateRevisions()` for every
+without consuming each other's revisions. The deprecated `stateRevisions`
+property is a single-consumer stream; create `observeStateRevisions()` for every
 independent observer and subscribe before reading its initial snapshot.
 
 ```swift
