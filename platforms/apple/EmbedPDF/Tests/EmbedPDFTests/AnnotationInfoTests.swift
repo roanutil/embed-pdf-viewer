@@ -70,8 +70,8 @@ extension BaseSuite {
       #expect(ink.intent == nil)
       #expect(ink.rotation == nil)
       expectNoDifference(ink.inkList, [[Point(x: 1, y: 2)]])
-      expectNoDifference(info.generated, record)
-      expectNoDifference(AnnotationInfo(info.generated), info)
+      expectNoDifference(info.record, record)
+      expectNoDifference(AnnotationInfo(info.record), info)
     }
 
     @Test func aHighlightsQuadsAreTyped() {
@@ -115,8 +115,8 @@ extension BaseSuite {
       let info = AnnotationInfo(Self.record(subtype: "sparkle", fieldsJSON: json))
       expectNoDifference(info.subtype, "sparkle")
       expectNoDifference(info.details, .untyped)
-      expectNoDifference(info.generated.subtype, "sparkle")
-      expectNoDifference(info.generated, Self.record(subtype: "sparkle", fieldsJSON: json))
+      expectNoDifference(info.record.subtype, "sparkle")
+      expectNoDifference(info.record, Self.record(subtype: "sparkle", fieldsJSON: json))
     }
 
     @Test func theRoundTripLosesNothing() {
@@ -132,8 +132,8 @@ extension BaseSuite {
       ]
       for record in records {
         let info = AnnotationInfo(record)
-        expectNoDifference(info.generated, record)
-        expectNoDifference(AnnotationInfo(info.generated), info)
+        expectNoDifference(info.record, record)
+        expectNoDifference(AnnotationInfo(info.record), info)
       }
     }
 
@@ -163,7 +163,7 @@ extension BaseSuite {
         expectNoDifference(info.rawCreatedAt, text)
         #expect(info.modifiedAt == nil, "\(text)")
         expectNoDifference(info.rawModifiedAt, text)
-        expectNoDifference(info.generated.createdAt, text)
+        expectNoDifference(info.record.createdAt, text)
       }
     }
 
@@ -236,7 +236,7 @@ extension BaseSuite {
       let listed = try await annotations.list(AnnotationFilter(pages: [page]))
       for created in [readInk, readHighlight, readNote] {
         #expect(listed.contains(created))
-        expectNoDifference(AnnotationInfo(created.generated), created)
+        expectNoDifference(AnnotationInfo(created.record), created)
       }
       try await annotations.selection.select([note])
       let selected = try await annotations.selected()
@@ -259,19 +259,19 @@ extension BaseSuite {
       try await annotations.refresh()
       let infos: [AnnotationInfo] = try await annotations.list()
       let records: [AnnotationRecord] = try await annotations.list()
-      expectNoDifference(records, infos.map(\.generated))
+      expectNoDifference(records, infos.map(\.record))
       let first = try #require(infos.first)
       let record: AnnotationRecord? = try await annotations.get(first.annotationRef)
-      expectNoDifference(record, first.generated)
+      expectNoDifference(record, first.record)
       expectNoDifference(first.fieldsJson, record?.fieldsJson)
       expectNoDifference(first.groupId, record?.groupId)
       try await annotations.selection.select([first.annotationRef])
       let selected: [AnnotationRecord] = try await annotations.selected()
-      expectNoDifference(selected, [first.generated])
+      expectNoDifference(selected, [first.record])
       let center = Point(x: first.rect.x + first.rect.width / 2, y: first.rect.y + first.rect.height / 2)
       let hitInfo: AnnotationInfo? = try await annotations.hitTest(at: center, on: first.page)
       let hitRecord: AnnotationRecord? = try await annotations.hitTest(at: center, on: first.page)
-      expectNoDifference(hitRecord, hitInfo?.generated)
+      expectNoDifference(hitRecord, hitInfo?.record)
     }
   }
 }

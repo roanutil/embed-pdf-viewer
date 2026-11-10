@@ -183,20 +183,20 @@ public struct SearchCapability: Sendable {
   }
 
   /// Every hit, in page order, touching no session state. With
-  /// ``Inclusion/whenPermitted`` the hits carry snippets when the session
+  /// ``ContentInclusion/whenPermitted`` the hits carry snippets when the session
   /// may copy text (`doc.text.copy`), and none when it may not or the
-  /// engine still denies them; ``Inclusion/always`` throws
+  /// engine still denies them; ``ContentInclusion/always`` throws
   /// `permission-denied` without `doc.text.copy`. Cancelling the task
   /// throws `operation-cancelled`.
-  public func findAll(_ query: SearchQuery, snippets: Inclusion = .whenPermitted) async throws(PDFError)
+  public func findAll(_ query: SearchQuery, snippets: ContentInclusion = .whenPermitted) async throws(PDFError)
     -> [SearchHit]
   {
     try await findAll(query, engineSnippets: snippets.engineValue)
   }
 
-  /// `nil` is ``Inclusion/whenPermitted``, `true` ``Inclusion/always`` and
-  /// `false` ``Inclusion/never``.
-  @available(*, deprecated, message: "Pass an Inclusion: findAll(_:) for nil, snippets: .always for true, .never for false.")
+  /// `nil` is ``ContentInclusion/whenPermitted``, `true` ``ContentInclusion/always`` and
+  /// `false` ``ContentInclusion/never``.
+  @available(*, deprecated, message: "Pass an ContentInclusion: findAll(_:) for nil, snippets: .always for true, .never for false.")
   public func findAll(_ query: SearchQuery, snippets: Bool?) async throws(PDFError) -> [SearchHit] {
     try await findAll(query, engineSnippets: snippets)
   }

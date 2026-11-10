@@ -439,7 +439,7 @@ extension BaseSuite {
 /// `AnnotationInfo`'s subtype members, which have no public initializer,
 /// as values a test can spell.
 struct InkSeen: Equatable {
-  var color: String?
+  var color: AnnotationColor?
   var opacity: Double
   var strokeWidth: Double
   var borderStyle: String
@@ -483,7 +483,7 @@ func sameJSON(_ left: Any, _ right: Any) -> Bool {
 }
 
 struct HighlightSeen: Equatable {
-  var color: String
+  var color: AnnotationColor
   var opacity: Double
   var quadPoints: [Quad]
 }
@@ -495,7 +495,7 @@ extension HighlightSeen {
 }
 
 struct NoteSeen: Equatable {
-  var color: String
+  var color: AnnotationColor
   var opacity: Double
   var icon: String
   var open: Bool

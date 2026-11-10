@@ -160,7 +160,7 @@ public final class TiledPageModel {
     onPainted: (@MainActor () -> Void)?
   ) async {
     do {
-      let annotations: Inclusion = includeAnnotations ? .always : .never
+      let annotations: ContentInclusion = includeAnnotations ? .always : .never
       try await demand.setDemand(
         page,
         RenderPageViewDemand(desiredDeviceWidth: deviceScale * unrotatedWidth, visibleRect: visibleRect),

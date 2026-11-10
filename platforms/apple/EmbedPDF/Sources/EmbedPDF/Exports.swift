@@ -2,6 +2,8 @@ public import EmbedPDFBindings
 
 public typealias ViewerConfig = EmbedPDFBindings.ViewerConfig
 public typealias DocumentInfo = EmbedPDFBindings.DocumentInfo
+/// `id` is the viewer's document id, so `ForEach(documents)` needs no `id:`.
+extension DocumentInfo: Identifiable {}
 /// The pre-rename name of `DocumentInfo`, kept for one release. It collides
 /// with PDFKit's `PDFDocument` in any file that imports both modules.
 @available(*, deprecated, renamed: "DocumentInfo")

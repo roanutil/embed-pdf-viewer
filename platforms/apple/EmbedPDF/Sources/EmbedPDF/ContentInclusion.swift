@@ -4,7 +4,7 @@
 /// The engine's default is ``whenPermitted``, which no `Bool` can say: what
 /// it includes follows the session's scope, so the same call draws
 /// annotations in one viewer and leaves them out in another.
-public enum Inclusion: Sendable, Hashable {
+public enum ContentInclusion: Sendable, Hashable {
   /// Include the part when the session may read it, and leave it out
   /// otherwise. The engine's default.
   case whenPermitted

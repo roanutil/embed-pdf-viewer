@@ -18,7 +18,7 @@ import Foundation
 //
 // A member left `nil` is left out of the JSON: on a draft that is the
 // engine's default, on a patch it keeps the current value. A member the
-// engine can set to nothing is an `AnnotationNullable`, whose `.null`
+// engine can set to nothing is a `Nullable`, whose `.null`
 // writes `null`.
 //
 // The JSON-string overloads stay for every field and subtype these types
@@ -51,15 +51,14 @@ extension AnnotationPatch {
   }
 }
 
-/// A member a draft or patch can set to a value or to nothing: `.null`
-/// writes JSON `null`. Leaving the member itself `nil` writes nothing,
+/// A value, or JSON `null`: a member a draft or patch can set to nothing.
+/// `.null` writes `null`. Leaving the member itself `nil` writes nothing,
 /// which on a draft is the engine's default and on a patch keeps the
-/// current value.
+/// current value (naming.md, "Nothing: left out or null").
 ///
-/// A string, number or array literal is `.value`: `color: "#ff0000"`.
-public enum AnnotationNullable<Value: Encodable & Sendable & Hashable>: Encodable, Sendable,
-  Hashable
-{
+/// A literal of `Value`'s own kind is `.value`: `color: "#ff0000"`,
+/// `rotation: 90`, `dashArray: [3, 2]`.
+public enum Nullable<Value: Encodable & Sendable & Hashable>: Encodable, Sendable, Hashable {
   case value(Value)
   /// Nothing: no stroke colour, no dash pattern, no rotation.
   case null
@@ -73,27 +72,30 @@ public enum AnnotationNullable<Value: Encodable & Sendable & Hashable>: Encodabl
   }
 }
 
-extension AnnotationNullable: ExpressibleByUnicodeScalarLiteral where Value == String {
-  public init(unicodeScalarLiteral value: String) { self = .value(value) }
+extension Nullable: ExpressibleByUnicodeScalarLiteral
+where Value: ExpressibleByStringLiteral, Value.StringLiteralType == String {
+  public init(unicodeScalarLiteral value: String) { self = .value(Value(stringLiteral: value)) }
 }
 
-extension AnnotationNullable: ExpressibleByExtendedGraphemeClusterLiteral where Value == String {
-  public init(extendedGraphemeClusterLiteral value: String) { self = .value(value) }
+extension Nullable: ExpressibleByExtendedGraphemeClusterLiteral
+where Value: ExpressibleByStringLiteral, Value.StringLiteralType == String {
+  public init(extendedGraphemeClusterLiteral value: String) { self = .value(Value(stringLiteral: value)) }
 }
 
-extension AnnotationNullable: ExpressibleByStringLiteral where Value == String {
-  public init(stringLiteral value: String) { self = .value(value) }
+extension Nullable: ExpressibleByStringLiteral
+where Value: ExpressibleByStringLiteral, Value.StringLiteralType == String {
+  public init(stringLiteral value: String) { self = .value(Value(stringLiteral: value)) }
 }
 
-extension AnnotationNullable: ExpressibleByFloatLiteral where Value == Double {
+extension Nullable: ExpressibleByFloatLiteral where Value == Double {
   public init(floatLiteral value: Double) { self = .value(value) }
 }
 
-extension AnnotationNullable: ExpressibleByIntegerLiteral where Value == Double {
+extension Nullable: ExpressibleByIntegerLiteral where Value == Double {
   public init(integerLiteral value: Int) { self = .value(Double(value)) }
 }
 
-extension AnnotationNullable: ExpressibleByArrayLiteral where Value == [Double] {
+extension Nullable: ExpressibleByArrayLiteral where Value == [Double] {
   public init(arrayLiteral elements: Double...) { self = .value(elements) }
 }
 
@@ -134,9 +136,9 @@ public struct InkAnnotationDraft: AnnotationDraft, Hashable {
   /// `/InkList`, page space: one array of points per stroke. At least one
   /// stroke, and no stroke without points.
   public var inkList: [[Point]]
-  /// `/C`, `"#rrggbb"`. `.null` draws no stroke; left out takes the tool's
-  /// or the engine's default.
-  public var color: AnnotationNullable<String>?
+  /// `/C`. `.null` draws no stroke; left out takes the tool's or the
+  /// engine's default.
+  public var color: Nullable<AnnotationColor>?
   /// `/CA`, 0 to 1.
   public var opacity: Double?
   /// The line width, above 0.
@@ -144,20 +146,20 @@ public struct InkAnnotationDraft: AnnotationDraft, Hashable {
   public var borderStyle: AnnotationBorderStyle?
   /// The dash lengths, each 0 or more, at least one. A dashed border with
   /// this left out takes the engine's default pattern; `.null` is none.
-  public var dashArray: AnnotationNullable<[Double]>?
+  public var dashArray: Nullable<[Double]>?
   /// `.null` is pen ink.
-  public var intent: AnnotationNullable<AnnotationInkIntent>?
+  public var intent: Nullable<AnnotationInkIntent>?
   /// Degrees. `.null` is none.
-  public var rotation: AnnotationNullable<Double>?
+  public var rotation: Nullable<Double>?
   /// `/Contents`. `.null` is none.
-  public var contents: AnnotationNullable<String>?
+  public var contents: Nullable<String>?
 
   public init(
-    inkList: [[Point]], color: AnnotationNullable<String>? = nil, opacity: Double? = nil,
+    inkList: [[Point]], color: Nullable<AnnotationColor>? = nil, opacity: Double? = nil,
     strokeWidth: Double? = nil, borderStyle: AnnotationBorderStyle? = nil,
-    dashArray: AnnotationNullable<[Double]>? = nil,
-    intent: AnnotationNullable<AnnotationInkIntent>? = nil,
-    rotation: AnnotationNullable<Double>? = nil, contents: AnnotationNullable<String>? = nil
+    dashArray: Nullable<[Double]>? = nil,
+    intent: Nullable<AnnotationInkIntent>? = nil,
+    rotation: Nullable<Double>? = nil, contents: Nullable<String>? = nil
   ) {
     self.inkList = inkList
     self.color = color
@@ -197,25 +199,25 @@ public struct InkAnnotationPatch: AnnotationPatch, Hashable {
   /// Replaces every stroke.
   public var inkList: [[Point]]?
   /// `.null` removes the stroke colour: no stroke.
-  public var color: AnnotationNullable<String>?
+  public var color: Nullable<AnnotationColor>?
   public var opacity: Double?
   public var strokeWidth: Double?
   public var borderStyle: AnnotationBorderStyle?
   /// `.null` removes the pattern.
-  public var dashArray: AnnotationNullable<[Double]>?
+  public var dashArray: Nullable<[Double]>?
   /// `.null` makes it pen ink.
-  public var intent: AnnotationNullable<AnnotationInkIntent>?
+  public var intent: Nullable<AnnotationInkIntent>?
   /// `.null` removes the rotation.
-  public var rotation: AnnotationNullable<Double>?
+  public var rotation: Nullable<Double>?
   /// `.null` removes `/Contents`.
-  public var contents: AnnotationNullable<String>?
+  public var contents: Nullable<String>?
 
   public init(
-    inkList: [[Point]]? = nil, color: AnnotationNullable<String>? = nil, opacity: Double? = nil,
+    inkList: [[Point]]? = nil, color: Nullable<AnnotationColor>? = nil, opacity: Double? = nil,
     strokeWidth: Double? = nil, borderStyle: AnnotationBorderStyle? = nil,
-    dashArray: AnnotationNullable<[Double]>? = nil,
-    intent: AnnotationNullable<AnnotationInkIntent>? = nil,
-    rotation: AnnotationNullable<Double>? = nil, contents: AnnotationNullable<String>? = nil
+    dashArray: Nullable<[Double]>? = nil,
+    intent: Nullable<AnnotationInkIntent>? = nil,
+    rotation: Nullable<Double>? = nil, contents: Nullable<String>? = nil
   ) {
     self.inkList = inkList
     self.color = color
@@ -253,16 +255,16 @@ public struct HighlightAnnotationDraft: AnnotationDraft, Hashable {
   /// `/QuadPoints`, page space: one quad per run of marked text, at least
   /// one.
   public var quadPoints: [Quad]
-  /// `/C`, `"#rrggbb"`. A highlight always has one, so there is no `.null`.
-  public var color: String?
+  /// `/C`. A highlight always has one, so there is no `.null`.
+  public var color: AnnotationColor?
   /// `/CA`, 0 to 1.
   public var opacity: Double?
   /// `/Contents`. `.null` is none.
-  public var contents: AnnotationNullable<String>?
+  public var contents: Nullable<String>?
 
   public init(
-    quadPoints: [Quad], color: String? = nil, opacity: Double? = nil,
-    contents: AnnotationNullable<String>? = nil
+    quadPoints: [Quad], color: AnnotationColor? = nil, opacity: Double? = nil,
+    contents: Nullable<String>? = nil
   ) {
     self.quadPoints = quadPoints
     self.color = color
@@ -289,14 +291,14 @@ public struct HighlightAnnotationDraft: AnnotationDraft, Hashable {
 public struct HighlightAnnotationPatch: AnnotationPatch, Hashable {
   /// Replaces every quad.
   public var quadPoints: [Quad]?
-  public var color: String?
+  public var color: AnnotationColor?
   public var opacity: Double?
   /// `.null` removes `/Contents`.
-  public var contents: AnnotationNullable<String>?
+  public var contents: Nullable<String>?
 
   public init(
-    quadPoints: [Quad]? = nil, color: String? = nil, opacity: Double? = nil,
-    contents: AnnotationNullable<String>? = nil
+    quadPoints: [Quad]? = nil, color: AnnotationColor? = nil, opacity: Double? = nil,
+    contents: Nullable<String>? = nil
   ) {
     self.quadPoints = quadPoints
     self.color = color
@@ -323,8 +325,8 @@ public struct HighlightAnnotationPatch: AnnotationPatch, Hashable {
 public struct NoteAnnotationDraft: AnnotationDraft, Hashable {
   /// `/Rect`, page space: where the icon sits.
   public var rect: Rect
-  /// `/C`, `"#rrggbb"`. A note always has one, so there is no `.null`.
-  public var color: String?
+  /// `/C`. A note always has one, so there is no `.null`.
+  public var color: AnnotationColor?
   /// `/CA`, 0 to 1.
   public var opacity: Double?
   public var icon: AnnotationNoteIcon?
@@ -332,16 +334,16 @@ public struct NoteAnnotationDraft: AnnotationDraft, Hashable {
   public var open: Bool?
   /// `/State`. A standard state (`accepted`, `marked`, …) brings its own
   /// `stateModel`; any other needs one. `.null` is none.
-  public var state: AnnotationNullable<String>?
+  public var state: Nullable<String>?
   /// `/StateModel`: `review`, `marked`, or a custom model. `.null` is none.
-  public var stateModel: AnnotationNullable<String>?
+  public var stateModel: Nullable<String>?
   /// `/Contents`: the note's text. `.null` is none.
-  public var contents: AnnotationNullable<String>?
+  public var contents: Nullable<String>?
 
   public init(
-    rect: Rect, color: String? = nil, opacity: Double? = nil, icon: AnnotationNoteIcon? = nil,
-    open: Bool? = nil, state: AnnotationNullable<String>? = nil,
-    stateModel: AnnotationNullable<String>? = nil, contents: AnnotationNullable<String>? = nil
+    rect: Rect, color: AnnotationColor? = nil, opacity: Double? = nil, icon: AnnotationNoteIcon? = nil,
+    open: Bool? = nil, state: Nullable<String>? = nil,
+    stateModel: Nullable<String>? = nil, contents: Nullable<String>? = nil
   ) {
     self.rect = rect
     self.color = color
@@ -376,22 +378,22 @@ public struct NoteAnnotationDraft: AnnotationDraft, Hashable {
 public struct NoteAnnotationPatch: AnnotationPatch, Hashable {
   /// Moves or resizes the icon.
   public var rect: Rect?
-  public var color: String?
+  public var color: AnnotationColor?
   public var opacity: Double?
   public var icon: AnnotationNoteIcon?
   public var open: Bool?
   /// A standard state sets its own `stateModel`; any other keeps the
   /// note's, and the note needs one. `.null` removes it.
-  public var state: AnnotationNullable<String>?
+  public var state: Nullable<String>?
   /// `.null` removes it.
-  public var stateModel: AnnotationNullable<String>?
+  public var stateModel: Nullable<String>?
   /// `.null` removes `/Contents`.
-  public var contents: AnnotationNullable<String>?
+  public var contents: Nullable<String>?
 
   public init(
-    rect: Rect? = nil, color: String? = nil, opacity: Double? = nil,
-    icon: AnnotationNoteIcon? = nil, open: Bool? = nil, state: AnnotationNullable<String>? = nil,
-    stateModel: AnnotationNullable<String>? = nil, contents: AnnotationNullable<String>? = nil
+    rect: Rect? = nil, color: AnnotationColor? = nil, opacity: Double? = nil,
+    icon: AnnotationNoteIcon? = nil, open: Bool? = nil, state: Nullable<String>? = nil,
+    stateModel: Nullable<String>? = nil, contents: Nullable<String>? = nil
   ) {
     self.rect = rect
     self.color = color

@@ -9,9 +9,9 @@ public import Foundation
 ///
 /// Nothing the engine reported is lost. `fieldsJSON` is the engine's whole
 /// record, every member, byte for byte; each timestamp keeps the engine's
-/// text next to its `Date`; and `generated` gives back the exact
+/// text next to its `Date`; and `record` gives back the exact
 /// `AnnotationRecord` this was made from, for the calls that take one.
-public struct AnnotationInfo: Sendable, Hashable {
+public struct AnnotationInfo: Sendable, Hashable, Identifiable {
   public let annotationRef: AnnotationRef
   public let page: PageRef
   public let subtype: AnnotationSubtype
@@ -64,14 +64,17 @@ public struct AnnotationInfo: Sendable, Hashable {
     details = Details(subtype: subtype, fieldsJSON: record.fieldsJson)
   }
 
-  /// The generated record this was made from, member for member.
-  public var generated: AnnotationRecord {
+  /// The engine's record this was made from, member for member.
+  public var record: AnnotationRecord {
     AnnotationRecord(
       annotationRef: annotationRef, page: page, subtype: subtype.rawValue, rect: rect,
       contents: contents, author: author, createdAt: rawCreatedAt, modifiedAt: rawModifiedAt,
       groupId: groupID, inReplyTo: inReplyTo, canUpdate: canUpdate, canDelete: canDelete,
       fieldsJson: fieldsJSON)
   }
+
+  /// `annotationRef`, so `ForEach(annotations)` needs no `id:`.
+  public var id: AnnotationRef { annotationRef }
 
   @available(*, deprecated, renamed: "fieldsJSON")
   public var fieldsJson: String { fieldsJSON }
@@ -126,9 +129,9 @@ extension AnnotationInfo {
 
   /// An ink annotation's members: freehand strokes.
   public struct Ink: Sendable, Hashable {
-    /// `/C`, as `"#rrggbb"`, or `nil` when the annotation has none or an
-    /// empty one: no stroke colour.
-    public let color: String?
+    /// `/C`, or `nil` when the annotation has none or an empty one: no
+    /// stroke colour.
+    public let color: AnnotationColor?
     /// `/CA`, 0 to 1.
     public let opacity: Double
     public let strokeWidth: Double
@@ -146,8 +149,8 @@ extension AnnotationInfo {
 
   /// A highlight annotation's members.
   public struct Highlight: Sendable, Hashable {
-    /// `/C`, as `"#rrggbb"`.
-    public let color: String
+    /// `/C`.
+    public let color: AnnotationColor
     /// `/CA`, 0 to 1.
     public let opacity: Double
     /// `/QuadPoints`, page space: one quad per run of marked text.
@@ -156,8 +159,8 @@ extension AnnotationInfo {
 
   /// A note's members: a `text` annotation.
   public struct Note: Sendable, Hashable {
-    /// `/C`, as `"#rrggbb"`.
-    public let color: String
+    /// `/C`.
+    public let color: AnnotationColor
     /// `/CA`, 0 to 1.
     public let opacity: Double
     /// `/Name`: `comment`, `key`, `note`, `help`, `new-paragraph`,
@@ -203,7 +206,7 @@ extension AnnotationInfo.Ink: Decodable {
 
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    color = try container.decodeIfPresent(String.self, forKey: .color)
+    color = try container.decodeIfPresent(AnnotationColor.self, forKey: .color)
     opacity = try container.decode(Double.self, forKey: .opacity)
     strokeWidth = try container.decode(Double.self, forKey: .strokeWidth)
     borderStyle = try container.decode(String.self, forKey: .borderStyle)
@@ -221,7 +224,7 @@ extension AnnotationInfo.Highlight: Decodable {
 
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    color = try container.decode(String.self, forKey: .color)
+    color = try container.decode(AnnotationColor.self, forKey: .color)
     opacity = try container.decode(Double.self, forKey: .opacity)
     quadPoints = try container.decode([WireQuad].self, forKey: .quadPoints).map(\.quad)
   }
@@ -234,7 +237,7 @@ extension AnnotationInfo.Note: Decodable {
 
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    color = try container.decode(String.self, forKey: .color)
+    color = try container.decode(AnnotationColor.self, forKey: .color)
     opacity = try container.decode(Double.self, forKey: .opacity)
     icon = try container.decode(String.self, forKey: .icon)
     open = try container.decode(Bool.self, forKey: .open)

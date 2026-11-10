@@ -81,12 +81,12 @@ public struct RenderSnapshot: Sendable {
 /// alive. After its document closes, every call throws `instance-closed`.
 ///
 /// A picture's layers, `includeAnnotations` and `includeFormFields`, default
-/// to ``Inclusion/whenPermitted``: annotations when the session may read
+/// to ``ContentInclusion/whenPermitted``: annotations when the session may read
 /// them (`doc.annotate.read`), form fields when it may read them
-/// (`doc.forms.read`) and annotations are not ``Inclusion/never``. That is
+/// (`doc.forms.read`) and annotations are not ``ContentInclusion/never``. That is
 /// the engine's rule, `resolve_page_layers` in
 /// `crates/plugins/render/src/model.rs`. A call that renders throws
-/// `permission-denied` for ``Inclusion/always`` on a layer the session may
+/// `permission-denied` for ``ContentInclusion/always`` on a layer the session may
 /// not read; `renderEpoch`, `sourceKey` and `RenderViewDemand.setDemand`
 /// leave that layer out instead.
 public struct RenderCapability: Sendable {
@@ -167,15 +167,15 @@ public struct RenderCapability: Sendable {
   /// sharing the raster cache. Needs only `doc.render.thumbnail`; throws
   /// `permission-denied` without it, otherwise like `renderPage`.
   public func renderThumbnail(
-    _ page: PageRef, includeAnnotations: Inclusion = .whenPermitted, includeFormFields: Inclusion = .whenPermitted
+    _ page: PageRef, includeAnnotations: ContentInclusion = .whenPermitted, includeFormFields: ContentInclusion = .whenPermitted
   ) async throws(PDFError) -> RenderedPage {
     try await renderThumbnail(
       page, engineAnnotations: includeAnnotations.engineValue, engineFormFields: includeFormFields.engineValue)
   }
 
-  /// `nil` is ``Inclusion/whenPermitted``, `true` ``Inclusion/always`` and
-  /// `false` ``Inclusion/never``.
-  @available(*, deprecated, message: "Pass an Inclusion: leave it out for nil, .always for true, .never for false.")
+  /// `nil` is ``ContentInclusion/whenPermitted``, `true` ``ContentInclusion/always`` and
+  /// `false` ``ContentInclusion/never``.
+  @available(*, deprecated, message: "Pass an ContentInclusion: leave it out for nil, .always for true, .never for false.")
   @_disfavoredOverload
   public func renderThumbnail(
     _ page: PageRef, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil
@@ -193,15 +193,17 @@ public struct RenderCapability: Sendable {
     return try RenderedPage(image)
   }
 
-  /// Render several pages, `concurrency` at a time (4 when `nil`). A page
-  /// that fails is in `failed`; cancelling the task throws
+  /// Render several pages, `concurrency` at a time. The default, 4, is the
+  /// engine's (`DEFAULT_BATCH_CONCURRENCY` in
+  /// `crates/plugins/render/src/controller.rs`), and the engine runs 0 as 1.
+  /// A page that fails is in `failed`; cancelling the task throws
   /// `operation-cancelled` for the whole batch. A `concurrency` below zero
   /// or past `UInt32.max` throws `invalid-input`.
   public func renderPages(
     _ pages: [PageRef], options: RenderPageOptions = RenderPageOptions(),
-    concurrency: Int? = nil
+    concurrency: Int = 4
   ) async throws(PDFError) -> RenderBatchResult {
-    let concurrency: UInt32? = try concurrency.map { (value) throws(PDFError) in try value.toWire("concurrency") }
+    let concurrency: UInt32 = try concurrency.toWire("concurrency")
     return try await renderPages(pages, options: options, wireConcurrency: concurrency)
   }
 
@@ -231,15 +233,15 @@ public struct RenderCapability: Sendable {
   /// The version of the raster these options would produce. It goes up when
   /// the page's pixels change.
   public func renderEpoch(
-    _ page: PageRef, includeAnnotations: Inclusion = .whenPermitted, includeFormFields: Inclusion = .whenPermitted
+    _ page: PageRef, includeAnnotations: ContentInclusion = .whenPermitted, includeFormFields: ContentInclusion = .whenPermitted
   ) async throws(PDFError) -> UInt64 {
     try await renderEpoch(
       page, engineAnnotations: includeAnnotations.engineValue, engineFormFields: includeFormFields.engineValue)
   }
 
-  /// `nil` is ``Inclusion/whenPermitted``, `true` ``Inclusion/always`` and
-  /// `false` ``Inclusion/never``.
-  @available(*, deprecated, message: "Pass an Inclusion: leave it out for nil, .always for true, .never for false.")
+  /// `nil` is ``ContentInclusion/whenPermitted``, `true` ``ContentInclusion/always`` and
+  /// `false` ``ContentInclusion/never``.
+  @available(*, deprecated, message: "Pass an ContentInclusion: leave it out for nil, .always for true, .never for false.")
   @_disfavoredOverload
   public func renderEpoch(_ page: PageRef, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil) async throws(PDFError)
     -> UInt64
@@ -274,17 +276,17 @@ public struct RenderCapability: Sendable {
   /// as in the engine (`RenderHandle::render_source` in
   /// `crates/plugins/render/src/ffi.rs`).
   public func renderSource(
-    _ page: PageRef, scale: Double, includeAnnotations: Inclusion = .whenPermitted,
-    includeFormFields: Inclusion = .whenPermitted, thumbnail: Bool = false
+    _ page: PageRef, scale: Double, includeAnnotations: ContentInclusion = .whenPermitted,
+    includeFormFields: ContentInclusion = .whenPermitted, thumbnail: Bool = false
   ) async throws(PDFError) -> RenderedPage {
     try await renderSource(
       page, scale: scale, engineAnnotations: includeAnnotations.engineValue,
       engineFormFields: includeFormFields.engineValue, engineThumbnail: thumbnail)
   }
 
-  /// `nil` layers are ``Inclusion/whenPermitted``, `true` ``Inclusion/always``
-  /// and `false` ``Inclusion/never``; a `nil` `thumbnail` is `false`.
-  @available(*, deprecated, message: "Pass an Inclusion for each layer (leave it out for nil) and a Bool thumbnail (nil is false).")
+  /// `nil` layers are ``ContentInclusion/whenPermitted``, `true` ``ContentInclusion/always``
+  /// and `false` ``ContentInclusion/never``; a `nil` `thumbnail` is `false`.
+  @available(*, deprecated, message: "Pass an ContentInclusion for each layer (leave it out for nil) and a Bool thumbnail (nil is false).")
   @_disfavoredOverload
   public func renderSource(
     _ page: PageRef, scale: Double, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil,
@@ -310,17 +312,17 @@ public struct RenderCapability: Sendable {
   /// thumbnail's with `thumbnail`. Leaving `thumbnail` out is `false`, as in
   /// the engine (`RenderHandle::source_key` in `crates/plugins/render/src/ffi.rs`).
   public func sourceKey(
-    _ page: PageRef, scale: Double, includeAnnotations: Inclusion = .whenPermitted,
-    includeFormFields: Inclusion = .whenPermitted, thumbnail: Bool = false
+    _ page: PageRef, scale: Double, includeAnnotations: ContentInclusion = .whenPermitted,
+    includeFormFields: ContentInclusion = .whenPermitted, thumbnail: Bool = false
   ) async throws(PDFError) -> String {
     try await sourceKey(
       page, scale: scale, engineAnnotations: includeAnnotations.engineValue,
       engineFormFields: includeFormFields.engineValue, engineThumbnail: thumbnail)
   }
 
-  /// `nil` layers are ``Inclusion/whenPermitted``, `true` ``Inclusion/always``
-  /// and `false` ``Inclusion/never``; a `nil` `thumbnail` is `false`.
-  @available(*, deprecated, message: "Pass an Inclusion for each layer (leave it out for nil) and a Bool thumbnail (nil is false).")
+  /// `nil` layers are ``ContentInclusion/whenPermitted``, `true` ``ContentInclusion/always``
+  /// and `false` ``ContentInclusion/never``; a `nil` `thumbnail` is `false`.
+  @available(*, deprecated, message: "Pass an ContentInclusion for each layer (leave it out for nil) and a Bool thumbnail (nil is false).")
   @_disfavoredOverload
   public func sourceKey(
     _ page: PageRef, scale: Double, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil,
@@ -369,16 +371,16 @@ public struct RenderViewDemand: Sendable {
   /// What this view wants for a page right now. The layers follow
   /// ``RenderCapability``'s rule.
   public func setDemand(
-    _ page: PageRef, _ demand: RenderPageViewDemand, includeAnnotations: Inclusion = .whenPermitted,
-    includeFormFields: Inclusion = .whenPermitted
+    _ page: PageRef, _ demand: RenderPageViewDemand, includeAnnotations: ContentInclusion = .whenPermitted,
+    includeFormFields: ContentInclusion = .whenPermitted
   ) async throws(PDFError) {
     try await setDemand(
       page, demand, engineAnnotations: includeAnnotations.engineValue, engineFormFields: includeFormFields.engineValue)
   }
 
-  /// `nil` is ``Inclusion/whenPermitted``, `true` ``Inclusion/always`` and
-  /// `false` ``Inclusion/never``.
-  @available(*, deprecated, message: "Pass an Inclusion: leave it out for nil, .always for true, .never for false.")
+  /// `nil` is ``ContentInclusion/whenPermitted``, `true` ``ContentInclusion/always`` and
+  /// `false` ``ContentInclusion/never``.
+  @available(*, deprecated, message: "Pass an ContentInclusion: leave it out for nil, .always for true, .never for false.")
   @_disfavoredOverload
   public func setDemand(_ page: PageRef, _ demand: RenderPageViewDemand, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil) async throws(PDFError) {
     try await setDemand(page, demand, engineAnnotations: includeAnnotations, engineFormFields: includeFormFields)
