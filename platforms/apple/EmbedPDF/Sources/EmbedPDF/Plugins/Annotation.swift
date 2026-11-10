@@ -73,7 +73,7 @@ public struct AnnotationCapability: Sendable {
   }
 
   let handle: AnnotationHandle
-  let viewer: PDFViewer
+  package let viewer: PDFViewer
 
   // Each sub-capability keeps the viewer alive, as this one does, so one
   // held on its own still answers. Nothing the viewer owns holds a

@@ -53,7 +53,7 @@ public struct SearchCapability: Sendable {
   }
 
   let handle: SearchHandle
-  let viewer: PDFViewer
+  package let viewer: PDFViewer
 
   /// Whether a search would be served now: `doc.text.search`, and with
   /// `snippets: true` also `doc.text.copy`. Leaving `snippets` out is
