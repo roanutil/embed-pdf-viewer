@@ -1,13 +1,15 @@
 import CustomDump
 import EmbedPDF
+import Foundation
 import Testing
 
 extension BaseSuite {
   /// A plugin left out of `ViewerConfig` is refused at its accessor, before
   /// any call on a capability: the host asks the kernel whether the plugin
   /// is installed (`kernel.provides`) ahead of any document lookup and answers
-  /// `unsupported`. A capability the accessor returns therefore never reports
-  /// a missing plugin per call.
+  /// `unsupported`. A capability the accessor returns has its own plugin; a
+  /// few of its calls still refuse when a companion plugin is left out (see
+  /// the Plugins section of `platforms/apple/README.md`).
   ///
   /// One row per accessor. `everyPluginInViewerConfigHasARow` fails when
   /// `ViewerConfig` gains a plugin field without a row here.
@@ -157,5 +159,47 @@ extension BaseSuite {
       }
       try await viewer.destroy()
     }
+
+    /// A document still loading is `unsupported`, not `not-ready`, when the
+    /// plugin is left out.
+    @Test(arguments: accessors)
+    func aPluginLeftOutIsUnsupportedForALoadingDocument(_ accessor: Accessor) async throws {
+      var config = ViewerConfig()
+      accessor.prerequisites(&config)
+      let viewer = try PDFViewer(config, documentFetcher: HeldURLProtocol.fetcher())
+      try await viewer.start()
+      let opening = Task { try await viewer.open(URL(string: "https://embedpdf.test/held.pdf")!) }
+      var loading: DocumentInfo?
+      for _ in 0..<500 {
+        loading = try await viewer.documents().first
+        if loading != nil { break }
+        try await Task.sleep(for: .milliseconds(10))
+      }
+      let document = try #require(loading)
+      #expect(document.status == .loading)
+      await #expect {
+        try await accessor.call(viewer, document)
+      } throws: { error in
+        (error as? PDFError)?.code == .unsupported
+      }
+      opening.cancel()
+      _ = await opening.result
+      try await viewer.destroy()
+    }
+  }
+}
+
+/// Answers no request, so an open through it stays pending and its tab
+/// stays `.loading` until the open is cancelled.
+private final class HeldURLProtocol: URLProtocol, @unchecked Sendable {
+  override class func canInit(with request: URLRequest) -> Bool { true }
+  override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+  override func startLoading() {}
+  override func stopLoading() {}
+
+  static func fetcher() -> URLSessionDocumentFetcher {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = [HeldURLProtocol.self]
+    return URLSessionDocumentFetcher(session: URLSession(configuration: configuration))
   }
 }

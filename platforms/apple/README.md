@@ -115,6 +115,19 @@ It has to. The release names a commit, and that commit can't contain its own che
 | actions | `ActionsCapability`, `JavaScriptCoreEngineFactory` | `actions: .forCurrentTimeZone(javascript: ActionsJavaScriptConfig(enabled: true, engine: JavaScriptCoreEngineFactory()))` | `2026-10-06-swift-plugins/15-actions.md` |
 | signature | `SignatureCapability`, `KeychainSigner`, `TrustAnchors` | `interaction: true, form: FormConfig(), signature: SignatureConfig()` | `2026-10-06-swift-plugins/16-signature.md` |
 
+A plugin left out of `ViewerConfig` is refused at its accessor. `search(in:)`, `stamps()` and the
+other accessors throw `PDFError` with code `.unsupported`, even for a document that is closed or
+still loading, so a capability you hold has its own plugin. `DisabledPluginTests` checks every
+accessor and fails when `ViewerConfig` gains a plugin without a row.
+
+A few calls also use a companion plugin and refuse on each call, with `.unsupported`, when it is
+left out. `RedactionCapability.markSelection()` needs `selection` and `markMatches(_:on:)` needs
+`search`. `StageCapability.registerScrollHandler(panFallback:)` needs `interaction`.
+`SignatureCapability.place(_:at:)` with a `.free` target needs `stamp` for an `.asset` mark and
+`annotation` for a `.source` mark. Stamp placement without `annotation` throws
+`.permissionDenied` instead, and `canPlace(in:)` reads `false`. Every other optional companion
+is skipped without an error.
+
 > Note: `JavaScriptCoreEngine` enforces a script's time budget by abandoning the realm, because
 > JavaScriptCore has no public execution limit. A runaway script keeps one thread busy until the
 > app exits. Memory and stack budgets aren't enforced. JavaScript on a real document also needs
