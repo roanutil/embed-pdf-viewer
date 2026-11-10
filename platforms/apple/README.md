@@ -139,6 +139,22 @@ is skipped without an error.
 > signature reads `.validUntrusted`. Document permissions follow `ViewerConfig.scope`; `nil` grants
 > everything.
 
+### Building a `ViewerConfig` with `ViewerConfigBuilder`
+
+`ViewerConfig(search: SearchConfig(), ...)` keeps working. Its memberwise initializer gains a
+parameter with every plugin we add, though, so we also ship a chained builder, one method per
+field, each returning a changed copy:
+
+```swift
+let viewer = try PDFViewer(
+  ViewerConfigBuilder().interaction().annotation(settingsJSON: "").search(SearchConfig()))
+```
+
+An unset field is the engine's default, so `ViewerConfigBuilder().build()` equals `ViewerConfig()`:
+every plugin left out and `scope` at `nil`. `PDFViewer.init(_:documentFetcher:)` takes either
+spelling. `ViewerConfigBuilderTests` fails when `ViewerConfig` gains a field the builder lacks.
+The cost is a second spelling to keep in step, which is what that test is for.
+
 ## What the script assembles
 
 Per slice, `libtool -static` merges `libepdf_viewer_host.a` with the fork's
