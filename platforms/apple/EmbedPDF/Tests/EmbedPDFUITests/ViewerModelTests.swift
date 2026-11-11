@@ -30,7 +30,9 @@ struct ViewerModelTests {
     try await expectObserved({ model.documentCount }, equals: 1) {
       first = try await viewer.open(pluginFixture())
     }
-    expectNoDifference(model.activeDocument?.id, first?.id)
+    // The count can reach 1 while the tab still holds its `pending:` ticket;
+    // the real id lands with a later revision.
+    try await expectObserved({ model.activeDocument?.id }, equals: first?.id) {}
     let second = try await viewer.open(pluginFixture("features"))
     try await expectObserved({ model.activeDocument?.id }, equals: second.id) {}
     expectNoDifference(model.documentCount, 2)
