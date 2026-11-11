@@ -210,6 +210,31 @@ every plugin left out and `scope` at `nil`. `PDFViewer.init(_:documentFetcher:)`
 spelling. `ViewerConfigBuilderTests` fails when `ViewerConfig` gains a field the builder lacks.
 The cost is a second spelling to keep in step, which is what that test is for.
 
+### Task-named entry points
+
+`StageCapability` and `InteractionCapability` are named after the engine part that does the work,
+and each has dozens of members. So we also ship three small entry points named after what you want
+to do. Each one forwards to its capability, and every member has the capability member's name,
+signature and errors:
+
+| To | Get | It forwards to | For everything else |
+|---|---|---|---|
+| move between pages | `viewer.pageNavigator(for: document)` | `StageCapability` | `navigator.stage` |
+| zoom and fit pages | `viewer.pageZoom(for: document)` | `StageCapability` | `zoom.stage` |
+| pick the active tool | `viewer.toolSwitcher(for: document)` | `InteractionCapability` | `switcher.interaction` |
+
+```swift
+let navigator = try await viewer.pageNavigator(for: document)
+if try await navigator.canGoNext() { try await navigator.nextPage() }
+```
+
+These are additive. The capabilities and their accessors are unchanged and stay the escape hatch:
+an entry point needs the same `ViewerConfig` plugin and throws the same `PDFError`.
+`ShellCapability` (which panels, sheets and menus are open) and `ViewManagerCapability` (documents
+as tabs in panes) don't get one. They're small and their members already say the task, so an entry
+point would mostly repeat them. The cost of the three we do ship is a second spelling to keep in
+step; `TaskEntryPointTests` fails when a member on either side disappears or changes signature.
+
 ## What the script assembles
 
 Per slice, `libtool -static` merges `libepdf_viewer_host.a` with the fork's
