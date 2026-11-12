@@ -6,7 +6,10 @@
 
 use epdf_annotation_core::engine::facts::field_names;
 use epdf_annotation_core::update::defaults_for;
+use std::rc::Rc;
+
 use epdf_kernel::Error;
+use epdf_kernel::changes::{SendChange, StagedChange};
 use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::rt::Promise;
 use epdf_kernel::signal::AbortSignal;
@@ -285,7 +288,9 @@ impl Core {
         })
     }
 
-    /// `import(bundle, options)`.
+    /// `import(bundle, options)`: one change on the queue, staged as the
+    /// engine verb's call: what was typed is sent first, and the history keeps
+    /// it as one step unless `history: false` says it isn't one.
     pub fn import(
         &self,
         bundle: Value,
@@ -295,23 +300,62 @@ impl Core {
         if let Err(e) = self.assert_allowed("annotations:create", "annotation.import") {
             return Promise::rejected(e);
         }
-        let doc = match self.doc_or_throw() {
-            Ok(d) => d,
+        // `const { signal, history, ...importOptions } = options`.
+        let history = options.get("history").cloned();
+        let mut import_options = options.as_object().cloned().unwrap_or_default();
+        import_options.shift_remove("signal");
+        import_options.shift_remove("history");
+        let op_id = import_options.get("opId").and_then(Value::as_str).map(str::to_string);
+        let send: SendChange = {
+            let me = self.weak();
+            Rc::new(move |write: Value| {
+                let Some(core) = me.upgrade() else {
+                    return Promise::rejected(Error::new("closed"));
+                };
+                let doc = match core.doc_or_throw() {
+                    Ok(d) => d,
+                    Err(e) => return Promise::rejected(e),
+                };
+                let mut options = import_options.clone();
+                options.insert("opId".into(), write.get("opId").cloned().unwrap_or(Value::Null));
+                let call = core.cancellable(
+                    signal.clone(),
+                    doc.call(
+                        "annotations.import",
+                        None,
+                        vec![bundle.clone(), Value::Object(options)],
+                    ),
+                );
+                Promise::spawn(async move { Ok(verb_answer("annotations.import", call.await?)) })
+            })
+        };
+        let staged = self.cx.changes().and_then(|changes| {
+            changes.stage(StagedChange::verb(
+                json!({ "key": "annotation.import" }),
+                send,
+                op_id,
+                history != Some(Value::Bool(false)),
+            ))
+        });
+        let change = match staged {
+            Ok(change) => change,
             Err(e) => return Promise::rejected(e),
         };
-        let call =
-            self.cancellable(signal, doc.call("annotations.import", None, vec![bundle, options]));
+        let result = change.result();
         let me = self.weak();
         Promise::spawn(async move {
-            let result = call.await?;
+            let answer = result.await?;
+            let imported =
+                answer.get("items").and_then(|i| i.get(0)).cloned().unwrap_or(Value::Null);
+            // The engine published one `annotations.created` per annotation:
+            // once the records hold them, `list()` shows them.
             if let Some(core) = me.upgrade() {
                 let settled = core.records.settled();
                 drop(core);
                 settled.await?;
             }
-            // `{ annotations: result.annotations, ... }`: a member the engine
-            // left out is `undefined`, as the TypeScript's literal has it.
-            let member = |k: &str| result.get(k).cloned().unwrap_or_else(epdf_kernel::undefined);
+            // A member the engine left out is `undefined`, as the TypeScript's literal has it.
+            let member = |k: &str| imported.get(k).cloned().unwrap_or_else(epdf_kernel::undefined);
             Ok(json!({
                 "annotations": member("annotations"),
                 "refMap": member("refMap"),
@@ -354,4 +398,19 @@ impl Core {
             call.reaction().await
         })
     }
+}
+
+/// `{ items: [{ type, ...result }], meta: result.meta }`: a verb's result as
+/// a change's answer.
+fn verb_answer(kind: &str, result: Value) -> Value {
+    let mut item = Map::new();
+    item.insert("type".into(), json!(kind));
+    for (k, v) in result.as_object().into_iter().flatten() {
+        item.insert(k.clone(), v.clone());
+    }
+    let mut answer = Map::new();
+    answer.insert("items".into(), json!([item]));
+    answer
+        .insert("meta".into(), result.get("meta").cloned().unwrap_or_else(epdf_kernel::undefined));
+    Value::Object(answer)
 }
