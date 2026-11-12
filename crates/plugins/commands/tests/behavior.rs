@@ -545,8 +545,11 @@ fn reads_keep_their_identity_until_an_input_changes() {
     // `""` is the active document's key, as no document.
     assert!(Rc::ptr_eq(&list, &rig.commands.list_commands(Some("")).unwrap()));
 
-    // A derivation's answer changes that command and the list, not the ids.
+    // A derivation's answer changes that command and the list, not the ids,
+    // once the store changes: derivations are asked once per store change.
     answer.set(false);
+    assert!(Rc::ptr_eq(&resolved, &rig.resolve("a")));
+    rig.kernel.store().notify();
     let changed = rig.resolve("a");
     assert!(!Rc::ptr_eq(&resolved, &changed) && !changed.enabled);
     assert!(!Rc::ptr_eq(&list, &rig.commands.list_commands(None).unwrap()));
@@ -748,13 +751,15 @@ fn a_document_scope_is_what_a_call_without_a_document_is_for() {
     let take = || seen.borrow_mut().drain(..).collect::<Vec<_>>();
     let on = |id: &str| Some(id.to_string());
     let scoped = rig.commands.in_scope("a");
-    // Each read that leaves out the document reads the one in scope.
+    // Each read that leaves out the document reads the one in scope. The
+    // resolution asks `visible` once per store change, so the list and the
+    // search reuse it; `can_execute` asks again, as it goes by the moment.
     assert!(scoped.resolve_command("go", None).unwrap().unwrap().visible);
     assert_eq!(scoped.list_commands(None).unwrap().len(), 1);
     assert_eq!(scoped.search_commands("go", None).unwrap().len(), 1);
     assert!(scoped.can_execute("go", None).unwrap());
     assert_eq!(scoped.get_refusal("go", None).unwrap(), None);
-    assert_eq!(take(), [on("a"), on("a"), on("a"), on("a")]);
+    assert_eq!(take(), [on("a"), on("a")]);
     let ran = |cap: &CommandsCapability, options| {
         settle(&cap.execute("go", options)).unwrap();
         take()
@@ -1007,6 +1012,8 @@ fn a_setting_lock_disables_without_hiding_and_preserves_active_value() {
     assert_eq!(runs.get(), 0);
     held.set(false);
     assert!(rig.commands.get_refusal("view:single", None).unwrap().is_none());
+    // The resolution asks again once the store changes.
+    rig.kernel.store().notify();
     assert!(rig.resolve("view:single").enabled);
     assert_eq!(
         settle(&rig.commands.execute("view:single", ExecuteOptions::default())).unwrap(),

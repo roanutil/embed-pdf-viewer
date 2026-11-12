@@ -1,6 +1,7 @@
 //! `controller.ts`: the commands (from the settings, added while the app
 //! runs, and from families), resolution for a document (derivations over
-//! live state, safe to throw), the one way to run a command, what the
+//! live state, safe to throw, asked once per store change), the one way to
+//! run a command, what the
 //! session may run, and the host-only keystroke matcher. Turning commands
 //! off is `turning_off.rs`.
 //!
@@ -32,8 +33,8 @@ use epdf_ui_core::shortcuts::{KeyStroke, ShortcutOptions, match_shortcut};
 use serde_json::Value;
 
 use crate::availability::{
-    is_turned_off, label_of, lock_of, locked_message, not_allowed_key_of, not_allowed_message,
-    refusal_of,
+    Translate, is_turned_off, label_of, label_params_of, locked_key_of, locked_message,
+    not_allowed_key_of, not_allowed_message, params_json, refusal_of, translate_of,
 };
 use crate::contract::{
     AccentDerivation, CommandCtx, CommandDef, CommandExecutedEvent, CommandExecutionFailedEvent,
@@ -100,51 +101,89 @@ fn same_resolved(a: &Option<Rc<ResolvedCommand>>, b: &Option<Rc<ResolvedCommand>
     }
 }
 
-/// `Derivations`: one command's live derivations for a document, as values
-/// a memo can compare.
+/// `Answers`: what one command's derivations answer for a document, as
+/// values a memo can compare: the entry, the translate function and its
+/// label's `labelParams` (as JSON, so equal values compare equal), the
+/// accent colors, the enabled/active/visible flags, and the keys of the
+/// sentences that say why it's disabled: the scope doesn't allow it (when it
+/// shows disabled for that), or a lock holds its setting. The label and the
+/// sentences are translated from these, only when one of them changes.
 #[derive(Clone)]
-struct Derivations {
+struct Answers {
     entry: Option<Rc<RegisteredCommand>>,
-    label: String,
+    translate: Translate,
+    /// `JSON.stringify(labelParams)`, with the params it was made from.
+    label_params: Option<(String, epdf_plugin_i18n::Params)>,
     accent_primary: Option<String>,
     accent_secondary: Option<String>,
     enabled: bool,
     active: bool,
     visible: bool,
-    disabled_reason: Option<String>,
+    not_allowed_key: Option<String>,
+    locked_key: Option<String>,
 }
 
-impl Derivations {
+/// `availabilityOf`'s answer.
+struct Availability {
+    enabled: bool,
+    visible: bool,
+    not_allowed_key: Option<String>,
+    locked_key: Option<String>,
+}
+
+fn same_translate(a: &Translate, b: &Translate) -> bool {
+    match (a, b) {
+        (None, None) => true,
+        (Some(a), Some(b)) => Rc::ptr_eq(a, b),
+        _ => false,
+    }
+}
+
+impl Answers {
     /// `NOT_REGISTERED`.
     fn not_registered() -> Self {
-        Derivations {
+        Answers {
             entry: None,
-            label: String::new(),
+            translate: None,
+            label_params: None,
             accent_primary: None,
             accent_secondary: None,
             enabled: false,
             active: false,
             visible: false,
-            disabled_reason: None,
+            not_allowed_key: None,
+            locked_key: None,
         }
     }
 
-    /// `sameInputs`: the entry by identity, the rest by value.
-    fn same(&self, other: &Derivations) -> bool {
+    /// `sameInputs`: the entry and the translate function by identity, the
+    /// rest by value.
+    fn same(&self, other: &Answers) -> bool {
         same_entry(&self.entry, &other.entry)
-            && self.label == other.label
+            && same_translate(&self.translate, &other.translate)
+            && self.label_params.as_ref().map(|(json, _)| json)
+                == other.label_params.as_ref().map(|(json, _)| json)
             && self.accent_primary == other.accent_primary
             && self.accent_secondary == other.accent_secondary
             && self.enabled == other.enabled
             && self.active == other.active
             && self.visible == other.visible
-            && self.disabled_reason == other.disabled_reason
+            && self.not_allowed_key == other.not_allowed_key
+            && self.locked_key == other.locked_key
     }
 
-    /// The memo's compute: the resolved command, or `None` for no entry.
+    /// The memo's compute: the resolved command, label and sentences
+    /// translated, or `None` for no entry.
     fn resolved(&self) -> Option<Rc<ResolvedCommand>> {
         let entry = self.entry.as_ref()?;
         let def = &entry.def;
+        let params = self.label_params.as_ref().map(|(_, params)| params);
+        let label = label_of(def, params, &self.translate);
+        let disabled_reason = match (&self.not_allowed_key, &self.locked_key) {
+            (Some(key), _) => Some(not_allowed_message(key, &label, &self.translate)),
+            (None, Some(key)) => Some(locked_message(key, &label, &self.translate)),
+            (None, None) => None,
+        };
         let icon_accent = match (&self.accent_primary, &self.accent_secondary) {
             (None, None) => None,
             (primary, secondary) => {
@@ -153,7 +192,7 @@ impl Derivations {
         };
         Some(Rc::new(ResolvedCommand {
             id: def.id.clone(),
-            label: self.label.clone(),
+            label,
             icon: def.icon.clone(),
             icon_accent,
             shortcuts: entry.shortcuts.clone(),
@@ -163,7 +202,7 @@ impl Derivations {
             pressable: pressable_of(def),
             visible: self.visible,
             categories: def.categories.clone().unwrap_or_default(),
-            disabled_reason: self.disabled_reason.clone(),
+            disabled_reason,
         }))
     }
 }
@@ -186,11 +225,12 @@ impl IdsInputs {
 }
 
 type Defined = Rc<Vec<Rc<RegisteredCommand>>>;
-type ResolutionKey = (String, Option<String>);
+/// A document's key (`""` is the active document) and a command id.
+type ResolutionKey = (String, String);
 type ConfiguredMemo = (Rc<Vec<CommandItem>>, Rc<ConfiguredCommands>);
 type DefinedMemo = (u64, Rc<ConfiguredCommands>, Defined);
 type FamilyMemo = (Rc<CommandFamily>, Vec<(String, Rc<RegisteredCommand>)>);
-type ResolvedMemo = (Derivations, Option<Rc<ResolvedCommand>>);
+type ResolvedMemo = (Answers, Option<Rc<ResolvedCommand>>);
 type IdsMemo = (IdsInputs, Rc<Vec<String>>);
 type ListMemo = (Vec<Option<Rc<ResolvedCommand>>>, Rc<Vec<Rc<ResolvedCommand>>>);
 type ShortcutsMemo = (Defined, Rc<Vec<ShortcutBinding>>);
@@ -214,6 +254,14 @@ struct Inner {
     /// identity. The TypeScript's `WeakMap` lets a family's entries go with
     /// the family; these stay for the controller's life.
     family_commands: RefCell<Vec<FamilyMemo>>,
+    /// `contextByDocument`: the context a document's derivations read, the
+    /// same until the store changes, by document key.
+    contexts: RefCell<HashMap<String, (u64, CommandCtx)>>,
+    /// Each document's `answersById`: a command's answers, asked at most
+    /// once per store change.
+    answers: RefCell<HashMap<ResolutionKey, (u64, Answers)>>,
+    /// Each document's resolved commands, built again only when their
+    /// answers changed.
     resolved: RefCell<HashMap<ResolutionKey, ResolvedMemo>>,
     ids: RefCell<HashMap<String, IdsMemo>>,
     lists: RefCell<HashMap<String, ListMemo>>,
@@ -453,98 +501,129 @@ impl CommandsCapability {
         (family.names)(context).unwrap_or_else(|_| self.inner.no_names.clone())
     }
 
-    /// `derivationsOf`.
-    fn derivations_of(
-        &self,
-        entry: &Rc<RegisteredCommand>,
-        document_id: Option<&str>,
-    ) -> Result<Derivations, Error> {
-        let def = &entry.def;
-        let context = self.command_context(document_id, None, None)?;
-        let label = label_of(def, &context);
-        // Turned off hides it; not allowed hides it, or disables it with the
-        // reason.
-        let turned_off = is_turned_off(def, &self.current_settings());
-        let not_allowed = if turned_off { None } else { not_allowed_key_of(def, &context) };
-        let shown_when_not_allowed = self.current_settings().not_allowed == NotAllowedMode::Disable;
-        let lock = if turned_off || not_allowed.is_some() { None } else { lock_of(def, &context) };
-        let ruled_out = turned_off || not_allowed.is_some() || lock.is_some();
-        // A command that opens something is active while it's open, unless
-        // it says otherwise.
-        let active = match &def.active {
-            Some(active) => derive(Some(active), &context, false),
-            None => match context.try_get(&SHELL) {
-                None => false,
-                Some(shell) => {
-                    if let Some(menu) = truthy(&def.menu) {
-                        shell.is_menu_open(menu)
-                    } else if let Some((panel, _, _)) = panel_target(def) {
-                        shell.is_open(panel)
-                    } else if let Some(modal) = truthy(&def.modal) {
-                        shell.is_open(modal)
-                    } else {
-                        false
-                    }
-                }
-            },
-        };
-        let accent = derive_accent(def.icon_accent.as_ref(), &context);
-        let enabled = !ruled_out && derive(def.enabled.as_ref(), &context, true);
+    /// `contextByDocument`: the context a document's derivations read
+    /// (`""` is the active document), the same until the store changes.
+    fn context_by_document(&self, document_key: &str) -> Result<CommandCtx, Error> {
+        let count = self.inner.cx.store_change_count();
+        if let Some((held, context)) = self.inner.contexts.borrow().get(document_key)
+            && *held == count
+        {
+            return Ok(context.clone());
+        }
+        let target = (!document_key.is_empty()).then_some(document_key);
+        let context = self.command_context(target, None, None)?;
+        self.inner.contexts.borrow_mut().insert(document_key.to_string(), (count, context.clone()));
+        Ok(context)
+    }
+
+    /// `activeOf`: whether a command shows as pressed, its `active`, else
+    /// while what it opens is open.
+    fn active_of(def: &CommandDef, context: &CommandCtx) -> bool {
+        if let Some(active) = &def.active {
+            return derive(Some(active), context, false);
+        }
+        let Some(shell) = context.try_get(&SHELL) else { return false };
+        if let Some(menu) = truthy(&def.menu) {
+            shell.is_menu_open(menu)
+        } else if let Some((panel, _, _)) = panel_target(def) {
+            shell.is_open(panel)
+        } else if let Some(modal) = truthy(&def.modal) {
+            shell.is_open(modal)
+        } else {
+            false
+        }
+    }
+
+    /// `availabilityOf`: whether a command can run and whether it shows, as
+    /// its derivations answer now, with the keys of the sentences that say
+    /// why it's disabled. Turned off hides it; not allowed hides it, or
+    /// disables it with the reason; a lock on the setting it changes
+    /// disables it with the lock's reason, whatever `notAllowed` says.
+    fn availability_of(&self, def: &CommandDef, context: &CommandCtx) -> Availability {
+        let settings = self.current_settings();
+        let turned_off = is_turned_off(def, &settings);
+        let not_allowed = if turned_off { None } else { not_allowed_key_of(def, context) };
+        let shown_when_not_allowed = settings.not_allowed == NotAllowedMode::Disable;
+        let locked_key =
+            if turned_off || not_allowed.is_some() { None } else { locked_key_of(def, context) };
+        let ruled_out = turned_off || not_allowed.is_some() || locked_key.is_some();
+        let enabled = !ruled_out && derive(def.enabled.as_ref(), context, true);
         let visible = !turned_off
             && (not_allowed.is_none() || shown_when_not_allowed)
-            && derive(def.visible.as_ref(), &context, true);
-        let disabled_reason = match &not_allowed {
-            Some(key) if shown_when_not_allowed => Some(not_allowed_message(key, &label, &context)),
-            _ => lock.as_ref().map(|lock| locked_message(lock, &label, &context)),
-        };
+            && derive(def.visible.as_ref(), context, true);
+        Availability {
+            enabled,
+            visible,
+            not_allowed_key: if shown_when_not_allowed { not_allowed } else { None },
+            locked_key,
+        }
+    }
+
+    /// `answersOf`: what a command's derivations answer for a document now.
+    fn answers_of(&self, entry: &Rc<RegisteredCommand>, context: &CommandCtx) -> Answers {
+        let def = &entry.def;
+        let Availability { enabled, visible, not_allowed_key, locked_key } =
+            self.availability_of(def, context);
+        let label_params =
+            label_params_of(def, context).map(|params| (params_json(&params), params));
+        let translate = translate_of(context);
+        let accent = derive_accent(def.icon_accent.as_ref(), context);
+        let active = Self::active_of(def, context);
         let (accent_primary, accent_secondary) = match accent {
             Some(accent) => (accent.primary, accent.secondary),
             None => (None, None),
         };
-        Ok(Derivations {
+        Answers {
             entry: Some(entry.clone()),
-            label,
+            translate,
+            label_params,
             accent_primary,
             accent_secondary,
             enabled,
             active,
             visible,
-            disabled_reason,
-        })
+            not_allowed_key,
+            locked_key,
+        }
     }
 
-    /// `resolvedByKey`: a resolved command, the same `Rc` until one of its
-    /// derivations or its entry changes.
-    fn resolved_by_key(
-        &self,
-        id: &str,
-        document_id: Option<&str>,
-    ) -> Result<Option<Rc<ResolvedCommand>>, Error> {
-        let derivations = match self.entry_of(id)? {
-            Some(entry) => self.derivations_of(&entry, document_id)?,
-            None => Derivations::not_registered(),
+    /// `answersById` for one document: a command's answers, asked at most
+    /// once per store change however many readers ask.
+    fn answers_by_id(&self, document_key: &str, id: &str) -> Result<Answers, Error> {
+        let count = self.inner.cx.store_change_count();
+        let key = (document_key.to_string(), id.to_string());
+        if let Some((held, answers)) = self.inner.answers.borrow().get(&key)
+            && *held == count
+        {
+            return Ok(answers.clone());
+        }
+        let answers = match self.entry_of(id)? {
+            Some(entry) => self.answers_of(&entry, &self.context_by_document(document_key)?),
+            None => Answers::not_registered(),
         };
-        let key = (id.to_string(), document_id.map(str::to_string));
+        self.inner.answers.borrow_mut().insert(key, (count, answers.clone()));
+        Ok(answers)
+    }
+
+    /// `documentResolution(documentKey)(id)`: one document's command as
+    /// buttons show it (`""` is the active document). Its resolved object is
+    /// built again, label and sentences translated, only when one of its
+    /// answers changed.
+    fn resolve_in(
+        &self,
+        document_key: &str,
+        id: &str,
+    ) -> Result<Option<Rc<ResolvedCommand>>, Error> {
+        let answers = self.answers_by_id(document_key, id)?;
+        let key = (document_key.to_string(), id.to_string());
         if let Some((held, resolved)) = self.inner.resolved.borrow().get(&key)
-            && held.same(&derivations)
+            && held.same(&answers)
         {
             return Ok(resolved.clone());
         }
-        let resolved = derivations.resolved();
-        self.inner.resolved.borrow_mut().insert(key, (derivations, resolved.clone()));
+        let resolved = answers.resolved();
+        self.inner.resolved.borrow_mut().insert(key, (answers, resolved.clone()));
         Ok(resolved)
-    }
-
-    /// The controller's own `resolveCommand`, with no document in scope.
-    fn resolve_for(
-        &self,
-        id: &str,
-        document_id: Option<&str>,
-    ) -> Result<Option<Rc<ResolvedCommand>>, Error> {
-        if self.entry_of(id)?.is_none() {
-            return Ok(None);
-        }
-        self.resolved_by_key(id, document_id)
     }
 
     /// `idsByDocument`: every command's id for a document (`""` is the
@@ -552,8 +631,7 @@ impl CommandsCapability {
     /// each family's names that no defined command took.
     fn ids_by_document(&self, document_key: &str) -> Result<Rc<Vec<String>>, Error> {
         let configured = self.configured()?;
-        let target = (!document_key.is_empty()).then_some(document_key);
-        let context = self.command_context(target, None, None)?;
+        let context = self.context_by_document(document_key)?;
         let inputs = IdsInputs {
             defined: self.defined_commands()?,
             names: configured.families.iter().map(|f| self.names_of(f, &context)).collect(),
@@ -586,9 +664,10 @@ impl CommandsCapability {
         document_key: &str,
     ) -> Result<Rc<Vec<Rc<ResolvedCommand>>>, Error> {
         let ids = self.ids_by_document(document_key)?;
-        let target = (!document_key.is_empty()).then_some(document_key);
-        let resolved =
-            ids.iter().map(|id| self.resolve_for(id, target)).collect::<Result<Vec<_>, Error>>()?;
+        let resolved = ids
+            .iter()
+            .map(|id| self.resolve_in(document_key, id))
+            .collect::<Result<Vec<_>, Error>>()?;
         if let Some((held, list)) = self.inner.lists.borrow().get(document_key)
             && held.len() == resolved.len()
             && held.iter().zip(&resolved).all(|(a, b)| same_resolved(a, b))
@@ -682,14 +761,15 @@ impl CommandsCapability {
     // ── what a button shows ──
 
     /// `resolveCommand`: a command as a button shows it, or `None` for an
-    /// unknown id. The same `Rc` while nothing about it changed. Every
-    /// derivation runs on every call.
+    /// unknown id. The same `Rc` while nothing about it changed. Its
+    /// derivations are asked at most once per store change; an empty
+    /// document id is the active document.
     pub fn resolve_command(
         &self,
         id: &str,
         document_id: Option<&str>,
     ) -> Result<Option<Rc<ResolvedCommand>>, Error> {
-        self.resolve_for(id, self.target(document_id))
+        self.resolve_in(self.target(document_id).unwrap_or(""), id)
     }
 
     /// `listCommands`: every command, resolved, in the order they were
@@ -809,11 +889,17 @@ impl CommandsCapability {
             let Some(entry) = this.entry_of(&id)? else {
                 return Ok(ExecuteResult::Rejected { reason: RejectReason::NotFound });
             };
-            let resolved = this.resolve_for(&id, document_id.as_deref())?;
-            let Some(resolved) = resolved.filter(|r| r.visible) else {
+            // Asked at this moment, not as of the last store change: a run
+            // goes by what the command answers now, also when something
+            // outside the viewer changed it since.
+            let now = this.availability_of(
+                &entry.def,
+                &this.context_by_document(document_id.as_deref().unwrap_or(""))?,
+            );
+            if !now.visible {
                 return Ok(ExecuteResult::Rejected { reason: RejectReason::Hidden });
-            };
-            if !resolved.enabled {
+            }
+            if !now.enabled {
                 return Ok(ExecuteResult::Rejected { reason: RejectReason::Disabled });
             }
             let context =
@@ -850,9 +936,13 @@ impl CommandsCapability {
         })
     }
 
-    /// `canExecute`: it exists, and is enabled and visible.
+    /// `canExecute`: it exists, and is enabled and visible as its
+    /// derivations answer now.
     pub fn can_execute(&self, id: &str, document_id: Option<&str>) -> Result<bool, Error> {
-        Ok(self.resolve_command(id, document_id)?.is_some_and(|r| r.enabled && r.visible))
+        let Some(entry) = self.entry_of(id)? else { return Ok(false) };
+        let context = self.context_by_document(self.target(document_id).unwrap_or(""))?;
+        let now = self.availability_of(&entry.def, &context);
+        Ok(now.enabled && now.visible)
     }
 
     /// `getRefusal`: why a command won't run whatever the moment; `None`
@@ -863,7 +953,7 @@ impl CommandsCapability {
         document_id: Option<&str>,
     ) -> Result<Option<CommandRefusal>, Error> {
         let Some(entry) = self.entry_of(id)? else { return Ok(None) };
-        let context = self.command_context(self.target(document_id), None, None)?;
+        let context = self.context_by_document(self.target(document_id).unwrap_or(""))?;
         Ok(refusal_of(&entry.def, &context, &self.current_settings()))
     }
 
@@ -909,7 +999,7 @@ impl CommandsCapability {
             if !entry.parsed.iter().any(|shortcut| match_shortcut(shortcut, stroke, platform)) {
                 continue;
             }
-            let context = self.command_context(None, None, None)?;
+            let context = self.context_by_document("")?;
             let refusal = refusal_of(def, &context, &self.current_settings());
             let visible = derive(def.visible.as_ref(), &context, true);
             let Some(refusal) = refusal else {
@@ -962,6 +1052,8 @@ pub fn create_commands_controller(
             configured: RefCell::new(None),
             defined: RefCell::new(None),
             family_commands: RefCell::new(Vec::new()),
+            contexts: RefCell::new(HashMap::new()),
+            answers: RefCell::new(HashMap::new()),
             resolved: RefCell::new(HashMap::new()),
             ids: RefCell::new(HashMap::new()),
             lists: RefCell::new(HashMap::new()),
