@@ -102,13 +102,15 @@ fn mask(value: &Value) -> Value {
 }
 
 /// The worker's payload as the `Host` answers it: without its `tag`, and a
-/// read whose one field is its `snapshot` as that snapshot when the `Host`
-/// answers the snapshot itself.
+/// read whose one field is its `snapshot` or `list` as that value, when the
+/// `Host` answers the value itself (`pages.list`, `annotations.list`).
 fn expected_result(resolve: &Value, actual: &Value) -> Value {
     let mut payload: Map<String, Value> = resolve.as_object().cloned().unwrap_or_default();
     payload.remove("tag");
-    if payload.len() == 1 && payload.contains_key("snapshot") && actual.get("snapshot").is_none() {
-        return payload.remove("snapshot").unwrap();
+    for wrapper in ["snapshot", "list"] {
+        if payload.len() == 1 && payload.contains_key(wrapper) && actual.get(wrapper).is_none() {
+            return payload.remove(wrapper).unwrap();
+        }
     }
     Value::Object(payload)
 }
@@ -216,7 +218,6 @@ fn a_scale_is_a_change() {
 }
 
 #[test]
-#[ignore = "not ported yet"]
 fn an_update_renames() {
     replay_file("rename.json", "document.apply.annotations.rename", 7);
 }

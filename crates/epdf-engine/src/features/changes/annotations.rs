@@ -901,7 +901,36 @@ pub fn update_annotation(
     if let Some(expect) = expect {
         super::applier::assert_expected(at, &current, expect)?;
     }
+    assert_new_name_free(ctx, reference, &current, patch.get("nm"))?;
     write_update(ctx, reference, patch.clone(), resources, "annotations.update")
+}
+
+/// A new name must be free on the annotation's page (ISO 32000-2 §12.5.2),
+/// checked against the page as the change's earlier ops left it
+/// (`assertNewNameFree`, 756f8e56b). Only an op checks it: an undo puts back
+/// the name an annotation had, as the undo of a delete brings back the
+/// deleted one's. A name sent back as it reads is no change.
+pub(super) fn assert_new_name_free(
+    ctx: &ChangeContext<'_>,
+    reference: &AnnotationRef,
+    current: &Map<String, Value>,
+    nm: Option<&Value>,
+) -> Result<(), EngineError> {
+    let Some(Value::String(nm)) = nm else { return Ok(()) };
+    if nm.is_empty() || current.get("nm").and_then(Value::as_str) == Some(nm.as_str()) {
+        return Ok(());
+    }
+    let owned = ctx.session.document()?;
+    let page = reference.page();
+    let page_index = owned.page_index(page)?;
+    if crate::features::annotation::write::create::name_taken(owned.document(), page_index, nm) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            format!("nm '{nm}' is already used on page {}", page.get()),
+        )
+        .with_details(serde_json::json!({ "field": "nm" })));
+    }
+    Ok(())
 }
 
 /// The keys whose objects an update's capture of an annotation holds
