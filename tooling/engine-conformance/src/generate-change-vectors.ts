@@ -14,6 +14,7 @@
  * | `rename.json` | an annotation update's `patch.nm` renames it (756f8e56b) |
  * | `annotation-copy.json` | `annotations.copy` (1481e4556, 9eead5531, 5496eb084) |
  * | `form-copy.json` | `forms.copy` (a390171cc, 2612ae1e1) |
+ * | `widget-rename.json` | a widget update's `patch.nm` renames it, held to a free name (756f8e56b) |
  * | `kinds.json` | the version each change kind arrived in (a4805a492) |
  *
  * # What is recorded
@@ -30,7 +31,13 @@
  * write names its `opId`, so an undo can name it and the answers are the
  * same on every run. A name the engine makes up for a copy (a UUIDv7) is
  * recorded as `"<uuid>"`, and a timestamp the clock wrote as `"<now>"`;
- * the Rust runner masks its own answers the same way.
+ * the Rust runner masks its own answers the same way. So that the mask
+ * doesn't hide whether copies got names of their own, each exchange also
+ * records how many distinct names it masked (`uuids`).
+ *
+ * Each `doc.apply` step also records the events the change publishes
+ * (`changeEvents` over its answer): the main thread derives them, so they
+ * aren't in the worker's answer, but the Rust `Host` answers them itself.
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
@@ -53,6 +60,8 @@ import {
   type ChangeKind,
 } from '../../../packages/engine/core/src/wire/changeKinds';
 import { CHANGE_KINDS } from '../../../packages/engine/core/src/wire/changeSchemas';
+import { changeEvents } from '../../../packages/engine/core/src/events/changeEvents';
+import type { ChangeResult } from '../../../packages/engine/core/src/mutation/Change';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -314,6 +323,25 @@ const GROUPS: readonly Group[] = [
         steps: [apply('copy:numbers', { ops: [{ type: 'annotations.copy', refs: [annot(5), annot(9)], objectNumbers: [40, 41] }] })],
       },
       {
+        name: 'copies-on-another-page',
+        covers:
+          'With page, the copies go on that page (a blank page the same change inserts at object 60), the same spot from its top-left, moved by the offset; a reply copied with its parent still replies to its copy there.',
+        steps: [
+          apply('copy:page', {
+            ops: [
+              { type: 'pages.insertBlank', spec: { size: { width: 300, height: 400 } }, objectNumbers: [60] },
+              { type: 'annotations.copy', refs: [annot(5), annot(7)], page: page(60), offset: { x: 10, y: 10 } },
+            ],
+          }),
+          { read: 'annotations.list', page: 60 },
+        ],
+      },
+      {
+        name: 'a-page-the-document-lacks-is-refused',
+        covers: 'A page no page has refuses the copy before anything is read.',
+        steps: [apply('copy:nopage', { ops: [{ type: 'annotations.copy', refs: [annot(5)], page: page(99) }] })],
+      },
+      {
         name: 'an-unknown-annotation-is-refused',
         covers: 'A ref no annotation has refuses the change.',
         steps: [apply('copy:unknown', { ops: [{ type: 'annotations.copy', refs: [annot(99)] }] })],
@@ -370,6 +398,20 @@ const GROUPS: readonly Group[] = [
         steps: [apply('fcopy:numbers', { ops: [{ type: 'forms.copy', fields: [field(9)], objectNumbers: [50, 51, 52] }] })],
       },
       {
+        name: 'copies-on-another-page',
+        covers:
+          'With page, every copied widget goes on that page (a blank page the same change inserts at object 60), the same spot from its top-left.',
+        steps: [
+          apply('fcopy:page', {
+            ops: [
+              { type: 'pages.insertBlank', spec: { size: { width: 300, height: 400 } }, objectNumbers: [60] },
+              { type: 'forms.copy', fields: [field(9)], page: page(60) },
+            ],
+          }),
+          { read: 'forms.list' },
+        ],
+      },
+      {
         name: 'an-unknown-field-is-refused',
         covers: 'A field ref no field has refuses the change.',
         steps: [apply('fcopy:unknown', { ops: [{ type: 'forms.copy', fields: [field(9999)] }] })],
@@ -381,6 +423,39 @@ const GROUPS: readonly Group[] = [
           apply('fcopy:do', { ops: [{ type: 'forms.copy', fields: [field(4), field(9)] }] }),
           apply('fcopy:undo', { undoOf: 'fcopy:do' }),
           { read: 'forms.list' },
+        ],
+      },
+    ],
+  },
+  {
+    file: 'widget-rename.json',
+    kind: 'document.apply.forms.updateWidget.rename',
+    fixture: FORMS,
+    cases: [
+      {
+        name: 'a-widget-update-renames',
+        covers: 'patch.nm on forms.updateWidget writes the widget\'s own /NM, as an annotation update does.',
+        steps: [
+          apply('wrename:new', { ops: [{ type: 'forms.updateWidget', widget: annot(7), patch: { nm: 'red-widget' } }] }),
+          { read: 'annotations.list', page: 3 },
+        ],
+      },
+      {
+        name: 'null-removes-the-widgets-name',
+        covers: 'null removes /NM.',
+        steps: [apply('wrename:null', { ops: [{ type: 'forms.updateWidget', widget: annot(7), patch: { nm: null } }] })],
+      },
+      {
+        name: 'a-name-another-annotation-has-is-refused',
+        covers:
+          'A new name must be free on the page, as the change\'s earlier ops left it: the first op names widget 7 shared, so the second is refused with InvalidArg.',
+        steps: [
+          apply('wrename:taken', {
+            ops: [
+              { type: 'forms.updateWidget', widget: annot(7), patch: { nm: 'shared' } },
+              { type: 'forms.updateWidget', widget: annot(8), patch: { nm: 'shared' } },
+            ],
+          }),
         ],
       },
     ],
@@ -400,13 +475,24 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{1
 const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 const CLOCK_AFTER = Date.parse('2025-01-01T00:00:00Z');
 
+/** The distinct names `plain` masked since the last `takeUuids()`. */
+let maskedUuids = new Set<string>();
+function takeUuids(): number {
+  const count = maskedUuids.size;
+  maskedUuids = new Set();
+  return count;
+}
+
 function plain(value: unknown): unknown {
   if (value instanceof ArrayBuffer) return Array.from(new Uint8Array(value));
   if (ArrayBuffer.isView(value)) {
     return Array.from(new Uint8Array(value.buffer, value.byteOffset, value.byteLength));
   }
   if (Array.isArray(value)) return value.map(plain);
-  if (typeof value === 'string' && UUID.test(value)) return '<uuid>';
+  if (typeof value === 'string' && UUID.test(value)) {
+    maskedUuids.add(value);
+    return '<uuid>';
+  }
   if (typeof value === 'string' && TIMESTAMP.test(value) && Date.parse(value) >= CLOCK_AFTER)
     return '<now>';
   if (value === null || typeof value !== 'object') return value;
@@ -424,6 +510,8 @@ function plain(value: unknown): unknown {
 interface Exchange {
   request: unknown;
   answer?: unknown;
+  /** How many distinct names the answer's `<uuid>` masks stand for. */
+  uuids?: number;
 }
 
 function recordingEngine(): { engine: LocalEngine; take: () => Exchange[] } {
@@ -442,6 +530,7 @@ function recordingEngine(): { engine: LocalEngine; take: () => Exchange[] } {
     send(pack) {
       const request = pack.payload as WorkerRequest & { jobId?: unknown };
       const exchange: Exchange = { request: plain(request) };
+      takeUuids();
       exchanges.push(exchange);
       byJob.set(request.jobId, exchange);
       inner.send(pack);
@@ -461,6 +550,7 @@ function recordingEngine(): { engine: LocalEngine; take: () => Exchange[] } {
             response.kind === 'resolve'
               ? { resolve: plain(response.result) }
               : { reject: String(response.error?.code) };
+          exchange.uuids = takeUuids();
         }
         handler(message);
       }),
@@ -488,16 +578,20 @@ async function runCase(group: Group, entry: Case): Promise<unknown> {
     const steps: unknown[] = [];
     try {
       for (const step of entry.steps) {
+        let events: unknown;
         try {
-          if ('apply' in step) await doc.apply(step.apply, { opId: step.opId });
-          else if (step.read === 'pages.list') await doc.pages.list();
+          if ('apply' in step) {
+            const result = await doc.apply(step.apply, { opId: step.opId });
+            events = plain(changeEvents(result as unknown as ChangeResult));
+            takeUuids();
+          } else if (step.read === 'pages.list') await doc.pages.list();
           else if (step.read === 'annotations.list')
             await doc.page(toPageRef(step.page)).annotations.list();
           else await doc.forms.list();
         } catch (error) {
           if ((error as { code?: unknown })?.code === undefined) throw error;
         }
-        steps.push({ ...step, exchanges: take() });
+        steps.push({ ...step, exchanges: take(), ...(events === undefined ? {} : { events }) });
       }
     } finally {
       await doc.close();
@@ -522,6 +616,7 @@ function kindsVector(): unknown {
     apiVersion: API_VERSION,
     since: Object.fromEntries(kinds.map((kind) => [kind, changeKindSince(kind as ChangeKind)])),
     rows: CHANGE_KIND_SINCE,
+    asked,
     unknownTo: VERSIONS.map((version) => ({
       version,
       unknown: changeKindsUnknownTo(version, asked),
