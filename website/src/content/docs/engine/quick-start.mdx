@@ -69,7 +69,7 @@ Give the engine the file's bytes. Here we fetch them from a URL; a file the user
 the same way (`await file.arrayBuffer()`).
 
 ```ts
-const response = await fetch('/invoice.pdf');
+const response = await fetch('https://www.embedpdf.com/pdfs/invoice.pdf');
 const doc = await engine.open({ kind: 'bytes', bytes: await response.arrayBuffer() });
 ```
 
@@ -107,6 +107,8 @@ document.querySelector('img')!.src = url;
 
 Each page has a `ref`: its address in the document. `doc.page(ref)` gives you a handle for that
 page, and you pass the same `ref` to anything that works on pages.
+
+{/* readme: end */}
 
 ## 5. Read the text
 

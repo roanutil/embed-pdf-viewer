@@ -55,7 +55,7 @@ Here **Approve** writes to a status line of your app, above the viewer:
 | `menu` | A [menu](menus) it opens, instead of `run` |
 | `panel` | A [panel](panels) it opens and closes, instead of `run` |
 | `requires` | The [permissions](#permissions) it needs from the scope. Without them, it's hidden. |
-| `categories` | The features it belongs to, so [`disable`](../features/turning-off) turns it off with them. A name of your own makes a new feature. |
+| `categories` | The features it belongs to, so [`features`](../features/turning-off) turns it off with them. A name of your own makes a new feature. |
 
 A command is the same thing as in headless: see [Commands &
 shortcuts](/docs/headless/ui/commands#define-a-command).
@@ -168,7 +168,8 @@ An icon is 24 × 24 SVG path data, drawn as a line, so [Tabler](https://tabler.i
 ```
 
 A string is one path, an array is several, and `{ paths, fill: true }` fills them instead of drawing
-their outline. An icon with the name of a built-in one replaces it, everywhere.
+their outline. An icon with the name of a built-in one replaces it, everywhere. A command that
+names an icon the viewer doesn't have logs a warning with the command's id and the icon's name.
 
 ## Permissions
 
@@ -188,8 +189,9 @@ doesn't have it, the command is gone from every bar and menu, and its shortcut d
 The names are the scope's permissions, listed on [Permissions](/docs/headless/concepts/permissions).
 The built-in commands already say what they need, so for a user whose scope doesn't allow
 changes the editing tools are gone, and with `notAllowed: 'disable'` they show greyed out instead,
-with the reason in their tooltip. To leave a command out for everyone, [disable](../features/turning-off)
-it instead: `disable: ['acme:approve']`.
+with the reason in their tooltip. To leave a command out for everyone, turn off its feature instead:
+`categories: ['acme.approve']`, then `features: { 'acme.approve': false }`. See
+[Your own commands](../features/turning-off#your-own-commands).
 
 A command whose setting a plugin [locks](/docs/headless/viewing/stage#lock-a-setting) for the
 document, such as the facing-pages choices while a plugin shows one page at a time, shows greyed
@@ -250,6 +252,7 @@ can't run now.
 | `selection:copy`, `selection:highlight`, `selection:underline`, `selection:strikeout` | Act on selected text |
 | `snapshot:copy`, `snapshot:save`, `snapshot:clear` | Copy the snapshot (`Ctrl`/`Cmd`+`C`), save it as a PNG, or let it go (`Escape`) |
 | `annotation:comment`, `annotation:style`, `annotation:link`, `annotation:group`, `annotation:ungroup`, `annotation:delete` | Act on selected annotations |
+| `annotation:duplicate` | Copy the selected annotations beside the originals and select the copies (`Ctrl`/`Cmd`+`D`) |
 | `annotation:save-file` | Save the file of a selected file attachment |
 | `annotation:apply-redaction` | Remove what's under the selected redaction marks for good, after asking, when every selected annotation is one |
 | `help:shortcuts` | Show every shortcut (`?`) |
@@ -280,10 +283,11 @@ Every icon the viewer has, by name:
 `alertTriangle`, `alignBottom`, `alignCenter`, `alignLeft`, `alignMiddle`, `alignRight`, `alignTop`,
 `area`, `arrowBackUp`, `arrowForwardUp`, `bold`, `book`, `book2`, `calibrate`, `callout`, `check`,
 `chevronDown`, `chevronLeft`, `chevronRight`, `chevronsDown`, `chevronsUp`, `circle`, `circleCheck`,
-`comment`, `copy`, `deviceFloppy`, `distance`, `dots`, `doublePage`, `download`, `externalLink`,
-`eye`, `file`, `fileExport`, `fileImport`, `filePlus`, `fitToPage`, `fitToWidth`, `formButton`,
-`formCheckbox`, `formDesign`, `formListbox`, `formRadio`, `formSelect`, `formTextfield`, `freeText`,
-`fullscreen`, `fullscreenExit`, `group`, `hand`, `highlight`, `horizontal`, `inkHighlighter`,
+`comment`, `copy`, `deviceFloppy`, `distance`, `dots`, `doublePage`, `download`, `duplicate`,
+`externalLink`, `eye`, `file`, `fileExport`, `fileImport`, `filePlus`, `fitToPage`, `fitToWidth`,
+`formButton`, `formCheckbox`, `formDesign`, `formListbox`, `formRadio`, `formSelect`,
+`formTextfield`, `freeText`, `fullscreen`, `fullscreenExit`, `group`, `hand`, `highlight`,
+`horizontal`, `inkHighlighter`,
 `insertText`, `italic`, `line`, `lineArrow`, `link`, `linkOff`, `listTree`, `lock`, `marqueeSelect`,
 `menu`, `message`, `pageByPage`, `pageRotateClockwise`, `pageRotateCounterClockwise`, `palette`,
 `paperclip`, `pencilMarker`, `perimeter`, `photo`, `plus`, `pointer`, `polygon`, `print`, `redact`, `redactArea`,

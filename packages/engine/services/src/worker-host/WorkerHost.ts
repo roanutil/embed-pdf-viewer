@@ -1597,7 +1597,7 @@ export class WorkerHost {
     if (req.objectNumberFloor !== undefined) {
       session.raiseLastObjectNumber(req.objectNumberFloor - 1);
     }
-    const applier = new ChangeApplier(this.runtime, session, this.fonts);
+    const applier = new ChangeApplier(this.runtime, session, this.fonts, req.limits);
     const space = this.pageSpaceOf(session);
     const records = new Map<string, ChangeRecord | null>();
     const outcomes: ServerChangeOutcome[] = [];
@@ -1843,10 +1843,9 @@ export class WorkerHost {
     signal: AbortSignal,
   ): Promise<WirePack<WorkerResultPayload<PdfCoordinates>>> {
     const session = this.requireSession(req);
-    const viewports = await new MeasureReader(this.runtime, session).viewports(
+    const viewports = new MeasureReader(this.runtime, session).viewports(
       session.resolvePageRef(req.page).pageObjectNumber,
       signal,
-      this.slices,
     );
     return wirePack({ tag: 'measure.viewports', page: req.page, viewports });
   }
@@ -1866,6 +1865,7 @@ export class WorkerHost {
         tag: 'measure.setScale',
         result: {
           page: req.page,
+          layout: new PagesReader(this.runtime, session).read(signal),
           meta: { affectedPages: [], cacheDelta: null, ...session.writeStamp() },
         },
       },

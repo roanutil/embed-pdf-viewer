@@ -1,5 +1,23 @@
 # @cloudpdf/engine
 
+## 3.2.0
+
+### Minor Changes
+
+- [#1071](https://github.com/embedpdf/embed-pdf-viewer/pull/1071) by [@bobsingor](https://github.com/bobsingor) – The cloud engine has `doc.annotations.copy(refs, { page?, offset?, objectNumbers? })`, and `doc.apply` takes the op `annotations.copy`. The copies are made on the server in one request, so nothing is downloaded. Against a server older than 3.2 the change is refused with `NotImplemented` before anything is sent.
+
+- [#1056](https://github.com/embedpdf/embed-pdf-viewer/pull/1056) by [@bobsingor](https://github.com/bobsingor) – The cloud engine works with a server that is older or newer than it for change kinds. A change with a kind of op the server doesn't have yet is refused on its own, before anything is sent, with `NotImplemented`; its `details` name the op (`kind`), the version that has it (`needs`) and the server's (`serverVersion`). The changes called beside it still go out. A change from another session of a kind this version doesn't know now reads as `stream.desynced` with `reason: 'unknown-change'`, so everything is read again; before, it became an event without a type and reads stayed stale.
+
+- [#1075](https://github.com/embedpdf/embed-pdf-viewer/pull/1075) by [@bobsingor](https://github.com/bobsingor) – The cloud engine has `doc.forms.copy(fields, { page?, offset?, values?, widgets?, objectNumbers? })`, and `doc.apply` takes the op `forms.copy`. The copies are made on the server in one request. Against a server older than 3.2 the change is refused with `NotImplemented` before anything is sent.
+
+## 3.1.0
+
+### Minor Changes
+
+- [#1030](https://github.com/embedpdf/embed-pdf-viewer/pull/1030) by [@bobsingor](https://github.com/bobsingor) – The layout is read at the manifest's `viewportsVersion` as well as its `layoutVersion`, so it carries the pages' scales and a scale change reaches every client. `page.measure.setScale()` is a one-page `doc.pages.setScale` change.
+
+- [#1033](https://github.com/embedpdf/embed-pdf-viewer/pull/1033) by [@bobsingor](https://github.com/bobsingor) – A token function now runs once per token, not once per request. The engine keeps the token it gives, and calls the function again in the background a minute before that token expires, so no request waits for the renewal and a long session never runs out. Requests that arrive together share one call; a renewal that fails is tried again 5 seconds later while the kept token still works. When CloudPDF refuses a kept token, the engine asks the function once more and sends the request again. A literal token works as before.
+
 ## 3.0.0
 
 ### Major Changes

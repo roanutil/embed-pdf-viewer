@@ -12,6 +12,13 @@ import { chromium, type Browser, type Page } from 'playwright-core';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
+/**
+ * `features` with the ones that start off turned on, as page source: the whole viewer, for the
+ * tests that open the Form, Redact or Measure tab, or take a snapshot.
+ */
+export const EVERY_FEATURE =
+  "{ measurement: true, redaction: true, 'forms.building': true, snapshots: true }";
+
 /** The built artifact the tests load. */
 export const dist = resolve(here, '..', '..', 'dist');
 const samplePdf = resolve(here, '../../../../../examples/engine-runtime-demo/public/sample.pdf');
@@ -107,6 +114,34 @@ export function frames(page: Page): Promise<unknown> {
   return page.evaluate(
     () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
   );
+}
+
+/**
+ * How far apart a coasting scroll's wheels are, by their own time: a little over a frame, so each
+ * one tells the Stage a speed.
+ */
+const WHEEL_SECONDS = 0.02;
+
+/**
+ * Wheels down at a point, `WHEEL_SECONDS` apart by the time each says it happened, however late
+ * this machine delivers them. The Stage reads a scroll's speed from those times.
+ */
+export async function evenlyTimed(
+  page: Page,
+  at: { x: number; y: number },
+  deltas: number[],
+): Promise<void> {
+  const devtools = await page.context().newCDPSession(page);
+  const startSeconds = Date.now() / 1000;
+  for (const [wheel, deltaY] of deltas.entries()) {
+    await devtools.send('Input.dispatchMouseEvent', {
+      type: 'mouseWheel',
+      ...at,
+      deltaX: 0,
+      deltaY,
+      timestamp: startSeconds + wheel * WHEEL_SECONDS,
+    });
+  }
 }
 
 /**

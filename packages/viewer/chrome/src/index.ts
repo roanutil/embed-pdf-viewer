@@ -1,6 +1,6 @@
 /**
  * @embedpdf/viewer-chrome — the full viewer as a component, plus the
- * customization contract (README.md): additive registries in, an owned
+ * customization contract (docs/conventions/viewer-chrome.md): additive registries in, an owned
  * layout in, pixels out.
  *
  * The defaults are exported AS values — that is the customization model. The
@@ -51,7 +51,7 @@ export type {
   ViewerPlugins,
   WatchOptions,
 } from './handle';
-export type { Feature, ReadOnlyExceptions } from './features';
+export type { Feature, Features, ReadOnlyExceptions } from './features';
 export type {
   CapabilityToken,
   DocumentInfo,

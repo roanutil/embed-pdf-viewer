@@ -68,13 +68,7 @@ export const DEFAULT_LAYOUT: LayoutData = {
       end: [
         {
           id: 'panels',
-          items: [
-            // The View only label: it shows only while nothing can change the document, and
-            // draws its icon alone when there's no room.
-            { custom: 'view-only', variants: ['label', 'icon'] },
-            'panel:search',
-            'panel:comments',
-          ],
+          items: ['panel:search', 'panel:comments'],
           importance: 5,
         },
       ],
@@ -232,6 +226,7 @@ export const DEFAULT_LAYOUT: LayoutData = {
             'annotation:goto-link',
             'annotation:save-file',
             'annotation:remove-link',
+            'annotation:duplicate',
             'annotation:group',
             'annotation:ungroup',
           ],

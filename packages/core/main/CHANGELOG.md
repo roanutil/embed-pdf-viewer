@@ -1,5 +1,36 @@
 # @embedpdf/core
 
+## 3.2.0
+
+### Minor Changes
+
+- [#1054](https://github.com/embedpdf/embed-pdf-viewer/pull/1054) by [@bobsingor](https://github.com/bobsingor) – A plugin can stage a change that one of the engine's own verbs makes, such as an import: `ctx.changes.stage({ label, send })`. The queue calls `send(doc, { opId })` when it sends the change, so the verb keeps its place among the other changes, and the history records it as one step. `opId` names the change when the caller of the verb chose an id, and `history: false` keeps it out of the history. The new `HistoryOptions` type is the `history?: false` option a verb takes from its caller.
+
+### Patch Changes
+
+- [#1056](https://github.com/embedpdf/embed-pdf-viewer/pull/1056) by [@bobsingor](https://github.com/bobsingor) – The page list is read again when the event stream skipped events (`stream.desynced`). A page inserted or deleted by someone else while a viewer was too far behind used to show only after the document was opened again.
+
+## 3.1.0
+
+### Minor Changes
+
+- [#1029](https://github.com/embedpdf/embed-pdf-viewer/pull/1029) by [@bobsingor](https://github.com/bobsingor) – `ctx.storeChangeCount()` says how many times the store changed: a state or mirror write anywhere, or a
+  `ctx.notify()`, counted when the change happens, also while the change stream is held. Give it to
+  `memo` or `memoByKey` as the input of a read whose answer comes from functions you can't name the
+  inputs of, so the read asks them once per store change, however many readers ask. Test contexts
+  from `@embedpdf/core/testing` have it too.
+
+  `memo` and `memoByKey` compare their inputs with a plain loop, which makes every cached read a
+  little cheaper.
+
+### Patch Changes
+
+- [#1030](https://github.com/embedpdf/embed-pdf-viewer/pull/1030) by [@bobsingor](https://github.com/bobsingor) – The page list takes a page scale change's new layout from its event, and shows a pending one at once. The test context's pages can carry viewports, and a document event that moves them wakes the store's readers, as in the kernel.
+
+- [#1028](https://github.com/embedpdf/embed-pdf-viewer/pull/1028) by [@bobsingor](https://github.com/bobsingor) – A page mirror's write costs the same however many pages it holds. Each page load copied every
+  loaded page's entry, so loading every page of a 1,000-page document took about 2,000 writes and
+  1.5 million copies.
+
 ## 3.0.0
 
 ### Major Changes

@@ -1,5 +1,22 @@
 # @embedpdf/core-annotation
 
+## 3.2.0
+
+### Minor Changes
+
+- [#1071](https://github.com/embedpdf/embed-pdf-viewer/pull/1071) by [@bobsingor](https://github.com/bobsingor) – New `isMovable(record)`: whether an annotation is one people move at all. Its kind moves, and it isn't bound to text, as a highlight or a redaction of words is. `canMove(model, id)` uses it, and adds the lock, the session's rights and its `editable` rule.
+
+## 3.1.0
+
+### Patch Changes
+
+- [#1025](https://github.com/embedpdf/embed-pdf-viewer/pull/1025) by [@bobsingor](https://github.com/bobsingor) – The ink stroke under the pen draws as its points, joined round, and as the curves Acrobat fits
+  once the pen lifts. Fitted again on every pointer move, it shifted all along its length while it
+  was being drawn. A stroke the pen has left is fitted once, not on every move of the next one.
+
+- [#1022](https://github.com/embedpdf/embed-pdf-viewer/pull/1022) by [@bobsingor](https://github.com/bobsingor) – A `replaceDefaults` message sets a tool's defaults to exactly the fields it gives, where
+  `setDefaults` merges a patch over them.
+
 ## 3.0.0
 
 ### Major Changes

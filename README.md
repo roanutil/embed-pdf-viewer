@@ -25,18 +25,79 @@ on PDFium that runs as WebAssembly. Apache-2.0 licensed.
 
 ## Three ways to use it
 
-|                         | What it is                                                                                 | Start here                                                              |
-| :---------------------- | :----------------------------------------------------------------------------------------- | :---------------------------------------------------------------------- |
-| **Viewer**              | A complete viewer, toolbar and panels included: one tag, made yours with plain config      | [Quick start](https://www.embedpdf.com/docs/viewer/vanilla/quick-start) |
-| **Headless components** | The same plugins without the UI, to build your own viewer in React, Vue, Svelte or Angular | [Headless](https://www.embedpdf.com/docs/headless/react)                |
-| **Engine**              | Open, read, change and render PDFs from your own code, in the browser or in Node           | [Engine](https://www.embedpdf.com/docs/engine/quick-start)              |
+<!--
+  Each card is its own table floated left, so the cards sit side by side on
+  wide screens and stack on phones. Between cards, a transparent 1px image
+  floated left makes the gap: GitHub pads img[align=left] 20px on the right. The
+  image width (230) sets the card width: keep every text line shorter than it,
+  or the three cards no longer fit in one row at 1280px. The empty <p> after
+  each link keeps space under it: GitHub drops the margin of a cell's last
+  element.
+-->
+
+<table align="left">
+  <tr>
+    <td valign="top">
+      <a href="https://www.embedpdf.com/docs/viewer/vanilla/quick-start">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset=".github/assets/readme/viewer-dark.png">
+          <img alt="The complete viewer: toolbar, thumbnails and a comment on a highlight" src=".github/assets/readme/viewer-light.png" width="230">
+        </picture>
+      </a>
+      <h3>Viewer</h3>
+      <p>A complete viewer, toolbar<br>and panels included: one tag,<br>made yours with plain config.</p>
+      <p><a href="https://www.embedpdf.com/docs/viewer/vanilla/quick-start"><b>Viewer docs →</b></a></p>
+      <p></p>
+    </td>
+  </tr>
+</table>
+
+<img align="left" width="1" height="1" alt="" src=".github/assets/readme/gap.png">
+
+<table align="left">
+  <tr>
+    <td valign="top">
+      <a href="https://www.embedpdf.com/docs/headless/react">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset=".github/assets/readme/headless-dark.png">
+          <img alt="Your own toolbar, pager and zoom control around a PDF page" src=".github/assets/readme/headless-light.png" width="230">
+        </picture>
+      </a>
+      <h3>Headless components</h3>
+      <p>The same plugins without the<br>UI, to build your own viewer in<br>React, Vue, Svelte or Angular.</p>
+      <p><a href="https://www.embedpdf.com/docs/headless/react"><b>Headless docs →</b></a></p>
+      <p></p>
+    </td>
+  </tr>
+</table>
+
+<img align="left" width="1" height="1" alt="" src=".github/assets/readme/gap.png">
+
+<table align="left">
+  <tr>
+    <td valign="top">
+      <a href="https://www.embedpdf.com/docs/engine/quick-start">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset=".github/assets/readme/engine-dark.png">
+          <img alt="Engine code that opens a PDF, reads its text and renders a page, in the browser or Node.js" src=".github/assets/readme/engine-light.png" width="230">
+        </picture>
+      </a>
+      <h3>Engine</h3>
+      <p>Open, read, change and render<br>PDFs from your own code, in<br>the browser or in Node.</p>
+      <p><a href="https://www.embedpdf.com/docs/engine/quick-start"><b>Engine docs →</b></a></p>
+      <p></p>
+    </td>
+  </tr>
+</table>
+
+<br clear="all">
 
 ## Quick start
 
 In plain HTML, from a CDN:
 
 ```html
-<embedpdf-viewer src="/report.pdf" style="height: 100vh"></embedpdf-viewer>
+<embedpdf-viewer src="https://www.embedpdf.com/pdfs/welcome.pdf" style="height: 100vh"></embedpdf-viewer>
 
 <script
   type="module"
@@ -54,7 +115,7 @@ npm install @embedpdf/viewer-react
 import { PDFViewer } from '@embedpdf/viewer-react';
 
 export function App() {
-  return <PDFViewer src="/report.pdf" style={{ height: '100vh' }} />;
+  return <PDFViewer src="https://www.embedpdf.com/pdfs/welcome.pdf" style={{ height: '100vh' }} />;
 }
 ```
 
@@ -85,22 +146,76 @@ Each feature is a plugin. The headless packages let you take only the ones you n
 EmbedPDF is made by [CloudPDF](https://www.cloudpdf.com). Both are the same viewer, added to your
 app as a package. What differs is the engine behind it:
 
-|                  | EmbedPDF                                        | CloudPDF                                                 |
-| :--------------- | :---------------------------------------------- | :------------------------------------------------------- |
-| **The engine**   | Local: runs in the browser, as WebAssembly      | Cloud: runs on a CloudPDF server                         |
-| **The PDF**      | Opened on the user's computer                   | Stays on the server; the viewer gets the pages it shows  |
-| **The packages** | `@embedpdf/viewer`, `@embedpdf/viewer-react`, … | `@cloudpdf/viewer`, `@cloudpdf/viewer-react`, …          |
-| **License**      | Open source                                     | Open source, except the server (see [License](#license)) |
+<!--
+  Same cards as "Three ways to use it": each floats left, two fit side by side
+  at 1280px and they stack on phones. The illustration width (360) sets the
+  card width: keep every text line shorter than it, and under 280px so it
+  fits a phone without wrapping. The logo isn't a heading because GitHub can't
+  give an image-only heading an anchor; the empty <p>s around it make the space
+  a heading would.
+-->
 
-Keeping the file on a server is what CloudPDF adds:
+<table align="left">
+  <tr>
+    <td valign="top">
+      <a href="https://www.embedpdf.com/docs">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset=".github/assets/readme/engine-local-dark.png">
+          <img alt="A PDF opened in the browser by the engine, as WebAssembly, which renders its pages" src=".github/assets/readme/engine-local-light.png" width="360">
+        </picture>
+      </a>
+      <p></p>
+      <a href="https://www.embedpdf.com">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset=".github/assets/readme/embedpdf-logo-dark.svg">
+          <img alt="EmbedPDF" src=".github/assets/readme/embedpdf-logo-light.svg" height="30">
+        </picture>
+      </a>
+      <p></p>
+      <p>The engine runs <b>in the browser</b>, as<br>WebAssembly. The PDF is opened on<br>the user's computer.</p>
+      <p><b>Packages:</b> <code>@embedpdf/viewer</code>,<br><code>@embedpdf/viewer-react</code>, …<br><b>License:</b> open source</p>
+      <p><a href="https://www.embedpdf.com/docs"><b>EmbedPDF docs →</b></a></p>
+      <p></p>
+    </td>
+  </tr>
+</table>
 
-- **Access control.** Your backend gives each user a short-lived token for one document, saying
-  what they may do: view, annotate, fill in, sign or download. The server checks every call
-  against it. Someone who may only view never receives the file, only its pages.
-- **Collaboration.** Annotations and comments are saved on the server as people make them, and
-  everyone with the document open sees each other's changes live, with who made them.
-- **Sharing.** Public links that can expire, ask for a passphrase or work only on your sites, with
-  one shared copy for everyone or a copy of their own for each visitor.
+<img align="left" width="1" height="1" alt="" src=".github/assets/readme/gap.png">
+
+<table align="left">
+  <tr>
+    <td valign="top">
+      <a href="https://www.cloudpdf.com/docs">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset=".github/assets/readme/engine-cloud-dark.png">
+          <img alt="A CloudPDF server that keeps the PDF and runs the engine, sending pages to the browser" src=".github/assets/readme/engine-cloud-light.png" width="360">
+        </picture>
+      </a>
+      <p></p>
+      <a href="https://www.cloudpdf.com">
+        <picture>
+          <source media="(prefers-color-scheme: dark)" srcset=".github/assets/readme/cloudpdf-logo-dark.svg">
+          <img alt="CloudPDF" src=".github/assets/readme/cloudpdf-logo-light.svg" height="30">
+        </picture>
+      </a>
+      <p></p>
+      <p>The engine runs <b>on a CloudPDF</b><br><b>server</b>. The PDF stays there; the<br>viewer gets the pages it shows.</p>
+      <p><b>Packages:</b> <code>@cloudpdf/viewer</code>,<br><code>@cloudpdf/viewer-react</code>, …<br><b>License:</b> open source, <a href="#license">not the server</a></p>
+      <p><a href="https://www.cloudpdf.com/docs"><b>CloudPDF docs →</b></a></p>
+      <p></p>
+    </td>
+  </tr>
+</table>
+
+<br clear="all">
+
+### What CloudPDF adds
+
+- **Access control.** Each user gets a token that says what they may do. View-only users never
+  receive the file.
+- **Collaboration.** Annotations and comments are saved as people make them, and everyone sees
+  them live.
+- **Sharing.** Public links that can expire, ask for a passphrase or work only on your sites.
 - **Large files.** The first page shows at once, without downloading the whole PDF.
 
 CloudPDF runs hosted, or on your own servers with its Docker image or Helm chart. See the

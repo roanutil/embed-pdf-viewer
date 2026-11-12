@@ -9,6 +9,8 @@ import {
   attachmentVerbs,
   isPluginId,
   outlineVerbs,
+  annotationVerbs,
+  formVerbs,
   pageVerbs,
   subscribeToType,
   type DocumentAnnotationsService,
@@ -70,7 +72,7 @@ import { CloudPageHandle } from './CloudPageHandle';
 import { CloudWrites } from './CloudWrites';
 import type { GrantSessionSource } from '../grant';
 import { auditRowToEvents } from '../realtime/auditRowToEvents';
-import { SseClient } from '../realtime/SseClient';
+import { SseClient, type DesyncReason } from '../realtime/SseClient';
 import { awaitSignal } from '../shared/awaitSignal';
 import type { HttpClient } from '../transport/HttpClient';
 
@@ -311,6 +313,7 @@ export class CloudDocumentHandle implements DocumentHandle {
       this.manifestAccessor,
       this.publisher,
       this.writes,
+      () => http.serverVersion,
     );
     this.metadata = new CloudMetadataService(
       http,
@@ -325,15 +328,18 @@ export class CloudDocumentHandle implements DocumentHandle {
     const importLimits = async () =>
       (security.currentAccess ?? (await security.establishAccess()).access)?.bundleLimits ??
       DEFAULT_BUNDLE_LIMITS;
-    this.annotations = new CloudDocumentAnnotationsService(
-      http,
-      id,
-      layerName,
-      () => this.closed,
-      this.manifestAccessor,
-      this.publisher,
-      this.writes,
-      importLimits,
+    this.annotations = annotationVerbs(
+      new CloudDocumentAnnotationsService(
+        http,
+        id,
+        layerName,
+        () => this.closed,
+        this.manifestAccessor,
+        this.publisher,
+        this.writes,
+        importLimits,
+      ),
+      (change, options) => this.apply(change, options),
     );
     this.actions = new CloudDocumentActionsService(
       http,
@@ -372,15 +378,18 @@ export class CloudDocumentHandle implements DocumentHandle {
       this.publisher,
       this.writes,
     );
-    this.forms = new CloudDocumentFormsService(
-      http,
-      id,
-      layerName,
-      () => this.closed,
-      this.manifestAccessor,
-      this.publisher,
-      this.writes,
-      importLimits,
+    this.forms = formVerbs(
+      new CloudDocumentFormsService(
+        http,
+        id,
+        layerName,
+        () => this.closed,
+        this.manifestAccessor,
+        this.publisher,
+        this.writes,
+        importLimits,
+      ),
+      (change, options) => this.apply(change, options),
     );
     this.search = new CloudDocumentSearchService(
       http,
@@ -423,6 +432,7 @@ export class CloudDocumentHandle implements DocumentHandle {
       (signal) => this.pageReads.pageLayout(ref, signal),
       () => this.cloudSecurity.pageLayerRights(),
       () => this.cloudSecurity.pagePictureRights(),
+      (pages, measure, options) => this.pages.setScale(pages, measure, options),
     );
   }
 
@@ -590,6 +600,9 @@ export class CloudDocumentHandle implements DocumentHandle {
       ...(delta?.outlineVersion !== undefined ? { outlineVersion: delta.outlineVersion } : {}),
       ...(delta?.fontsVersion !== undefined ? { fontsVersion: delta.fontsVersion } : {}),
       ...(delta?.contentsVersion !== undefined ? { contentsVersion: delta.contentsVersion } : {}),
+      ...(delta?.viewportsVersion !== undefined
+        ? { viewportsVersion: delta.viewportsVersion }
+        : {}),
       // The signing fences: every ordinary commit writes an artifact
       // (`working`), and the layer's write serial when the delta names it.
       ...(delta?.layerVersion !== undefined ? { layerVersion: delta.layerVersion } : {}),
@@ -777,26 +790,22 @@ export class CloudDocumentHandle implements DocumentHandle {
           const sha = (row.payload as { version?: { sha256?: unknown } }).version?.sha256;
           if (typeof sha === 'string') this.pool.versioned(sha);
         }
-        // None for an own echo or an unknown kind; one per fact otherwise.
-        for (const event of auditRowToEvents(row, this.sessionId)) {
+        const events = auditRowToEvents(row, this.sessionId);
+        // A kind of change this version doesn't have, from a newer server:
+        // nothing says what it changed, so everything is read again.
+        if (events === null) {
+          this.desynced('unknown-change');
+          return;
+        }
+        // None for an own echo; one per fact otherwise.
+        for (const event of events) {
           // Absorb before publish: a listener reading the manifest in its
           // callback must see post-mutation state (same order as local).
           this.absorbRemoteEvent(event);
           this.hub.publish(event);
         }
       },
-      onFullRefresh: () => {
-        // Too far behind to replay: drop the cache; the next read refetches.
-        this.manifestCache = null;
-        this.inflightManifest = null;
-        // Tell subscribers their event-derived state may be stale — the
-        // gap's mutations will never arrive as events.
-        this.hub.publish({
-          type: 'stream.desynced',
-          reason: 'backlog-overflow',
-          at: new Date().toISOString(),
-        });
-      },
+      onFullRefresh: (reason) => this.desynced(reason),
       onAuthLost: () => {
         // The stream is gone for good under this credential. Local events
         // keep flowing; remote delivery resumes if the doc is re-opened
@@ -807,6 +816,18 @@ export class CloudDocumentHandle implements DocumentHandle {
       onConnected: (connected) => this.pool.connected(connected),
     });
     this.sseClient.open();
+  }
+
+  /**
+   * The stream can't be followed change by change from here: drop the cached
+   * manifest, so the next read refetches, and tell subscribers their
+   * event-derived state may be stale. The missed mutations will never arrive
+   * as events.
+   */
+  private desynced(reason: DesyncReason): void {
+    this.manifestCache = null;
+    this.inflightManifest = null;
+    this.hub.publish({ type: 'stream.desynced', reason, at: new Date().toISOString() });
   }
 
   private releaseRemoteStream(): void {
@@ -825,7 +846,8 @@ export class CloudDocumentHandle implements DocumentHandle {
   private absorbRemoteEvent(event: DocumentEvent): void {
     switch (event.type) {
       case 'pages.scaleSet':
-        this.absorbMutation(event.meta, []);
+        // The layout carries the pages' scales.
+        this.absorbMutation(event.meta, ['layout']);
         return;
       case 'annotations.created':
       case 'annotations.updated':

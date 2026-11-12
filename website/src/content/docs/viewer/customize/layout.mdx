@@ -34,7 +34,7 @@ and nothing else changes. Every change returns a new layout, so changes chain:
 | Bar | Where | What's in it |
 | :-- | :-- | :-- |
 | `main` | `top` | The document menu, thumbnails, view menu, zoom and tools; the mode tabs in the middle; search and comments at the end |
-| `annotate`, `shapes`, `insert`, `form`, `redact`, `measure` | Along `main`, one at a time | The tools of the mode whose tab is selected |
+| `annotate`, `shapes`, `insert`, `form`, `redact`, `measure` | Along `main`, one at a time | The tools of the mode whose tab is selected. Form, Redact and Measure have a tab once their [features](../features/turning-off) are on. |
 | `pager` | Floating at the bottom | The page number between the previous and next page buttons; nothing for a document of one page |
 | `selection` | Over selected text | Copy, highlight, underline, strike out |
 | `annotation` | Over selected annotations | Comment, style, delete |
@@ -196,9 +196,9 @@ layout.remove('view:fullscreen', { from: 'document' });
 ```
 
 The command itself stays: it can sit in another bar, its shortcut works, and your code can run it.
-To leave something out everywhere at once, every button, menu row, tab and shortcut, use
-[`disable`](../features/turning-off) instead: the layout says where things go, `disable` says
-whether the viewer has them.
+To leave a feature out everywhere at once, every button, menu row, tab and shortcut, turn it off in
+[`features`](../features/turning-off) instead: the layout says where buttons go, `features` says
+what people can do.
 
 `removeBar(id)` removes a whole bar, with the bars that ride along it. Removing a mode's bar removes
 its tab, while its tools stay available for a bar of your own. It takes a list too:
@@ -323,6 +323,10 @@ own title, icon and words, so `search` needs no more than its side. Which one to
 - **A whole layout** stays exactly as you wrote it. New features arrive as new ids you add when you
   want them.
 
+The viewer's package exports the default as `defaultLayout`, and `createLayout()`, which gives a
+layout you wrote the same methods. `toJSON()` gives a layout as plain data, so yours can take a
+built-in menu as it is: `menus: { zoom: defaultLayout.toJSON().menus.zoom }`.
+
 ## Good to know
 
 ### Every built-in id
@@ -356,8 +360,8 @@ page's, in the thumbnails panel). Their buttons are `menu:document`, `menu:view`
 to type a page, and both numbers while a spread fits across the view: "2–3 / 10"; nothing for a
 document of one page), `{ custom: 'quick-stamps' }` (the stamps
 bar of the Insert mode), `{ custom: 'measurement-scale' }` (the scale of the Measure mode),
-`{ custom: 'view-only' }` (the [View only](../features/turning-off#read-only) label, in the main bar's
-`panels` group), `{ custom: 'outline-filter' }` (the outline's filter field, in its panel's bar) and
+`{ custom: 'view-only' }` (the [View only](../features/turning-off#read-only) label, which the
+default layout leaves out), `{ custom: 'outline-filter' }` (the outline's filter field, in its panel's bar) and
 `{ custom: 'attachments-count' }` (how many files the document carries).
 
 **Buttons**: every command, listed with what it does on [Buttons & commands](commands#every-built-in-command).

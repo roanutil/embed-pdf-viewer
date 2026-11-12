@@ -1,3 +1,4 @@
+import type { PdfMeasure } from '../dto/Measure';
 import type { PageScaleResult } from '../mutation/PageScaleResult';
 import type { PdfRotation } from '../geometry/primitives';
 import type { AnnotationRef } from '../identity/AnnotationRef';
@@ -121,7 +122,13 @@ export interface EventOrigin {
  * provenance-aware features (undo, attribution toasts, camera etiquette).
  */
 export type DocumentEvent =
-  | ({ type: 'pages.scaleSet'; origin: EventOrigin } & PageScaleResult)
+  | ({
+      type: 'pages.scaleSet';
+      origin: EventOrigin;
+      /** The pages, and the scale each has now. */
+      pages: PageRef[];
+      measure: PdfMeasure | null;
+    } & PageScaleResult)
   | ({
       type: 'annotations.created';
       page: PageRef;
@@ -306,12 +313,14 @@ export type DocumentEvent =
     }
   | {
       /**
-       * Cloud only: the live event stream fell too far behind to replay
-       * (the server's SSE `full-refresh`) — state derived from earlier
-       * events or snapshots may be stale, and the gap's mutations will
-       * never arrive as events. Consumers must re-read the snapshots they
-       * keep fresh from this stream (`doc.annotations.list()`,
-       * `doc.forms.list()`, …).
+       * Cloud only: the live event stream can't be followed change by
+       * change from here. `'backlog-overflow'`: it fell too far behind to
+       * replay. `'unknown-change'`: a change of a kind this version
+       * doesn't know arrived, from a newer server. Either way, state
+       * derived from earlier events or snapshots may be stale, and the
+       * missed mutations will never arrive as events. Consumers must
+       * re-read the snapshots they keep fresh from this stream
+       * (`doc.annotations.list()`, `doc.forms.list()`, `doc.pages.list()`, …).
        *
        * Carries no `EventOrigin`: it is a transport notice, not a
        * document mutation — the exactly-once / results-ride-verbatim
@@ -319,7 +328,7 @@ export type DocumentEvent =
        * never emits it.
        */
       type: 'stream.desynced';
-      reason: 'backlog-overflow';
+      reason: 'backlog-overflow' | 'unknown-change';
       /** When the stream fell behind, as an ISO 8601 string. */
       at: string;
     };
