@@ -16,6 +16,7 @@ use serde_json::{Map, Value, json};
 
 use crate::controller::Core;
 use crate::js::{key_or_none, page_object_number};
+use crate::services::staging::StoreChange;
 use crate::sync::records::{by_key, dto_of};
 
 #[derive(Default)]
@@ -72,82 +73,94 @@ impl Core {
             .insert(page_key(page_object_number(page)), (viewports, fallback));
     }
 
-    /// `remeasurePage(page, scale)`: recalibrate a page's dimensions.
-    pub fn remeasure_page(&self, page: &Value, scale: Value) -> Promise<Value> {
+    /// `whenRemeasurable()`: resolves once the document's measurements can be
+    /// re-measured: the annotations loaded (a failed load retried) and every
+    /// pending load settled.
+    pub fn when_remeasurable(&self) -> Promise<Value> {
         let me = self.weak();
-        let page = page.clone();
         Promise::spawn(async move {
             let core = me.upgrade().ok_or_else(|| Error::new("closed"))?;
-            let number = page_object_number(&page);
             if core.records.get_status() != ResourceStatus::Ready {
                 let refresh = core.records.refresh();
                 let _ = refresh.await;
             }
             core.records.settled().await?;
-            let mut report =
-                json!({ "page": page, "scale": scale, "updated": [], "skipped": [], "failed": [] });
-            if core.records.get_status() != ResourceStatus::Ready {
-                report["error"] =
-                    serialize_error(&Error::new("the annotations of this document are not loaded"));
-                return Ok(report);
-            }
-            let model = core.model();
-            let truths = core.records.get();
-            let mut candidates = Vec::new();
-            for stored in by_key(&truths).values() {
-                let dto = dto_of(stored);
-                let Some(record) =
-                    model.by_id.get(&key_or_none(dto.get("ref").unwrap_or(&Value::Null)))
-                else {
-                    continue;
-                };
-                let subtype = dto.get("subtype").and_then(Value::as_str).unwrap_or("");
-                let intent = dto.get("intent").and_then(Value::as_str);
-                if dto.get("page").map(page_object_number) == Some(number)
-                    && is_dimension(subtype, intent)
-                {
-                    candidates.push((dto.clone(), record.clone()));
-                }
-            }
-            for (dto, record) in candidates {
-                let reference = dto.get("ref").cloned().unwrap_or(Value::Null);
-                let measure =
-                    dto.get("measure").filter(|m| epdf_annotation_core::json::truthy(Some(m)));
-                let mut with_scale = dto.as_object().cloned().unwrap_or_default();
-                with_scale.insert("measure".into(), scale.clone());
-                let readout = measurement_readout(&DimensionInput::of(&with_scale));
-                let reason = if record.authority.as_ref().is_some_and(|a| !a.update) {
-                    Some("no-authority")
-                } else if !annot_transformable(&*record) || !annot_contents_editable(&*record) {
-                    Some("locked")
-                } else if measure.is_some_and(|m| {
-                    m.get("subtype").and_then(Value::as_str) != Some("rectilinear")
-                }) {
-                    Some("foreign-measure")
-                } else if matches!(readout, Readout::Unavailable(_)) {
-                    Some("unavailable")
-                } else {
-                    None
-                };
-                if let Some(reason) = reason {
-                    report["skipped"]
-                        .as_array_mut()
-                        .unwrap()
-                        .push(json!({ "ref": reference, "reason": reason }));
-                    continue;
-                }
-                let mut patch = Map::new();
-                patch.insert("subtype".into(), dto.get("subtype").cloned().unwrap_or(Value::Null));
-                patch.insert("measure".into(), scale.clone());
-                match core.update(&reference, &patch, None, None).await {
-                    Ok(_) => report["updated"].as_array_mut().unwrap().push(reference),
-                    Err(error) => report["failed"]
-                        .as_array_mut()
-                        .unwrap()
-                        .push(json!({ "ref": reference, "error": serialize_error(&error) })),
-                }
-            }
-            Ok(report)
+            Ok(epdf_kernel::undefined())
         })
+    }
+
+    /// `stageRemeasure(page, scale)`: stage the update of every measurement on
+    /// `page` to `scale`, at once, so a group takes it into its change. What
+    /// it staged is `updated`; `error` is set, and nothing staged, when the
+    /// annotations aren't loaded.
+    pub fn stage_remeasure(&self, page: &Value, scale: Value) -> Result<Value, Error> {
+        let number = page_object_number(page);
+        let mut report =
+            json!({ "page": page, "scale": scale, "updated": [], "skipped": [], "failed": [] });
+        if self.records.get_status() != ResourceStatus::Ready {
+            report["error"] =
+                serialize_error(&Error::new("the annotations of this document are not loaded"));
+            return Ok(report);
+        }
+        let model = self.model();
+        let truths = self.records.get();
+        let mut candidates = Vec::new();
+        for stored in by_key(&truths).values() {
+            let dto = dto_of(stored);
+            let Some(record) =
+                model.by_id.get(&key_or_none(dto.get("ref").unwrap_or(&Value::Null)))
+            else {
+                continue;
+            };
+            let subtype = dto.get("subtype").and_then(Value::as_str).unwrap_or("");
+            let intent = dto.get("intent").and_then(Value::as_str);
+            if dto.get("page").map(page_object_number) == Some(number)
+                && is_dimension(subtype, intent)
+            {
+                candidates.push((dto.clone(), record.clone()));
+            }
+        }
+        let mut updates = Vec::new();
+        for (dto, record) in candidates {
+            let reference = dto.get("ref").cloned().unwrap_or(Value::Null);
+            let measure =
+                dto.get("measure").filter(|m| epdf_annotation_core::json::truthy(Some(m)));
+            let mut with_scale = dto.as_object().cloned().unwrap_or_default();
+            with_scale.insert("measure".into(), scale.clone());
+            let readout = measurement_readout(&DimensionInput::of(&with_scale));
+            let reason = if record.authority.as_ref().is_some_and(|a| !a.update) {
+                Some("no-authority")
+            } else if !annot_transformable(&*record) || !annot_contents_editable(&*record) {
+                Some("locked")
+            } else if measure
+                .is_some_and(|m| m.get("subtype").and_then(Value::as_str) != Some("rectilinear"))
+            {
+                Some("foreign-measure")
+            } else if matches!(readout, Readout::Unavailable(_)) {
+                Some("unavailable")
+            } else {
+                None
+            };
+            if let Some(reason) = reason {
+                report["skipped"]
+                    .as_array_mut()
+                    .unwrap()
+                    .push(json!({ "ref": reference, "reason": reason }));
+                continue;
+            }
+            let mut patch = Map::new();
+            patch.insert("subtype".into(), dto.get("subtype").cloned().unwrap_or(Value::Null));
+            patch.insert("measure".into(), scale.clone());
+            updates.push(StoreChange::Update {
+                reference: reference.clone(),
+                patch,
+                resources: None,
+            });
+            report["updated"].as_array_mut().unwrap().push(reference);
+        }
+        if !updates.is_empty() {
+            self.apply(&updates, false)?;
+        }
+        Ok(report)
     }
 }

@@ -318,53 +318,6 @@ fn merge_present(left: Option<Object>, right: Option<Object>) -> Option<Object> 
     Some(crate::js::spread(&left.unwrap_or_default(), &right.unwrap_or_default()))
 }
 
-/// `mergeDef(base, over)`: a same-id override over a definition.
-fn merge_def(base: &Value, over: &Value) -> Value {
-    let mut out = base.as_object().cloned().unwrap_or_default();
-    for (k, v) in over.as_object().into_iter().flatten() {
-        out.insert(k.clone(), v.clone());
-    }
-    out.insert(
-        "enables".into(),
-        present(over, "enables").or(present(base, "enables")).cloned().unwrap_or(Value::Null),
-    );
-    let set = |out: &mut Object, key: &str, value: Option<Object>| {
-        match value {
-            Some(v) => out.insert(key.into(), Value::Object(v)),
-            None => out.shift_remove(key),
-        };
-    };
-    set(
-        &mut out,
-        "meta",
-        merge_present(object_of(present(base, "meta")), object_of(present(over, "meta"))),
-    );
-    set(
-        &mut out,
-        "defaults",
-        merge_objects(object_of(present(base, "defaults")), object_of(present(over, "defaults"))),
-    );
-    set(
-        &mut out,
-        "flags",
-        merge_present(object_of(present(base, "flags")), object_of(present(over, "flags"))),
-    );
-    set(
-        &mut out,
-        "ink",
-        merge_present(object_of(present(base, "ink")), object_of(present(over, "ink"))),
-    );
-    set(
-        &mut out,
-        "afterCreate",
-        merge_present(
-            object_of(present(base, "afterCreate")),
-            object_of(present(over, "afterCreate")),
-        ),
-    );
-    Value::Object(out)
-}
-
 fn validate_defaults(tool: &ResolvedTool) -> Result<(), Error> {
     let Some(defaults) = &tool.defaults else { return Ok(()) };
     let Some(allowed) = tool_default_fields(&tool.subtype) else { return Ok(()) };
@@ -404,129 +357,144 @@ fn resolve_ghost(ghost: &Value) -> Value {
     }
 }
 
-/// `buildToolRegistry(overrides)`: the built-ins and the app's entries,
-/// resolved, keyed by id in table order.
-pub fn build_tool_registry(
-    overrides: &[Value],
-) -> Result<IndexMap<String, Rc<ResolvedTool>>, Error> {
-    let mut defs: IndexMap<String, Value> = IndexMap::new();
-    for definition in default_tools() {
-        defs.insert(string_of(definition.get("id")).unwrap_or_default(), definition);
+/// An entry's `id` as the TypeScript's template string prints it.
+fn id_of(entry: &Value) -> String {
+    match entry.get("id") {
+        Some(Value::String(s)) => s.clone(),
+        Some(other) => crate::js::stringify(Some(other)),
+        None => "undefined".into(),
     }
-    for over in overrides {
-        let id = match over.get("id") {
-            Some(Value::String(s)) => s.clone(),
-            Some(other) => crate::js::stringify(Some(other)),
-            None => "undefined".into(),
-        };
-        let next = match defs.get(&id) {
-            Some(previous) => merge_def(previous, over),
-            None => over.clone(),
-        };
-        defs.insert(id, next);
-    }
-    let mut out: IndexMap<String, Rc<ResolvedTool>> = IndexMap::new();
-    let mut resolving: Vec<String> = Vec::new();
-    fn resolve(
-        id: &str,
-        defs: &IndexMap<String, Value>,
-        out: &mut IndexMap<String, Rc<ResolvedTool>>,
-        resolving: &mut Vec<String>,
-    ) -> Result<Rc<ResolvedTool>, Error> {
-        if let Some(cached) = out.get(id) {
-            return Ok(cached.clone());
+}
+
+/// `toolFrom(definition, base)`: a tool from `definition`, starting from
+/// `base` when it has one: the base's kind, behavior and defaults, with the
+/// definition's own fields over them. The base's `meta` stays behind, since
+/// it says which button the base is. `preset` stands for
+/// `definition.preset` when the caller spreads one over it.
+fn tool_from(
+    definition: &Value,
+    base: Option<&ResolvedTool>,
+    preset: Option<String>,
+) -> ResolvedTool {
+    let own_id = id_of(definition);
+    let subtype = string_of(present(definition, "subtype"))
+        .or_else(|| base.map(|b| b.subtype.clone()))
+        .unwrap_or_else(|| own_id.clone());
+    let ink =
+        merge_present(base.and_then(|b| b.ink.clone()), object_of(present(definition, "ink")));
+    let after_create = {
+        let own = present(definition, "afterCreate").map(AfterCreate::read);
+        match (base.and_then(|b| b.after_create.clone()), own) {
+            (None, None) => None,
+            (b, o) => Some(b.unwrap_or_default().over(&o.unwrap_or_default())),
         }
-        let Some(definition) = defs.get(id) else {
-            return Err(Error::new(format!("[annotation] tool '{id}' extends an unknown tool")));
-        };
-        let own_id = string_of(definition.get("id")).unwrap_or_else(|| id.to_string());
-        let mut base: Option<Rc<ResolvedTool>> = None;
-        if let Some(extends) = string_of(present(definition, "extends"))
-            && extends != id
-            && !resolving.contains(&extends)
-        {
-            resolving.push(id.to_string());
-            let resolved = resolve(&extends, defs, out, resolving);
-            resolving.retain(|r| r != id);
-            base = Some(resolved?);
-        }
-        let base = base.as_deref();
-        let subtype = string_of(present(definition, "subtype"))
-            .or_else(|| base.map(|b| b.subtype.clone()))
-            .unwrap_or_else(|| own_id.clone());
-        let ink =
-            merge_present(base.and_then(|b| b.ink.clone()), object_of(present(definition, "ink")));
-        let after_create = {
-            let own = present(definition, "afterCreate").map(AfterCreate::read);
-            match (base.and_then(|b| b.after_create.clone()), own) {
-                (None, None) => None,
-                (b, o) => Some(b.unwrap_or_default().over(&o.unwrap_or_default())),
-            }
-        };
-        let resolved = ResolvedTool {
-            id: own_id.clone(),
-            subtype: subtype.clone(),
-            preset: string_of(present(definition, "preset")).unwrap_or_else(|| own_id.clone()),
-            fields_kind: string_of(present(definition, "fieldsKind"))
-                .or_else(|| base.map(|b| b.fields_kind.clone()))
-                .unwrap_or_else(|| subtype.clone()),
-            cursor: string_of(present(definition, "cursor"))
-                .or_else(|| base.map(|b| b.cursor.clone()))
-                .unwrap_or_else(|| "crosshair".into()),
-            enables: match present(definition, "enables") {
-                Some(e) => tag_set(Some(e)),
-                None => base.map(|b| b.enables.clone()).unwrap_or_default(),
-            },
-            defaults: merge_objects(
-                base.and_then(|b| b.defaults.clone()),
-                object_of(present(definition, "defaults")),
-            ),
-            flags: merge_present(
-                base.and_then(|b| b.flags.clone()),
-                object_of(present(definition, "flags")),
-            ),
-            source: present(definition, "source")
+    };
+    ResolvedTool {
+        id: own_id.clone(),
+        subtype: subtype.clone(),
+        preset: preset
+            .or_else(|| string_of(present(definition, "preset")))
+            .unwrap_or_else(|| own_id.clone()),
+        fields_kind: string_of(present(definition, "fieldsKind"))
+            .or_else(|| base.map(|b| b.fields_kind.clone()))
+            .unwrap_or_else(|| subtype.clone()),
+        cursor: string_of(present(definition, "cursor"))
+            .or_else(|| base.map(|b| b.cursor.clone()))
+            .unwrap_or_else(|| "crosshair".into()),
+        enables: match present(definition, "enables") {
+            Some(e) => tag_set(Some(e)),
+            None => base.map(|b| b.enables.clone()).unwrap_or_default(),
+        },
+        defaults: merge_objects(
+            base.and_then(|b| b.defaults.clone()),
+            object_of(present(definition, "defaults")),
+        ),
+        flags: merge_present(
+            base.and_then(|b| b.flags.clone()),
+            object_of(present(definition, "flags")),
+        ),
+        source: present(definition, "source")
+            .cloned()
+            .or_else(|| base.and_then(|b| b.source.clone())),
+        selection: present(definition, "selection")
+            .cloned()
+            .or_else(|| base.and_then(|b| b.selection.clone())),
+        ink,
+        upright: match present(definition, "upright") {
+            Some(v) => epdf_annotation_core::json::truthy(Some(v)),
+            None => base.is_some_and(|b| b.upright),
+        },
+        click_create: present(definition, "clickCreate")
+            .cloned()
+            .or_else(|| base.map(|b| b.click_create.clone()))
+            .unwrap_or(Value::Bool(false)),
+        // `resolveGhost(definition.ghost ?? base?.ghost ?? false)`.
+        ghost: resolve_ghost(
+            &present(definition, "ghost")
                 .cloned()
-                .or_else(|| base.and_then(|b| b.source.clone())),
-            selection: present(definition, "selection")
-                .cloned()
-                .or_else(|| base.and_then(|b| b.selection.clone())),
-            ink,
-            upright: match present(definition, "upright") {
-                Some(v) => epdf_annotation_core::json::truthy(Some(v)),
-                None => base.is_some_and(|b| b.upright),
-            },
-            click_create: present(definition, "clickCreate")
-                .cloned()
-                .or_else(|| base.map(|b| b.click_create.clone()))
+                .or_else(|| base.map(|b| b.ghost.clone()))
                 .unwrap_or(Value::Bool(false)),
-            // `resolveGhost(definition.ghost ?? base?.ghost ?? false)`.
-            ghost: resolve_ghost(
-                &present(definition, "ghost")
-                    .filter(|g| !g.is_null())
-                    .cloned()
-                    .or_else(|| base.map(|b| b.ghost.clone()))
-                    .unwrap_or(Value::Bool(false)),
-            ),
-            after_create,
-            capture: CAPTURE_TOOLS.contains(&own_id.as_str()) || base.is_some_and(|b| b.capture),
-            meta: merge_present(
-                base.and_then(|b| b.meta.clone()),
-                object_of(present(definition, "meta")),
-            ),
-        };
-        validate_defaults(&resolved)?;
-        let resolved = Rc::new(resolved);
-        out.insert(id.to_string(), resolved.clone());
-        Ok(resolved)
+        ),
+        after_create,
+        capture: CAPTURE_TOOLS.contains(&own_id.as_str()) || base.is_some_and(|b| b.capture),
+        meta: object_of(present(definition, "meta")),
     }
-    let ids: Vec<String> = defs.keys().cloned().collect();
-    for id in ids {
-        resolve(&id, &defs, &mut out, &mut resolving)?;
+}
+
+/// `changeTool(tool, change)`: `tool` with a change for its id merged over
+/// it: the same tool, `meta` included.
+fn change_tool(tool: &ResolvedTool, change: &Value) -> ResolvedTool {
+    let preset = string_of(present(change, "preset")).unwrap_or_else(|| tool.preset.clone());
+    ResolvedTool {
+        meta: merge_present(tool.meta.clone(), object_of(present(change, "meta"))),
+        ..tool_from(change, Some(tool), Some(preset))
     }
-    // In the order the tools resolved, as the TypeScript's map is filled:
-    // a tool another extends resolves first.
-    Ok(out)
+}
+
+/// `applyTool(tools, entry)`: apply one tool entry to `tools` and return the
+/// tool it leaves under its id. An entry with `extends` makes a tool from a
+/// copy of that tool as it is now, in place of any tool with its id; an entry
+/// whose id is taken changes that tool; any other entry adds one.
+pub fn apply_tool(
+    tools: &mut IndexMap<String, Rc<ResolvedTool>>,
+    entry: &Value,
+) -> Result<Rc<ResolvedTool>, Error> {
+    let extends = present(entry, "extends").filter(|e| epdf_annotation_core::json::truthy(Some(e)));
+    let tool = match extends {
+        Some(extends) => {
+            let name = match extends {
+                Value::String(s) => s.clone(),
+                other => crate::js::stringify(Some(other)),
+            };
+            let Some(base) = tools.get(&name) else {
+                return Err(Error::new(format!(
+                    "[annotation] tool '{}' extends '{name}', which isn't defined before it",
+                    id_of(entry)
+                )));
+            };
+            tool_from(entry, Some(base), None)
+        }
+        None => match tools.get(&id_of(entry)) {
+            Some(current) => change_tool(current, entry),
+            None => tool_from(entry, None, None),
+        },
+    };
+    validate_defaults(&tool)?;
+    let tool = Rc::new(tool);
+    tools.insert(tool.id.clone(), tool.clone());
+    Ok(tool)
+}
+
+/// `buildToolRegistry(entries)`: the built-ins, then `entries`, each applied
+/// in order by [`apply_tool`]. So a change to a built-in reaches only that
+/// built-in, and an entry's `extends` sees the tool as the entries before it
+/// left it.
+pub fn build_tool_registry(entries: &[Value]) -> Result<IndexMap<String, Rc<ResolvedTool>>, Error> {
+    let mut tools: IndexMap<String, Rc<ResolvedTool>> = IndexMap::new();
+    for entry in default_tools().iter().chain(entries) {
+        apply_tool(&mut tools, entry)?;
+    }
+    Ok(tools)
 }
 
 /// The kind `fieldsKind` reads when the tool doesn't exist (`tool?.fieldsKind ?? toolId`).

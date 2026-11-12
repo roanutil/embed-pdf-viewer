@@ -435,7 +435,8 @@ const MEMBERS: &[&str] = &[
     "placeAt",
     "setFilePickerProvider",
     "setPageViewports",
-    "remeasurePage",
+    "whenRemeasurable",
+    "stageRemeasure",
     "editPointer",
     "marqueePointer",
     "createPointer",
@@ -944,7 +945,11 @@ fn call_capability(a: &AnnotationCapability, method: &str, args: &[Value], h: &H
             a.set_page_viewports(&value(args, 0), viewports, value(args, 2));
             undefined_outcome()
         }
-        "remeasurePage" => promise(a.remeasure_page(&value(args, 0), value(args, 1))),
+        "whenRemeasurable" => promise(a.when_remeasurable()),
+        "stageRemeasure" => match a.stage_remeasure(&value(args, 0), value(args, 1)) {
+            Ok(report) => Outcome::Returned(report),
+            Err(e) => Outcome::Threw(e),
+        },
         "onDraftCaptured" => subscribe(h, &a.events.draft_captured, &value(args, 0)),
         "getDistanceCreationPage" => Outcome::Returned(opt_value(a.distance_creation_page())),
         // ── pointer ──
