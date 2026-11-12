@@ -40,12 +40,41 @@ struct Case {
 #[derive(Debug, Deserialize)]
 struct Step {
     exchanges: Vec<Exchange>,
+    /// What the change published (`changeEvents` over its answer), for a
+    /// `doc.apply` step.
+    #[serde(default)]
+    events: Option<Value>,
 }
 
 #[derive(Debug, Deserialize)]
 struct Exchange {
     request: Value,
     answer: Value,
+    /// How many distinct names the answer's `<uuid>` masks stand for.
+    #[serde(default)]
+    uuids: Option<usize>,
+}
+
+/// The distinct made-up names in `value`, before they are masked.
+fn distinct_uuids(value: &Value, found: &mut std::collections::BTreeSet<String>) {
+    match value {
+        Value::String(s) if is_uuid_v7(s) => {
+            found.insert(s.clone());
+        }
+        Value::Array(items) => items.iter().for_each(|v| distinct_uuids(v, found)),
+        Value::Object(fields) => fields.values().for_each(|v| distinct_uuids(v, found)),
+        _ => {}
+    }
+}
+
+/// An event the `Host` published, as `changeEvents` reads it: without the
+/// `origin` the host stamps on it.
+fn event_init(event: &Value) -> Value {
+    let mut event = event.clone();
+    if let Some(fields) = event.as_object_mut() {
+        fields.remove("origin");
+    }
+    event
 }
 
 fn load(file: &str, kind: &str) -> VectorFile {
@@ -170,6 +199,7 @@ fn replay_file(file: &str, kind: &str, cases: usize) {
     for case in &vectors.cases {
         let mut replay = open(&vectors.fixture, &format!("changes:{}", case.name));
         'steps: for (s, step) in case.steps.iter().enumerate() {
+            let mut published: Option<Value> = None;
             for exchange in &step.exchanges {
                 let what = format!("{} step {s} {}", case.name, exchange.request["kind"]);
                 let answer = replay.replay(&exchange.request);
@@ -177,8 +207,22 @@ fn replay_file(file: &str, kind: &str, cases: usize) {
                     (Some(resolve), None) => match answer {
                         Ok(mut actual) => {
                             if let Some(fields) = actual.as_object_mut() {
+                                if let Some(events) = fields.get("events") {
+                                    published = Some(events.clone());
+                                }
                                 for key in HOST_ONLY {
                                     fields.remove(key);
+                                }
+                            }
+                            if let Some(expected) = exchange.uuids {
+                                let mut found = std::collections::BTreeSet::new();
+                                distinct_uuids(&actual, &mut found);
+                                if found.len() != expected {
+                                    failures.push(format!(
+                                        "{what}: {} distinct made-up names, expected {expected}",
+                                        found.len()
+                                    ));
+                                    break 'steps;
                                 }
                             }
                             let actual = test_support::canonical_numbers(&mask(&actual));
@@ -214,6 +258,28 @@ fn replay_file(file: &str, kind: &str, cases: usize) {
                     _ => panic!("{what}: records neither a resolve nor a reject"),
                 }
             }
+            if let Some(expected) = &step.events {
+                let actual = Value::Array(
+                    published
+                        .as_ref()
+                        .and_then(Value::as_array)
+                        .map(|events| events.iter().map(event_init).collect())
+                        .unwrap_or_default(),
+                );
+                let actual = test_support::canonical_numbers(&mask(&actual));
+                let expected = test_support::canonical_numbers(expected);
+                if actual != expected {
+                    let mut found = Vec::new();
+                    differences(&actual, &expected, "/events", &mut found, 8);
+                    failures.push(format!(
+                        "{} step {s} events: {}\n    {}",
+                        case.name,
+                        case.covers,
+                        found.join("\n    ")
+                    ));
+                    break 'steps;
+                }
+            }
         }
     }
     assert!(
@@ -241,12 +307,17 @@ fn an_update_renames() {
 
 #[test]
 fn annotations_copy() {
-    replay_file("annotation-copy.json", "document.apply.annotations.copy", 10);
+    replay_file("annotation-copy.json", "document.apply.annotations.copy", 12);
 }
 
 #[test]
 fn forms_copy() {
-    replay_file("form-copy.json", "document.apply.forms.copy", 8);
+    replay_file("form-copy.json", "document.apply.forms.copy", 9);
+}
+
+#[test]
+fn a_widget_update_renames() {
+    replay_file("widget-rename.json", "document.apply.forms.updateWidget.rename", 3);
 }
 
 /// `kinds.json`: the version each change kind arrived in, which kinds an
@@ -278,18 +349,17 @@ fn every_change_kind_has_the_version_it_arrived_in() {
         CHANGE_KIND_SINCE.iter().map(|(kind, since)| ((*kind).to_owned(), json!(since))).collect();
     assert_eq!(Value::Object(rows), vectors["rows"]);
 
+    // The kinds are asked in the vector's order, and answered in it.
     let asked: Vec<&str> =
-        kinds.iter().copied().chain(["pages.someKindFromANewerServer"]).collect();
+        vectors["asked"].as_array().expect("asked").iter().map(|k| k.as_str().unwrap()).collect();
+    let mut declared: Vec<&str> = asked.clone();
+    declared.pop();
+    assert_eq!(CHANGE_KINDS, declared.as_slice(), "the kinds are not in the wire schema's order");
     for row in vectors["unknownTo"].as_array().expect("unknownTo") {
         let version = row["version"].as_str();
         let unknown = change_kinds_unknown_to(version, asked.iter().copied());
-        let mut unknown: Vec<&str> = unknown;
-        let mut expected: Vec<&str> =
+        let expected: Vec<&str> =
             row["unknown"].as_array().unwrap().iter().map(|k| k.as_str().unwrap()).collect();
-        // The kinds are asked in the vector's object order, which a map need
-        // not keep; the set is what is compared.
-        unknown.sort_unstable();
-        expected.sort_unstable();
         assert_eq!(unknown, expected, "unknown to {version:?}");
     }
     for row in vectors["lacks"].as_array().expect("lacks") {

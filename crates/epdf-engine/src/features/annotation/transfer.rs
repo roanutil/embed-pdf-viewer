@@ -462,10 +462,7 @@ pub fn prepare_annotation_copy(
         )?
     };
 
-    let mut collector = ResourceCollector {
-        resources: BundleResources::new(BundleKind::Annotation, *limits),
-        drawings: HashMap::new(),
-    };
+    let mut collector = CopyResources::new(*limits);
     let mut creates = Vec::with_capacity(plan.creates.len());
     for planned in &plan.creates {
         cancel.check()?;
@@ -477,8 +474,7 @@ pub fn prepare_annotation_copy(
             &mut box_of,
         )?;
         let actor = authorize_create(&draft)?;
-        let found = collector.of(owned, source)?;
-        let role = |name: &str| found.get(name).and_then(Value::as_str).map(str::to_owned);
+        let (appearance, file) = collector.of(owned, source)?;
         let file_dates = (source["subtype"] == "file-attachment" && source["file"].is_object())
             .then(|| {
                 let date = |key: &str| source["file"][key].as_str().map(str::to_owned);
@@ -489,8 +485,8 @@ pub fn prepare_annotation_copy(
             draft,
             reply_to: planned.reply_to,
             parent: planned.parent,
-            appearance: role("appearance"),
-            file: role("file"),
+            appearance,
+            file,
             actor,
             file_dates,
             object_number: object_numbers.map(|numbers| numbers[planned.source]),
@@ -499,12 +495,101 @@ pub fn prepare_annotation_copy(
     }
     let ref_map_from =
         plan.creates.iter().map(|planned| sources[planned.source]["ref"].clone()).collect();
-    Ok(PreparedCopy {
-        creates,
-        resources: collector.resources.by_id,
-        ref_map_from,
-        dropped: plan.dropped,
-    })
+    Ok(PreparedCopy { creates, resources: collector.held, ref_map_from, dropped: plan.dropped })
+}
+
+/// The drawings and files a copy carries, read from its sources and counted
+/// against the bundle limits as they are read (`AnnotationCopier`'s
+/// `resourceReader`). A stamp's drawing is read and counted once however
+/// many copies place it; any other appearance, and each file, counts for
+/// every copy, which gets its own.
+struct CopyResources {
+    limits: BundleLimits,
+    /// The id each drawing (by object number) was read under.
+    drawings: HashMap<u32, String>,
+    held: Vec<(String, Vec<u8>)>,
+    count: u64,
+    total: u64,
+}
+
+impl CopyResources {
+    fn new(limits: BundleLimits) -> Self {
+        Self { limits, drawings: HashMap::new(), held: Vec::new(), count: 0, total: 0 }
+    }
+
+    /// `counted`: one more resource of `bytes`, within `resourceBytes`,
+    /// `resources` and `bundleBytes`.
+    fn counted(&mut self, bytes: Vec<u8>) -> Result<String, EngineError> {
+        use crate::features::transfer::limits::assert_copy_within_limit;
+        let size = bytes.len() as u64;
+        assert_copy_within_limit("resourceBytes", self.limits.resource_bytes, size)?;
+        self.count += 1;
+        assert_copy_within_limit("resources", self.limits.resources, self.count)?;
+        self.total += size;
+        assert_copy_within_limit("bundleBytes", self.limits.bundle_bytes, self.total)?;
+        let id = format!("copy-resource-{}", self.held.len());
+        self.held.push((id.clone(), bytes));
+        Ok(id)
+    }
+
+    /// The appearance and file `source` (a read, in the file's coordinates)
+    /// carries, by role: a stamp's drawing or appearance, a file
+    /// attachment's file.
+    fn of(
+        &mut self,
+        owned: &crate::access::OwnedDocument,
+        source: &Value,
+    ) -> Result<(Option<String>, Option<String>), EngineError> {
+        let subtype = source["subtype"].as_str().unwrap_or_default();
+        if subtype != "stamp" && subtype != "file-attachment" {
+            return Ok((None, None));
+        }
+        let reference = ref_of(source).ok_or_else(|| unserializable("a record names no ref"))?;
+        let document = owned.document();
+        let page_index = owned.page_index(reference.page())?;
+        let index =
+            super::write::resolve::resolve_annotation_index_raw(document, page_index, &reference)?;
+        let raw = document
+            .raw_annotation(page_index, index)
+            .ok_or_else(|| unserializable("an annotation is not where it was read"))?;
+        if subtype == "stamp" {
+            let drawing = raw.stamp_drawing();
+            if let Some(known) = drawing.and_then(|drawing| self.drawings.get(&drawing)) {
+                return Ok((Some(known.clone()), None));
+            }
+            let bytes = match drawing {
+                Some(drawing) => match document.export_drawing(drawing) {
+                    Some(exported) => {
+                        Some(exported.save_to_buffer(pdfium::PdfSaveMode::Full).map_err(|_| {
+                            EngineError::with_message(
+                                EngineErrorCode::DocOpenFailed,
+                                "failed to save a drawing",
+                            )
+                        })?)
+                    }
+                    None => None,
+                },
+                None => super::appearance::unturned_appearance(&raw)?,
+            };
+            let Some(bytes) = bytes else { return Ok((None, None)) };
+            let id = self.counted(bytes)?;
+            if let Some(drawing) = drawing {
+                self.drawings.insert(drawing, id.clone());
+            }
+            return Ok((Some(id), None));
+        }
+        let Some(attachment) = raw.file_attachment() else { return Ok((None, None)) };
+        let max = self.limits.resource_bytes;
+        // One larger than `resourceBytes` is refused before it is read (`fileOf`).
+        let bytes = attachment.extract(max).map_err(|error| match error {
+            pdfium::AttachmentExtractError::SizeLimitExceeded => past_limit(
+                format!("copy: an attached file is larger than {max} bytes"),
+                json!({ "limit": "resourceBytes", "max": max }),
+            ),
+            other => crate::features::files::attachments::extract_error(other, Some(max)),
+        })?;
+        Ok((None, Some(self.counted(bytes)?)))
+    }
 }
 
 /// The checks a copy makes before it reads anything: as many object
@@ -570,4 +655,37 @@ pub fn write_annotation_copy(
         .map(|(from, annotation)| json!({ "from": from, "to": annotation["ref"] }))
         .collect();
     Ok(AnnotationImportResult { annotations, ref_map, dropped, meta: created.meta })
+}
+
+#[cfg(test)]
+mod copy_resource_tests {
+    use super::CopyResources;
+    use crate::error::EngineErrorCode;
+    use crate::features::transfer::limits::DEFAULT_BUNDLE_LIMITS;
+    use serde_json::json;
+
+    /// Each resource read counts, the same bytes again included: a copy is
+    /// held to `resources`, `resourceBytes` and `bundleBytes` with
+    /// `assertCopyWithinLimit`'s message (5496eb084).
+    #[test]
+    fn every_read_counts_against_the_copy_limits() {
+        let limits = super::BundleLimits { resources: 1, ..DEFAULT_BUNDLE_LIMITS };
+        let mut resources = CopyResources::new(limits);
+        resources.counted(vec![1, 2, 3]).expect("one resource");
+        let refused =
+            resources.counted(vec![1, 2, 3]).expect_err("a second, though the same bytes");
+        assert_eq!(refused.code, EngineErrorCode::PayloadTooLarge);
+        assert_eq!(refused.message, "copy: past the resources limit: 2 > 1");
+        assert_eq!(refused.details, Some(json!({ "limit": "resources", "max": 1, "value": 2 })));
+
+        let limits = super::BundleLimits { resource_bytes: 2, ..DEFAULT_BUNDLE_LIMITS };
+        let refused = CopyResources::new(limits).counted(vec![0; 3]).expect_err("too large");
+        assert_eq!(refused.message, "copy: past the resourceBytes limit: 3 > 2");
+
+        let limits = super::BundleLimits { bundle_bytes: 5, ..DEFAULT_BUNDLE_LIMITS };
+        let mut resources = CopyResources::new(limits);
+        resources.counted(vec![0; 3]).expect("3 bytes");
+        let refused = resources.counted(vec![0; 3]).expect_err("6 bytes in all");
+        assert_eq!(refused.message, "copy: past the bundleBytes limit: 6 > 5");
+    }
 }

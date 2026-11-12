@@ -798,6 +798,8 @@ pub fn update_widget(
     if let Some(expect) = expect {
         assert_expected(at, &current, expect)?;
     }
+    // A widget's new name must be free on its page too (756f8e56b).
+    super::annotations::assert_new_name_free(ctx, widget, &current, patch.get("nm"))?;
     let mut patch = patch.clone();
     patch.insert("subtype".into(), Value::String("widget".into()));
     super::annotations::write_update(
