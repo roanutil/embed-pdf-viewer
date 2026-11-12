@@ -36,8 +36,7 @@ fn readout(object: &Map<String, Value>) -> Value {
 }
 
 impl MeasurementCapability {
-    /// May measure on the page: `annotations:create`, and the page's scale
-    /// has loaded.
+    /// May measure on the page: `annotations:create`, and the page is there.
     pub fn can_measure(&self, page: impl Into<PageInput>) -> Result<bool, Error> {
         Ok(self.core().cx.allows("annotations:create") && self.scale_of(page.into())?.ready)
     }

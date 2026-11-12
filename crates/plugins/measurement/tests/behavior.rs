@@ -16,11 +16,9 @@ use epdf_geometry::Point as GeometryPoint;
 use epdf_kernel::error::code;
 use epdf_kernel::geometry::{PageRef, Point};
 use epdf_kernel::kernel::{OpenOptions, OpenSource};
-use epdf_kernel::mirror::ResourceStatus;
 use epdf_kernel::{AnyPlugin, Error, Kernel, KernelOptions, Promise, rt};
 use epdf_plugin_annotation::{ANNOTATION, AnnotationCapability, annotation_plugin};
 use epdf_plugin_interaction::{INTERACTION, InteractionConfig, interaction_plugin};
-use epdf_plugin_measurement::model::{PageScaleInputs, PageSize, page_scale_of};
 use epdf_plugin_measurement::*;
 use plugin_conformance::fake_engine::{AsEngine, FakeEngine};
 use serde_json::{Value, json};
@@ -147,74 +145,6 @@ fn input(from: (f64, f64), to: (f64, f64), value: f64) -> CalibrateInput {
 }
 
 #[test]
-fn page_scale_of_projects_its_three_read_states() {
-    let known = json!([{
-        "bbox": { "x": 0, "y": 0, "width": 600, "height": 800 },
-        "measure": feet(),
-        "owned": true,
-        "name": null,
-    }]);
-    let offline = json!({ "code": "RuntimeUnavailable", "message": "offline" });
-    let fallback = metres();
-    let size = Some(PageSize { width: 600.0, height: 800.0 });
-
-    // Loading, nothing read yet: not ready, no measure, persistence kept.
-    let loading = page_scale_of(&PageScaleInputs {
-        viewports: None,
-        status: ResourceStatus::Loading,
-        error: None,
-        size,
-        fallback: &fallback,
-        persistent: true,
-    });
-    assert_eq!(
-        loading.to_json(),
-        json!({ "measure": null, "source": "default", "ready": false, "persistent": true })
-    );
-
-    // A failed re-read keeps the last confirmed viewports and reports why.
-    let failed_known = page_scale_of(&PageScaleInputs {
-        viewports: Some(&known),
-        status: ResourceStatus::Error,
-        error: Some(&offline),
-        size,
-        fallback: &fallback,
-        persistent: true,
-    });
-    assert_eq!(
-        failed_known.to_json(),
-        json!({
-            "measure": feet(),
-            "source": "owned",
-            "ready": true,
-            "persistent": true,
-            "error": offline,
-        })
-    );
-
-    // A failed first read on a page not in the registry: not ready, with
-    // the error.
-    let failed_empty = page_scale_of(&PageScaleInputs {
-        viewports: None,
-        status: ResourceStatus::Error,
-        error: Some(&offline),
-        size: None,
-        fallback: &fallback,
-        persistent: false,
-    });
-    assert_eq!(
-        failed_empty.to_json(),
-        json!({
-            "measure": null,
-            "source": "default",
-            "ready": false,
-            "persistent": false,
-            "error": offline,
-        })
-    );
-}
-
-#[test]
 fn a_calibration_capture_ends_at_the_drags_final_move() {
     let rig = Rig::new(Vec::new());
     let requested: Rc<RefCell<Vec<CalibrationRequest>>> = Rc::default();
@@ -268,86 +198,74 @@ fn calibrate_refuses_lengths_that_are_not_finite_and_positive() {
 }
 
 #[test]
-fn closing_mid_change_reports_each_page_and_refuses_the_queued_write() {
-    let scale_set = |pon: u32| {
-        json!({
-            "type": "pages.scaleSet",
-            "page": pr(pon),
-            "meta": { "affectedPages": [pr(pon)], "cacheDelta": null, "opId": "set", "undoable": true },
-            "origin": { "kind": "local", "sessionId": "s1",
-                "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": null },
-        })
-    };
+fn closing_mid_change_reports_each_page_and_refuses_the_next_change() {
     let rig = Rig::new(vec![
-        json!({ "path": "page.measure.setScale", "pon": 1, "defer": "set1" }),
-        json!({
-            "path": "page.measure.setScale",
-            "pon": 2,
-            "value": { "page": pr(2), "meta": { "affectedPages": [pr(2)], "cacheDelta": null, "opId": "set2", "undoable": true } },
-            "events": [scale_set(2)],
-            "defer": "set2",
-        }),
+        json!({ "path": "apply", "defer": "every" }),
+        json!({ "path": "apply", "defer": "second" }),
     ]);
     let options =
         || ScaleChangeOptions { recalculate: Some(false), ..ScaleChangeOptions::default() };
     let every = rig.measurement.set_scale(PageTarget::All, feet(), options());
-    let queued = rig.measurement.set_scale(PageRef::new(2), metres(), options());
+    let next = rig.measurement.set_scale(PageRef::new(2), metres(), options());
     rt::run_until_stalled();
     assert!(rig.measurement.is_busy());
-    assert_eq!(rig.calls_to("page.measure.setScale"), 2);
+    // Each scale change is one change of the document, sent at once.
+    let applies: Vec<Value> =
+        rig.fake.log_since(0).into_iter().filter(|call| call["path"] == "apply").collect();
+    assert_eq!(applies.len(), 2);
+    assert_eq!(
+        applies[0]["args"][0]["ops"],
+        json!([{ "type": "pages.setScale", "pages": [pr(1), pr(2)], "measure": feet() }])
+    );
+    assert_eq!(rig.calls_to("page.measure.setScale"), 0, "no page write of its own");
 
     let closing = rig.kernel.documents().close("a");
     rt::run_until_stalled();
     assert!(matches!(closing.peek(), Some(Ok(()))));
 
+    // Several pages: a refused change fails every page of it.
     let reports = match settled(&every) {
         Some(Ok(reports)) => reports,
         other => panic!("the all-pages change resolves: {:?}", other.map(|r| r.map(|_| ()))),
     };
-    let closed = json!({
-        "code": "Unknown",
-        "message": "document instance a#1 was closed",
-    });
-    assert_eq!(
-        *reports,
-        vec![
-            ScaleChangeReport::ScaleError { page: PageRef::new(1), scale_error: closed.clone() },
-            ScaleChangeReport::ScaleError { page: PageRef::new(2), scale_error: closed },
-        ]
-    );
-
-    let refused = failure(&queued);
-    assert_eq!(refused.plugin_code(), Some(code::INSTANCE_CLOSED));
-    assert_eq!(refused.message, "document instance a#1 was closed");
-
-    let closed_updates: Vec<String> = rig
+    assert_eq!(reports.len(), 2);
+    for (report, pon) in reports.iter().zip([1, 2]) {
+        let ScaleChangeReport::ScaleError { page, scale_error } = report else {
+            panic!("page {pon} reports its refusal: {report:?}");
+        };
+        assert_eq!(*page, PageRef::new(pon));
+        // `serializeError` keeps an engine error's code; the queue's refusal is `Unknown`.
+        assert_eq!(*scale_error, json!({ "code": "Unknown", "message": "the document closed" }));
+    }
+    // One page: the refusal rejects.
+    assert_eq!(failure(&next).plugin_code(), Some(code::INSTANCE_CLOSED));
+    // The close dropped the busy count's last update, as the kernel reports.
+    let dropped = rig
         .reports
         .borrow()
         .iter()
         .filter(|e| e.plugin_code() == Some(code::INSTANCE_CLOSED))
-        .map(|e| e.message.clone())
-        .collect();
-    assert_eq!(closed_updates, vec!["a state update after the instance closed (a#1); dropped"]);
+        .count();
+    assert!(dropped >= 1, "the state updates after the close are reported");
 }
 
-/// `write/scale.ts:61`: `ctx.onSettle` makes a download wait for the scale
-/// changes on their way (`Promise.all` over each page queue's `idle()`), so
-/// the file has the scale in it.
+/// A download waits for the changes on their way (the kernel's settle over
+/// the document's change queue), so the file has the scale in it.
 #[test]
 fn a_download_waits_for_a_scale_change_on_its_way() {
     let rig = Rig::new(vec![
-        json!({ "path": "page.measure.setScale", "pon": 1, "defer": "set1" }),
+        json!({ "path": "apply", "defer": "set1" }),
         json!({ "path": "download", "value": { "$bytes": "" } }),
     ]);
     let options = ScaleChangeOptions { recalculate: Some(false), ..ScaleChangeOptions::default() };
     let change = rig.measurement.set_scale(PageRef::new(1), feet(), options);
     rt::run_until_stalled();
-    assert_eq!(rig.calls_to("page.measure.setScale"), 1);
+    assert_eq!(rig.calls_to("apply"), 1);
     let saved = rig.kernel.documents().save(Some("a"), None);
     rt::run_until_stalled();
     assert_eq!(rig.calls_to("download"), 0, "the download waits for the scale change");
     assert!(saved.peek().is_none());
-    let answer = json!({ "page": pr(1), "meta": { "affectedPages": [pr(1)], "cacheDelta": null, "opId": "set1", "undoable": true } });
+    let answer = json!({ "items": [], "meta": { "affectedPages": [pr(1)], "cacheDelta": null, "opId": "set1", "undoable": true } });
     assert!(rig.fake.settle("set1", Ok(answer)));
     rt::run_until_stalled();
     assert!(change.peek().is_some());

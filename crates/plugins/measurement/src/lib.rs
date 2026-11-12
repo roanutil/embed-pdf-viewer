@@ -1,7 +1,7 @@
 //! `packages/plugin/measurement` in Rust: page scale, calibration and
 //! measurement readouts, document-scoped. The annotation plugin owns the
-//! measurement annotations; this plugin owns each page's viewports (the
-//! scale, a kernel page mirror of the engine's `page.measure` reads), keeps
+//! measurement annotations; this plugin reads each page's viewports (the
+//! scale) from its layout, writes a scale as one change of the document, keeps
 //! the annotation plugin's measure in step, and turns the calibrate tool's
 //! drafts into scale requests.
 //!
@@ -43,7 +43,7 @@ use serde_json::Value;
 
 pub use contract::*;
 pub use controller::{MeasurementCapability, MeasurementContext, create_measurement_controller};
-pub use model::{MeasurementState, initial_measurement_state, page_scale_of, select_page_scale};
+pub use model::{MeasurementState, initial_measurement_state, select_page_scale};
 pub use scale::{default_measure, default_presets, with_area_unit, with_precision, with_unit};
 pub use token::MEASUREMENT;
 
