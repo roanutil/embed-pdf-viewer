@@ -452,6 +452,17 @@ fn run_op(ctx: &mut ChangeContext<'_>, op: &ChangeOp, at: usize) -> Result<Done,
         ChangeOp::AnnotationsReorder { page, refs, position } => {
             super::annotations::reorder_annotations(ctx, *page, refs, position)
         }
+        ChangeOp::FormsCopy { fields, widgets, page, offset, values, object_numbers } => {
+            super::fields::copy_fields(
+                ctx,
+                fields,
+                widgets.as_deref(),
+                *page,
+                offset.map_or((0.0, 0.0), |o| (o.x, o.y)),
+                values.unwrap_or(true),
+                object_numbers.as_deref(),
+            )
+        }
         ChangeOp::AnnotationsCopy { refs, page, offset, object_numbers } => {
             super::annotations::copy_annotations(
                 ctx,

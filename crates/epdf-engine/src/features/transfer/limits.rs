@@ -114,6 +114,18 @@ pub fn assert_within_limit(
 
 /// A bundle past a limit: `PayloadTooLarge`, with upstream's message and
 /// `details`.
+/// `copy: past the <limit> limit` (`assertCopyWithinLimit`): a copy inside
+/// the document carries what a bundle may.
+pub fn assert_copy_within_limit(limit: &str, max: u64, value: u64) -> Result<(), EngineError> {
+    if value <= max {
+        return Ok(());
+    }
+    Err(past_limit(
+        format!("copy: past the {limit} limit: {value} > {max}"),
+        serde_json::json!({ "limit": limit, "max": max, "value": value }),
+    ))
+}
+
 pub fn past_limit(message: String, details: Value) -> EngineError {
     EngineError::with_message(EngineErrorCode::PayloadTooLarge, message).with_details(details)
 }

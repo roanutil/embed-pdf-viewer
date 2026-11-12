@@ -305,6 +305,18 @@ pub enum ChangeItem {
         calculation_order: Option<Vec<crate::features::forms::snapshot::FormFieldRef>>,
         meta: FormMutationMeta,
     },
+    /// `FormCopyResult`: what a design import of the same fields answers
+    /// (a390171cc).
+    #[serde(rename = "forms.copy", rename_all = "camelCase")]
+    FormsCopy {
+        fields: Vec<serde_json::Value>,
+        widgets: Vec<serde_json::Value>,
+        ref_map: Vec<serde_json::Value>,
+        dropped: Vec<serde_json::Value>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        calculation_order: Option<Vec<crate::features::forms::snapshot::FormFieldRef>>,
+        meta: FormMutationMeta,
+    },
     /// `FormValuesImportResult`: the fields a values import filled, the
     /// rows of the widgets whose look changed, and what it left out.
     #[serde(rename = "forms.importValues")]
@@ -393,6 +405,7 @@ impl ChangeItem {
             | Self::FormsReorderWidgets { meta, .. }
             | Self::FormsReorderCalculations { meta, .. }
             | Self::FormsImport { meta, .. }
+            | Self::FormsCopy { meta, .. }
             | Self::FormsImportValues { meta, .. }
             | Self::FormsUpdateWidget { meta, .. } => &meta.meta,
             Self::OutlineCreate { meta, .. }
@@ -442,6 +455,7 @@ impl ChangeItem {
             | Self::FormsReorderWidgets { meta, .. }
             | Self::FormsReorderCalculations { meta, .. }
             | Self::FormsImport { meta, .. }
+            | Self::FormsCopy { meta, .. }
             | Self::FormsImportValues { meta, .. }
             | Self::FormsUpdateWidget { meta, .. } => &mut meta.meta,
             Self::OutlineCreate { meta, .. }
@@ -460,9 +474,9 @@ impl ChangeItem {
             Self::Skipped { .. } => false,
             Self::AnnotationsImport { annotations, .. }
             | Self::AnnotationsCopy { annotations, .. } => !annotations.is_empty(),
-            Self::FormsImport { fields, .. } | Self::FormsImportValues { fields, .. } => {
-                !fields.is_empty()
-            }
+            Self::FormsImport { fields, .. }
+            | Self::FormsCopy { fields, .. }
+            | Self::FormsImportValues { fields, .. } => !fields.is_empty(),
             _ => true,
         }
     }
@@ -521,7 +535,7 @@ impl ChangeItem {
                 ));
             }
             // One `forms.created` per field (`formImportFacts`).
-            Self::FormsImport { .. } => {
+            Self::FormsImport { .. } | Self::FormsCopy { .. } => {
                 return Ok(crate::features::transfer::plan_form::form_import_facts(&to_value(
                     self,
                 )?));

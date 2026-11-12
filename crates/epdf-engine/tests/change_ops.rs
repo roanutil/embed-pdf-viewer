@@ -245,7 +245,6 @@ fn annotations_copy() {
 }
 
 #[test]
-#[ignore = "not ported yet"]
 fn forms_copy() {
     replay_file("form-copy.json", "document.apply.forms.copy", 8);
 }

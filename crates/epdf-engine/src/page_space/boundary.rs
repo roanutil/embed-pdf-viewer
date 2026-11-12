@@ -690,6 +690,7 @@ pub fn change_op_in_file_space(
         // measures each source on its page and each copy on the page it goes
         // to.
         | ChangeOp::AnnotationsCopy { .. }
+        | ChangeOp::FormsCopy { .. }
         | ChangeOp::PagesRotate { .. }
         // Each page takes the scale on its own visible box as it's written
         // (`scaleChanges.ts`).
@@ -761,6 +762,19 @@ pub fn change_item_in_page_space(
         }
         ChangeItem::FormsImport { fields, widgets, ref_map, dropped, calculation_order, meta } => {
             Ok(ChangeItem::FormsImport {
+                fields: fields
+                    .into_iter()
+                    .map(|field| super::forms::page_form_field_value(field, box_of))
+                    .collect::<Result<_, _>>()?,
+                widgets: page_widgets(widgets, box_of)?,
+                ref_map,
+                dropped,
+                calculation_order,
+                meta,
+            })
+        }
+        ChangeItem::FormsCopy { fields, widgets, ref_map, dropped, calculation_order, meta } => {
+            Ok(ChangeItem::FormsCopy {
                 fields: fields
                     .into_iter()
                     .map(|field| super::forms::page_form_field_value(field, box_of))

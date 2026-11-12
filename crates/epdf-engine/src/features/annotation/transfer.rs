@@ -421,18 +421,6 @@ impl PreparedCopy {
     }
 }
 
-/// `copy: past the <limit> limit` (`assertCopyWithinLimit`): a copy carries
-/// what a bundle may.
-fn assert_copy_within_limit(limit: &str, max: u64, value: u64) -> Result<(), EngineError> {
-    if value <= max {
-        return Ok(());
-    }
-    Err(past_limit(
-        format!("copy: past the {limit} limit: {value} > {max}"),
-        json!({ "limit": limit, "max": max, "value": value }),
-    ))
-}
-
 /// What `doc.annotations.copy` will create (`AnnotationCopier.copy`, up to
 /// its write): each source measured from the top-left of its page,
 /// [`plan_annotation_copy`] works out the copies and what to leave out, each
@@ -536,7 +524,7 @@ pub fn check_annotation_copy_request(
         .with_details(json!({ "field": "objectNumbers" })));
     }
     // Counted as asked, before anything is read.
-    assert_copy_within_limit("items", limits.items, refs as u64)
+    crate::features::transfer::limits::assert_copy_within_limit("items", limits.items, refs as u64)
 }
 
 /// The write of a prepared copy, all or nothing, as an import's

@@ -3455,6 +3455,7 @@ fn strip_item(
         | ChangeItem::AnnotationsImport { .. }
         | ChangeItem::AnnotationsCopy { .. }
         | ChangeItem::FormsImport { .. }
+        | ChangeItem::FormsCopy { .. }
         | ChangeItem::FormsImportValues { .. }) => {
             let mut result = value(&item)?;
             if let Some(fields) = result.as_object_mut() {
