@@ -54,3 +54,36 @@ fn a_written_viewport_reads_back_and_removes() {
     assert!(page.remove_viewport(1));
     assert_eq!(page.viewport_count(), 1);
 }
+
+/// The raw viewport functions (runtime-src 55cc10b20) read and write `/VP`
+/// through the page dictionary, with no page loaded, and see what a loaded
+/// page sees.
+#[test]
+fn raw_viewports_read_and_write_without_loading_the_page() {
+    let lib = Library::acquire();
+    let doc = Document::from_bytes(
+        lib,
+        &test_support::fixture("tooling/engine-conformance/fixtures/viewports.pdf"),
+        None,
+    )
+    .expect("open viewports.pdf");
+    assert_eq!(doc.viewport_count_raw(0), 2);
+    assert_eq!(doc.viewport_count_raw(1), 0);
+    assert_eq!(doc.viewport_count_raw(99), 0, "no page at that index");
+    {
+        let first = doc.viewport_raw(0, 0).expect("a viewport");
+        assert_eq!(first.get().name().unwrap().as_deref(), Some("Plan"));
+        assert_eq!(first.get().measure().expect("a measure").subtype(), MeasureSubtype::Rl);
+        assert!(doc.viewport_raw(0, 2).is_none(), "past the end");
+    }
+
+    let bbox = RectF { left: 10.0, top: 280.0, right: 390.0, bottom: 20.0 };
+    {
+        let added = doc.add_viewport_raw(1, bbox).expect("added");
+        assert!(added.get().set_name("EmbedPDF"));
+    }
+    assert_eq!(doc.viewport_count_raw(1), 1);
+    assert_eq!(doc.page(1).unwrap().viewport_count(), 1, "a loaded page sees it");
+    assert!(doc.remove_viewport_raw(1, 0));
+    assert_eq!(doc.viewport_count_raw(1), 0);
+}
