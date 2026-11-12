@@ -206,11 +206,14 @@ const expectedRejections: Record<string, unknown[]> = {
         },
       },
     },
-    negative('createMeasurement', 'the page scale is not known yet', 'not-ready'),
   ],
   'pages-inserted-and-removed': [negative('setScale', missing(2), 'not-found')],
-  'page-removed-while-a-change-waits': [negative('setPreset', 'no such page', 'not-found')],
-  'close-mid-flight': [negative('setScale', 'document instance a#1 was closed', 'instance-closed')],
+  // Upstream 8bc6546e5: the change is sent at once, so the engine refuses the page it removed.
+  'page-removed-while-a-change-waits': [
+    negative('setScale', 'no page 1', 'not-found', engine('no page 1', 'NotFound')),
+  ],
+  // Upstream 8bc6546e5: the change queue refuses what the close cut short.
+  'close-mid-flight': [negative('setScale', 'the document closed', 'instance-closed')],
 };
 const expectedReports: Record<string, unknown[]> = {
   'listener-throws': [{ $error: { name: 'Error', message: 'listener broke' } }],
@@ -317,7 +320,8 @@ const pureNegatives: Record<string, unknown> = {
   ),
 };
 test('all current pure inputs invoke shipping functions with exactly eight named refusals and recovery', () => {
-  assert.equal(pureSuite.cases.length, 45);
+  // 41: upstream 8bc6546e5 removed clearLoadError and pageScaleOf (four cases).
+  assert.equal(pureSuite.cases.length, 41);
   let refused = 0;
   for (const c of pureSuite.cases) {
     let outcome: unknown;
@@ -347,7 +351,8 @@ test('all current pure inputs invoke shipping functions with exactly eight named
   });
 });
 test('current state transitions and full scale projection fields replace cached PAGE_SCALE', () => {
-  const empty = { pending: 0, calibration: null, reports: [], loadErrors: {}, localViewports: {} };
+  // Upstream 8bc6546e5 removed loadErrors with the viewport mirror.
+  const empty = { pending: 0, calibration: null, reports: [], localViewports: {} };
   assert.deepEqual(pure('initial-state'), empty);
   assert.deepEqual(pure('reduce-pending-up'), { ...empty, pending: 2 });
   assert.deepEqual(pure('reduce-pending-floors-at-zero'), empty);
@@ -406,27 +411,14 @@ test('current state transitions and full scale projection fields replace cached 
   });
   for (const entry of pureSuite.cases.filter((c) => c.fn === 'selectPageScale'))
     assert.deepEqual(Object.keys(entry.args[1] as object), ['width', 'height']);
-  assert.deepEqual(pure('page-scale-loading'), {
-    measure: null,
-    source: 'default',
-    ready: false,
-    persistent: true,
-  });
-  const e = { code: 'RuntimeUnavailable', message: 'offline' };
-  assert.deepEqual(pure('page-scale-failed-known'), {
-    measure: FEET,
-    source: 'owned',
-    ready: true,
-    persistent: true,
-    error: e,
-  });
-  assert.deepEqual(pure('page-scale-failed-empty'), {
-    measure: null,
-    source: 'default',
-    ready: false,
-    persistent: false,
-    error: e,
-  });
+  // pageScaleOf and its three read states went with the mirror (upstream 8bc6546e5).
+  for (const name of ['page-scale-loading', 'page-scale-failed-known', 'page-scale-failed-empty'])
+    assert.equal(
+      pureSuite.cases.some((c) => c.name === name),
+      false,
+    );
+  assert.equal('pageScaleOf' in pureSuite.functions, false);
+  assert.equal('clearLoadError' in pureSuite.functions, false);
 });
 test('pure scale units precision fractions presets and explicit user units remain meaningful', () => {
   const imperial = pure('default-measure-imperial-user-unit') as typeof FEET;
@@ -490,47 +482,30 @@ test('loaded scales read real labels geometry foreign and unavailable results', 
   });
   assert.deepEqual(value(foreign, 8), { unavailable: 'foreign-measure' });
 });
-test('mirrors retry failed reads preserve confirmed data through stale epochs and drop removed pages', async () => {
-  const t = (await run('viewport-reads-fail-refresh-and-rehydrate')).trace;
-  assert.deepEqual(value(t, 2), {
-    measure: null,
-    source: 'default',
-    ready: false,
-    persistent: true,
-    error: { code: 'Unknown', message: 'offline' },
-  });
-  assert.deepEqual(value(t, 5), {
-    measure: METRES,
-    source: 'owned',
-    ready: true,
-    persistent: true,
-  });
-  assert.deepEqual(value(t, 7), value(t, 5));
-  assert.deepEqual(value(t, 10), { measure: FEET, source: 'owned', ready: true, persistent: true });
-  const e = (await run('refresh-epochs')).trace;
-  assert.deepEqual(value(e, 6), {
-    measure: null,
-    source: 'default',
-    ready: false,
-    persistent: true,
-  });
-  assert.deepEqual(value(e, 8), { measure: FEET, source: 'owned', ready: true, persistent: true });
-  assert.deepEqual(value(e, 12), value(e, 8));
-  assert.deepEqual(value(e, 14), {
-    measure: FEET,
-    source: 'owned',
-    ready: true,
-    persistent: true,
-    error: { code: 'Unknown', message: 'gone' },
-  });
+// Upstream 8bc6546e5 removed the viewports mirror, its read errors and its epochs: a page's
+// scale rides on its layout. These pin what replaced them.
+test('layouts carry scales: events move them, a desync re-reads them, removed pages drop', async () => {
+  const t = (await run('scale-events-move-the-layout')).trace;
+  // Known at open, with no read of the viewports.
+  assert.deepEqual(value(t, 2), { measure: METRES, source: 'owned', ready: true, persistent: true });
+  assert.equal(value(t, 3), true);
+  assert.equal(calls(t, 'page.measure.listViewports').length, 0);
+  // Another session's pages.scaleSet moves page 1.
+  assert.deepEqual(value(t, 6), { measure: FEET, source: 'owned', ready: true, persistent: true });
+  assert.equal(value(t, 7), false);
+  // stream.desynced reads the page list again (a4805a492) and takes page 2's scale from it.
+  assert.deepEqual(
+    t[8]!.engine.map((e) => (e as { path: string }).path),
+    ['pages.list', 'annotations.list'],
+  );
+  assert.deepEqual(value(t, 9), { measure: METRES, source: 'owned', ready: true, persistent: true });
+  // document.versioned and a layout with the same scales change neither page's.
+  assert.deepEqual(value(t, 12), value(t, 6));
+  assert.deepEqual(value(t, 13), value(t, 9));
   const removed = (await run('pages-inserted-and-removed')).trace;
-  assert.deepEqual(value(removed, 3), {
-    measure: FEET,
-    source: 'owned',
-    ready: true,
-    persistent: true,
-  });
-  assert.deepEqual(value(removed, 8), {
+  assert.deepEqual(value(removed, 3), { measure: FEET, source: 'owned', ready: true, persistent: true });
+  assert.deepEqual(value(removed, 5), value(removed, 3));
+  assert.deepEqual(value(removed, 7), {
     measure: null,
     source: 'default',
     ready: false,
@@ -723,7 +698,7 @@ test('registered imperial and custom defaults preserve explicit presets and user
   assert.equal(preset.measure.x[0]?.conversion, 0.1111111119389534);
   assert.deepEqual(value(c, 8), value(c, 2));
 });
-test('scale changes remeasure actual refs skip locked records and clear back to mirrored default', async () => {
+test('scale changes remeasure actual refs skip locked records and clear back to the default', async () => {
   const t = (await run('set-scale-on-one-page')).trace;
   assert.equal(value(t, 7), true);
   assert.equal(value(t, 9), false);
@@ -738,22 +713,25 @@ test('scale changes remeasure actual refs skip locked records and clear back to 
     },
   ]);
   assert.deepEqual(value(t, 11), settlement(t, 6));
+  // Upstream 8bc6546e5: each scale change is one change: its pages.setScale op, then the
+  // re-measure's updates; recalculate false writes the scale alone.
   const writes = calls(t, 'apply');
-  assert.equal(writes.length, 2);
-  for (const [i, write] of writes.entries()) {
-    const change = write.args[0] as { ops: unknown[] };
-    assert.deepEqual(change.ops, [
-      {
-        type: 'annotations.update',
-        ref: objRef(1),
-        patch: { subtype: 'line', measure: i === 0 ? FEET : value<PageScale>(t, 15).measure },
-      },
-    ]);
-  }
-  assert.deepEqual(
-    calls(t, 'page.measure.setScale').map((c) => c.args),
-    [[FEET], [METRES], [null]],
-  );
+  assert.equal(writes.length, 3);
+  const opsOf = (i: number) => (writes[i]!.args[0] as { ops: unknown[] }).ops;
+  assert.deepEqual(opsOf(0), [
+    { type: 'pages.setScale', pages: [pr(1)], measure: FEET },
+    { type: 'annotations.update', ref: objRef(1), patch: { subtype: 'line', measure: FEET } },
+  ]);
+  assert.deepEqual(opsOf(1), [{ type: 'pages.setScale', pages: [pr(1)], measure: METRES }]);
+  assert.deepEqual(opsOf(2), [
+    { type: 'pages.setScale', pages: [pr(1)], measure: null },
+    {
+      type: 'annotations.update',
+      ref: objRef(1),
+      patch: { subtype: 'line', measure: value<PageScale>(t, 15).measure },
+    },
+  ]);
+  assert.equal(calls(t, 'page.measure.setScale').length, 0);
   assert.deepEqual(value(t, 13), {
     measure: METRES,
     source: 'owned',
@@ -765,18 +743,6 @@ test('scale changes remeasure actual refs skip locked records and clear back to 
   assert.equal(reset.ready, true);
   assert.equal(reset.persistent, true);
   assert.deepEqual(value(t, 19), settlement(t, 14));
-  const responses = scenario('set-scale-on-one-page').engine!.documents!.a!.responses!.filter(
-    (r) => r.path === 'apply',
-  );
-  assert.equal(responses.length, 2);
-  for (const [i, response] of responses.entries()) {
-    assert.equal(response.events?.length, 1);
-    const event = response.events![0]!;
-    assert.ok(event.type === 'annotations.updated');
-    assert.equal(event.appearance.changed, true);
-    assert.deepEqual(event.meta.changedRefs, [objRef(1)]);
-    assert.equal(event.origin.transaction?.id, (writes[i]!.args[1] as { opId: string }).opId);
-  }
 });
 test('multi-page strict preflight and tolerant scale errors remain separate channels', async () => {
   const t = (await run('set-scale-on-several-pages')).trace;
@@ -790,6 +756,8 @@ test('multi-page strict preflight and tolerant scale errors remain separate chan
       failed: [],
     })),
   );
+  // Upstream 8bc6546e5: a page's report serializes the plugin error its refusal became, which
+  // keeps no engine code.
   assert.deepEqual(
     settlement(t, 8),
     [1, 2].map((page) => ({
@@ -798,7 +766,7 @@ test('multi-page strict preflight and tolerant scale errors remain separate chan
       skipped: [],
       failed: [],
       scaleError: {
-        code: 'InvalidArg',
+        code: 'Unknown',
         message: 'Only rectilinear measures can be authored',
       },
     })),
@@ -814,12 +782,17 @@ test('multi-page strict preflight and tolerant scale errors remain separate chan
       { unit: 'mm', conversion: 304.8, precision: 100, fraction: 'decimal' },
     ]);
   }
-  assert.equal(calls(t, 'apply').length, 2);
-  assert.equal(calls(t, 'page.measure.setScale').length, 4);
+  // One change per call, however many pages it covers.
+  const writes = calls(t, 'apply');
+  assert.equal(writes.length, 2);
+  const first = (writes[0]!.args[0] as { ops: { type: string; pages?: unknown }[] }).ops[0]!;
+  assert.deepEqual([first.type, first.pages], ['pages.setScale', [pr(1), pr(2)]]);
+  assert.equal(calls(t, 'page.measure.setScale').length, 0);
 });
 test('preflight refusals recover to valid authored formats origin CYX and calibration ratio', async () => {
   const t = (await run('set-scale-preflight')).trace;
-  assert.equal(calls(t, 'page.measure.setScale').length, 3);
+  // Three changes reach the engine, each one apply (upstream 8bc6546e5).
+  assert.equal(calls(t, 'apply').length, 3);
   const first = value<PageScale>(t, 10);
   assert.ok(first.measure?.subtype === 'rectilinear');
   assert.deepEqual(first.measure.distance, [{ unit: 'm', conversion: 1 }]);
@@ -855,25 +828,30 @@ test('unit changes preserve base conversions imported fractions and valid recove
   assert.deepEqual(s(14).distance, FEET_INCHES.distance);
   assert.equal(s(14).area[0]?.unit, 'ha');
   assert.equal(s(19).ratio, '1:50');
-  assert.equal(calls(t, 'page.measure.setScale').length, 9);
+  assert.equal(calls(t, 'apply').length, 9);
+  assert.equal(calls(t, 'page.measure.setScale').length, 0);
 });
-test('engine writes serialize per page recover after refusal and re-read confirmed viewports', async () => {
+test('engine writes land in order, recover after a refusal and take the layout the engine answers', async () => {
   const t = (await run('service-writes-and-foreign-scales')).trace;
-  assert.equal(calls(t.slice(0, 8), 'page.measure.setScale').length, 1);
+  // A foreign scale can't take a unit or precision change: nothing reaches the engine for them.
+  assert.equal(calls(t.slice(0, 5), 'apply').length, 0);
+  // Upstream 8bc6546e5: three changes, each one apply, in order; the refused one changes nothing.
   assert.deepEqual(
-    calls(t, 'page.measure.setScale').map((c) => c.args),
-    [[FEET], [METRES], [METRES]],
+    calls(t, 'apply').map((c) => (c.args[0] as { ops: unknown[] }).ops),
+    [FEET, METRES, METRES].map((measure) => [
+      { type: 'pages.setScale', pages: [pr(1)], measure },
+    ]),
   );
-  assert.deepEqual(value(t, 9), {
+  assert.deepEqual(value(t, 8), {
     measure: METRES,
     source: 'owned',
     ready: true,
     persistent: true,
   });
-  assert.deepEqual(value(t, 10), [
+  assert.deepEqual(value(t, 9), [
     { page: pr(1), scale: METRES, updated: [], skipped: [], failed: [] },
   ]);
-  assert.equal(calls(t, 'page.measure.listViewports').length, 4);
+  assert.equal(calls(t, 'page.measure.listViewports').length, 0);
 });
 test('authority refuses before writes and throwing listeners retain successful scale changes', async () => {
   const denied = (await run('without-authority')).trace;
@@ -884,7 +862,8 @@ test('authority refuses before writes and throwing listeners retain successful s
   assert.equal(value(denied, 8), 'pointer');
   assert.equal(value(denied, 10), false);
   const listener = (await run('listener-throws')).trace;
-  assert.equal(calls(listener, 'page.measure.setScale').length, 2);
+  assert.equal(calls(listener, 'apply').length, 2);
+  assert.equal(calls(listener, 'page.measure.setScale').length, 0);
   assert.deepEqual(
     listener.flatMap((t) => t.callbacks).map((c) => c.fn),
     ['loud'],
@@ -895,11 +874,16 @@ test('authority refuses before writes and throwing listeners retain successful s
 });
 test('closing and page deletion settle exact channels then a fresh document recovers', async () => {
   const deleted = (await run('page-removed-while-a-change-waits')).trace;
-  assert.equal(calls(deleted, 'page.measure.setScale').length, 1);
+  // Upstream 8bc6546e5: the change waits on the annotations' load, then is one apply, which the
+  // engine refuses for the page it removed; no page write of its own.
+  assert.equal(calls(deleted, 'page.measure.setScale').length, 0);
   assert.equal(calls(deleted, 'apply').length, 1);
   assert.equal(value(deleted, 6), false);
+  assert.deepEqual(value(deleted, 7), []);
   const closed = (await run('close-mid-flight')).trace;
-  assert.equal(value(closed, 5), true);
+  // Both changes were sent at once; the close refuses them on the queue.
+  assert.equal(calls(closed, 'apply').length, 2);
+  assert.equal(value(closed, 4), true);
   assert.deepEqual(
     settlement(closed, 2),
     [1, 2].map((page) => ({
@@ -909,7 +893,7 @@ test('closing and page deletion settle exact channels then a fresh document reco
       failed: [],
       scaleError: {
         code: 'Unknown',
-        message: 'document instance a#1 was closed',
+        message: 'the document closed',
       },
     })),
   );
@@ -925,15 +909,15 @@ test('closing and page deletion settle exact channels then a fresh document reco
     [],
   );
 });
-test('refused annotation creation rolls back and a loading scale recovers without creating early', async () => {
+// The deferred scale read this test also covered went with upstream 8bc6546e5: a page's scale is
+// known when the document opens, so a create never waits for it.
+test('refused annotation creation rolls back after three confirmed creates', async () => {
   const t = (await run('create-measurement')).trace;
   assert.equal(t.flatMap((t) => t.callbacks).filter((c) => c.fn === 'created').length, 3);
-  const last = t.at(-1)!;
-  assert.ok(last.outcome && 'returned' in last.outcome);
-  assert.equal(last.outcome.returned, true);
   const getIndex = scenario('create-measurement').steps.findIndex(
     (s) => s.op === 'call' && s.method === 'get',
   );
+  assert.equal(getIndex, t.length - 1);
   assert.equal(value(t, getIndex), null);
   assert.equal(calls(t, 'apply').length, 4);
 });
@@ -969,7 +953,7 @@ test('all authored persistent scale results carry complete matching mutation pro
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
-test('the complete original B3 archive and all 61 measurement mappings remain exact', async () => {
+test('the complete original B3 archive, its 61 measurement mappings and the 2026-11-12 re-accounting remain exact', async () => {
   const history = new URL('../historical/task-12b2b3/', import.meta.url);
   const digest = (data: string | Uint8Array) => createHash('sha256').update(data).digest('hex');
   const hashes = JSON.parse(
@@ -1001,26 +985,100 @@ test('the complete original B3 archive and all 61 measurement mappings remain ex
       evidence: string[];
       reason: string;
     }[];
-    additions: { name: string }[];
+    additions: { name: string; file: string; inputSha256: string }[];
   };
   assert.deepEqual(
     [accounting.original, accounting.current, accounting.added, accounting.mappings.length],
     [61, 64, 3, 61],
   );
-  const current = suites.flatMap((s) =>
-    s.cases.map((c) => ({ file: s.file, name: c.name, input: canonical(c) })),
+  // The 2026-11-12 catch-up (upstream c7f8d75ff, 8bc6546e5) rewrote the suite. task-12b2b3-i's
+  // accounting still pins the 64 cases it left current; the catch-up's accounting maps each of
+  // those to the case that carries it now, or retires it with its reason.
+  const catchUp = JSON.parse(
+    await readFile(
+      new URL('../historical/catchup-2026-11-12-measurement/accounting.json', import.meta.url),
+      'utf8',
+    ),
+  ) as {
+    previousAccounting: { path: string; sha256: string };
+    previous: number;
+    current: number;
+    unchanged: number;
+    rewritten: number;
+    retired: number;
+    added: number;
+    mappings: {
+      before: { file: string; name: string; inputSha256: string };
+      after: { file: string; name: string; inputSha256: string } | null;
+      disposition: 'unchanged' | 'rewritten' | 'retired';
+      reason: string;
+      upstream: string[];
+    }[];
+    additions: { file: string; name: string; inputSha256: string; reason: string; upstream: string[] }[];
+  };
+  assert.equal(
+    digest(
+      await readFile(new URL('../historical/task-12b2b3-i/accounting.json', import.meta.url)),
+    ),
+    catchUp.previousAccounting.sha256,
   );
-  assert.equal(current.length, 64);
-  assert.equal(new Set(current.map((c) => c.file + ':' + c.name)).size, 64);
+  const previous = [
+    ...accounting.mappings.map((m) => m.after),
+    ...accounting.additions,
+  ].map(({ file, name, inputSha256 }) => ({ file, name, inputSha256 }));
+  assert.deepEqual(
+    catchUp.mappings.map((m) => m.before),
+    previous,
+  );
   for (const row of accounting.mappings) {
-    const before = originals.find((c) => c.file === row.before.file && c.name === row.before.name),
-      after = current.find((c) => c.file === row.after.file && c.name === row.after.name);
-    assert.ok(before && after);
+    const before = originals.find((c) => c.file === row.before.file && c.name === row.before.name);
+    assert.ok(before);
     assert.equal(row.before.inputSha256, before.inputSha256);
-    assert.equal(row.after.inputSha256, digest(JSON.stringify(after.input)));
     assert.ok(row.evidence.length && row.reason);
     assert.equal(row.task11InputDrift, false);
   }
+  const current = suites.flatMap((s) =>
+    s.cases.map((c) => ({ file: s.file, name: c.name, input: canonical(c) })),
+  );
+  assert.equal(current.length, 59);
+  assert.equal(new Set(current.map((c) => c.file + ':' + c.name)).size, 59);
+  const mapped = new Set<string>();
+  for (const row of catchUp.mappings) {
+    assert.ok(row.reason);
+    if (!row.after) {
+      assert.equal(row.disposition, 'retired');
+      assert.ok(row.upstream.length);
+      continue;
+    }
+    const after = current.find((c) => c.file === row.after!.file && c.name === row.after!.name);
+    assert.ok(after, row.after.name);
+    assert.equal(row.after.inputSha256, digest(JSON.stringify(after.input)));
+    assert.equal(
+      row.disposition,
+      row.after.inputSha256 === row.before.inputSha256 ? 'unchanged' : 'rewritten',
+    );
+    assert.equal(mapped.has(row.after.file + ':' + row.after.name), false);
+    mapped.add(row.after.file + ':' + row.after.name);
+  }
+  for (const row of catchUp.additions) {
+    const after = current.find((c) => c.file === row.file && c.name === row.name);
+    assert.ok(after && row.reason && row.upstream.length, row.name);
+    assert.equal(row.inputSha256, digest(JSON.stringify(after.input)));
+    assert.equal(mapped.has(row.file + ':' + row.name), false);
+    mapped.add(row.file + ':' + row.name);
+  }
+  assert.equal(mapped.size, 59);
+  assert.deepEqual(
+    [
+      catchUp.previous,
+      catchUp.current,
+      catchUp.unchanged,
+      catchUp.rewritten,
+      catchUp.retired,
+      catchUp.added,
+    ],
+    [64, 59, 36, 22, 6, 1],
+  );
   assert.deepEqual(
     accounting.additions.map((c) => c.name),
     ['page-scale-loading', 'page-scale-failed-known', 'page-scale-failed-empty'],
