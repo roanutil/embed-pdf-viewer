@@ -233,3 +233,56 @@ fn annotations_copy() {
 fn forms_copy() {
     replay_file("form-copy.json", "document.apply.forms.copy", 8);
 }
+
+/// `kinds.json`: the version each change kind arrived in, which kinds an
+/// older or newer side lacks, and `lacksWhatArrivedIn` itself (a4805a492).
+#[test]
+fn every_change_kind_has_the_version_it_arrived_in() {
+    use epdf_engine::features::changes::kinds::{
+        API_VERSION, CHANGE_KIND_SINCE, CHANGE_KINDS, change_kind_since, change_kinds_unknown_to,
+        lacks_what_arrived_in,
+    };
+    let path = test_support::corpus::vectors_dir("changes").join("kinds.json");
+    let text = std::fs::read_to_string(&path).expect("kinds.json");
+    let vectors: Value = serde_json::from_str(&text).expect("kinds.json");
+    assert_eq!(vectors["schemaVersion"], json!(SCHEMA_VERSION));
+    assert_eq!(vectors["kind"], json!("wire.changeKinds"));
+    assert_eq!(vectors["apiVersion"], json!(API_VERSION), "the API version moved");
+
+    let since = vectors["since"].as_object().expect("since");
+    let kinds: Vec<&str> = since.keys().map(String::as_str).collect();
+    let mut ours = CHANGE_KINDS.to_vec();
+    let mut theirs = kinds.clone();
+    ours.sort_unstable();
+    theirs.sort_unstable();
+    assert_eq!(ours, theirs, "the change kinds moved");
+    for (kind, version) in since {
+        assert_eq!(change_kind_since(kind), version, "{kind}");
+    }
+    let rows: Map<String, Value> =
+        CHANGE_KIND_SINCE.iter().map(|(kind, since)| ((*kind).to_owned(), json!(since))).collect();
+    assert_eq!(Value::Object(rows), vectors["rows"]);
+
+    let asked: Vec<&str> =
+        kinds.iter().copied().chain(["pages.someKindFromANewerServer"]).collect();
+    for row in vectors["unknownTo"].as_array().expect("unknownTo") {
+        let version = row["version"].as_str();
+        let unknown = change_kinds_unknown_to(version, asked.iter().copied());
+        let mut unknown: Vec<&str> = unknown;
+        let mut expected: Vec<&str> =
+            row["unknown"].as_array().unwrap().iter().map(|k| k.as_str().unwrap()).collect();
+        // The kinds are asked in the vector's object order, which a map need
+        // not keep; the set is what is compared.
+        unknown.sort_unstable();
+        expected.sort_unstable();
+        assert_eq!(unknown, expected, "unknown to {version:?}");
+    }
+    for row in vectors["lacks"].as_array().expect("lacks") {
+        let (version, since) = (row["version"].as_str(), row["since"].as_str());
+        assert_eq!(
+            json!(lacks_what_arrived_in(version, since)),
+            row["lacks"],
+            "{version:?} lacks {since:?}"
+        );
+    }
+}

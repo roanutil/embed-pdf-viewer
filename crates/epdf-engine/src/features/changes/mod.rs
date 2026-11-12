@@ -55,6 +55,7 @@ pub mod fields;
 pub mod fingerprint;
 pub mod forms;
 pub mod item;
+pub mod kinds;
 pub mod ledger;
 pub mod metadata;
 pub mod objects;
