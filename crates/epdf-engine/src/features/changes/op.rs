@@ -119,6 +119,12 @@ pub enum ChangeOp {
     /// `InvalidArg`, as `PagesMutator.rotate` refuses it.
     #[serde(rename = "pages.rotate")]
     PagesRotate { pages: Vec<PageRef>, rotation: serde_json::Number },
+    /// Every page gets `measure` as its own scale: the one viewport the
+    /// engine writes, over the visible page; `null` removes it. Other
+    /// viewports stay as they are. `measure` is in page space (its origin):
+    /// each page takes it on its own visible box (c7f8d75ff).
+    #[serde(rename = "pages.setScale")]
+    PagesSetScale { pages: Vec<PageRef>, measure: Option<serde_json::Value> },
     /// The pages go together, in the order given, to `position`.
     #[serde(rename = "pages.reorder")]
     PagesReorder { pages: Vec<PageRef>, position: crate::features::pages_write::PagePosition },
@@ -583,6 +589,7 @@ pub fn resolve_payloads(change: &mut Change, payloads: &[Vec<u8>]) -> Result<(),
             | ChangeOp::AnnotationsDelete { .. }
             | ChangeOp::AnnotationsReorder { .. }
             | ChangeOp::PagesRotate { .. }
+            | ChangeOp::PagesSetScale { .. }
             | ChangeOp::PagesReorder { .. }
             | ChangeOp::PagesDelete { .. }
             | ChangeOp::PagesInsertBlank { .. }
@@ -645,6 +652,7 @@ impl ChangeOp {
             Self::AnnotationsDelete { .. } => "annotations.delete",
             Self::AnnotationsReorder { .. } => "annotations.reorder",
             Self::PagesRotate { .. } => "pages.rotate",
+            Self::PagesSetScale { .. } => "pages.setScale",
             Self::PagesReorder { .. } => "pages.reorder",
             Self::PagesDelete { .. } => "pages.delete",
             Self::PagesInsertBlank { .. } => "pages.insertBlank",
@@ -769,6 +777,7 @@ pub fn parse_op(at: usize, op: &serde_json::Value) -> Result<ChangeOp, EngineErr
         | ChangeOp::AnnotationsDelete { .. }
         | ChangeOp::AnnotationsReorder { .. }
         | ChangeOp::PagesRotate { .. }
+        | ChangeOp::PagesSetScale { .. }
         | ChangeOp::PagesReorder { .. }
         | ChangeOp::PagesDelete { .. }
         | ChangeOp::PagesInsertBlank { .. }
@@ -967,6 +976,7 @@ mod tests {
             "annotations.delete",
             "annotations.reorder",
             "pages.rotate",
+            "pages.setScale",
             "pages.reorder",
             "pages.delete",
             "pages.insertBlank",

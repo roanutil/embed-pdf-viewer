@@ -116,6 +116,19 @@ pub enum ChangeItem {
         layout: serde_json::Value,
         meta: MutationMeta,
     },
+    /// `PageScaleResult`, with the pages and the scale each has now
+    /// (`null`: none), in page space: the op's own, or the step's measured
+    /// on its first page.
+    #[serde(rename = "pages.setScale")]
+    PagesSetScale {
+        pages: Vec<PageRef>,
+        measure: Option<serde_json::Value>,
+        /// The first page.
+        page: PageRef,
+        /// The new `PageListSnapshot`, whose pages carry their viewports.
+        layout: serde_json::Value,
+        meta: MutationMeta,
+    },
     /// `PageReorderResult`: the pages that moved, in their new order.
     #[serde(rename = "pages.reorder")]
     PagesReorder { pages: Vec<PageRef>, layout: serde_json::Value, meta: MutationMeta },
@@ -345,6 +358,7 @@ impl ChangeItem {
             | Self::AnnotationsImport { meta, .. }
             | Self::AnnotationsRestore { meta, .. } => &meta.meta,
             Self::PagesRotate { meta, .. }
+            | Self::PagesSetScale { meta, .. }
             | Self::PagesReorder { meta, .. }
             | Self::PagesDelete { meta, .. }
             | Self::PagesInsertBlank { meta, .. }
@@ -392,6 +406,7 @@ impl ChangeItem {
             | Self::AnnotationsImport { meta, .. }
             | Self::AnnotationsRestore { meta, .. } => &mut meta.meta,
             Self::PagesRotate { meta, .. }
+            | Self::PagesSetScale { meta, .. }
             | Self::PagesReorder { meta, .. }
             | Self::PagesDelete { meta, .. }
             | Self::PagesInsertBlank { meta, .. }
@@ -512,6 +527,11 @@ impl ChangeItem {
                 "pages.rotated",
                 serde_json::json!({ "pages": pages, "rotation": rotation, "layout": layout,
                     "meta": to_value(meta)? }),
+            ),
+            Self::PagesSetScale { pages, measure, page, layout, meta } => (
+                "pages.scaleSet",
+                serde_json::json!({ "pages": pages, "measure": measure, "page": page,
+                    "layout": layout, "meta": to_value(meta)? }),
             ),
             Self::PagesReorder { pages, layout, meta } => (
                 "pages.reordered",

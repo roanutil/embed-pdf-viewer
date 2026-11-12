@@ -1412,10 +1412,15 @@ impl Host {
                 .on_page(&key, body, |page| value(&f::geometry::read_page_geometry(page, cancel)?)),
             // `{page, viewports}`, the page as the request named it; the
             // boundary puts each viewport in page space on it.
-            "measure.viewports" => self.on_page(&key, body, |page| {
-                let viewports = f::measure::read_viewports(page.view(), cancel)?;
-                Ok(serde_json::json!({ "page": body.get("page"), "viewports": viewports }))
-            }),
+            // `MeasureReader.viewports`: read from the page dictionary, so
+            // no page is loaded (c7f8d75ff).
+            "measure.viewports" => {
+                let pon = page_field(body)?;
+                let owned = self.sessions.session(&key)?.document()?;
+                let index = owned.page_index(pon)?;
+                let viewports = f::measure::read_viewports(owned.document(), index, cancel)?;
+                Ok(ok(serde_json::json!({ "page": body.get("page"), "viewports": viewports })))
+            }
             // The boundary has put `options.target` in the file's
             // coordinates, and puts the answer's `area` back in page space.
             "pages.render" | "pages.renderEncoded" => {
@@ -2185,7 +2190,6 @@ impl Host {
             }
 
             "measure.setScale" => {
-                use crate::access::{DocumentAccess, PageAccess};
                 let pon = page_field(body)?;
                 // `PdfMeasure | null`: `null` clears. An absent `measure` is
                 // refused, as `assertWritableMeasure(undefined)` refuses it in
@@ -2208,11 +2212,9 @@ impl Host {
                         {
                             let owned = session.document()?;
                             let index = owned.page_index(pon)?;
-                            let page = owned.page(pon)?;
                             f::measure::set_scale(
                                 owned.document(),
                                 index,
-                                page.view(),
                                 measure.as_ref(),
                                 cancel,
                             )?;
@@ -2221,8 +2223,12 @@ impl Host {
                             Vec::new(),
                             &session.write_stamp()?,
                         );
+                        // The new layout, whose pages carry their viewports
+                        // (c7f8d75ff).
+                        let layout = f::pages::list_pages(session.document()?.document(), cancel)?;
                         Ok(serde_json::json!({
                             "page": crate::identity::PageRef::new(pon),
+                            "layout": value(&layout)?,
                             "meta": value(&meta)?,
                         }))
                     },
@@ -3451,6 +3457,7 @@ fn strip_item(
         // The page ops have no single verb (119685ea4): only
         // `document.apply` runs them, and it answers the items whole.
         ChangeItem::PagesRotate { .. }
+        | ChangeItem::PagesSetScale { .. }
         | ChangeItem::PagesReorder { .. }
         | ChangeItem::PagesDelete { .. }
         | ChangeItem::PagesInsertBlank { .. }

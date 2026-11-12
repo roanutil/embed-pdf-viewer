@@ -38,6 +38,21 @@ pub fn page_layout_of(
             })
         })
         .transpose()?;
+    // Its viewports are on the page itself.
+    let viewports = layout
+        .viewports
+        .map(|viewports| {
+            super::measure::page_viewports_of(viewports.into(), layout.boxes.crop).and_then(
+                |converted| match converted {
+                    serde_json::Value::Array(items) => Ok(items),
+                    _ => Err(EngineError::with_message(
+                        EngineErrorCode::Unknown,
+                        "page viewports did not convert to a list",
+                    )),
+                },
+            )
+        })
+        .transpose()?;
     Ok(PageLayout::<PageCoordinates> {
         index: layout.index,
         page_object_number: layout.page_object_number,
@@ -49,6 +64,7 @@ pub fn page_layout_of(
         boxes: page_space_boxes_of(layout.boxes),
         pdf_crop_box: layout.pdf_crop_box,
         actions,
+        viewports,
     })
 }
 
@@ -117,6 +133,7 @@ mod tests {
             tab_order: None,
             boxes,
             pdf_crop_box: boxes.crop,
+            viewports: None,
             actions: goes_to.map(|to| PageActions {
                 open: None,
                 close: Some(ActionTree {

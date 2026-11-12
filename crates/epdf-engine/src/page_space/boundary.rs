@@ -430,7 +430,8 @@ pub fn result_in_page_space(
 
         // The new layout (`pageListOf`), in the result and in the event that
         // carries it.
-        K::PagesSetName | K::PagesRemoveName => {
+        // `measure.setScale` answers the layout too since c7f8d75ff.
+        K::PagesSetName | K::PagesRemoveName | K::MeasureSetScale => {
             convert_result(response, |mut answer: serde_json::Value| {
                 for at in ["/result/layout", "/event/layout"] {
                     if let Some(layout) = answer.pointer_mut(at) {
@@ -549,7 +550,6 @@ pub fn result_in_page_space(
         | K::FormsReorderWidgets
         | K::FormsRepair
         | K::LayerClose
-        | K::MeasureSetScale
         | K::MetadataRead
         | K::MetadataReadCustom
         | K::MetadataUpdate
@@ -687,6 +687,9 @@ pub fn change_op_in_file_space(
         | ChangeOp::AttachmentsDelete { .. }
         | ChangeOp::AnnotationsReorder { .. }
         | ChangeOp::PagesRotate { .. }
+        // Each page takes the scale on its own visible box as it's written
+        // (`scaleChanges.ts`).
+        | ChangeOp::PagesSetScale { .. }
         | ChangeOp::PagesReorder { .. }
         | ChangeOp::PagesDelete { .. }
         | ChangeOp::PagesInsertBlank { .. }
@@ -782,6 +785,15 @@ pub fn change_item_in_page_space(
             layout: page_layout_value(layout)?,
             meta,
         }),
+        ChangeItem::PagesSetScale { pages, measure, page, layout, meta } => {
+            Ok(ChangeItem::PagesSetScale {
+                pages,
+                measure,
+                page,
+                layout: page_layout_value(layout)?,
+                meta,
+            })
+        }
         ChangeItem::PagesReorder { pages, layout, meta } => {
             Ok(ChangeItem::PagesReorder { pages, layout: page_layout_value(layout)?, meta })
         }

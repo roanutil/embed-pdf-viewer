@@ -62,4 +62,5 @@ pub mod op;
 pub mod outline;
 pub mod pages;
 pub mod record;
+pub mod scale;
 pub mod transaction;

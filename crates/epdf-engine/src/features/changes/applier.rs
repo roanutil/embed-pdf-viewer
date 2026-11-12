@@ -448,6 +448,9 @@ fn run_op(ctx: &mut ChangeContext<'_>, op: &ChangeOp, at: usize) -> Result<Done,
         ChangeOp::PagesRotate { pages, rotation } => {
             super::pages::rotate_pages(ctx, pages, rotation)
         }
+        ChangeOp::PagesSetScale { pages, measure } => {
+            super::scale::set_page_scales(ctx, pages, measure.as_ref())
+        }
         ChangeOp::PagesReorder { pages, position } => {
             super::pages::reorder_pages(ctx, pages, position)
         }
@@ -560,6 +563,7 @@ fn run_step(ctx: &mut ChangeContext<'_>, step: &ReverseStep) -> Result<Done, Eng
         ReverseStep::AnnotationRestore(step) => super::annotations::restore_annotations(ctx, step),
         ReverseStep::AnnotationReorder(step) => super::annotations::reorder_back(ctx, step),
         ReverseStep::PagesRotate(step) => super::pages::rotate_pages_back(ctx, step),
+        ReverseStep::PagesSetScale(step) => super::scale::set_page_scales_back(ctx, step),
         ReverseStep::PagesReorder(step) => super::pages::reorder_pages_back(ctx, step),
         ReverseStep::PagesRestore(step) => super::pages::restore_pages(ctx, step),
         ReverseStep::PagesRemove(step) => super::pages::remove_pages(ctx, step),
