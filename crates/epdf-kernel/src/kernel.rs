@@ -1626,6 +1626,44 @@ impl Inner {
         });
         let weak = Rc::downgrade(&this);
         let s = Rc::downgrade(&session);
+        // How many events carried the engine's pages, and how many reads of them started.
+        let layouts_seen = Rc::new(Cell::new(0u64));
+        let page_reads = Rc::new(Cell::new(0u64));
+        // The stream skipped events, a page change maybe among them: read the
+        // pages again. A page event that arrives meanwhile carries pages at
+        // least as new, and only the last read counts.
+        let read_pages_again = {
+            let (weak, s) = (weak.clone(), s.clone());
+            let (layouts_seen, page_reads) = (layouts_seen.clone(), page_reads.clone());
+            move || {
+                let (Some(this), Some(session)) = (weak.upgrade(), s.upgrade()) else { return };
+                let Some(handle) = session.handle() else { return };
+                let seen = layouts_seen.get();
+                page_reads.set(page_reads.get() + 1);
+                let read = page_reads.get();
+                let list = handle.call("pages.list", None, Vec::new());
+                let (layouts_seen, page_reads) = (layouts_seen.clone(), page_reads.clone());
+                rt::spawn(async move {
+                    match list.await {
+                        Ok(snapshot) => {
+                            if session.cancel.aborted()
+                                || layouts_seen.get() != seen
+                                || page_reads.get() != read
+                            {
+                                return;
+                            }
+                            session.page_view.set_engine_pages(&snapshot);
+                            this.refresh_pages(&session);
+                        }
+                        Err(error) => {
+                            if !session.cancel.aborted() {
+                                (this.report)(&error);
+                            }
+                        }
+                    }
+                });
+            }
+        };
         let unsubscribe = handle.subscribe(Rc::new(move |event: &Value| {
             let (Some(this), Some(session)) = (weak.upgrade(), s.upgrade()) else { return };
             let tx = event.pointer("/origin/transaction");
@@ -1668,8 +1706,13 @@ impl Inner {
             // so they replace the engine's pages whole; the page view
             // replays the pending changes on top. Own and remote
             // (collaborator) mutations arrive alike.
+            // When the stream skipped events (`stream.desynced`), the list is read again.
             if let Some(layout) = crate::page_view::layout_from_event(event) {
+                layouts_seen.set(layouts_seen.get() + 1);
                 session.page_view.set_engine_pages(layout);
+            }
+            if event["type"] == "stream.desynced" {
+                read_pages_again();
             }
             session.page_view.fold(event);
             this.refresh_pages(&session);
