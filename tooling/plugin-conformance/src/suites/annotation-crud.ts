@@ -2,6 +2,15 @@
 import type { ScenarioCase } from '../scenario';
 import type { Suite } from '../vectors';
 import { annotationAfter } from '../../../../packages/core/annotation/src/record';
+import { copiesOf, type AnnotationRecords } from '../../../../packages/plugin/annotation/src/sync/records';
+import {
+  annotationImportFacts,
+  annotationKey,
+  type Annotation,
+  type ChangeOp,
+  type DocumentEvent,
+} from '@embedpdf/engine-core/runtime';
+import type { ResponseSpec } from '../fake-engine';
 import {
   scenario,
   call,
@@ -29,6 +38,8 @@ import {
   advance,
   doc,
   PNG,
+  operationAt,
+  LOCAL,
 } from './annotation-live-fixtures';
 const box = { x: 100, y: 100, width: 100, height: 100 };
 const seed = [
@@ -44,6 +55,70 @@ const after = (n: number, patch: Parameters<typeof annotationAfter>[1]) =>
 const select = (...refs: ReturnType<typeof objRef>[]) => call('selection.select', [refs]);
 const draw = (tool: string, phase: string, x: number, y: number) =>
   call('createPointer', [tool, phase, pr(1), { x, y }]);
+/**
+ * The engine's answer to an `annotations.copy` op over `sources`: the copies
+ * as the plugin's own rule reads them (`copiesOf`, the engine's
+ * `planAnnotationCopies`), each with the fresh name the engine gives a copy,
+ * and one `annotations.created` per copy, as an import publishes them.
+ */
+function copyWrite(
+  n: number,
+  sources: readonly Annotation[],
+  op: Omit<Extract<ChangeOp, { type: 'annotations.copy' }>, 'type'>,
+  options: { defer?: string } = {},
+): ResponseSpec {
+  const records: AnnotationRecords = {
+    byKey: Object.fromEntries(
+      sources.map((dto) => [annotationKey(dto.ref), { dto, pictureVersion: 0 }]),
+    ),
+    order: sources.map((dto) => annotationKey(dto.ref)),
+  };
+  const made = copiesOf(records, { type: 'annotations.copy', ...op });
+  const annotations = made.map(({ copy }, at) => ({ ...copy!, nm: `copy-${n}-${at}` }));
+  const opId = operationAt(n);
+  const pages = [...new Map(annotations.map((a) => [a.page.objectNumber, a.page])).values()];
+  const meta = { affectedPages: pages, cacheDelta: null, opId, undoable: true };
+  const result = {
+    annotations,
+    refMap: made.map(({ of, ref }) => ({ from: of, to: ref })),
+    dropped: [],
+    meta,
+  };
+  // The fixture's meta names no changed pages beyond the copies'; the facts read it as an import's.
+  const events = annotationImportFacts(result as unknown as Parameters<typeof annotationImportFacts>[0]).map(
+    (fact, index): DocumentEvent => ({
+      type: 'annotations.created',
+      ...fact,
+      origin: { ...LOCAL, transaction: { id: opId, index, count: annotations.length } },
+    }),
+  );
+  return {
+    path: 'apply',
+    times: 1,
+    value: { items: [{ type: 'annotations.copy', ...result }], meta },
+    events,
+    ...(options.defer ? { defer: options.defer } : {}),
+  };
+}
+/** The deferred answer `duplicate-copies-as-one-change` settles with `settle('copy', …)`. */
+const firstCopy = (): ResponseSpec =>
+  copyWrite(
+    1,
+    copySeed(),
+    {
+      refs: [objRef(1), objRef(2), objRef(3), objRef(5)],
+      offset: { x: 10, y: 20 },
+      objectNumbers: [10001, 10002, 10003, 10004],
+    },
+    { defer: 'copy' },
+  );
+const copySeed = (): Annotation[] => [
+  square(1),
+  textNote(2),
+  textNote(3, { reply: { to: objRef(2), type: 'group' } }),
+  square(4, { locked: true }),
+  link(5, { reply: { to: objRef(1), type: 'group' } }),
+];
 const cases: ScenarioCase[] = [
   scenario(
     'create-programmatically',
@@ -466,6 +541,64 @@ const cases: ScenarioCase[] = [
         ],
         { defer: 'followup' },
       ),
+    ],
+  ),
+  scenario(
+    'duplicate-copies-as-one-change',
+    "duplicate (1481e4556): canDuplicate needs the right to create, an annotation that is here and nothing locked; isMovable is false for one that isn't here. A copy is one annotations.copy op under the object numbers its sources' places in refs are given, an attached link coming along (its copy isn't among the ones named); the copies show at once, read as creates (a reply to a copied note replies to its copy), are selected, and the engine's answer, with each copy's new name, replaces them. An empty duplicate resolves with nothing, an unknown ref rejects not-found, and code may copy a locked annotation onto another page by index.",
+    [
+      call('canDuplicate', [[objRef(1), objRef(2)]]),
+      call('canDuplicate', [[objRef(4)]]),
+      call('canDuplicate', [[]]),
+      call('isMovable', [objRef(1)]),
+      call('isMovable', [objRef(9)]),
+      call('duplicate', [[objRef(1), objRef(2), objRef(3)], { offset: { x: 10, y: 20 }, select: true }]),
+      call('list'),
+      call('selection.getSelected'),
+      settle('copy', firstCopy().value),
+      call('list'),
+      call('duplicate', [[objRef(9)]]),
+      call('duplicate', [[]]),
+      call('duplicate', [[objRef(4)], { page: 1 }]),
+      call('get', [objRef(10006, 2)]),
+    ],
+    [
+      hydrate(copySeed()),
+      firstCopy(),
+      // The unknown ref took 10005 before it was refused.
+      copyWrite(2, copySeed(), { refs: [objRef(4)], page: pr(2), objectNumbers: [10006] }),
+    ],
+  ),
+  scenario(
+    'selection-duplicate-lands-beside',
+    "selection.duplicate (1481e4556) copies the selection 10 points right and down, or left and up where a copy would leave its page, and selects the copies; selection.canDuplicate is false with nothing selected and with a locked annotation selected. A refused copy takes its copies away again.",
+    [
+      call('selection.canDuplicate'),
+      call('selection.select', [[objRef(1)]]),
+      call('selection.canDuplicate'),
+      call('selection.duplicate'),
+      call('selection.getSelected'),
+      call('selection.select', [[objRef(6)]]),
+      call('selection.duplicate'),
+      call('list'),
+      call('selection.select', [[objRef(4)]]),
+      call('selection.canDuplicate'),
+    ],
+    [
+      hydrate([
+        square(1),
+        square(4, { locked: true }),
+        square(6, {
+          box: { x: 565, y: 775, width: 30, height: 20 },
+          rect: { x: 565, y: 775, width: 30, height: 20 },
+        }),
+      ]),
+      copyWrite(1, [square(1)], {
+        refs: [objRef(1)],
+        offset: { x: 10, y: 10 },
+        objectNumbers: [10001],
+      }),
+      refused('copy refused'),
     ],
   ),
 ];
