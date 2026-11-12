@@ -116,13 +116,15 @@ pub enum StageSettingKey {
     PanFallback,
     ZoomGestures,
     TurnGestures,
+    ScrollChaining,
     ZoomBox,
     ViewUnitsPerPoint,
 }
 mirror_enum!(StageSettingKey <=> SettingKey {
     Flow, Layout, Spread, Sizing, Columns, Bounded, Padding, Gap, PageFrame, Direction,
     FitAlign, ArrivalAlign, ZoomAlign, AnchorAlign, ViewRotation, Zoom, MinZoom, MaxZoom,
-    ScrollBehavior, Interaction, PanFallback, ZoomGestures, TurnGestures, ZoomBox, ViewUnitsPerPoint,
+    ScrollBehavior, Interaction, PanFallback, ZoomGestures, TurnGestures, ScrollChaining, ZoomBox,
+    ViewUnitsPerPoint,
 });
 
 /// Grid columns: about the square root of the item count, as many as fit,
@@ -282,6 +284,9 @@ pub struct StageSettings {
     /// Whether a pinch or a zoom wheel zooms this view.
     pub zoom_gestures: bool,
     pub turn_gestures: bool,
+    /// Whether a wheel that begins where the view can't scroll further is
+    /// left to the page around the viewer.
+    pub scroll_chaining: bool,
     /// The look of the box the `zoom` tool drags.
     pub zoom_box: StageZoomBoxLook,
     pub view_units_per_point: f64,
@@ -314,6 +319,7 @@ impl TryFrom<crate::StageSettings> for StageSettings {
             pan_fallback: s.pan_fallback,
             zoom_gestures: s.zoom_gestures,
             turn_gestures: s.turn_gestures,
+            scroll_chaining: s.scroll_chaining,
             zoom_box: StageZoomBoxLook { fill: s.zoom_box.fill, stroke: s.zoom_box.stroke },
             view_units_per_point: s.view_units_per_point,
         })
@@ -347,6 +353,7 @@ impl TryFrom<StageSettings> for crate::StageSettings {
             pan_fallback: s.pan_fallback,
             zoom_gestures: s.zoom_gestures,
             turn_gestures: s.turn_gestures,
+            scroll_chaining: s.scroll_chaining,
             zoom_box: crate::ZoomBoxLook { fill: s.zoom_box.fill, stroke: s.zoom_box.stroke },
             view_units_per_point: s.view_units_per_point,
         })
@@ -401,6 +408,8 @@ pub struct StageSettingsPatch {
     #[uniffi(default = None)]
     pub zoom_gestures: Option<bool>,
     pub turn_gestures: Option<bool>,
+    #[uniffi(default = None)]
+    pub scroll_chaining: Option<bool>,
     /// The colors it names; the ones left `None` follow the accent.
     #[uniffi(default = None)]
     pub zoom_box: Option<StageZoomBoxLook>,
@@ -437,6 +446,7 @@ impl TryFrom<StageSettingsPatch> for crate::StageSettingsPatch {
             pan_fallback: p.pan_fallback,
             zoom_gestures: p.zoom_gestures,
             turn_gestures: p.turn_gestures,
+            scroll_chaining: p.scroll_chaining,
             zoom_box: p
                 .zoom_box
                 .map(|look| crate::PartialZoomBoxLook { fill: look.fill, stroke: look.stroke }),
@@ -1177,6 +1187,13 @@ impl StageHandle {
     /// Fire, in viewport points.
     pub fn pan_by(&self, dx: f64, dy: f64) {
         self.bound.fire(move |b| b.fire(|c| c.pan_by(dx, dy)));
+    }
+
+    /// Pan by a wheel's delta (viewport points, signed like `pan_by`) at
+    /// `time_ms`, on a clock that only goes forward. False: the view leaves
+    /// this wheel to the scroll view around it (`scroll_chaining`).
+    pub async fn wheel_by(&self, dx: f64, dy: f64, time_ms: f64) -> Result<bool, ViewerError> {
+        self.read(move |c| c.wheel_by(dx, dy, time_ms)).await
     }
 
     pub async fn scroll_to(&self, options: StageScrollToOptions) -> Result<(), ViewerError> {

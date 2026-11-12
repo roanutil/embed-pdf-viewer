@@ -1,11 +1,16 @@
 //! `navigation/turn.ts`: page turns in paged flow. A push past the edge of
 //! the page turns it, read off what the host port reports (pans, the drag
 //! bracket, the release fling). A push is the part of a pan the clamp
-//! refused. A stream is one drag, or the pans between two pauses (a wheel
-//! or trackpad gesture with its momentum). A stream turns only at an edge
-//! it began at, so reading down to the bottom stops there, and it turns
-//! once: the rest of it is spent, so momentum never scrolls the page that
-//! just arrived.
+//! refused. A stream is one drag, or one push of a wheel or trackpad with
+//! its momentum: the pans up to the next pause, or up to the next push the
+//! wheel tells while the last still coasts (`camera/wheel.rs`). A stream
+//! turns only at an edge it began at, so reading down to the bottom stops
+//! there, and it turns once: the rest of it is spent, so momentum never
+//! scrolls the page that just arrived.
+//!
+//! In every flow it also says whether a push has anywhere to go, which is
+//! how the wheel tells a stream of its own from one for the page around the
+//! viewer (`camera/wheel.rs`).
 
 use crate::prelude::*;
 
@@ -16,7 +21,7 @@ const TURN_PUSH: f64 = 60.0;
 /// flick.
 const TURN_FLICK: f64 = 600.0;
 /// The pause that ends a wheel or trackpad stream.
-const QUIET_MS: f64 = 200.0;
+pub(crate) const QUIET_MS: f64 = 200.0;
 
 /// A screen-space amount per axis (`Point`).
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -197,6 +202,14 @@ impl StageCapability {
         }
     }
 
+    /// A wheel or trackpad pushes anew while its last push still coasts:
+    /// the next stream begins here, with no pause before it.
+    pub(crate) fn turn_push_began(&self) {
+        if !self.turns().dragging.get() {
+            self.turns().stream.set(None);
+        }
+    }
+
     /// A drag begins: one stream for all of it, however long it holds
     /// still.
     pub(crate) fn turn_drag_began(&self) {
@@ -235,5 +248,28 @@ impl StageCapability {
         }
         let Some(stream) = self.turns().stream.get() else { return false };
         stream.spent || self.turn_past(self.ahead(velocity), TURN_FLICK)
+    }
+
+    /// Whether a push by `delta` (screen px) has anywhere to go along its
+    /// longer axis: the camera can move that way, or a turn has a page to
+    /// turn to.
+    pub(crate) fn leads_somewhere(&self, delta: Push) -> bool {
+        let y = !(delta.x.abs() > delta.y.abs());
+        let next = self.ahead(delta).axis(y) > 0.0;
+        let edges = self.edges_now();
+        let at_edge = match (next, y) {
+            (true, true) => edges.next_y,
+            (true, false) => edges.next_x,
+            (false, true) => edges.previous_y,
+            (false, false) => edges.previous_x,
+        };
+        // An unbounded camera has no edges.
+        if !self.st().settings.bounded || !at_edge {
+            return true;
+        }
+        if !self.turns_enabled() {
+            return false;
+        }
+        if next { self.can_go_next() } else { self.can_go_previous() }
     }
 }

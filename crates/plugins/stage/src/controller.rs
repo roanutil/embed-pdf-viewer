@@ -131,6 +131,8 @@ pub(crate) struct Inner {
     pub(crate) gesture: Gesture,
     // navigation/turn
     pub(crate) turns: crate::navigation::turn::Turns,
+    // camera/wheel
+    pub(crate) wheel: crate::camera::wheel::Wheel,
     pub(crate) cancel_rest: RefCell<Option<Cancel>>,
     // camera/animation: the frame the running motion waits for
     pub(crate) cancel_frame: RefCell<Option<Cancel>>,
@@ -187,6 +189,7 @@ pub(crate) fn create_stage_controller(
             registry_cache: RefCell::new(None),
             gesture: Gesture::default(),
             turns: Default::default(),
+            wheel: Default::default(),
             cancel_rest: RefCell::new(None),
             cancel_frame: RefCell::new(None),
             last_metrics: Cell::new(None),

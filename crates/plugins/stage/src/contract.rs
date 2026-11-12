@@ -208,6 +208,10 @@ pub struct StageSettings {
     /// Whether a pinch or a zoom wheel zooms this view.
     pub zoom_gestures: bool,
     pub turn_gestures: bool,
+    /// Whether a wheel or trackpad scroll that begins where this view can't
+    /// scroll any further is left to the page around the viewer, as over any
+    /// scrolling element at its end. Off, the view keeps every wheel.
+    pub scroll_chaining: bool,
     /// The look of the box the `zoom` tool drags. A color left `None`
     /// follows the viewer's accent.
     pub zoom_box: ZoomBoxLook,
@@ -345,6 +349,8 @@ pub struct StageSettingsPatch {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub turn_gestures: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scroll_chaining: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub zoom_box: Option<PartialZoomBoxLook>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub view_units_per_point: Option<f64>,
@@ -383,6 +389,7 @@ impl From<StageSettings> for StageSettingsPatch {
             pan_fallback: Some(s.pan_fallback),
             zoom_gestures: Some(s.zoom_gestures),
             turn_gestures: Some(s.turn_gestures),
+            scroll_chaining: Some(s.scroll_chaining),
             zoom_box: Some(s.zoom_box.into()),
             view_units_per_point: Some(s.view_units_per_point),
         }
