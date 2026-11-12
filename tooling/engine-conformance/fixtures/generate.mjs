@@ -616,6 +616,47 @@ function pageLabels() {
   ]);
 }
 
+/**
+ * Measurement viewports (`/VP`, ISO 32000-2 §12.9), on three pages:
+ *
+ *   page 3: a foreign rectilinear viewport over the left half, then the
+ *           engine's own (`EmbedPDF`, rectilinear, the whole page);
+ *   page 4: none, with a crop box, so a scale lands on the visible box;
+ *   page 5: turned a quarter, a geospatial viewport only (not one the
+ *           engine owns, and not one a scale replaces).
+ */
+function viewportPages() {
+  const content = Buffer.from('72 72 200 100 re\nf\n', 'latin1');
+  const rl = (unit, conversion) =>
+    `<< /Type /Measure /Subtype /RL /R (1 in = ${conversion} ${unit}) ` +
+    `/X [<< /Type /NumberFormat /U (${unit}) /C ${conversion} /D 100 >>] ` +
+    `/D [<< /Type /NumberFormat /U (${unit}) /C 1 /D 100 >>] ` +
+    `/A [<< /Type /NumberFormat /U (${unit}2) /C 1 /D 100 >>] >>`;
+  return buildPdf([
+    Buffer.from('<< /Type /Catalog /Pages 2 0 R >>', 'latin1'),
+    Buffer.from('<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R] /Count 3 >>', 'latin1'),
+    Buffer.from(
+      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 6 0 R /Resources << >> /VP [' +
+        `<< /Type /Viewport /Name (Plan) /BBox [0 0 306 792] /Measure ${rl('ft', 0.5)} >> ` +
+        `<< /Type /Viewport /Name (EmbedPDF) /BBox [0 0 612 792] /Measure ${rl('m', 0.25)} >>` +
+        '] >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 400 300] /CropBox [10 20 390 280] ' +
+        '/Contents 6 0 R /Resources << >> >>',
+      'latin1',
+    ),
+    Buffer.from(
+      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Rotate 90 /Contents 6 0 R ' +
+        '/Resources << >> /VP [<< /Type /Viewport /Name (Map) /BBox [100 100 400 500] ' +
+        '/Measure << /Type /Measure /Subtype /GEO >> >>] >>',
+      'latin1',
+    ),
+    stream('', content),
+  ]);
+}
+
 function pageActions() {
   const content = Buffer.from('72 72 200 100 re\nf\n', 'latin1');
 
@@ -1675,6 +1716,7 @@ const outputs = [
   ['unsupported-security.pdf', unsupportedSecurityDocument()],
 
   ['page_labels.pdf', pageLabels()],
+  ['viewports.pdf', viewportPages()],
 ];
 for (const [name, bytes] of outputs) {
   writeFileSync(resolve(here, name), bytes);

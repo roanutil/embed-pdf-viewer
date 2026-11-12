@@ -280,6 +280,23 @@ bitwise operators return a signed 32-bit int, so `0xFFFFFFFC & ~(1 << 3)` is
 at each boundary. Rust takes `u32` and converts once at the FFI edge with
 `normalize_u32`. Both spellings of each word are in the corpus.
 
+## Change ops at the worker boundary
+
+`vectors/changes/` records the change ops and reads that arrived after
+`074a190c9`: the viewports a page layout carries, `pages.setScale` and its
+undo, a rename through an annotation update, `annotations.copy`, `forms.copy`,
+and the version each change kind arrived in. `src/generate-change-vectors.ts`
+runs each case's steps against a fresh document and records every worker
+request a step sent with the worker's answer to it, since the worker is what
+the Rust `Host` stands in for. Names a copy makes up are recorded as
+`"<uuid>"` and timestamps the clock wrote as `"<now>"`.
+`crates/epdf-engine/tests/change_ops.rs` replays them.
+
+```bash
+pnpm --filter @embedpdf/tooling-engine-conformance run changes
+pnpm --filter @embedpdf/tooling-engine-conformance run changes:check
+```
+
 ## The linked WASM bridge
 
 `src/verify-wasm-bridge.mts` drives the Stage A geometry export inside a module
