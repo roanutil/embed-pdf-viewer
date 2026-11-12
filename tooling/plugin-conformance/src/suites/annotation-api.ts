@@ -680,11 +680,14 @@ const cases: ScenarioCase[] = [
   ),
   scenario(
     'remeasure-page',
-    'Recalibration reports actual updated, locked, foreign-measure and engine-refused records; other pages stay isolated.',
+    'stageRemeasure stages the page’s re-measurable dimensions in one change and reports them as updated, and locked, foreign-measure and unreadable ones as skipped; an engine refusal of that change puts every staged dimension back; other pages stay isolated.',
     [
-      call('remeasurePage', [pr(1), FEET]),
+      call('whenRemeasurable'),
+      call('stageRemeasure', [pr(1), FEET]),
       call('list'),
-      call('remeasurePage', [pr(2), { ...FEET, distance: [] }]),
+      call('stageRemeasure', [pr(1), FEET]),
+      call('list'),
+      call('stageRemeasure', [pr(2), { ...FEET, distance: [] }]),
     ],
     [
       hydrate([
@@ -694,17 +697,21 @@ const cases: ScenarioCase[] = [
         dimension(6),
         dimension(20, { page: pr(2), ref: objRef(20, 2) }),
       ]),
-      write(1, [{ item: updated(annotationAfter(dimension(1), { measure: FEET })) }]),
       refused('intended stale measurement', 'Conflict'),
+      write(2, [
+        { item: updated(annotationAfter(dimension(1), { measure: FEET })) },
+        { item: updated(annotationAfter(dimension(6), { measure: FEET })) },
+      ]),
     ],
   ),
   scenario(
     'remeasure-without-authority-and-after-errors',
-    'No-authority dimensions are reported as skipped; an unreadable mirror reports its failure rather than a silent successful calibration.',
+    'No-authority dimensions are reported as skipped; when the annotations cannot be read again, whenRemeasurable still resolves and stageRemeasure reports the error with nothing staged, rather than a silent successful calibration.',
     [
-      call('remeasurePage', [pr(1), FEET]),
+      call('stageRemeasure', [pr(1), FEET]),
       emit({ type: 'stream.desynced', reason: 'backlog-overflow', at: '1970-01-01T00:00:00.001Z' }),
-      call('remeasurePage', [pr(1), FEET]),
+      call('whenRemeasurable'),
+      call('stageRemeasure', [pr(1), FEET]),
     ],
     [],
     {

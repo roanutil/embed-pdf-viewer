@@ -1153,7 +1153,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'fixed-bytes-stamp-tool',
     covers:
-      'tools.register at runtime: a stamp preset with fixed bytes places on click with no picker; an upright tool counter-rotates on a rotated page. The unregister removes it (the hub’s tool too); a same-id registration replaces; an invalid one throws.',
+      'tools.register at runtime: a stamp preset with fixed bytes places on click with no picker; an upright tool counter-rotates on a rotated page. A same-id registration replaces; removing the first registration then leaves the replacement in place, and removing the replacement too removes the tool (the hub’s tool too); an invalid one throws.',
     plugins: PLUGINS,
     engine: {
       documents: {
@@ -1194,6 +1194,8 @@ const cases: ScenarioCase[] = [
       call('tools.register', [{ id: 'pens', extends: 'ink', defaults: { strokeWidth: 2 } }]),
       call('tools.getDefaults', ['pens']),
       { op: 'call', target: { ref: 0 } },
+      call('tools.get', ['approved']),
+      { op: 'call', target: { ref: 1 } },
       ix('listTools'),
       call('tools.get', ['approved']),
       call('tools.register', [{ id: 'bad', subtype: 'square', defaults: { fontSize: 3 } }]),

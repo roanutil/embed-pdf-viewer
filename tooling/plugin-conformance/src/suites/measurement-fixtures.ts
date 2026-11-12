@@ -1,13 +1,17 @@
 /** Current measurement inputs and static engine answers, constructed before execution. */
+import { viewportsWithScale } from '@embedpdf/engine-core/runtime';
 import type {
   Annotation,
   AnnotationDraft,
+  ChangeItem,
+  ChangeResult,
   DocumentEvent,
   MutationMeta,
   PageBox,
+  PageLayout,
+  PageListSnapshot,
   PageMeasurementViewport,
-  PageMeasurementViewportList,
-  PageScaleResult,
+  PageRef,
   PdfMeasure,
   PdfMeasurement,
 } from '@embedpdf/engine-core/runtime';
@@ -23,10 +27,13 @@ import type { AnnotationConfig } from '../../../../packages/plugin/annotation/sr
 import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
 import { registerPlugin, type Step } from '../scenario';
 import {
+  confirmation,
   doc,
   hydrate,
   layout,
   objRef,
+  operationAt,
+  origin,
   pr,
   LOCAL,
   updated,
@@ -123,7 +130,7 @@ export const docOf = (
   responses: ResponseSpec[] = [],
   over: Partial<FakeDocumentSpec> = {},
 ): FakeDocumentSpec =>
-  doc([...responses, hydrate(), ...PAGES.map((page) => viewports(page.ref.objectNumber, []))], {
+  doc([...responses, hydrate()], {
     pages: PAGES,
     ...over,
   });
@@ -212,49 +219,132 @@ export const vp = (
   owned = false,
   name: string | null = null,
 ): PageMeasurementViewport => ({ bbox, measure, owned, name });
-export const viewports = (
-  pon: number,
-  viewports: PageMeasurementViewport[] | undefined,
-  over: Partial<ResponseSpec> = {},
-): ResponseSpec => ({
-  path: 'page.measure.listViewports',
-  pon,
-  value: { viewports: viewports ?? [] } satisfies PageMeasurementViewportList,
-  ...over,
+/** A page list as the engine answers it. */
+export const listOf = (pages: readonly PageLayout[]): PageListSnapshot => ({
+  pageCount: pages.length,
+  pages: [...pages],
+  labels: [],
+  namedPages: [],
 });
+/** The page with these viewports on its layout; one without any leaves `viewports` out, as the engine does. */
+export const withViewports = (
+  page: PageLayout,
+  viewports: readonly PageMeasurementViewport[],
+): PageLayout => {
+  const { viewports: _old, ...rest } = page;
+  return viewports.length > 0 ? { ...rest, viewports: [...viewports] } : rest;
+};
 export const meta = (page = pr(1), opId = 'viewport-fact'): MutationMeta => ({
   affectedPages: [page],
   cacheDelta: null,
   opId,
   undoable: true,
 });
-export const scaleFact = (page = pr(1), opId = 'viewport-fact'): DocumentEvent => ({
+/** A remote `pages.scaleSet`: another session set these pages' scale; `layout` is the list it left. */
+export const scaleFact = (
+  pages: readonly PageRef[],
+  measure: PdfMeasure | null,
+  layout: readonly PageLayout[],
+  opId = 'viewport-fact',
+): DocumentEvent => ({
   type: 'pages.scaleSet',
-  page,
-  meta: meta(page, opId),
-  origin: { ...LOCAL, transaction: { id: opId, index: 0, count: 1 } },
+  page: pages[0]!,
+  pages: [...pages],
+  measure,
+  layout: listOf(layout),
+  meta: { ...meta(pages[0], opId), affectedPages: [...pages] },
+  origin: { ...origin('remote'), transaction: { id: opId, index: 0, count: 1 } },
 });
-export const scaleAnswer = (
-  pon = 1,
-  over: Partial<ResponseSpec> = {},
-  opId = `engine-scale-${pon}`,
-): ResponseSpec => ({
-  path: 'page.measure.setScale',
-  pon,
-  value: { page: pr(pon), meta: meta(pr(pon), opId) } satisfies PageScaleResult,
-  events: [scaleFact(pr(pon), opId)],
-  ...over,
+/** One page's scale in a change (`null`: back to the default). */
+export interface ScaleWrite {
+  readonly page: PageRef;
+  readonly measure: PdfMeasure | null;
+}
+type AnnotationEntry = Parameters<typeof confirmation>[1][number];
+/**
+ * Authored engine answers to a case's scale changes, in the order the case
+ * makes them. A change's `pages.setScale` items come first, one per scale
+ * (the pages that get the same one go together), then the re-measured
+ * annotations; the engine publishes their events before it answers. Each
+ * layout follows from the case's starting pages and the answers before it,
+ * as the engine holds them: `viewportsWithScale`, the function the engine
+ * contract names for it. Nothing here reads a runtime request.
+ */
+export function scaleEngine(start: readonly PageLayout[]) {
+  let pages = [...start];
+  const answer = (
+    n: number,
+    writes: readonly ScaleWrite[],
+    entries: readonly AnnotationEntry[] = [],
+  ): { value: ChangeResult; events: DocumentEvent[] } => {
+    const opId = operationAt(n);
+    const groups = new Map<string, { measure: PdfMeasure | null; pages: PageRef[] }>();
+    for (const { page, measure } of writes) {
+      const key = JSON.stringify(measure);
+      const group = groups.get(key) ?? { measure, pages: [] };
+      group.pages.push(page);
+      groups.set(key, group);
+    }
+    const annotations = confirmation(n, entries);
+    const count = groups.size + annotations.events.length;
+    const items: ChangeItem[] = [];
+    const events: DocumentEvent[] = [];
+    const affected = new Map<number, PageRef>();
+    for (const { measure, pages: scaled } of groups.values()) {
+      pages = pages.map((page) =>
+        scaled.some((ref) => ref.objectNumber === page.ref.objectNumber)
+          ? withViewports(page, viewportsWithScale(page.viewports ?? [], page.size, measure))
+          : page,
+      );
+      for (const ref of scaled) affected.set(ref.objectNumber, ref);
+      const result = {
+        page: scaled[0]!,
+        pages: [...scaled],
+        measure,
+        layout: listOf(pages),
+        meta: { affectedPages: [...scaled], cacheDelta: null, opId, undoable: true },
+      };
+      const from = { ...LOCAL, transaction: { id: opId, index: events.length, count } };
+      items.push({ type: 'pages.setScale', ...result });
+      events.push({ type: 'pages.scaleSet', ...result, origin: from });
+    }
+    items.push(...annotations.value.items);
+    for (const event of annotations.events) {
+      const from = { ...LOCAL, transaction: { id: opId, index: events.length, count } };
+      events.push({ ...event, origin: from } as DocumentEvent);
+    }
+    for (const page of annotations.value.meta.affectedPages) affected.set(page.objectNumber, page);
+    return {
+      value: {
+        items,
+        meta: { affectedPages: [...affected.values()], cacheDelta: null, opId, undoable: true },
+      },
+      events,
+    };
+  };
+  return {
+    /** The pages as the engine holds them after the answers so far. */
+    get pages(): readonly PageLayout[] {
+      return pages;
+    },
+    /** The answer to the next change: `n` names its operation, as `write` does. */
+    change: (
+      n: number,
+      writes: readonly ScaleWrite[],
+      entries: readonly AnnotationEntry[] = [],
+      options: { defer?: string } = {},
+    ): ResponseSpec => ({
+      path: 'apply',
+      times: 1,
+      ...answer(n, writes, entries),
+      ...(options.defer ? { defer: options.defer } : {}),
+    }),
+  };
+}
+/** The re-measured dimension line `n` on page `pon`, as one of a change's annotation entries. */
+export const remeasuredEntry = (n: number, measure: PdfMeasure, pon = 1): AnnotationEntry => ({
+  item: updated(dimensionLine(n, { measure, page: pr(pon), ref: objRef(n, pon) }), true),
 });
-export const remeasured = (
-  operation: number,
-  n: number,
-  measure: PdfMeasure,
-  pon = 1,
-): ResponseSpec =>
-  write(operation, [
-    { item: updated(dimensionLine(n, { measure, page: pr(pon), ref: objRef(n, pon) }), true) },
-  ]);
-
 export const creation = (kind: 'distance' | 'perimeter' | 'area', n: number): Annotation => {
   const shared = {
     color: '#e5484d',
@@ -297,28 +387,3 @@ export const creation = (kind: 'distance' | 'perimeter' | 'area', n: number): An
           };
   return annotationOfNew(draft, { ref: objRef(n) });
 };
-
-/** Authored sequential engine snapshots; never reads a runtime request. */
-export const scaleSequence = (
-  pon: number,
-  scales: readonly (PdfMeasure | null)[],
-): ResponseSpec[] => [
-  viewports(pon, [], { times: 1 }),
-  ...scales.flatMap((scale, index) => [
-    scaleAnswer(pon, { times: 1, args: [scale] }, `engine-scale-${pon}-${index + 1}`),
-    viewports(
-      pon,
-      scale
-        ? [
-            vp(
-              { x: 0, y: 0, width: pon === 1 ? 600 : 400, height: pon === 1 ? 800 : 500 },
-              scale,
-              true,
-              'EmbedPDF',
-            ),
-          ]
-        : [],
-      index === scales.length - 1 ? {} : { times: 1 },
-    ),
-  ]),
-];

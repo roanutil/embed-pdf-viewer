@@ -651,7 +651,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'derivations',
     covers:
-      'resolve() calls active, then iconAccent, then enabled, then visible, each with a CommandCtx bound to the explicit document, else the active one (null with none open, and an empty string is kept); their answers land on the resolved command.',
+      'resolve() calls enabled, then visible, then iconAccent, then active, at most once per store change (7af98f4df), each with a CommandCtx bound to the explicit document, else the active one (null with none open, and an empty string is kept); their answers land on the resolved command.',
     plugins: [
       commands([
         vdef('d', {
@@ -765,7 +765,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'label-params-without-i18n',
     covers:
-      'Without i18n, labelParams fill the {name} slots of label, else labelKey, else the id (ccc4bf7fe); a slot with no value stays as it is; one that throws gives none; it is asked on every resolve, before the derivations.',
+      'Without i18n, labelParams fill the {name} slots of label, else labelKey, else the id (ccc4bf7fe); a slot with no value stays as it is; one that throws gives none; it is asked once per store change, before the derivations (7af98f4df).',
     plugins: [
       commands([
         vdef('delete', {

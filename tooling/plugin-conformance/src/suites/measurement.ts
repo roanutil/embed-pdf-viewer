@@ -1,4 +1,5 @@
 import { measureFromRatio, measureFromKnownLength } from '@embedpdf/engine-core/runtime';
+import type { PdfMeasure } from '@embedpdf/engine-core/runtime';
 /** Measurement oracle: current page mirrors, scale writes, calibration and engine annotations. */
 import * as model from '../../../../packages/plugin/measurement/src/model';
 import {
@@ -11,9 +12,7 @@ import {
 import type { FunctionCase, Suite } from '../vectors';
 import type { ScenarioCase } from '../scenario';
 import {
-  open,
   refused,
-  scaleSequence,
   layout,
   creation,
   created,
@@ -40,8 +39,10 @@ import {
   listen,
   drag,
   vp,
-  viewports,
-  remeasured,
+  listOf,
+  remeasuredEntry,
+  scaleEngine,
+  withViewports,
   boot,
   hydrate,
   objRef,
@@ -53,20 +54,167 @@ import {
   confirmation,
   meta,
   scaleFact,
-  scaleAnswer,
   ix,
 } from './measurement-fixtures';
 const CROP3 = { x: 0, y: 0, width: 200, height: 200 };
+const PAGE1_BOX = { x: 0, y: 0, width: 600, height: 800 };
+const PAGE2_BOX = { x: 0, y: 0, width: 400, height: 500 };
 const UNSNAPSHOTTED = {
   snapshot: 'none',
   reason:
     'Pins exact preflight refusals and successful scale recovery through calls and settlements.',
 } as const;
+/** A preset's ratio on a page of user unit 1, as setPreset writes it. */
+const presetMeasure = (id: string): PdfMeasure => {
+  const preset = DEFAULT_PRESETS.find((candidate) => candidate.id === id);
+  if (!preset) throw new Error(`no preset ${id}`);
+  return measureFromRatio(preset.paper, preset.real, preset.unit, { userUnit: 1 });
+};
+
+const imperial = scaleEngine(PAGES);
+const imperialAnswers = [
+  imperial.change(1, [{ page: pr(1), measure: measureFromRatio(2, 300, 'ft') }]),
+];
+
+const USER_UNIT_PAGES = [layout(0, 1), { ...layout(1, 2, CROP2), userUnit: 2 }];
+const customDefault = scaleEngine(USER_UNIT_PAGES);
+const customDefaultAnswers = [
+  customDefault.change(1, [
+    { page: pr(2), measure: measureFromRatio(1, 48, 'ft', { userUnit: 2 }) },
+  ]),
+  customDefault.change(2, [{ page: pr(2), measure: null }]),
+];
+
+const MOVED_START = [
+  withViewports(PAGES[0]!, [vp(PAGE1_BOX, METRES, true, 'EmbedPDF')]),
+  PAGES[1]!,
+];
+const MOVED_REMOTE = [withViewports(PAGES[0]!, [vp(PAGE1_BOX, FEET, true, 'EmbedPDF')]), PAGES[1]!];
+const MOVED_REREAD = [
+  MOVED_REMOTE[0]!,
+  withViewports(PAGES[1]!, [vp(PAGE2_BOX, METRES, true, 'EmbedPDF')]),
+];
+
+const onePage = scaleEngine(PAGES);
+const onePageWrite = onePage.change(
+  1,
+  [{ page: pr(1), measure: FEET }],
+  [remeasuredEntry(1, FEET)],
+  {
+    defer: 'write',
+  },
+);
+const onePageAnswers = [
+  onePageWrite,
+  onePage.change(2, [{ page: pr(1), measure: METRES }]),
+  onePage.change(
+    3,
+    [{ page: pr(1), measure: null }],
+    [remeasuredEntry(1, defaultMeasure('metric'))],
+  ),
+];
+
+const severalPages = scaleEngine(PAGES);
+const severalPagesAnswers = [
+  severalPages.change(
+    1,
+    [
+      { page: pr(1), measure: FEET },
+      { page: pr(2), measure: FEET },
+    ],
+    [remeasuredEntry(1, FEET), remeasuredEntry(20, FEET, 2)],
+  ),
+  severalPages.change(2, [
+    { page: pr(1), measure: withUnit(FEET, 'mm') },
+    { page: pr(2), measure: withUnit(FEET, 'mm') },
+  ]),
+];
+
+const preflight = scaleEngine(PAGES);
+const preflightAnswers = [
+  rl('m', { distance: [{ unit: 'm', conversion: 1 }] }),
+  rl('m', {
+    distance: [{ unit: 'm', conversion: 1, precision: 100, labelPosition: 'suffix', fixed: true }],
+    origin: { x: 10, y: 20 },
+    cyx: 1,
+  }),
+  measureFromKnownLength(7, { value: 1, unit: 'm' }),
+].map((measure, index) => preflight.change(index + 1, [{ page: pr(1), measure }]));
+
+const units = scaleEngine(PAGES);
+const unitsAnswers = [
+  withUnit(defaultMeasure('metric'), 'ft'),
+  withAreaUnit(withUnit(defaultMeasure('metric'), 'ft'), 'acre'),
+  withPrecision(withAreaUnit(withUnit(defaultMeasure('metric'), 'ft'), 'acre'), 1000),
+  FEET_INCHES,
+  withUnit(FEET_INCHES, 'in'),
+  FEET_INCHES,
+  withAreaUnit(FEET_INCHES, 'ha'),
+  rl('furlong'),
+  presetMeasure('metric-50'),
+].map((measure, index) => units.change(index + 1, [{ page: pr(1), measure }]));
+
+const FOREIGN_START = [
+  withViewports(PAGES[0]!, [vp(PAGE1_BOX, GEO)]),
+  withViewports(PAGES[1]!, [vp(PAGE2_BOX, undefined)]),
+];
+const foreign = scaleEngine(FOREIGN_START);
+const foreignAnswers = [
+  foreign.change(1, [{ page: pr(1), measure: FEET }]),
+  refused('read-only'),
+  foreign.change(3, [{ page: pr(1), measure: METRES }]),
+];
+
+const calibration = scaleEngine(PAGES);
+const calibrationAnswers = [
+  calibration.change(
+    1,
+    [{ page: pr(1), measure: measureFromKnownLength(144, { value: 2, unit: 'm' }) }],
+    [remeasuredEntry(1, measureFromKnownLength(144, { value: 2, unit: 'm' }))],
+  ),
+  calibration.change(2, [
+    { page: pr(1), measure: measureFromKnownLength(72, { value: 1, unit: 'ft' }) },
+    { page: pr(2), measure: measureFromKnownLength(72, { value: 1, unit: 'ft' }) },
+  ]),
+];
+
+const listener = scaleEngine(PAGES);
+const listenerAnswers = [
+  listener.change(1, [{ page: pr(1), measure: FEET }]),
+  listener.change(2, [{ page: pr(1), measure: METRES }]),
+];
+
+const INSERTED = withViewports(PAGES4[2]!, [vp(CROP3, FEET, true, 'EmbedPDF')]);
+
+const REMOVED_HYDRATE = hydrate([dimensionLine(1)]);
+const removedAnswers = [
+  { ...REMOVED_HYDRATE, times: 1, defer: 'hydrate' },
+  {
+    path: 'apply',
+    times: 1,
+    error: { name: 'EngineError', message: 'no page 1', code: 'NotFound' },
+  },
+];
+
+const closing = scaleEngine(PAGES);
+const closingAnswers = [
+  closing.change(
+    1,
+    [
+      { page: pr(1), measure: FEET },
+      { page: pr(2), measure: FEET },
+    ],
+    [],
+    { defer: 'set1' },
+  ),
+  closing.change(2, [{ page: pr(2), measure: METRES }], [], { defer: 'set2' }),
+];
+
 const cases: ScenarioCase[] = [
   {
     name: 'reads-without-a-measure-service',
     covers:
-      'The required current measure service returns empty viewports; pages load onto the metric default and are persistent. The historical optional-service contract is archived. The reads: the scale (a page not in the document reads the loading scale), the twins, the busy flag, the last reports, the presets, the units and the area units, the pending request. measureDistance and measureArea convert page points through the page geometry and read the page scale; a page not in the document returns an unavailable readout. getReadout reads a dimension annotation and answers not-dimension for an unknown ref. ensureLoaded resolves at once for a loaded page and rejects not-found for a page not in the document.',
+      'Pages whose layouts carry no viewports read the metric default and are persistent (8bc6546e5). The reads: the scale (a page not in the document reads the loading scale), the twins, the busy flag, the last reports, the presets, the units and the area units, the pending request. measureDistance and measureArea convert page points through the page geometry and read the page scale; a page not in the document returns an unavailable readout. getReadout reads a dimension annotation and answers not-dimension for an unknown ref. ensureLoaded resolves at once for a page that is there and rejects not-found for a page not in the document.',
     plugins: PLUGINS,
     engine: { documents: { a: docOf([hydrate([dimensionLine(1)])]) } },
     snapshot: SNAP,
@@ -121,7 +269,7 @@ const cases: ScenarioCase[] = [
         { id: 'plan', label: '2 in = 300 ft', paper: 2, real: 300, unit: 'ft' },
       ],
     }),
-    engine: { documents: { a: docOf([...scaleSequence(1, [measureFromRatio(2, 300, 'ft')])]) } },
+    engine: { documents: { a: docOf(imperialAnswers) } },
     snapshot: SNAP,
     steps: [
       ...boot,
@@ -137,13 +285,7 @@ const cases: ScenarioCase[] = [
     covers:
       'A PdfMeasure as defaultScale is the fallback as it is, whatever the page userUnit; setPreset scales the ratio by the page userUnit.',
     plugins: withConfig({ defaultScale: FEET_INCHES }),
-    engine: {
-      documents: {
-        a: docOf([...scaleSequence(2, [measureFromRatio(1, 48, 'ft', { userUnit: 2 }), null])], {
-          pages: [layout(0, 1), { ...layout(1, 2, CROP2), userUnit: 2 }],
-        }),
-      },
-    },
+    engine: { documents: { a: docOf(customDefaultAnswers, { pages: USER_UNIT_PAGES }) } },
     snapshot: SNAP,
     steps: [
       ...boot,
@@ -159,26 +301,24 @@ const cases: ScenarioCase[] = [
   {
     name: 'measure-service-viewports',
     covers:
-      "With the engine's measure service each page reads its viewports. An owned viewport wins wherever it is; otherwise the viewport under the page-space centre (the last containing one) is a foreign scale, one without a measure reads null, and a page whose viewports miss the centre falls back to the default. Every page is persistent. canMeasure is ready on each; a foreign scale gives readouts of foreign-measure.",
+      "Each page's layout carries its viewports (c7f8d75ff). An owned viewport wins wherever it is; otherwise the viewport under the page-space centre (the last containing one) is a foreign scale, one without a measure reads null, and a page whose viewports miss the centre falls back to the default. Every page is persistent. canMeasure is ready on each; a foreign scale gives readouts of foreign-measure.",
     plugins: PLUGINS,
     engine: {
       documents: {
-        a: docOf(
-          [
-            hydrate([dimensionLine(1)]),
-            viewports(1, [
+        a: docOf([hydrate([dimensionLine(1)])], {
+          pages: [
+            withViewports(PAGES4[0]!, [
               vp({ x: 0, y: 0, width: 50, height: 50 }, METRES),
               vp({ x: 0, y: 0, width: 10, height: 10 }, FEET, true, 'EmbedPDF'),
             ]),
-            viewports(2, [
-              vp({ x: 0, y: 0, width: 400, height: 500 }, METRES, false, 'outer'),
+            withViewports(PAGES4[1]!, [
+              vp(PAGE2_BOX, METRES, false, 'outer'),
               vp({ x: 100, y: 200, width: 200, height: 200 }, GEO, false, 'inner'),
             ]),
-            viewports(3, [vp(CROP3, undefined)]),
-            viewports(4, [vp({ x: 0, y: 0, width: 10, height: 10 }, METRES)]),
+            withViewports(PAGES4[2]!, [vp(CROP3, undefined)]),
+            withViewports(PAGES4[3]!, [vp({ x: 0, y: 0, width: 10, height: 10 }, METRES)]),
           ],
-          { pages: PAGES4, services: ['page.measure'] },
-        ),
+        }),
       },
     },
     snapshot: SNAP,
@@ -196,24 +336,18 @@ const cases: ScenarioCase[] = [
     ],
   },
   {
-    name: 'viewport-reads-fail-refresh-and-rehydrate',
+    name: 'scale-events-move-the-layout',
     covers:
-      'A refused viewport read leaves the page not ready with the serialized error; ensureLoaded retries it. A pages.scaleSet event re-reads that page (one not in the document is refused quietly), stream.desynced and document.versioned re-read every page, and any other event is ignored. While a read is in flight the page reads not ready with its previous scale.',
+      "A page's scale comes with its layout, so canMeasure and ensureLoaded answer at once (8bc6546e5). A pages.scaleSet from another session moves the page's scale; stream.desynced reads the page list again and takes the scales it carries (a4805a492); document.versioned and an event whose layout keeps the same scales change none.",
     plugins: PLUGINS,
     engine: {
       documents: {
         a: docOf(
           [
-            viewports(1, undefined, {
-              times: 1,
-              error: { name: 'EngineError', message: 'offline', code: 'RuntimeUnavailable' },
-            }),
-            viewports(1, [vp({ x: 0, y: 0, width: 600, height: 800 }, METRES, true)], { times: 1 }),
-            viewports(1, undefined, { times: 1, defer: 'v1' }),
-            viewports(1, [vp({ x: 0, y: 0, width: 600, height: 800 }, FEET, true)]),
-            viewports(2, []),
+            { path: 'pages.list', times: 1, value: listOf(MOVED_START) },
+            { path: 'pages.list', value: listOf(MOVED_REREAD) },
           ],
-          { services: ['page.measure'] },
+          { pages: MOVED_START },
         ),
       },
     },
@@ -223,14 +357,11 @@ const cases: ScenarioCase[] = [
       m('getPageScale', [pr(1)]),
       m('canMeasure', [pr(1)]),
       m('ensureLoaded', [pr(1)]),
-      m('getPageScale', [pr(1)]),
-      emit(scaleFact(pr(1))),
+      emit(scaleFact([pr(1)], FEET, MOVED_REMOTE)),
       m('getPageScale', [pr(1)]),
       m('isBusy'),
-      settle('v1', { viewports: [vp({ x: 0, y: 0, width: 600, height: 800 }, FEET, true)] }),
-      m('getPageScale', [pr(1)]),
-      emit(scaleFact(pr(9))),
       emit({ type: 'stream.desynced', reason: 'backlog-overflow', at: '1970-01-01T00:00:00.000Z' }),
+      m('getPageScale', [pr(2)]),
       emit({
         type: 'document.versioned',
         version: { sha256: 'version2', sizeBytes: 100 },
@@ -240,64 +371,24 @@ const cases: ScenarioCase[] = [
         type: 'pages.named',
         name: 'unrelated',
         page: pr(1),
-        layout: { pageCount: 2, pages: PAGES, labels: [], namedPages: [] },
+        layout: listOf(MOVED_REREAD),
         meta: meta(),
         origin: LOCAL,
       }),
+      m('getPageScale', [pr(1)]),
       m('getPageScale', [pr(2)]),
-    ],
-  },
-  {
-    name: 'refresh-epochs',
-    covers:
-      'Viewport reads carry an epoch per page: an older read that answers after a newer one began is dropped, whether it resolves or rejects, and ensureLoaded joins the read in flight rather than starting another.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: docOf(
-          [
-            viewports(1, undefined, { times: 1, defer: 'first' }),
-            viewports(1, undefined, { times: 1, defer: 'second' }),
-            viewports(1, undefined, { times: 1, defer: 'third' }),
-            viewports(1, undefined, { times: 1, defer: 'fourth' }),
-            viewports(2, []),
-          ],
-          { services: ['page.measure'] },
-        ),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      m('ensureLoaded', [pr(1)]),
-      emit(scaleFact(pr(1))),
-      m('ensureLoaded', [pr(1)]),
-      settle('first', { viewports: [vp({ x: 0, y: 0, width: 600, height: 800 }, METRES, true)] }),
-      m('getPageScale', [pr(1)]),
-      settle('second', { viewports: [vp({ x: 0, y: 0, width: 600, height: 800 }, FEET, true)] }),
-      m('getPageScale', [pr(1)]),
-      emit(scaleFact(pr(1))),
-      emit(scaleFact(pr(1))),
-      fail('third', 'stale'),
-      m('getPageScale', [pr(1)]),
-      fail('fourth', 'gone'),
-      m('getPageScale', [pr(1)]),
     ],
   },
   {
     name: 'set-scale-on-one-page',
     covers:
-      "The required engine measure service confirms an owned page-space 'EmbedPDF' viewport through pages.scaleSet and a mirror reload, then re-measures the page's dimensions through the annotation plugin and announces the change; isBusy is true while it runs and listLastReports keeps the reports. recalculate false skips the re-measure and reports the scale alone. clearScale drops the owned viewport and re-measures with the default. A single-page change rejects: a measure that is not writable, and a page not in the document.",
+      "setScale writes the page's owned page-space 'EmbedPDF' viewport and the re-measure of the page's dimensions through the annotation plugin as one change: one pages.setScale op and the annotation updates (8bc6546e5). The page's scale follows the layout the engine answers, and the change is announced; isBusy is true while it runs and listLastReports keeps the reports. recalculate false writes the scale alone. clearScale drops the owned viewport and re-measures with the default. A single-page change rejects: a measure that is not writable, and a page not in the document.",
     plugins: PLUGINS,
     engine: {
       documents: {
         a: docOf([
-          ...scaleSequence(1, [FEET, METRES, null]),
           hydrate([dimensionLine(1), dimensionLine(2, { locked: true })]),
-          write(1, [{ item: updated(dimensionLine(1, { measure: FEET }), true) }], {
-            defer: 'write',
-          }),
-          remeasured(2, 1, defaultMeasure('metric')),
+          ...onePageAnswers,
         ]),
       },
     },
@@ -307,10 +398,7 @@ const cases: ScenarioCase[] = [
       ...listen,
       m('setScale', [pr(1), FEET]),
       m('isBusy'),
-      settle(
-        'write',
-        confirmation(1, [{ item: updated(dimensionLine(1, { measure: FEET }), true) }]).value,
-      ),
+      settle('write', onePageWrite.value),
       m('isBusy'),
       m('getPageScale', [pr(1)]),
       m('listLastReports'),
@@ -327,16 +415,13 @@ const cases: ScenarioCase[] = [
   {
     name: 'set-scale-on-several-pages',
     covers:
-      "'all' and a list of pages change each page and report per page: a page that fails (not in the document, a measure that is not writable, a scale without a rectilinear base) reports scaleError instead of rejecting. A list of one page is still strict.",
+      "'all' and a list of pages set every page's scale in one change, one pages.setScale op for the pages that get the same scale, with the re-measure of their dimensions, and report per page (8bc6546e5). A page whose scale fails before the change (a measure that is not writable, a scale without a rectilinear base) reports scaleError instead of rejecting. A list naming a page not in the document rejects not-found before anything is written, and so does a list of one page.",
     plugins: PLUGINS,
     engine: {
       documents: {
         a: docOf([
-          ...scaleSequence(1, [FEET, withUnit(FEET, 'mm')]),
-          ...scaleSequence(2, [FEET, withUnit(FEET, 'mm')]),
           hydrate([dimensionLine(1), dimensionLine(20, { page: pr(2), ref: objRef(20, 2) })]),
-          remeasured(1, 1, FEET),
-          remeasured(2, 20, FEET, 2),
+          ...severalPagesAnswers,
         ]),
       },
     },
@@ -357,23 +442,7 @@ const cases: ScenarioCase[] = [
     covers:
       'A single-page setScale runs the write preflight and rejects with its message: a conversion that is not positive, a precision that is not a whole number or is past the int32 range, a format whose unit is not a string, a text member that is not a string, a missing distance list, and an origin outside the PDF float range. A decimal format without a precision defaults to 100, and a label position, a fixed flag, a finite origin and a positive CYX all pass. calibrate writes the ratio rounded to eight significant digits.',
     plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: docOf([
-          ...scaleSequence(1, [
-            rl('m', { distance: [{ unit: 'm', conversion: 1 }] }),
-            rl('m', {
-              distance: [
-                { unit: 'm', conversion: 1, precision: 100, labelPosition: 'suffix', fixed: true },
-              ],
-              origin: { x: 10, y: 20 },
-              cyx: 1,
-            }),
-            measureFromKnownLength(7, { value: 1, unit: 'm' }),
-          ]),
-        ]),
-      },
-    },
+    engine: { documents: { a: docOf(preflightAnswers) } },
     ...UNSNAPSHOTTED,
     steps: [
       ...boot,
@@ -446,23 +515,7 @@ const cases: ScenarioCase[] = [
     covers:
       "setUnit, setAreaUnit and setPrecision edit the page's rectilinear scale (the default counts) and write it back; a fractional last format restarts at a precision of 100. An invalid precision, a base unit that is not a length unit, and an unknown preset reject; setPreset writes the preset's ratio.",
     plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: docOf([
-          ...scaleSequence(1, [
-            withUnit(defaultMeasure('metric'), 'ft'),
-            withAreaUnit(withUnit(defaultMeasure('metric'), 'ft'), 'acre'),
-            withPrecision(withAreaUnit(withUnit(defaultMeasure('metric'), 'ft'), 'acre'), 1000),
-            FEET_INCHES,
-            withUnit(FEET_INCHES, 'in'),
-            FEET_INCHES,
-            withAreaUnit(FEET_INCHES, 'ha'),
-            rl('furlong'),
-            measureFromRatio(1, 50, 'm'),
-          ]),
-        ]),
-      },
-    },
+    engine: { documents: { a: docOf(unitsAnswers) } },
     snapshot: SNAP,
     steps: [
       ...boot,
@@ -490,29 +543,9 @@ const cases: ScenarioCase[] = [
   {
     name: 'service-writes-and-foreign-scales',
     covers:
-      'With a measure service a scale write goes to the engine, then the page re-reads its viewports. A refused engine write rejects a single-page change, and the next change on that page still runs. Unit and precision edits need a rectilinear scale: a foreign one, or a viewport without a measure, rejects not-ready. Two changes on one page queue behind each other.',
+      "A scale write is a change the engine applies, sent at once rather than queued behind the page's earlier change (8bc6546e5). A refused change rejects a single-page change, and the next change on that page still runs. Unit and precision edits need a rectilinear scale: a foreign one, or a viewport without a measure, rejects not-ready.",
     plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: docOf(
-          [
-            viewports(1, [vp({ x: 0, y: 0, width: 600, height: 800 }, GEO)], { times: 1 }),
-            viewports(1, [vp({ x: 0, y: 0, width: 600, height: 800 }, FEET, true)], { times: 1 }),
-            viewports(1, [vp({ x: 0, y: 0, width: 600, height: 800 }, METRES, true)]),
-            viewports(2, [vp({ x: 0, y: 0, width: 400, height: 500 }, undefined)]),
-            scaleAnswer(1, { times: 1, defer: 'set1' }, 'engine-scale-first'),
-            {
-              path: 'page.measure.setScale',
-              pon: 1,
-              times: 1,
-              error: { name: 'EngineError', message: 'read-only', code: 'Refused' },
-            },
-            scaleAnswer(1),
-          ],
-          { services: ['page.measure'] },
-        ),
-      },
-    },
+    engine: { documents: { a: docOf(foreignAnswers, { pages: FOREIGN_START }) } },
     snapshot: SNAP,
     steps: [
       ...boot,
@@ -522,7 +555,6 @@ const cases: ScenarioCase[] = [
       m('setScale', [pr(1), FEET, { recalculate: false }]),
       m('setScale', [pr(1), METRES, { recalculate: false }]),
       m('setScale', [pr(1), METRES, { recalculate: false }]),
-      settle('set1', { page: pr(1), meta: meta(pr(1), 'engine-scale-first') }),
       m('getPageScale', [pr(1)]),
       m('listLastReports'),
     ],
@@ -530,21 +562,9 @@ const cases: ScenarioCase[] = [
   {
     name: 'calibration-flow',
     covers:
-      "startCalibration clears any request and arms the calibrate tool. The tool's captured line becomes the pending request in page space (the pointer tool comes back, onCalibrationRequested fires); calibrate derives the scale from the known length, writes it, clears the request for its page and fires onCalibrationCompleted. A request on another page survives a calibrate elsewhere; dismissCalibration drops it and fires onCalibrationDismissed, and is silent with nothing pending. applyTo widens the write. Two identical points reject invalid-input; a page not in the document rejects not-found. A capture tool other than calibrate is ignored.",
+      "startCalibration clears any request and arms the calibrate tool. The tool's captured line becomes the pending request in page space (the pointer tool comes back, onCalibrationRequested fires); calibrate derives the scale from the known length, writes it, clears the request for its page and fires onCalibrationCompleted. A request on another page survives a calibrate elsewhere; dismissCalibration drops it and fires onCalibrationDismissed, and is silent with nothing pending. applyTo widens the write to one change over every page it names. Two identical points reject invalid-input; a page not in the document rejects not-found. A capture tool other than calibrate is ignored.",
     plugins: withConfig({}, { tools: [{ id: 'ruler', extends: 'calibrate', clickCreate: false }] }),
-    engine: {
-      documents: {
-        a: docOf([
-          ...scaleSequence(1, [
-            measureFromKnownLength(144, { value: 2, unit: 'm' }),
-            measureFromKnownLength(72, { value: 1, unit: 'ft' }),
-          ]),
-          ...scaleSequence(2, [measureFromKnownLength(72, { value: 1, unit: 'ft' })]),
-          hydrate([dimensionLine(1)]),
-          remeasured(1, 1, measureFromKnownLength(144, { value: 2, unit: 'm' })),
-        ]),
-      },
-    },
+    engine: { documents: { a: docOf([hydrate([dimensionLine(1)]), ...calibrationAnswers]) } },
     snapshot: SNAP,
     steps: [
       ...boot,
@@ -664,7 +684,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'create-measurement',
     covers:
-      "createMeasurement creates a line (distance), a polyline (perimeter) or a polygon (area) through the annotation plugin, with the kind's own tool unless one is named. A distance needs exactly two points; a page whose scale is not known rejects not-ready.",
+      "createMeasurement creates a line (distance), a polyline (perimeter) or a polygon (area) through the annotation plugin, with the kind's own tool unless one is named. A distance needs exactly two points; a page not in the document rejects.",
     plugins: PLUGINS,
     engine: {
       documents: {
@@ -674,7 +694,6 @@ const cases: ScenarioCase[] = [
           write(3, [{ item: created(creation('area', 10003)) }]),
           refused('measurement create refused'),
         ]),
-        b: docOf([viewports(1, undefined, { times: 1, defer: 'loading' })]),
       },
     },
     snapshot: SNAP,
@@ -749,23 +768,6 @@ const cases: ScenarioCase[] = [
         },
       ]),
       an('get', [objRef(10004)]),
-      open('b'),
-      m(
-        'createMeasurement',
-        [
-          {
-            kind: 'distance',
-            page: pr(1),
-            points: [
-              { x: 0, y: 0 },
-              { x: 72, y: 0 },
-            ],
-          },
-        ],
-        'b',
-      ),
-      settle('loading', { viewports: [] }),
-      m('canMeasure', [pr(1)], 'b'),
     ],
   },
   {
@@ -773,7 +775,7 @@ const cases: ScenarioCase[] = [
     covers:
       'A throwing listener goes to the kernel report channel with its exact Error; the change still resolves. An unsubscribed listener hears nothing more.',
     plugins: PLUGINS,
-    engine: { documents: { a: docOf([...scaleSequence(1, [FEET, METRES])]) } },
+    engine: { documents: { a: docOf(listenerAnswers) } },
     snapshot: SNAP,
     steps: [
       ...boot,
@@ -787,21 +789,16 @@ const cases: ScenarioCase[] = [
   {
     name: 'pages-inserted-and-removed',
     covers:
-      'A page inserted after the plugin connected loads its viewports; a structural event that keeps the same pages loads nothing. A page removed while its viewport read is in flight is not published, and a later change on it rejects not-found.',
+      'A page inserted after the plugin connected brings its scale on its layout; a structural event that keeps the same pages changes no scale. A deleted page reads no scale, and a later change on it rejects not-found.',
     plugins: PLUGINS,
     engine: {
       documents: {
         a: docOf(
           [
-            viewports(1, []),
-            viewports(2, [], { times: 1 }),
-            viewports(2, undefined, { times: 1, defer: 'late' }),
-            viewports(3, [vp(CROP3, FEET, true)]),
-            hydrate(),
             // The engine knows page 3 from the start; the registry learns it from the insert.
-            { path: 'pages.list', value: { pageCount: 2, pages: PAGES, namedPages: [] } },
+            { path: 'pages.list', value: listOf(PAGES) },
           ],
-          { pages: PAGES4.slice(0, 3), services: ['page.measure'] },
+          { pages: [...PAGES, INSERTED] },
         ),
       },
     },
@@ -812,7 +809,7 @@ const cases: ScenarioCase[] = [
         type: 'pages.inserted',
         insertedPages: [pr(3)],
         origin: LOCAL,
-        layout: { pageCount: 3, pages: PAGES4.slice(0, 3), labels: [], namedPages: [] },
+        layout: listOf([...PAGES, INSERTED]),
         meta: meta(),
       }),
       m('getPageScale', [pr(3)]),
@@ -821,18 +818,17 @@ const cases: ScenarioCase[] = [
         pages: [pr(1)],
         rotation: 0,
         origin: LOCAL,
-        layout: { pageCount: 3, pages: PAGES4.slice(0, 3), labels: [], namedPages: [] },
+        layout: listOf([...PAGES, INSERTED]),
         meta: meta(),
       }),
-      emit(scaleFact(pr(2))),
+      m('getPageScale', [pr(3)]),
       emit({
         type: 'pages.deleted',
         pages: [pr(2)],
         origin: LOCAL,
-        layout: { pageCount: 2, pages: [PAGES4[0], PAGES4[2]], labels: [], namedPages: [] },
+        layout: listOf([PAGES[0]!, INSERTED]),
         meta: meta(),
       }),
-      settle('late', { viewports: [vp({ x: 0, y: 0, width: 400, height: 500 }, FEET, true)] }),
       m('getPageScale', [pr(2)]),
       m('setScale', [pr(2), FEET, { recalculate: false }]),
     ],
@@ -840,63 +836,37 @@ const cases: ScenarioCase[] = [
   {
     name: 'page-removed-while-a-change-waits',
     covers:
-      'With the required current measure service, a preset change queued behind another on the same page finds the page gone once it runs: the ratio falls back to a userUnit of 1 and the write rejects not-found.',
+      'A change that re-measures waits for the annotations to load. A page deleted meanwhile is still in the change it then sends; the engine refuses it, and the single-page change rejects with that refusal (not-found) and keeps no reports.',
     plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: docOf([
-          ...scaleSequence(1, [FEET]),
-          hydrate([dimensionLine(1)]),
-          write(1, [{ item: updated(dimensionLine(1, { measure: FEET }), true) }], {
-            defer: 'write',
-          }),
-        ]),
-      },
-    },
+    engine: { documents: { a: docOf(removedAnswers) } },
     snapshot: SNAP,
     steps: [
       ...boot,
       m('setScale', [pr(1), FEET]),
-      m('setPreset', [pr(1), 'metric-10', { recalculate: false }]),
+      m('isBusy'),
       emit({
         type: 'pages.deleted',
         pages: [pr(1)],
         origin: LOCAL,
-        layout: { pageCount: 1, pages: [PAGES[1]], labels: [], namedPages: [] },
+        layout: listOf([PAGES[1]!]),
         meta: meta(),
       }),
-      settle(
-        'write',
-        confirmation(1, [{ item: updated(dimensionLine(1, { measure: FEET }), true) }]).value,
-      ),
+      settle('hydrate', REMOVED_HYDRATE.value),
       m('isBusy'),
+      m('listLastReports'),
     ],
   },
   {
     name: 'close-mid-flight',
     covers:
-      "Closing the document while changes run: a single-page change rejects with the engine call's instance-closed, the all-pages change resolves two serialized per-page scale errors and the attempted closed-state update reports instance-closed, and a viewport read in flight is not published.",
+      'Closing the document while changes run: the all-pages change resolves a serialized scale error for each page, the single-page change rejects instance-closed, and the attempted closed-state update reports instance-closed.',
     plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: docOf(
-          [
-            viewports(1, [], { times: 1 }),
-            viewports(1, undefined, { defer: 'read' }),
-            viewports(2, []),
-            { path: 'page.measure.setScale', pon: 1, defer: 'set1' },
-            scaleAnswer(2, { defer: 'set2' }),
-          ],
-          { services: ['page.measure'] },
-        ),
-      },
-    },
+    engine: { documents: { a: docOf(closingAnswers) } },
     snapshot: SNAP,
     steps: [
       ...boot,
       m('setScale', ['all', FEET, { recalculate: false }]),
       m('setScale', [pr(2), METRES, { recalculate: false }]),
-      emit(scaleFact(pr(1))),
       m('isBusy'),
       close(),
     ],
@@ -910,11 +880,9 @@ const functions = {
   setCalibration: model.setCalibration,
   setReports: model.setReports,
   setLocalViewports: model.setLocalViewports,
-  clearLoadError: model.clearLoadError,
   DEFAULT_PRESETS: () => DEFAULT_PRESETS,
   defaultMeasure,
   selectPageScale: model.selectPageScale,
-  pageScaleOf: model.pageScaleOf,
   withUnit,
   withAreaUnit,
   withPrecision,
@@ -959,12 +927,6 @@ const functionCases: FunctionCase[] = [
       },
     ],
   ]),
-  fc(
-    'reduce-unknown',
-    'clearLoadError',
-    [loaded, 99],
-    'Unknown-action dispatch is archived; current absent-error clearing preserves identity without copied dispatch logic.',
-  ),
   fc('default-presets', 'DEFAULT_PRESETS', []),
   fc('default-measure-metric', 'defaultMeasure', ['metric']),
   fc('default-measure-imperial-user-unit', 'defaultMeasure', ['imperial', 2]),
@@ -1056,36 +1018,6 @@ const functionCases: FunctionCase[] = [
   fc('with-precision-not-power', 'withPrecision', [METRES, 50]),
   fc('with-precision-fraction', 'withPrecision', [METRES, 0.1]),
   fc('with-precision-empty-lists', 'withPrecision', [{ ...METRES, distance: [], area: [] }, 10]),
-  fc('page-scale-loading', 'pageScaleOf', [
-    {
-      viewports: undefined,
-      status: 'loading',
-      error: undefined,
-      size: { width: 600, height: 800 },
-      fallback: METRES,
-      persistent: true,
-    },
-  ]),
-  fc('page-scale-failed-known', 'pageScaleOf', [
-    {
-      viewports: [vp({ x: 0, y: 0, width: 600, height: 800 }, FEET, true)],
-      status: 'error',
-      error: { code: 'RuntimeUnavailable', message: 'offline' },
-      size: { width: 600, height: 800 },
-      fallback: METRES,
-      persistent: true,
-    },
-  ]),
-  fc('page-scale-failed-empty', 'pageScaleOf', [
-    {
-      viewports: undefined,
-      status: 'error',
-      error: { code: 'RuntimeUnavailable', message: 'offline' },
-      size: undefined,
-      fallback: METRES,
-      persistent: false,
-    },
-  ]),
 ];
 export const suites: Suite[] = [
   {
