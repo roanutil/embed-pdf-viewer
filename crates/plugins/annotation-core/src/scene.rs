@@ -430,11 +430,21 @@ pub fn scene(item: &RenderItem) -> Vec<SceneNode> {
                 keys.push("hairline");
             }
             // Ink is drawn as Acrobat draws it: round caps and no join, and a
-            // stroke of one point is a dot filled in the stroke's colour.
+            // stroke of one point is a dot filled in the stroke's colour. The
+            // stroke the pen is still drawing is its points (a `poly`), joined
+            // round as a pen lays them.
             if ink {
                 paint.fill = if closed { stroke_color(&item.style) } else { None };
                 paint.line_cap = Some("round".into());
                 keys.push("lineCap");
+                if matches!(node, RenderNode::Poly(_)) {
+                    if paint.join.is_none() {
+                        // A spread adds `join` last when the paint had none.
+                        keys.retain(|k| *k != "join");
+                        keys.push("join");
+                    }
+                    paint.join = Some("round".into());
+                }
             }
             SceneNode::painted(node, paint.ordered(&keys))
         })

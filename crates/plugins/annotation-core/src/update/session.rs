@@ -49,7 +49,11 @@ pub fn tool_annotation(model: &Model, kind: &str, preset: Option<&str>) -> Objec
 
 /// `setDefaults(model, preset, patch)`.
 pub fn set_defaults(model: &Model, preset: &str, patch: &FieldValues) -> Model {
-    let next = json::spread(&defaults_for(model, preset), patch);
+    replace_defaults(model, preset, json::spread(&defaults_for(model, preset), patch))
+}
+
+/// `replaceDefaults(model, preset, defaults)`: set a tool's defaults to exactly `defaults`.
+pub fn replace_defaults(model: &Model, preset: &str, next: FieldValues) -> Model {
     let mut defaults = (*model.defaults).clone();
     defaults.insert(preset.to_string(), next);
     Model { defaults: Rc::new(defaults), ..model.clone() }

@@ -201,6 +201,9 @@ fn transition(model: &Model, message: &Message) -> CoreResult<(Model, Vec<Effect
             none(selection_edits::set_flags(model, patch, ids.as_deref())?)
         }
         Message::SetDefaults { preset, patch } => none(session::set_defaults(model, preset, patch)),
+        Message::ReplaceDefaults { preset, defaults } => {
+            none(session::replace_defaults(model, preset, defaults.clone()))
+        }
         Message::SetSnap { patch } => {
             let merged: Object = json::spread(&model.snap.to_object(), patch);
             // The TypeScript spreads any patch in. Settings the typed

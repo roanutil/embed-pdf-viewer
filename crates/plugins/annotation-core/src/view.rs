@@ -349,6 +349,7 @@ pub fn page_items(model: &Model, page: &PageRef, view: Option<&ViewEnv>) -> Vec<
             let geometry = Shape::Ink(InkShape {
                 ink_list: d.strokes.clone(),
                 rotation: 0.0,
+                drawing: (d.drawing == Some(true)).then_some(true),
                 order: Default::default(),
             });
             Some((d.subtype.clone(), tool, geometry, None, false))
