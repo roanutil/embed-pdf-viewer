@@ -902,7 +902,7 @@ const functionCases: FunctionCase[] = [
     'reduce-page-scale',
     'setLocalViewports',
     [loaded, 2, [vp({ x: 0, y: 0, width: 400, height: 500 }, METRES, true)]],
-    'Surviving fallback viewport storage uses setLocalViewports; removed independently cached public PAGE_SCALE state is archived. Current mirror-backed public projection is tested independently.',
+    'The session keeps its own viewports with setLocalViewports where the engine keeps no scale; a page with the service reads them from its layout. Removed cached public PAGE_SCALE state is archived; the public projection is selectPageScale.',
   ),
   fc('reduce-pending-up', 'beginScaleChange', [loaded]),
   fc(
