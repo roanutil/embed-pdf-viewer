@@ -165,23 +165,18 @@ impl AnnotationLender for FormLender {
         self.core().is_some_and(|core| core.allows("doc.forms.modify"))
     }
 
-    /// `copyOps(refs, placement)`: upstream a390171cc copies a form's widgets
-    /// (`forms.copy`, a radio button's `forms.addWidget`). Not ported yet:
-    /// it needs engine-core's `planFormCopies` and the form plugin's copy
-    /// prediction, a follow-up of its own. Refuses until then.
+    /// `copyOps(refs, placement)`: by hand, a copy is the question, not
+    /// what someone filled in.
     fn copy_ops(
         &self,
-        _refs: &[Value],
-        _page: Option<Value>,
-        _offset: Option<Value>,
+        refs: &[Value],
+        page: Option<Value>,
+        offset: Option<Value>,
     ) -> Promise<(Vec<Value>, Vec<Value>)> {
-        Promise::rejected(epdf_kernel::error::plugin_error(
-            epdf_kernel::error::code::OPERATION_FAILED,
-            "form",
-            "copying a form's widgets is not ported yet",
-            None,
-            None,
-        ))
+        let Some(core) = self.core() else {
+            return Promise::rejected(Error::new("[form] closed"));
+        };
+        core.copy_ops(refs.to_vec(), page, offset, false).map(|(ops, copies, _)| Ok((ops, copies)))
     }
 
     fn picture_epoch(&self, page: &Value) -> String {

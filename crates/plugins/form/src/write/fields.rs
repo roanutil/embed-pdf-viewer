@@ -13,10 +13,13 @@ use epdf_kernel::signal::AbortSignal;
 use serde_json::{Map, Value, json};
 
 use crate::controller::CAPABILITY;
+use crate::engine::copy::CopyPlacement;
 use crate::engine::{draft_writes_scripts, writes_scripts};
+use crate::model::field_key_of;
 use crate::model::{Box, field_by_ref, widget_row_of};
 use crate::sync::predict::undo_look_of;
 use crate::value::{get, items, str_of};
+use crate::write::duplicate::{is_merged, next_choice_of, plan_over, widget_duplicate_of};
 use crate::write::next_in_line::next_in_line;
 
 /// `LOOK`: a widget's look, as `addWidget()` copies it from the field's
@@ -57,26 +60,14 @@ fn export_value_for(field: &Value) -> Option<Value> {
             get(field, "exportValue").filter(|v| !epdf_kernel::is_undefined(v)).cloned()
         }
         Some("radio") => {
-            let widgets = items(field, "widgets");
-            let taken: Vec<String> =
-                widgets.iter().map(|w| crate::value::string_of(get(w, "exportValue"))).collect();
-            let mut n = widgets.len() + 1;
-            while taken.contains(&format!("Choice{n}")) {
-                n += 1;
-            }
-            Some(json!(format!("Choice{n}")))
+            let taken: Vec<String> = items(field, "widgets")
+                .iter()
+                .map(|w| crate::value::string_of(get(w, "exportValue")))
+                .collect();
+            Some(json!(next_choice_of(&taken)))
         }
         _ => None,
     }
-}
-
-/// `isMerged(field)`: the field's dictionary is its only widget's too.
-fn is_merged(field: &Value) -> bool {
-    let reference = get(field, "ref").unwrap_or(&Value::Null);
-    str_of(reference, "kind") == Some("objectNumber")
-        && items(field, "widgets").iter().any(|w| {
-            crate::value::strict_eq(get(w, "objectNumber"), get(reference, "objectNumber"))
-        })
 }
 
 const MODIFY: &str = "doc.forms.modify";
@@ -98,6 +89,147 @@ impl crate::controller::Core {
         let mut change = StagedChange::ops(json!({ "key": format!("form.{verb}") }), vec![op]);
         change.undo = undo;
         self.cx.changes()?.stage(change)
+    }
+
+    /// `stageAll(verb, ops)`: the ops of one design verb as one change, one
+    /// step of the history.
+    fn stage_all(&self, verb: &str, ops: Vec<Value>) -> Result<PendingChange, Error> {
+        let undo = undo_look_of(&self.view(), &ops);
+        let mut change = StagedChange::ops(json!({ "key": format!("form.{verb}") }), ops);
+        change.undo = undo;
+        self.cx.changes()?.stage(change)
+    }
+
+    /// `placementOf(options)`: where a duplicate's copies go, a page index
+    /// as that page's ref.
+    fn placement_of(&self, options: &Value) -> Result<(Option<Value>, Option<Value>), Error> {
+        let page = match get(options, "page").filter(|p| !p.is_null()) {
+            None => None,
+            Some(page) => Some(get(&self.page_of(page)?, "ref").cloned().unwrap_or(Value::Null)),
+        };
+        let offset = get(options, "offset").filter(|o| crate::value::truthy(Some(o))).cloned();
+        Ok((page, offset))
+    }
+
+    /// `copyOps(widgets, placement, values)`: the ops that copy these
+    /// widgets by the designer's rule (`write/duplicate.rs`), under the
+    /// object numbers they take, with each copy's ref and what was left out
+    /// before the engine is asked.
+    pub(crate) fn copy_ops(
+        &self,
+        widgets: Vec<Value>,
+        page: Option<Value>,
+        offset: Option<Value>,
+        values: bool,
+    ) -> Promise<(Vec<Value>, Vec<Value>, Vec<Value>)> {
+        let plan =
+            widget_duplicate_of(&self.view(), &widgets, page, offset, values, self.allows(SCRIPT))
+                .map_err(|error| to_plugin_error(CAPABILITY, &error));
+        let plan = match plan {
+            Ok(plan) => plan,
+            Err(e) => return Promise::rejected(e),
+        };
+        let me = self.rc();
+        Promise::spawn(async move {
+            let taken = if plan.needs == 0 {
+                Vec::new()
+            } else {
+                match me.take_numbers_now(plan.needs)? {
+                    Some(numbers) => numbers,
+                    None => me.take_numbers(plan.needs).await?,
+                }
+            };
+            let (ops, copies) = plan.build(&taken);
+            Ok((ops, copies, plan.dropped))
+        })
+    }
+
+    /// `duplicate(fields, options)`: copy whole fields, each a new field
+    /// named after its original. Resolves `{ fields, widgets, dropped }`.
+    pub fn duplicate(
+        &self,
+        refs: Vec<Value>,
+        options: Value,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        let me = self.rc();
+        Promise::spawn(async move {
+            me.allow("form.duplicate", false)?;
+            if refs.is_empty() {
+                return Ok(json!({ "fields": [], "widgets": [], "dropped": [] }));
+            }
+            let (page, offset) = me.placement_of(&options)?;
+            let values = get(&options, "values").and_then(Value::as_bool).unwrap_or(false);
+            let view = me.view();
+            if view.snapshot.is_none() {
+                return Err(epdf_kernel::error::plugin_error(
+                    code::NOT_READY,
+                    CAPABILITY,
+                    "the form is still loading",
+                    None,
+                    None,
+                ));
+            }
+            // The engine's own plan says how many objects the copies are.
+            let placement = CopyPlacement::of(&json!({ "page": page, "offset": offset }));
+            let count: usize = plan_over(&view, &refs, None, &placement, values, true)
+                .map_err(|error| to_plugin_error(CAPABILITY, &error))?
+                .creates
+                .iter()
+                .map(|c| 1 + c.widgets.len())
+                .sum();
+            let numbers = if count == 0 {
+                Vec::new()
+            } else {
+                match me.take_numbers_now(count)? {
+                    Some(numbers) => numbers,
+                    None => me.take_numbers(count).await?,
+                }
+            };
+            let mut op = Map::new();
+            op.insert("type".into(), json!("forms.copy"));
+            op.insert("fields".into(), Value::Array(refs));
+            if let Some(page) = page {
+                op.insert("page".into(), page);
+            }
+            if let Some(offset) = offset {
+                op.insert("offset".into(), offset);
+            }
+            op.insert("values".into(), json!(values));
+            op.insert("objectNumbers".into(), json!(numbers));
+            let change = me.stage_all("duplicate", vec![Value::Object(op)])?;
+            let item = me.answer(change, signal).await?;
+            let member = |k: &str| get(&item, k).cloned().unwrap_or(Value::Null);
+            Ok(
+                json!({ "fields": member("fields"), "widgets": member("widgets"), "dropped": member("dropped") }),
+            )
+        })
+    }
+
+    /// `duplicateWidgets(widgets, options)`: copy widgets as Duplicate does
+    /// in a form designer.
+    pub fn duplicate_widgets(
+        &self,
+        refs: Vec<Value>,
+        options: Value,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        let me = self.rc();
+        Promise::spawn(async move {
+            me.allow("form.duplicate", false)?;
+            let (page, offset) = me.placement_of(&options)?;
+            let values = get(&options, "values").and_then(Value::as_bool).unwrap_or(false);
+            let (ops, copies, dropped) = me.copy_ops(refs, page, offset, values).await?;
+            if ops.is_empty() {
+                return Ok(json!({ "fields": [], "widgets": [], "dropped": dropped }));
+            }
+            let change = me.stage_all("duplicate", ops)?;
+            let result = me
+                .cancellable(signal, change.result())
+                .await
+                .map_err(|error| to_plugin_error(CAPABILITY, &error))?;
+            Ok(duplicate_result_of(items(&result, "items"), &copies, dropped))
+        })
     }
 
     /// `answer(change, options)`: the engine's answer to a staged design
@@ -384,4 +516,60 @@ impl crate::controller::Core {
             crate::promise::adopt(queued).await
         })
     }
+}
+
+/// `duplicateResultOf(items, copies, dropped)`: what a duplicate of widgets
+/// resolves, read off the engine's answer: the fields it made and each field
+/// that got a new button, as the last op that named them left them; the
+/// copies' rows, in the order their originals were given; and what was left
+/// out, here and by the engine.
+fn duplicate_result_of(answer: &[Value], copies: &[Value], dropped: Vec<Value>) -> Value {
+    let mut fields: indexmap::IndexMap<String, Value> = indexmap::IndexMap::new();
+    let mut rows: std::collections::HashMap<String, Value> = std::collections::HashMap::new();
+    let mut left = dropped;
+    let mut hold = |row: &Value| {
+        if let Some(reference) =
+            get(row, "ref").filter(|r| str_of(r, "kind") == Some("objectNumber"))
+        {
+            rows.insert(
+                crate::value::number_key(
+                    get(reference, "objectNumber").and_then(Value::as_f64).unwrap_or(f64::NAN),
+                ),
+                row.clone(),
+            );
+        }
+    };
+    for item in answer {
+        match str_of(item, "type") {
+            Some("forms.copy") => {
+                for field in items(item, "fields") {
+                    fields.insert(field_key_of(field), field.clone());
+                }
+                items(item, "widgets").iter().for_each(&mut hold);
+                left.extend(items(item, "dropped").iter().cloned());
+            }
+            Some("forms.addWidget") => {
+                let field = get(item, "field").cloned().unwrap_or(Value::Null);
+                fields.insert(field_key_of(&field), field);
+                items(item, "widgets").iter().for_each(&mut hold);
+            }
+            Some("forms.updateWidget") => {
+                if let Some(widget) = get(item, "widget") {
+                    hold(widget);
+                }
+            }
+            _ => {}
+        }
+    }
+    let widgets: Vec<Value> = copies
+        .iter()
+        .filter(|copy| str_of(copy, "kind") == Some("objectNumber"))
+        .filter_map(|copy| {
+            rows.get(&crate::value::number_key(
+                get(copy, "objectNumber").and_then(Value::as_f64).unwrap_or(f64::NAN),
+            ))
+            .cloned()
+        })
+        .collect();
+    json!({ "fields": fields.into_values().collect::<Vec<_>>(), "widgets": widgets, "dropped": left })
 }

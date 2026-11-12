@@ -122,6 +122,8 @@ fn predict_once(index: &Rc<FieldIndex>, op: &Value) -> Result<Rc<FieldIndex>, ep
             }
         }
         "forms.create" => created_field(index, op)?,
+        "forms.copy" => copied_fields(index, op)?,
+        "forms.addWidget" => added_widget(index, op)?,
         "forms.update" => match field_by_ref(index, get(op, "field").unwrap_or(&none)) {
             Some(field) => {
                 let patch = get(op, "patch").cloned().unwrap_or(Value::Null);
@@ -283,6 +285,151 @@ fn created_field(index: &Rc<FieldIndex>, op: &Value) -> Result<Rc<FieldIndex>, e
     })
 }
 
+/// One field a `forms.copy` makes, with the numbers the op names for it.
+struct FieldCopy {
+    plan: crate::engine::copy::PlannedFieldCopy,
+    object_number: Value,
+    widget_object_numbers: Vec<Value>,
+}
+
+/// `copiesOf(index, op)`: the fields a `forms.copy` makes, by the engine's
+/// own rule (`planFormCopies`), each with the object numbers the op names:
+/// its own, then its widgets'. None for a copy that doesn't name them all,
+/// which shows when the engine answers, and none for one the engine would
+/// refuse. What a script right leaves out is the engine's to say.
+fn copies_of(index: &FieldIndex, op: &Value) -> Vec<FieldCopy> {
+    let Some(numbers) = get(op, "objectNumbers").and_then(Value::as_array) else {
+        return Vec::new();
+    };
+    if index.snapshot.is_none() {
+        return Vec::new();
+    }
+    let widgets = get(op, "widgets").and_then(Value::as_array).map(Vec::as_slice);
+    let placement = crate::engine::copy::CopyPlacement::of(op);
+    let values = get(op, "values").and_then(Value::as_bool).unwrap_or(true);
+    let Ok(plan) = crate::write::duplicate::plan_over(
+        index,
+        items(op, "fields"),
+        widgets,
+        &placement,
+        values,
+        true,
+    ) else {
+        return Vec::new();
+    };
+    let needed: usize = plan.creates.iter().map(|c| 1 + c.widgets.len()).sum();
+    if numbers.len() != needed {
+        return Vec::new();
+    }
+    let mut at = 0;
+    plan.creates
+        .into_iter()
+        .map(|create| {
+            let taken = &numbers[at..at + 1 + create.widgets.len()];
+            at += 1 + create.widgets.len();
+            FieldCopy {
+                object_number: taken[0].clone(),
+                widget_object_numbers: taken[1..].to_vec(),
+                plan: create,
+            }
+        })
+        .collect()
+}
+
+/// `copiedFields(index, op)`: each copy as a create of the same field
+/// shows, then its widgets' flags, which a create writes none of, and its value.
+fn copied_fields(index: &Rc<FieldIndex>, op: &Value) -> Result<Rc<FieldIndex>, epdf_kernel::Error> {
+    let mut next = index.clone();
+    for copy in copies_of(index, op) {
+        let reference = json!({ "kind": "objectNumber", "objectNumber": copy.object_number });
+        if field_by_ref(&next, &reference).is_some() {
+            continue;
+        }
+        next = created_field(
+            &next,
+            &json!({
+                "type": "forms.create",
+                "draft": copy.plan.draft,
+                "objectNumber": copy.object_number,
+                "widgetObjectNumbers": copy.widget_object_numbers,
+            }),
+        )?;
+        let Some(made) = field_by_ref(&next, &reference).cloned() else { continue };
+        let rows = rows_of_field(&next, &made)
+            .iter()
+            .enumerate()
+            .map(|(at, row)| {
+                let flags = copy.plan.flags.get(at).cloned().unwrap_or_default();
+                widget_after_patch(row, &Value::Object(flags))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        next = upsert_widgets(&next, &rows);
+        if let Some(value) = &copy.plan.value {
+            let made = field_by_ref(&next, &reference).cloned().unwrap_or(made);
+            next = with_fields(&next, &[field_after_value(&with_rows(&next, &made), value)?]);
+        }
+    }
+    Ok(next)
+}
+
+/// `addedWidget(index, op)`: `forms.addWidget`, once it names its widget's
+/// number: the widget as a create of a field of that kind places it, last
+/// among the field's. One that splits a merged field shows when the engine
+/// answers.
+fn added_widget(index: &Rc<FieldIndex>, op: &Value) -> Result<Rc<FieldIndex>, epdf_kernel::Error> {
+    let Some(object_number) = get(op, "objectNumber").filter(|n| !n.is_null()) else {
+        return Ok(index.clone());
+    };
+    if get(op, "splitObjectNumber").is_some_and(|n| !n.is_null()) {
+        return Ok(index.clone());
+    }
+    let none = Value::Null;
+    let Some(field) = field_by_ref(index, get(op, "field").unwrap_or(&none)).cloned() else {
+        return Ok(index.clone());
+    };
+    let own = get(&field, "ref").cloned().unwrap_or(Value::Null);
+    if str_of(&field, "kind") == Some("unknown") || str_of(&own, "kind") != Some("objectNumber") {
+        return Ok(index.clone());
+    }
+    if widget_row_of(index, object_number.as_f64().unwrap_or(f64::NAN)).is_some() {
+        return Ok(index.clone());
+    }
+    let placement = get(op, "placement").cloned().unwrap_or(Value::Null);
+    let mut draft = serde_json::Map::new();
+    draft.insert("kind".into(), get(&field, "kind").cloned().unwrap_or(Value::Null));
+    draft.insert("name".into(), get(&field, "name").cloned().unwrap_or(Value::Null));
+    if let Some(options) = get(&field, "options") {
+        let options: Vec<Value> = options
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|o| json!({ "label": get(o, "label").cloned().unwrap_or(Value::Null), "value": get(o, "value").cloned().unwrap_or(Value::Null) }))
+            .collect();
+        draft.insert("options".into(), Value::Array(options));
+    }
+    draft.insert("widgets".into(), json!([placement]));
+    let made = form_field_of_draft(
+        &Value::Object(draft),
+        &FieldDraftContext {
+            object_number: get(&own, "objectNumber").and_then(Value::as_f64).unwrap_or(f64::NAN),
+            widgets: vec![json!({
+                "kind": "objectNumber",
+                "page": get(&placement, "page").cloned().unwrap_or(Value::Null),
+                "objectNumber": object_number,
+            })],
+        },
+    )?;
+    let (Some(widget), Some(row)) =
+        (items(&made.field, "widgets").first().cloned(), made.widgets.first().cloned())
+    else {
+        return Ok(index.clone());
+    };
+    let mut widgets = items(&field, "widgets").to_vec();
+    widgets.push(widget);
+    let grown = crate::value::spread(&field, [("widgets", Value::Array(widgets))]);
+    Ok(upsert_widgets(&upsert_fields(index, &[grown]), &[row]))
+}
+
 /// `fieldsNamedBy(index, ops)`: the fields a change's ops write a value or
 /// a look to, each once, in op order.
 pub fn fields_named_by(index: &FieldIndex, ops: &[Value]) -> Vec<Value> {
@@ -354,6 +501,25 @@ fn undo_of_op(index: &FieldIndex, op: &Value) -> Vec<Value> {
             Some(n) => vec![json!({
                 "type": "forms.delete",
                 "field": { "kind": "objectNumber", "objectNumber": n },
+            })],
+        },
+        // The copies go, the last made first.
+        "forms.copy" => copies_of(index, op)
+            .into_iter()
+            .rev()
+            .map(|copy| {
+                json!({ "type": "forms.delete", "field": { "kind": "objectNumber", "objectNumber": copy.object_number } })
+            })
+            .collect(),
+        "forms.addWidget" => match get(op, "objectNumber").filter(|n| !n.is_null()) {
+            None => Vec::new(),
+            Some(n) => vec![json!({
+                "type": "forms.deleteWidget",
+                "widget": {
+                    "kind": "objectNumber",
+                    "page": get(op, "placement").and_then(|p| get(p, "page")).cloned().unwrap_or(Value::Null),
+                    "objectNumber": n,
+                },
             })],
         },
         "forms.update" | "forms.delete" => field_by_ref(index, get(op, "field").unwrap_or(&none))

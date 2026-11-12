@@ -87,6 +87,8 @@ const MEMBERS: &[&str] = &[
     "resetFormAction",
     "create",
     "addWidget",
+    "duplicate",
+    "duplicateWidgets",
     "update",
     "reorderCalculations",
     "delete",
@@ -310,6 +312,16 @@ fn call_form(
         "addWidget" => {
             let placement = arg(args, 1).cloned().unwrap_or_else(|| json!({}));
             Outcome::Promise(cap.add_widget(value(args, 0), placement, None))
+        }
+        "duplicate" => {
+            let refs = arg(args, 0).and_then(Value::as_array).cloned().unwrap_or_default();
+            let options = arg(args, 1).map(without_signal).unwrap_or_else(|| json!({}));
+            Outcome::Promise(cap.duplicate(refs, options, None))
+        }
+        "duplicateWidgets" => {
+            let refs = arg(args, 0).and_then(Value::as_array).cloned().unwrap_or_default();
+            let options = arg(args, 1).map(without_signal).unwrap_or_else(|| json!({}));
+            Outcome::Promise(cap.duplicate_widgets(refs, options, None))
         }
         "update" => Outcome::Promise(cap.update(value(args, 0), value(args, 1), None)),
         "reorderCalculations" => {

@@ -15,8 +15,8 @@ use crate::engine::page_refs_equal;
 use indexmap::IndexMap;
 
 use crate::model::{
-    FieldIndex, canonical_key, field_by_key, shared_field_by_key, shared_field_by_ref,
-    shared_field_for_widget, shared_widget_row_of, widget_row_of,
+    FieldIndex, canonical_key, field_by_key, field_key_of, shared_field_by_key,
+    shared_field_by_ref, shared_field_for_widget, shared_widget_row_of, widget_row_of,
 };
 use crate::value::{get, items, str_of, truthy};
 
@@ -345,17 +345,26 @@ impl crate::controller::Core {
             return answer.clone();
         }
         computed();
-        let answer = match selected.as_deref().map(Vec::as_slice) {
-            Some([only])
-                if get(only, "subtype")
+        // Several widgets of one field (a radio group's buttons) are that
+        // field's selection too.
+        let answer = (|| {
+            let mut found: Option<Rc<Value>> = None;
+            for annotation in selected.as_deref().into_iter().flatten() {
+                let widget_kind = get(annotation, "subtype")
                     .and_then(Value::as_str)
-                    .is_some_and(|subtype| subtype.starts_with("widget")) =>
-            {
-                let widget = widget_object_of(get(only, "ref").unwrap_or(&Value::Null));
-                shared_field_for_widget(&index, widget).cloned()
+                    .is_some_and(|subtype| subtype.starts_with("widget"));
+                if !widget_kind {
+                    return None;
+                }
+                let widget = widget_object_of(get(annotation, "ref").unwrap_or(&Value::Null));
+                let field = shared_field_for_widget(&index, widget)?.clone();
+                if found.as_ref().is_some_and(|f| field_key_of(f) != field_key_of(&field)) {
+                    return None;
+                }
+                found = Some(field);
             }
-            _ => None,
-        };
+            found
+        })();
         *self.reads.selected.borrow_mut() = Some((index, selected, answer.clone()));
         answer
     }

@@ -1,6 +1,7 @@
 //! `write/`: the verbs that change the form.
 
 pub mod activation;
+pub mod duplicate;
 pub mod fields;
 pub mod fill;
 pub mod interchange;
