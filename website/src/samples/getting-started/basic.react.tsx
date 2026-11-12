@@ -5,14 +5,14 @@ import { RenderLayer, renderPlugin } from '@embedpdf/react/render';
 import { localEngine } from '@embedpdf/engine';
 
 // The engine is created synchronously and costs nothing until first use, so
-// a module-scope `const engine = …` is safe — even under SSR. Only opening a
+// a module-scope `const engine = …` is safe, even under SSR. Only opening a
 // document does real work: the UI renders at t≈0.
 const engine = localEngine();
 const plugins = [stagePlugin(), renderPlugin()];
 
 // The local engine opens bytes: fetch lazily, under the loading tab.
 const welcome = async (): Promise<OpenInput> => {
-  const response = await fetch('/pdfs/welcome.pdf');
+  const response = await fetch('https://www.embedpdf.com/pdfs/welcome.pdf');
   return { kind: 'bytes', id: 'welcome', bytes: new Uint8Array(await response.arrayBuffer()) };
 };
 
@@ -20,7 +20,7 @@ export default function App() {
   return (
     <Viewer engine={engine} plugins={plugins} initialDocuments={[{ source: welcome }]}>
       <div style={{ height: 500 }}>
-        {/* Document UI is defined over a document — gate it on having one. */}
+        {/* Document UI is defined over a document: gate it on having one. */}
         <DocumentGate fallback={<p>Loading…</p>}>
           <Stage style={{ height: '100%' }}>{() => <RenderLayer />}</Stage>
         </DocumentGate>

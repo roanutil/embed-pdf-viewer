@@ -51,8 +51,8 @@ export function numbersNamedBy(changes: readonly RequestedChange[]): number[] {
  * How many objects a request's changes may make for themselves (appearance
  * streams, fonts, the pages they insert, the files they embed), as the single
  * verbs estimated theirs: form writes regenerate many widget appearances,
- * inserted pages and embedded files need their own objects, every other write
- * few.
+ * inserted pages, embedded files and copied annotations and fields need
+ * their own objects, every other write few.
  */
 export function objectNumberEstimateOf(changes: readonly RequestedChange[]): number {
   const forms = changes.some(
@@ -62,6 +62,8 @@ export function objectNumberEstimateOf(changes: readonly RequestedChange[]): num
   const undo = changes.some(({ change }) => isUndoChange(change));
   let pages = 0;
   let files = 0;
+  let copies = 0;
+  let fields = 0;
   for (const { change } of changes) {
     if (isUndoChange(change)) continue;
     for (const op of change.ops) {
@@ -73,13 +75,19 @@ export function objectNumberEstimateOf(changes: readonly RequestedChange[]): num
         pages += OBJECT_NUMBER_ESTIMATES.copiedPages(op.pages.length);
       } else if (op.type === 'attachments.create') {
         files += 1;
+      } else if (op.type === 'annotations.copy') {
+        copies += op.refs.length;
+      } else if (op.type === 'forms.copy') {
+        fields += op.fields.length;
       }
     }
   }
   return (
     (forms || undo ? OBJECT_NUMBER_ESTIMATES.forms : OBJECT_NUMBER_ESTIMATES.default) +
     pages +
-    OBJECT_NUMBER_ESTIMATES.embeddedFiles(files)
+    OBJECT_NUMBER_ESTIMATES.embeddedFiles(files) +
+    OBJECT_NUMBER_ESTIMATES.copiedAnnotations(copies) +
+    OBJECT_NUMBER_ESTIMATES.copiedFields(fields)
   );
 }
 
@@ -109,6 +117,8 @@ export interface ChangeFacts {
   readonly attachments: boolean;
   /** The page order, the pages' rotations, or the page set (`layout_version`). */
   readonly layout: boolean;
+  /** A page's scale, which the layout carries (`viewports_version`). */
+  readonly viewports: boolean;
   /** How the page set changed, in the order the items did it: the commit replays it on `layer_pages`. */
   readonly pageSet: readonly PageSetStep[];
 }
@@ -135,6 +145,7 @@ export function factsOf(results: readonly ChangeResult[]): ChangeFacts {
   let outline = false;
   let attachments = false;
   let layout = false;
+  let viewports = false;
   const pageSetChanged = (
     kind: PageSetStep['kind'],
     pages: readonly { objectNumber: number }[],
@@ -158,6 +169,8 @@ export function factsOf(results: readonly ChangeResult[]): ChangeFacts {
       outline = true;
     } else if (item.type.startsWith('attachments.')) {
       attachments = true;
+    } else if (item.type === 'pages.setScale') {
+      viewports = true;
     } else if (item.type.startsWith('pages.')) {
       layout = true;
       if (item.type === 'pages.delete') pageSetChanged('remove', item.pages);
@@ -179,6 +192,7 @@ export function factsOf(results: readonly ChangeResult[]): ChangeFacts {
     outline,
     attachments,
     layout,
+    viewports,
     pageSet,
   };
 }

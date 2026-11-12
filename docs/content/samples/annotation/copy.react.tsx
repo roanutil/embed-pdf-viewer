@@ -19,7 +19,7 @@ const plugins = [stagePlugin(), renderPlugin(), interactionPlugin(), annotationP
 
 // [!doc-source layout]
 const layout = async (): Promise<OpenInput> => {
-  const response = await fetch('/pdfs/layout.pdf');
+  const response = await fetch('https://www.embedpdf.com/pdfs/layout.pdf');
   return { kind: 'bytes', id: 'layout', bytes: new Uint8Array(await response.arrayBuffer()) };
 };
 // [!/doc-source]
@@ -43,7 +43,7 @@ function SelectSquare() {
   return null;
 }
 
-// A read passed to create() makes the same annotation again, here on the next page.
+// duplicate() copies the selected annotation, here onto the next page.
 function CopyButton() {
   const annotation = useAnnotation();
   const stage = useStage();
@@ -58,11 +58,12 @@ function CopyButton() {
 
   const copyToNextPage = async () => {
     if (!first || !next) return;
-    const copy = annotation.get(first.ref)!;
-    const { annotation: made } = await annotation.create(next.ref, copy, undefined, {
+    const { annotations } = await annotation.duplicate([first.ref], {
+      page: next.ref,
       select: true, // so the next click copies the copy, a page further
     });
-    stage.reveal(next.ref, { rect: made.rect });
+    const [made] = annotations;
+    if (made) stage.reveal(next.ref, { rect: made.rect });
     setStatus(`Copied to page ${next.index + 1}`);
   };
 

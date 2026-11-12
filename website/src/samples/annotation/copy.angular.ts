@@ -19,12 +19,12 @@ import { EpdfAnnotation, EpdfAnnotationLayer, withAnnotation } from '@embedpdf/a
 import { localEngine } from '@embedpdf/engine';
 
 const layout = async (): Promise<OpenInput> => {
-  const response = await fetch('/pdfs/layout.pdf');
+  const response = await fetch('https://www.embedpdf.com/pdfs/layout.pdf');
   return { kind: 'bytes', id: 'layout', bytes: new Uint8Array(await response.arrayBuffer()) };
 };
 
 /**
- * A read passed to create() makes the same annotation again, here on the next page. Next to
+ * duplicate() copies the selected annotation, here onto the next page. Next to
  * `<epdf-stage #stage="epdfStage">`: `<demo-copy-button [stage]="stage" />`.
  */
 @Component({
@@ -66,11 +66,12 @@ export class CopyButton {
     const first = this.first();
     const next = this.next();
     if (!first || !next) return;
-    const copy = this.annotation.get(first.ref)!;
-    const { annotation: made } = await this.annotation.create(next.ref, copy, undefined, {
+    const { annotations } = await this.annotation.duplicate([first.ref], {
+      page: next.ref,
       select: true, // so the next click copies the copy, a page further
     });
-    this.stage().reveal(next.ref, { rect: made.rect });
+    const [made] = annotations;
+    if (made) this.stage().reveal(next.ref, { rect: made.rect });
     this.status.set(`Copied to page ${next.index + 1}`);
   }
 }

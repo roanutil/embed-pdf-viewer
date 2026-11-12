@@ -1,5 +1,21 @@
 # @embedpdf/engine-services
 
+## 3.2.0
+
+### Minor Changes
+
+- [#1071](https://github.com/embedpdf/embed-pdf-viewer/pull/1071) by [@bobsingor](https://github.com/bobsingor) – The worker applies the new op `annotations.copy`. It reads each named annotation, creates the copies as one change, all or nothing, and records the reverse, so an undo deletes them. A copied stamp places the drawing its original places, so the document gets no second drawing, and a copied attachment gets the same file bytes with its dates. Every create is checked before the first write: the session needs `doc.annotate.read` and the right to create each kind. A copy carries what a bundle may: as many annotations, and as many drawings and files, of that size each and together. A drawing counts once however many copies place it. Past a limit the copy is refused with `PayloadTooLarge` before anything is written. `document.applyChanges` takes the deployment's `limits`; without them the defaults apply.
+
+- [#1075](https://github.com/embedpdf/embed-pdf-viewer/pull/1075) by [@bobsingor](https://github.com/bobsingor) – The worker applies the new op `forms.copy`. It reads the form, plans the copies before the first write, and creates each new field as a design import creates one: with its widgets, their flags, its value when asked, and its place in the calculation order. Its reverse deletes the fields it made, the last first. It needs `doc.forms.modify`; a script, a submit or a link is left out and reported without `doc.forms.script`. A copy names at most as many fields as the bundle limits' `items`; more is refused with `PayloadTooLarge` before the form is read.
+
+- [#1049](https://github.com/embedpdf/embed-pdf-viewer/pull/1049) by [@bobsingor](https://github.com/bobsingor) – `annotations.update` and `forms.updateWidget` write a new `nm` to the annotation's own `/NM`, or remove it for `null`. The object, its replies, its appearance and its other keys stay as they are. A name another annotation on the page has is refused with `InvalidArg`. An empty name removes `/NM`, as a create given one writes none.
+
+## 3.1.0
+
+### Minor Changes
+
+- [#1030](https://github.com/embedpdf/embed-pdf-viewer/pull/1030) by [@bobsingor](https://github.com/bobsingor) – Listing pages reads each page's measurement viewports from its dictionary, without loading the page, and `measure.viewports` and scale writes no longer load the page either. A `pages.setScale` op applies a scale to every page it names, taking a scale's origin on each page's own visible box, and records each page's previous scale for undo.
+
 ## 3.0.0
 
 ### Major Changes

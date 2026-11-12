@@ -103,6 +103,7 @@ export const en: Locale = {
         saveFile: 'Save file',
         removeLink: 'Remove link',
         delete: 'Delete',
+        duplicate: 'Duplicate',
         group: 'Group',
         ungroup: 'Ungroup',
         stampFromSelection: 'Make stamp',
@@ -284,7 +285,7 @@ export const en: Locale = {
       cancel: 'Cancel',
       close: 'Close without saving',
     },
-    // The View only label in the main bar, while nothing can change the document.
+    // The View only label, where the layout puts it, while nothing can change the document.
     viewOnly: {
       label: 'View only',
       turnedOff: 'The tools that change this document are turned off',
@@ -505,6 +506,7 @@ export const en: Locale = {
       box: 'Box {number}',
       addButton: 'Add a button',
       addBox: 'Add a box',
+      duplicateGroup: 'Duplicate group',
     },
     // The style panel's own words around the properties.
     stylePanel: {

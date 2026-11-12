@@ -1,5 +1,34 @@
 # @embedpdf/plugin-annotation
 
+## 3.2.0
+
+### Minor Changes
+
+- [#1071](https://github.com/embedpdf/embed-pdf-viewer/pull/1071) by [@bobsingor](https://github.com/bobsingor) – New `duplicate(refs, { page?, offset?, select? })` copies annotations in the same document. The copies show at once, it is one step to undo, labelled `annotation.duplicate`, and it resolves `{ annotations, dropped }`. A stamp keeps its drawing and an attachment its file, with nothing to download, and an annotation keeps its link. `selection.duplicate({ offset? })` copies the selection 10 points right and down, or left or up near the page's edge, and selects the copies. `canDuplicate(refs)` and `selection.canDuplicate()` are false without the right to create and for a locked annotation, whose copy would be locked too; code can still copy one. `isMovable(ref)` says whether an annotation is one people move: false for one that sits on text, such as a highlight. Past the engine's bundle limits (10,000 annotations by default) `duplicate()` is refused with `invalid-input`, and nothing is copied.
+
+- [#1075](https://github.com/embedpdf/embed-pdf-viewer/pull/1075) by [@bobsingor](https://github.com/bobsingor) – `selection.duplicate()` copies a form's widgets too, in design mode: their owner says how (a radio button's copy joins its group, any other widget's is a new field), and the copies are made in the same change as the annotations', so a selection of both is one step to undo. `selection.canDuplicate()` asks the owner for them. `duplicate(refs)` still refuses a widget. For a plugin that lends records (`AnnotationLender`): `copyOps(refs, placement)` gives the ops that copy its records, and `getAuthority()` also says `copy`.
+
+- [#1054](https://github.com/embedpdf/embed-pdf-viewer/pull/1054) by [@bobsingor](https://github.com/bobsingor) – `import()` is now one step to undo: an undo takes away every annotation the import added, and a redo brings them back under the same refs. It is sent after the changes staged before it, typed text included. An app that imports by itself, such as loading stored annotations when a document opens, passes `history: false` to keep the import out of undo and redo: `annotation.import(bundle, { history: false })`.
+
+## 3.1.0
+
+### Patch Changes
+
+- [#1030](https://github.com/embedpdf/embed-pdf-viewer/pull/1030) by [@bobsingor](https://github.com/bobsingor) – The measurement host seam stages a page's re-measure at once (`whenRemeasurable()`, `stageRemeasure()`), so a scale change takes it into its own change.
+
+- [#1022](https://github.com/embedpdf/embed-pdf-viewer/pull/1022) by [@bobsingor](https://github.com/bobsingor) – The `tools` setting applies its entries in order, so each tool behaves the way the list reads:
+  - A change reaches only the tool it names. Changing `ink` no longer changes the built-in
+    highlighter, and changing `line`, `polyline` or `polygon` no longer changes the Distance,
+    Calibrate, Perimeter or Area tools.
+  - `extends` starts from a copy of a tool listed before it, as the entries above it left it. A
+    change written after it doesn't reach the copy. Naming a tool that only comes later throws an
+    error that says so.
+  - `extends` no longer copies `meta`, so a tool you make never shows the label or icon of the tool
+    it came from.
+  - `tools.register()` adds one more entry after the setting's. It can extend a tool registered
+    before it, and the function it returns puts a tool it changed back the way it was, defaults
+    included, where it used to remove the tool.
+
 ## 3.0.0
 
 ### Major Changes

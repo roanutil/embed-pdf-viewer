@@ -7,11 +7,13 @@ export type ChangeOp =
     | CloudPDF.ChangeOp.AnnotationsUpdate
     | CloudPDF.ChangeOp.AnnotationsDelete
     | CloudPDF.ChangeOp.AnnotationsReorder
+    | CloudPDF.ChangeOp.AnnotationsCopy
     | CloudPDF.ChangeOp.FormsSetValue
     | CloudPDF.ChangeOp.FormsSetDisplay
     | CloudPDF.ChangeOp.FormsSetAppearanceText
     | CloudPDF.ChangeOp.FormsReset
     | CloudPDF.ChangeOp.FormsCreate
+    | CloudPDF.ChangeOp.FormsCopy
     | CloudPDF.ChangeOp.FormsUpdate
     | CloudPDF.ChangeOp.FormsDelete
     | CloudPDF.ChangeOp.FormsAddWidget
@@ -28,6 +30,7 @@ export type ChangeOp =
     | CloudPDF.ChangeOp.OutlineMove
     | CloudPDF.ChangeOp.OutlineDelete
     | CloudPDF.ChangeOp.PagesRotate
+    | CloudPDF.ChangeOp.PagesSetScale
     | CloudPDF.ChangeOp.PagesReorder
     | CloudPDF.ChangeOp.PagesDelete
     | CloudPDF.ChangeOp.PagesInsertBlank
@@ -80,6 +83,21 @@ export namespace ChangeOp {
         position: CloudPDF.AnnotationPosition;
     }
 
+    export interface AnnotationsCopy {
+        type: "annotations.copy";
+        refs: CloudPDF.AnnotationRef[];
+        page?: CloudPDF.PageRef | undefined;
+        offset?: ChangeOpAnnotationsCopy.Offset | undefined;
+        objectNumbers?: number[] | undefined;
+    }
+
+    export namespace ChangeOpAnnotationsCopy {
+        export interface Offset {
+            x: number;
+            y: number;
+        }
+    }
+
     export interface FormsSetValue {
         type: "forms.setValue";
         field: CloudPDF.FormFieldRef;
@@ -119,6 +137,23 @@ export namespace ChangeOp {
         draft: CloudPDF.FormFieldDraft;
         objectNumber?: number | undefined;
         widgetObjectNumbers?: number[] | undefined;
+    }
+
+    export interface FormsCopy {
+        type: "forms.copy";
+        fields: CloudPDF.FormFieldRef[];
+        widgets?: CloudPDF.AnnotationRef[] | undefined;
+        page?: CloudPDF.PageRef | undefined;
+        offset?: ChangeOpFormsCopy.Offset | undefined;
+        values?: boolean | undefined;
+        objectNumbers?: number[] | undefined;
+    }
+
+    export namespace ChangeOpFormsCopy {
+        export interface Offset {
+            x: number;
+            y: number;
+        }
     }
 
     export interface FormsUpdate {
@@ -229,6 +264,230 @@ export namespace ChangeOp {
         type: "pages.rotate";
         pages: CloudPDF.PageRef[];
         rotation: number;
+    }
+
+    export interface PagesSetScale {
+        type: "pages.setScale";
+        pages: CloudPDF.PageRef[];
+        measure: ChangeOpPagesSetScale.Measure | null;
+    }
+
+    export namespace ChangeOpPagesSetScale {
+        export interface Measure {
+            subtype: Measure.Subtype;
+            ratio?: string | undefined;
+            x: Measure.X.Item[];
+            y?: Measure.Y.Item[] | undefined;
+            distance: Measure.Distance.Item[];
+            area: Measure.Area.Item[];
+            angle?: Measure.Angle.Item[] | undefined;
+            slope?: Measure.Slope.Item[] | undefined;
+            origin?: Measure.Origin | undefined;
+            cyx?: number | undefined;
+        }
+
+        export namespace Measure {
+            export const Subtype = {
+                Rectilinear: "rectilinear",
+            } as const;
+            export type Subtype = (typeof Subtype)[keyof typeof Subtype];
+            export type X = X.Item[];
+
+            export namespace X {
+                export interface Item {
+                    unit: string;
+                    conversion: number;
+                    fraction?: Item.Fraction | undefined;
+                    precision?: number | undefined;
+                    fixed?: boolean | undefined;
+                    thousands?: string | undefined;
+                    decimal?: string | undefined;
+                    prefixSpacing?: string | undefined;
+                    suffixSpacing?: string | undefined;
+                    labelPosition?: Item.LabelPosition | undefined;
+                }
+
+                export namespace Item {
+                    export const Fraction = {
+                        Decimal: "decimal",
+                        Fraction: "fraction",
+                        Round: "round",
+                        Truncate: "truncate",
+                    } as const;
+                    export type Fraction = (typeof Fraction)[keyof typeof Fraction];
+                    export const LabelPosition = {
+                        Suffix: "suffix",
+                        Prefix: "prefix",
+                    } as const;
+                    export type LabelPosition = (typeof LabelPosition)[keyof typeof LabelPosition];
+                }
+            }
+
+            export type Y = Y.Item[];
+
+            export namespace Y {
+                export interface Item {
+                    unit: string;
+                    conversion: number;
+                    fraction?: Item.Fraction | undefined;
+                    precision?: number | undefined;
+                    fixed?: boolean | undefined;
+                    thousands?: string | undefined;
+                    decimal?: string | undefined;
+                    prefixSpacing?: string | undefined;
+                    suffixSpacing?: string | undefined;
+                    labelPosition?: Item.LabelPosition | undefined;
+                }
+
+                export namespace Item {
+                    export const Fraction = {
+                        Decimal: "decimal",
+                        Fraction: "fraction",
+                        Round: "round",
+                        Truncate: "truncate",
+                    } as const;
+                    export type Fraction = (typeof Fraction)[keyof typeof Fraction];
+                    export const LabelPosition = {
+                        Suffix: "suffix",
+                        Prefix: "prefix",
+                    } as const;
+                    export type LabelPosition = (typeof LabelPosition)[keyof typeof LabelPosition];
+                }
+            }
+
+            export type Distance = Distance.Item[];
+
+            export namespace Distance {
+                export interface Item {
+                    unit: string;
+                    conversion: number;
+                    fraction?: Item.Fraction | undefined;
+                    precision?: number | undefined;
+                    fixed?: boolean | undefined;
+                    thousands?: string | undefined;
+                    decimal?: string | undefined;
+                    prefixSpacing?: string | undefined;
+                    suffixSpacing?: string | undefined;
+                    labelPosition?: Item.LabelPosition | undefined;
+                }
+
+                export namespace Item {
+                    export const Fraction = {
+                        Decimal: "decimal",
+                        Fraction: "fraction",
+                        Round: "round",
+                        Truncate: "truncate",
+                    } as const;
+                    export type Fraction = (typeof Fraction)[keyof typeof Fraction];
+                    export const LabelPosition = {
+                        Suffix: "suffix",
+                        Prefix: "prefix",
+                    } as const;
+                    export type LabelPosition = (typeof LabelPosition)[keyof typeof LabelPosition];
+                }
+            }
+
+            export type Area = Area.Item[];
+
+            export namespace Area {
+                export interface Item {
+                    unit: string;
+                    conversion: number;
+                    fraction?: Item.Fraction | undefined;
+                    precision?: number | undefined;
+                    fixed?: boolean | undefined;
+                    thousands?: string | undefined;
+                    decimal?: string | undefined;
+                    prefixSpacing?: string | undefined;
+                    suffixSpacing?: string | undefined;
+                    labelPosition?: Item.LabelPosition | undefined;
+                }
+
+                export namespace Item {
+                    export const Fraction = {
+                        Decimal: "decimal",
+                        Fraction: "fraction",
+                        Round: "round",
+                        Truncate: "truncate",
+                    } as const;
+                    export type Fraction = (typeof Fraction)[keyof typeof Fraction];
+                    export const LabelPosition = {
+                        Suffix: "suffix",
+                        Prefix: "prefix",
+                    } as const;
+                    export type LabelPosition = (typeof LabelPosition)[keyof typeof LabelPosition];
+                }
+            }
+
+            export type Angle = Angle.Item[];
+
+            export namespace Angle {
+                export interface Item {
+                    unit: string;
+                    conversion: number;
+                    fraction?: Item.Fraction | undefined;
+                    precision?: number | undefined;
+                    fixed?: boolean | undefined;
+                    thousands?: string | undefined;
+                    decimal?: string | undefined;
+                    prefixSpacing?: string | undefined;
+                    suffixSpacing?: string | undefined;
+                    labelPosition?: Item.LabelPosition | undefined;
+                }
+
+                export namespace Item {
+                    export const Fraction = {
+                        Decimal: "decimal",
+                        Fraction: "fraction",
+                        Round: "round",
+                        Truncate: "truncate",
+                    } as const;
+                    export type Fraction = (typeof Fraction)[keyof typeof Fraction];
+                    export const LabelPosition = {
+                        Suffix: "suffix",
+                        Prefix: "prefix",
+                    } as const;
+                    export type LabelPosition = (typeof LabelPosition)[keyof typeof LabelPosition];
+                }
+            }
+
+            export type Slope = Slope.Item[];
+
+            export namespace Slope {
+                export interface Item {
+                    unit: string;
+                    conversion: number;
+                    fraction?: Item.Fraction | undefined;
+                    precision?: number | undefined;
+                    fixed?: boolean | undefined;
+                    thousands?: string | undefined;
+                    decimal?: string | undefined;
+                    prefixSpacing?: string | undefined;
+                    suffixSpacing?: string | undefined;
+                    labelPosition?: Item.LabelPosition | undefined;
+                }
+
+                export namespace Item {
+                    export const Fraction = {
+                        Decimal: "decimal",
+                        Fraction: "fraction",
+                        Round: "round",
+                        Truncate: "truncate",
+                    } as const;
+                    export type Fraction = (typeof Fraction)[keyof typeof Fraction];
+                    export const LabelPosition = {
+                        Suffix: "suffix",
+                        Prefix: "prefix",
+                    } as const;
+                    export type LabelPosition = (typeof LabelPosition)[keyof typeof LabelPosition];
+                }
+            }
+
+            export interface Origin {
+                x: number;
+                y: number;
+            }
+        }
     }
 
     export interface PagesReorder {

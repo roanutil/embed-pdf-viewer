@@ -12,7 +12,8 @@
  * Samples emit per flavor: the engine import/factory lines swap from
  * `engines.mjs`, each `// [!doc-source <key>]` block swaps to the
  * flavor's form from `documents.mjs`, each `// [!doc-range <key> <name>]`
- * block gets the flavor's characters of that document (`swapDocRanges`), and
+ * block gets the flavor's characters of that document (`swapDocRanges`), each
+ * demo document's full URL names the flavor's own site (`swapDocumentSite`), and
  * a `// [!asset-engine]` block (the browser-side engine a stamp library opens
  * on) swaps to the flavor's
  * `assetEngine` — the document's own engine locally, a local engine beside
@@ -40,7 +41,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { DEMO_DOCUMENTS } from '../documents.mjs';
+import { DEMO_DOCUMENTS, DOCUMENT_SITES } from '../documents.mjs';
 import { ENGINES } from '../engines.mjs';
 import { writePublishStatus } from './publish-gate.mjs';
 import { checkReference } from './reference.mjs';
@@ -213,6 +214,7 @@ function mountPages(mount, engine, skipped = new Map()) {
     let mdx = source;
     if (mount.swapsEngineImports) mdx = swapEngineImports(mdx, engine);
     if (mount.swapsViewer) mdx = swapViewerCode(mdx, engine);
+    mdx = swapDocumentSite(mdx, engine);
     pages.push({ source: `${mount.from}/${relative}`, emitAs, mdx });
   }
   return pages;
@@ -392,6 +394,16 @@ function swapDocRanges(source, engine, relative) {
 /** A range as a sample writes it in an object: `start: 28, count: 9`. */
 const rangeCode = ({ start, count }) => `start: ${start}, count: ${count}`;
 
+/**
+ * The demo documents on the flavor's own site. Code gives each by its full URL on embedpdf.com,
+ * so it opens wherever a reader pastes it; cloudpdf.com serves the same files at its own
+ * (`DOCUMENT_SITES`), its own brand's welcome among them. Runs after the viewer's swaps, which
+ * find a document by its embedpdf.com URL.
+ */
+function swapDocumentSite(source, engine) {
+  return source.replaceAll(`${DOCUMENT_SITES.local}/pdfs/`, `${DOCUMENT_SITES[engine]}/pdfs/`);
+}
+
 // ── the ready-made viewer ───────────────────────────────────────────────────
 
 /** A viewer document's declaration, up to its value: `const welcome = `, `readonly welcome = `. */
@@ -526,9 +538,34 @@ function swapViewerCode(mdx, engine) {
 export function transformFile(source, engine, relative, { viewer }) {
   if (!integrationOf(relative)) return source; // an example's stylesheet: engine-neutral
   const ranged = swapDocRanges(source, engine, relative);
-  return viewer
+  const output = viewer
     ? transformViewerFile(ranged, engine, relative)
     : transformSample(ranged, engine, relative);
+  return swapDocumentSite(output, engine);
+}
+
+/** Where a site keeps its copy of the examples and snippets. */
+const SAMPLES_DIR = 'src/samples';
+
+/**
+ * The examples and snippets a flavor's site has, as it shows them: each file's path under the
+ * site's samples (`search/basic.react.tsx`, `snippets/start/save-button.vue`) and its code.
+ */
+export function siteSamples(engine, frameworks = ALL_FRAMEWORKS) {
+  const samples = new Map();
+  for (const mount of MOUNTS.samples) {
+    const root = path.join(contentRoot, mount.from);
+    const relatives = walk(root).map((file) => toPosix(path.relative(root, file)));
+    for (const { source: relative, emitAs } of siteFiles(relatives, engine)) {
+      const integration = integrationOf(emitAs);
+      // `--frameworks` narrows the frameworks; a plain HTML page belongs to none of them.
+      if (integration && integration !== 'vanilla' && !frameworks.includes(integration)) continue;
+      const source = fs.readFileSync(path.join(root, relative), 'utf8');
+      const emitted = transformFile(source, engine, emitAs, { viewer: mount.viewer(emitAs) });
+      samples.set(toPosix(path.join(path.relative(SAMPLES_DIR, mount.to), emitAs)), emitted);
+    }
+  }
+  return samples;
 }
 
 // ── the site's copy ─────────────────────────────────────────────────────────
@@ -562,17 +599,8 @@ function buildExpected(engine, frameworks) {
     }
   }
 
-  for (const mount of MOUNTS.samples) {
-    const root = path.join(contentRoot, mount.from);
-    const relatives = walk(root).map((file) => toPosix(path.relative(root, file)));
-    for (const { source: relative, emitAs } of siteFiles(relatives, engine)) {
-      const integration = integrationOf(emitAs);
-      // `--frameworks` narrows the frameworks; a plain HTML page belongs to none of them.
-      if (integration && integration !== 'vanilla' && !frameworks.includes(integration)) continue;
-      const source = fs.readFileSync(path.join(root, relative), 'utf8');
-      const emitted = transformFile(source, engine, emitAs, { viewer: mount.viewer(emitAs) });
-      expected.set(path.join(mount.to, emitAs), emitted);
-    }
+  for (const [file, code] of siteSamples(engine, frameworks)) {
+    expected.set(path.join(SAMPLES_DIR, file), code);
   }
 
   // The ?inline/css ambient declarations every synced samples tree needs.
@@ -588,9 +616,41 @@ function ownedRoots() {
   return [...MOUNTS.mdx, ...MOUNTS.samples].map((mount) => mount.to);
 }
 
+/** Where a site serves the demo documents (`docs/content/pdfs/build.mjs`). */
+const DOCUMENTS_DIR = 'public/pdfs';
+
+/**
+ * The demo documents the site's copy opens, as a reader copies the code: by full URL, since
+ * `/pdfs/…` opens nothing on the reader's page, and each one a file the site serves.
+ */
+export function documentProblems(expected, engine, target) {
+  const site = `${DOCUMENT_SITES[engine]}/pdfs/`;
+  const problems = [];
+  for (const [relative, contents] of expected) {
+    if (/['"`]\/pdfs\//.test(contents)) {
+      problems.push(`${relative}: opens a demo document at /pdfs/…; give its full URL, ${site}…`);
+    }
+    for (const [url, file] of contents.matchAll(
+      new RegExp(`${escapeRegExp(site)}([\\w.-]+)`, 'g'),
+    )) {
+      if (!fs.existsSync(path.join(target, DOCUMENTS_DIR, file))) {
+        problems.push(`${relative}: ${url} isn't a file the site serves (${DOCUMENTS_DIR})`);
+      }
+    }
+  }
+  return problems;
+}
+
 async function main() {
   const args = parseArgs(process.argv);
   const expected = buildExpected(args.engine, args.frameworks);
+
+  const problems = documentProblems(expected, args.engine, args.target);
+  if (problems.length) {
+    console.error("Docs code opens a demo document that won't open where a reader pastes it:");
+    for (const problem of problems) console.error(`- ${problem}`);
+    process.exit(1);
+  }
 
   const stale = [];
   const onDisk = new Set(
@@ -653,7 +713,8 @@ async function main() {
   );
 }
 
-// The snippet check reads the pages and files a site gets from here (`sitePages`, `siteFiles`,
-// `transformViewerFile`); only `node scripts/sync.mjs` syncs.
+// The snippet check and the package READMEs read the pages and files a site gets from here
+// (`sitePages`, `siteFiles`, `siteSamples`, `transformViewerFile`); only `node scripts/sync.mjs`
+// syncs.
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]))
   await main();

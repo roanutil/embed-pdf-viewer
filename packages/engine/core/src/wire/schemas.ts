@@ -66,7 +66,7 @@ import {
   WidgetPlacementSchema,
 } from '../forms/schema';
 import { FormFieldRefSchema, FormFieldValueSchema } from '../forms/schema';
-import { PdfMeasurementSchema } from '../dto/Measure.schema';
+import { PageMeasurementViewportSchema, PdfMeasurementSchema } from '../dto/Measure.schema';
 import {
   PageBoxSchema,
   PageQuadSchema,
@@ -178,6 +178,8 @@ import type {
   SearchSnippet,
 } from '../search/types';
 import type { PdfTextSegment } from '../text/layout';
+import type { AnnotationCopyResult } from '../transfer/annotationCopy';
+import type { FormCopyResult } from '../transfer/formCopy';
 import type {
   AnnotationImportBody,
   AnnotationImportOptions,
@@ -598,6 +600,8 @@ export const DocumentManifestSchema = z.object({
   annotationsVersion: z.number().int().positive().default(1),
   formsVersion: z.number().int().positive().default(1),
   outlineVersion: z.number().int().positive().default(1),
+  // Absent from a server without it: its layout has no viewports (see DocumentManifest).
+  viewportsVersion: z.number().int().positive().optional(),
   fontsVersion: z.number().int().positive().default(1),
   contentsVersion: z.number().int().positive().default(1),
   auditHead: z.number().int().nonnegative(),
@@ -1096,6 +1100,7 @@ export const CacheDeltaSchema: z.ZodType<CacheDelta> = z.object({
   metadataVersion: z.number().int().positive().optional(),
   attachmentsVersion: z.number().int().positive().optional(),
   outlineVersion: z.number().int().positive().optional(),
+  viewportsVersion: z.number().int().positive().optional(),
   fontsVersion: z.number().int().positive().optional(),
   contentsVersion: z.number().int().positive().optional(),
   layerVersion: z.number().int().nonnegative().optional(),
@@ -1175,7 +1180,8 @@ export const AnnotationCreateResultSchema: z.ZodType<AnnotationCreateResult> = z
   meta: AnnotationListMutationMetaSchema,
 });
 
-export const AnnotationImportResultSchema: z.ZodType<AnnotationImportResult> = z.object({
+/** What an import and a copy answer: the annotations made, where each came from, what was left out. */
+const annotationsMadeShape = {
   annotations: z.array(AnnotationSchema),
   refMap: z.array(z.object({ from: AnnotationRefSchema, to: AnnotationRefSchema })),
   dropped: z.array(
@@ -1199,7 +1205,15 @@ export const AnnotationImportResultSchema: z.ZodType<AnnotationImportResult> = z
     }),
   ),
   meta: AnnotationListMutationMetaSchema,
-}) as z.ZodType<AnnotationImportResult>;
+};
+
+export const AnnotationImportResultSchema: z.ZodType<AnnotationImportResult> = z.object(
+  annotationsMadeShape,
+) as z.ZodType<AnnotationImportResult>;
+
+export const AnnotationCopyResultSchema: z.ZodType<AnnotationCopyResult> = z.object(
+  annotationsMadeShape,
+) as z.ZodType<AnnotationCopyResult>;
 
 /** The engine's `/AP` verdict riding every update result (see engine-core
  *  `annotation/appearance.ts`). `changed` drives client raster invalidation. */
@@ -1301,7 +1315,8 @@ export const FormResetBodySchema = z
 /** What `updateWidget` takes on the wire: the widget patch (`PATCH …/form/widgets/{p}/{key}`). */
 export const FormWidgetUpdateBodySchema = z.object({ patch: WidgetPatchSchema }).strict();
 
-export const FormImportResultSchema: z.ZodType<FormImportResult> = z.object({
+/** What a design import and a copy answer: the fields made, where each came from, what was left out. */
+const fieldsMadeShape = {
   fields: z.array(FormFieldDTOSchema),
   widgets: z.array(WidgetDTOSchema),
   refMap: z.array(z.object({ from: FormFieldRefSchema, to: FormFieldRefSchema })),
@@ -1323,7 +1338,15 @@ export const FormImportResultSchema: z.ZodType<FormImportResult> = z.object({
   ),
   calculationOrder: z.array(FormFieldRefSchema).optional(),
   meta: FormMutationMetaSchema,
-}) as unknown as z.ZodType<FormImportResult>;
+};
+
+export const FormImportResultSchema: z.ZodType<FormImportResult> = z.object(
+  fieldsMadeShape,
+) as unknown as z.ZodType<FormImportResult>;
+
+export const FormCopyResultSchema: z.ZodType<FormCopyResult> = z.object(
+  fieldsMadeShape,
+) as unknown as z.ZodType<FormCopyResult>;
 
 export const FormValuesImportResultSchema: z.ZodType<FormValuesImportResult> = z.object({
   fields: z.array(FormFieldDTOSchema),
@@ -1448,6 +1471,7 @@ export const PageLayoutSchema: z.ZodType<PageLayout> = z.object({
   boxes: PageBoxesSchema,
   pdfCropBox: PdfRectSchema,
   actions: PdfPageActionsSchema.optional(),
+  viewports: z.array(PageMeasurementViewportSchema).optional(),
 });
 
 export const PageFlattenResultSchema: z.ZodType<PageFlattenResult> = z.object({
@@ -1673,6 +1697,15 @@ export const PageListSnapshotSchema: z.ZodType<PageListSnapshot> = z.object({
   labels: z.array(PageLabelSectionSchema),
   namedPages: z.array(NamedPageEntrySchema),
 });
+
+/**
+ * The page list and the viewport, named once: every page op's answer, a
+ * scale's and a page name's carry the whole list, like `OutlineWireComponents`.
+ */
+export const PageWireComponents = {
+  PageListSnapshot: PageListSnapshotSchema,
+  PageMeasurementViewport: PageMeasurementViewportSchema,
+} as const satisfies Record<string, z.ZodTypeAny>;
 
 /** `pages.setName` input — see `PageNameInput`. */
 export const PageNameInputSchema: z.ZodType<PageNameInput> = z.object({
@@ -2321,5 +2354,6 @@ export { DigestAlgorithmSchema, ModificationLevelSchema };
 
 export const PageScaleResultSchema = z.object({
   page: PageRefSchema,
+  layout: PageListSnapshotSchema,
   meta: MutationMetaSchema,
 });

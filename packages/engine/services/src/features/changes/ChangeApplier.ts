@@ -1,15 +1,18 @@
-import type {
-  ChangeAuthority,
-  ChangeItem,
-  Coordinates,
-  PdfCoordinates,
-  RecordedOp,
-  WireAnnotationResources,
+import {
+  DEFAULT_BUNDLE_LIMITS,
+  type BundleLimits,
+  type ChangeAuthority,
+  type ChangeItem,
+  type Coordinates,
+  type PdfCoordinates,
+  type RecordedOp,
+  type WireAnnotationResources,
 } from '@embedpdf/engine-core/runtime';
 import type { PdfRuntimeModule } from '@embedpdf/engine-runtime';
 
 import type { ChangeRecord, ReverseStep } from './ChangeRecord';
 import {
+  copyAnnotations,
   createAnnotation,
   deleteAnnotation,
   importAnnotations,
@@ -29,6 +32,7 @@ import {
 import type { ChangeContext, Done } from './internal/changeContext';
 import {
   addWidget,
+  copyFields,
   createField,
   deleteField,
   deleteRestoredWidget,
@@ -78,6 +82,7 @@ import {
   rotatePages,
   rotatePagesBack,
 } from './internal/pageChanges';
+import { setPageScales, setPageScalesBack } from './internal/scaleChanges';
 import type { DocumentSession } from '../../document-session/DocumentSession';
 import { throwIfAborted } from '../../shared/abort';
 import type { FontRegistrar } from '../fonts/FontRegistrar';
@@ -128,6 +133,8 @@ export class ChangeApplier {
     private readonly runtime: PdfRuntimeModule,
     private readonly session: DocumentSession,
     private readonly fonts?: FontRegistrar,
+    /** What a copy inside the document may carry (see `ChangeContext.limits`). */
+    private readonly limits: BundleLimits = DEFAULT_BUNDLE_LIMITS,
   ) {}
 
   apply<In extends Coordinates, Out extends Coordinates>(
@@ -176,6 +183,7 @@ export class ChangeApplier {
       ...(this.fonts ? { fonts: this.fonts } : {}),
       authority,
       signal,
+      limits: this.limits,
       fillsOwnField: () => (answer ??= ownFill(ctx)),
     };
     return ctx;
@@ -233,6 +241,8 @@ function runOp(
       return deleteAnnotation(ctx, op, at);
     case 'annotations.reorder':
       return reorderAnnotations(ctx, op);
+    case 'annotations.copy':
+      return copyAnnotations(ctx, op);
     case 'forms.setValue':
       return setValue(ctx, op, at);
     case 'forms.setDisplay':
@@ -243,6 +253,8 @@ function runOp(
       return reset(ctx, op);
     case 'forms.create':
       return createField(ctx, op);
+    case 'forms.copy':
+      return copyFields(ctx, op);
     case 'forms.update':
       return updateField(ctx, op, at);
     case 'forms.delete':
@@ -279,6 +291,8 @@ function runOp(
       return deleteOutlineItem(ctx, op, at);
     case 'pages.rotate':
       return changingPageTree(ctx, () => rotatePages(ctx, op));
+    case 'pages.setScale':
+      return setPageScales(ctx, op);
     case 'pages.reorder':
       return changingPageTree(ctx, () => reorderPages(ctx, op));
     case 'pages.delete':
@@ -334,6 +348,8 @@ function runStep(ctx: ChangeContext, step: ReverseStep): Done {
       return reopenOutlineItem(ctx, step);
     case 'pages.rotate':
       return changingPageTree(ctx, () => rotatePagesBack(ctx, step));
+    case 'pages.setScale':
+      return setPageScalesBack(ctx, step);
     case 'pages.reorder':
       return changingPageTree(ctx, () => reorderPagesBack(ctx, step));
     case 'pages.restore':

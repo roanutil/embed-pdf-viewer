@@ -1,5 +1,51 @@
 # @embedpdf/viewer-chrome
 
+## 3.2.0
+
+### Minor Changes
+
+- [#1071](https://github.com/embedpdf/embed-pdf-viewer/pull/1071) by [@bobsingor](https://github.com/bobsingor) – New command `annotation:duplicate`, with `Ctrl`/`Cmd`+`D` and a button in the bar over a selection. It copies the selected annotations beside the originals and selects the copies, as one step to undo. The button shows for annotations people move, so not for a highlight, and is greyed out while a locked annotation is selected. New icon `duplicate` and label `commands.annotate.duplicate`, in all 15 languages.
+
+- [#1075](https://github.com/embedpdf/embed-pdf-viewer/pull/1075) by [@bobsingor](https://github.com/bobsingor) – Duplicate (`annotation:duplicate`, `Ctrl`/`Cmd`+`D`) now copies form fields in Form design: a radio button's copy joins its group as a new choice, and any other field's copy is a new field named after the original. The form design sidebar has **Duplicate group** for a radio group, which copies the whole group as a new one. New label `formDesign.duplicateGroup`, in all 15 languages.
+
+### Patch Changes
+
+- [#1069](https://github.com/embedpdf/embed-pdf-viewer/pull/1069) by [@TbhVishal](https://github.com/TbhVishal) – A comment and a reply show their time as well as their day, with the year once it isn't this year's, and the whole date and time in a tooltip. Dates, times and file sizes are written in the language the viewer shows, the way the reader's region writes them: an English viewer reads `14 Sept, 17:30` in a British browser and `Sep 14, 5:30 PM` in an American one, and a `locale` that names a region, such as `'en-GB'`, writes them that way for everyone. A language whose code the browser can't read is written in the browser's own formats.
+
+## 3.1.0
+
+### Minor Changes
+
+- [#1031](https://github.com/embedpdf/embed-pdf-viewer/pull/1031) by [@bobsingor](https://github.com/bobsingor) – The View only label is no longer in the default layout: a read-only viewer just shows no tools, as a
+  PDF reader does. To tell people why, add it where you want it:
+  `layout: (layout) => layout.add({ custom: 'view-only' }, { to: 'main', before: 'panel:search' })`.
+  It still shows only while nothing can change the document.
+
+- [#1027](https://github.com/embedpdf/embed-pdf-viewer/pull/1027) by [@bobsingor](https://github.com/bobsingor) – A `features` prop says what people can do in the viewer, everywhere at once: a feature or a part
+  by its name, `true` or `false` (`{ measurement: true, 'documents.download': false }`). A feature
+  left out keeps its default, and a part wins over its feature, in any order, so
+  `{ annotations: false, 'annotations.highlight': true }` is highlighting and nothing else.
+  `readOnly` comes after it, so `features` never brings a tool back into a read-only viewer.
+  `features` follows its prop, and a name that is no feature or part warns once in the console.
+
+  Measuring, redaction, building forms and snapshots now start off: the Measure, Redact and Form tabs
+  and Take a Snapshot show once `features` turns them on
+  (`{ measurement: true, redaction: true, 'forms.building': true, snapshots: true }`). Until then,
+  measurement and redaction marks already in a document show but can't be changed by hand, and
+  people fill in forms but can't move their fields.
+
+  `disable` is deprecated and goes in 4.0. It still works: a feature in it counts as `false` under
+  `features`, and a command in it stays off. Turn a feature off with `features`, move or remove a
+  button with the layout, and take one button out everywhere with the commands plugin's
+  `disabledCommands`.
+
+### Patch Changes
+
+- [#1029](https://github.com/embedpdf/embed-pdf-viewer/pull/1029) by [@bobsingor](https://github.com/bobsingor) – The bars find which menu a button opens from its command's definition, so leaving out a button
+  whose menu shows nothing no longer asks every command in every mode on each change.
+
+- [#1030](https://github.com/embedpdf/embed-pdf-viewer/pull/1030) by [@bobsingor](https://github.com/bobsingor) – The scale panel no longer shows a viewport read error: a page's scale comes with the page.
+
 ## 3.0.0
 
 ### Major Changes

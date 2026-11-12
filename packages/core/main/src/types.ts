@@ -128,6 +128,15 @@ export interface OperationOptions {
   readonly signal?: AbortSignal;
 }
 
+/**
+ * For a write that is one step to undo unless its caller says it isn't:
+ * `history: false` keeps it out of undo and redo, as for what an app loads by
+ * itself when a document opens.
+ */
+export interface HistoryOptions {
+  readonly history?: false;
+}
+
 /** Load state of a resource a plugin hydrates from the engine. `forbidden` is a permission refusal, not an empty value. */
 export type ResourceStatus = 'idle' | 'loading' | 'ready' | 'forbidden' | 'error';
 
@@ -439,6 +448,13 @@ export interface PluginContext<State = unknown, PluginSettings extends object = 
    * (a registry, a cache, a resource) changed. A no-op once the instance closed.
    */
   notify(): void;
+  /**
+   * How many times the store changed (a state write anywhere, a `notify()`), counted when the
+   * change happens, also while the change stream is held. The input of a read whose answer
+   * comes from functions it can't name the inputs of, such as a command's `enabled`: it asks
+   * them again only after this moved.
+   */
+  storeChangeCount(): number;
   /**
    * Run `handler` whenever `select()` answers differently. For reacting to
    * state this plugin does not own (the page registry, a sibling's getter);
