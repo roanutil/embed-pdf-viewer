@@ -38,7 +38,10 @@ import {
   sample,
   open,
   fnSpec,
+  mutationMeta,
 } from './form-live-fixtures';
+import type { DocumentEvent, FormField, WidgetAnnotation } from '@embedpdf/engine-core/runtime';
+import { LOCAL } from './annotation-live-fixtures';
 const BOX = { x: 10, y: 20, width: 100, height: 24 };
 const place = (page = 1, rect = BOX): WidgetPlacement => ({ page: pr(page), rect });
 const draft = (name = 'text_1', widgets = [place()]): FormFieldDraft => ({
@@ -118,6 +121,44 @@ const LIST = listbox(10005, 'listbox_1', [], { widgets: [placed(10006)], options
 const CHECK = checkbox(10007, 'checkbox_1', false, {
   widgets: [{ ...placed(10008), onState: 'Yes', exportValue: 'Yes', checked: false }],
 });
+/**
+ * The engine's answer to a `forms.copy`: the copies, their rows, and one
+ * `forms.created` per field, as a design import publishes them.
+ */
+const copyAnswer = (n: number, fields: FormField[], widgets: WidgetAnnotation[], from: FormField[]) => {
+  const meta = mutationMeta(n, fields, widgets);
+  const origin = { ...LOCAL, transaction: { id: meta.opId, index: 0, count: fields.length } };
+  const events = fields.map(
+    (field, index): DocumentEvent => ({
+      type: 'forms.created',
+      field,
+      widgets: widgets.filter((w) =>
+        field.widgets.some((own) => w.ref.kind === 'objectNumber' && own.objectNumber === w.ref.objectNumber),
+      ),
+      meta,
+      origin: { ...origin, transaction: { ...origin.transaction, index } },
+    }) as DocumentEvent,
+  );
+  const item = {
+    fields,
+    widgets,
+    refMap: fields.map((field, at) => ({ from: from[at]!.ref, to: field.ref })),
+    dropped: [],
+    meta,
+  };
+  return { value: { items: [{ type: 'forms.copy', ...item }], meta }, events };
+};
+const MOVED = { ...BOX, y: BOX.y + 30 };
+const EMAIL = text(7, 'email', 'hello', {}, [placed(107)]);
+const EMAIL_COPY = text(10001, 'email_2', '', {}, [placed(10002)]);
+const GROUP = radio(9, 'choice', [
+  { ...placed(109), onState: 'Choice1', exportValue: 'Choice1', checked: false },
+  { ...placed(110), onState: 'Choice2', exportValue: 'Choice2', checked: false },
+]);
+const GROUP_GROWN = radio(9, 'choice', [
+  ...GROUP.widgets,
+  { ...placed(10003), onState: 'Choice3', exportValue: 'Choice3', checked: false },
+]);
 const cases: ScenarioCase[] = [
   scenario(
     'init-without-annotation',
@@ -819,6 +860,29 @@ const cases: ScenarioCase[] = [
     [refused('intended placement refusal')],
     {},
     true,
+  ),
+  scenario(
+    'duplicate-fields-and-widgets',
+    "duplicate (a390171cc) copies whole fields as one forms.copy op: the copy is a new field named after its original with the next free number (email becomes email_2), without its value unless asked, its widgets moved by the offset, under the object numbers the plugin takes, shown before the engine answers. duplicateWidgets copies a radio button as another button of its group (forms.addWidget) with the next free Choice<n>. An empty duplicate resolves with nothing; an unknown field or widget rejects not-found.",
+    [
+      call('duplicate', [[ref(7)], { offset: { x: 0, y: 30 } }]),
+      call('list'),
+      settle('copy', copyAnswer(1, [EMAIL_COPY], [row(10002, EMAIL_COPY.ref, 1, MOVED)], [EMAIL]).value),
+      call('get', [ref(10001)]),
+      call('duplicateWidgets', [[objRef(109)]]),
+      call('getWidgets', [ref(9)]),
+      call('duplicate', [[]]),
+      call('duplicate', [[ref(99)]]),
+      call('duplicateWidgets', [[objRef(999)]]),
+    ],
+    snapshot(
+      [EMAIL, GROUP],
+      [row(107, EMAIL.ref, 1, BOX), row(109, GROUP.ref, 1, BOX), row(110, GROUP.ref, 1, { ...BOX, x: 200 })],
+    ),
+    [
+      apply({ ...copyAnswer(1, [EMAIL_COPY], [row(10002, EMAIL_COPY.ref, 1, MOVED)], [EMAIL]), defer: 'copy' } as never),
+      apply(fieldAnswer('forms.addWidget', 2, GROUP_GROWN, [row(10003, GROUP.ref, 1, BOX)])),
+    ],
   ),
 ];
 export const suites: ScenarioSuite[] = [
