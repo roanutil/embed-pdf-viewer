@@ -348,6 +348,7 @@ pub fn import_annotations(
             attribution,
             file_dates,
             label: format!("import: item {}", planned.item),
+            object_number: None,
         });
     }
     for create in &creates {
@@ -368,4 +369,217 @@ pub fn import_annotations(
         })
         .collect();
     Ok(AnnotationImportResult { annotations, ref_map, dropped: plan.dropped, meta: created.meta })
+}
+
+/// What a copy checks of each create before the first write, answering
+/// whom the copy is attributed to (`authorizeCreate`).
+pub type AuthorizeCopy<'a> =
+    dyn FnMut(&Map<String, Value>) -> Result<Option<AnnotationActor>, EngineError> + 'a;
+
+/// A copy of annotations inside one document, as its op asks for it
+/// (`AnnotationCopyRequest`, 1481e4556).
+pub struct AnnotationCopyRequest<'a> {
+    /// The sources, each as it reads now, in the file's coordinates.
+    pub sources: &'a [Value],
+    /// The page the copies go on; each on its own page when absent.
+    pub page: Option<PageRef>,
+    /// How far each copy moves, in page points from the top-left.
+    pub offset: (f64, f64),
+    /// The object number each copy gets, in the order of the sources.
+    pub object_numbers: Option<&'a [u32]>,
+    /// What the copy may carry: what a bundle of the same annotations may.
+    pub limits: &'a BundleLimits,
+}
+
+/// A copy worked out and checked, before its first write: the creates, the
+/// bytes their drawings and files carry, and what was left out.
+pub struct PreparedCopy {
+    creates: Vec<PreparedCopyCreate>,
+    resources: Vec<(String, Vec<u8>)>,
+    ref_map_from: Vec<Value>,
+    dropped: Vec<Value>,
+}
+
+struct PreparedCopyCreate {
+    page: PageRef,
+    draft: Map<String, Value>,
+    reply_to: Option<(usize, crate::features::annotation::vocabulary::AnnotationReplyType)>,
+    parent: Option<usize>,
+    appearance: Option<String>,
+    file: Option<String>,
+    actor: Option<AnnotationActor>,
+    file_dates: Option<(Option<String>, Option<String>)>,
+    object_number: Option<u32>,
+    label: String,
+}
+
+impl PreparedCopy {
+    /// The object numbers the copies were given, for the caller to claim
+    /// before the write. A number given for a source left out isn't used.
+    pub fn object_numbers(&self) -> impl Iterator<Item = u32> + '_ {
+        self.creates.iter().filter_map(|create| create.object_number)
+    }
+}
+
+/// `copy: past the <limit> limit` (`assertCopyWithinLimit`): a copy carries
+/// what a bundle may.
+fn assert_copy_within_limit(limit: &str, max: u64, value: u64) -> Result<(), EngineError> {
+    if value <= max {
+        return Ok(());
+    }
+    Err(past_limit(
+        format!("copy: past the {limit} limit: {value} > {max}"),
+        json!({ "limit": limit, "max": max, "value": value }),
+    ))
+}
+
+/// What `doc.annotations.copy` will create (`AnnotationCopier.copy`, up to
+/// its write): each source measured from the top-left of its page,
+/// [`plan_annotation_copy`] works out the copies and what to leave out, each
+/// copy is measured back on the page it goes to and checked as its create
+/// would be, and each drawing and file it carries is read and counted
+/// against `limits`. `authorize_create` sees each create's draft and
+/// answers whom it is attributed to.
+pub fn prepare_annotation_copy(
+    session: &DocumentSession,
+    request: AnnotationCopyRequest<'_>,
+    authorize_create: &mut AuthorizeCopy<'_>,
+    cancel: &CancelToken,
+) -> Result<PreparedCopy, EngineError> {
+    cancel.check()?;
+    let AnnotationCopyRequest { sources, page, offset, object_numbers, limits } = request;
+    let owned = session.document()?;
+    let document = owned.document();
+    let mut box_of = crate::features::pages::visible_box_reader(document);
+    let mut in_page_space = Vec::with_capacity(sources.len());
+    for source in sources {
+        in_page_space
+            .push(crate::page_space::annotations::page_annotation_of(source.clone(), &mut box_of)?);
+    }
+    let plan = {
+        let mut check = |page: PageRef, draft: &Map<String, Value>| -> Result<(), EngineError> {
+            let visible = box_of(page.object_number())?;
+            let converted = crate::page_space::annotations::pdf_annotation_draft_of(
+                draft.clone(),
+                visible,
+                &mut box_of,
+            )?;
+            check_draft(converted).map(|_| ())
+        };
+        crate::features::transfer::plan_annotation::plan_annotation_copy(
+            &in_page_space,
+            page,
+            offset,
+            &mut check,
+        )?
+    };
+
+    let mut collector = ResourceCollector {
+        resources: BundleResources::new(BundleKind::Annotation, *limits),
+        drawings: HashMap::new(),
+    };
+    let mut creates = Vec::with_capacity(plan.creates.len());
+    for planned in &plan.creates {
+        cancel.check()?;
+        let source = &sources[planned.source];
+        let visible = box_of(planned.page.object_number())?;
+        let draft = crate::page_space::annotations::pdf_annotation_draft_of(
+            planned.draft.clone(),
+            visible,
+            &mut box_of,
+        )?;
+        let actor = authorize_create(&draft)?;
+        let found = collector.of(owned, source)?;
+        let role = |name: &str| found.get(name).and_then(Value::as_str).map(str::to_owned);
+        let file_dates = (source["subtype"] == "file-attachment" && source["file"].is_object())
+            .then(|| {
+                let date = |key: &str| source["file"][key].as_str().map(str::to_owned);
+                (date("createdAt"), date("modifiedAt"))
+            });
+        creates.push(PreparedCopyCreate {
+            page: planned.page,
+            draft,
+            reply_to: planned.reply_to,
+            parent: planned.parent,
+            appearance: role("appearance"),
+            file: role("file"),
+            actor,
+            file_dates,
+            object_number: object_numbers.map(|numbers| numbers[planned.source]),
+            label: format!("copy: annotation {}", planned.source),
+        });
+    }
+    let ref_map_from =
+        plan.creates.iter().map(|planned| sources[planned.source]["ref"].clone()).collect();
+    Ok(PreparedCopy {
+        creates,
+        resources: collector.resources.by_id,
+        ref_map_from,
+        dropped: plan.dropped,
+    })
+}
+
+/// The checks a copy makes before it reads anything: as many object
+/// numbers as refs, and no more refs than a bundle may carry items.
+pub fn check_annotation_copy_request(
+    refs: usize,
+    object_numbers: Option<&[u32]>,
+    limits: &BundleLimits,
+) -> Result<(), EngineError> {
+    if let Some(numbers) = object_numbers
+        && numbers.len() != refs
+    {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            format!("copy: objectNumbers names {} copies of {refs}", numbers.len()),
+        )
+        .with_details(json!({ "field": "objectNumbers" })));
+    }
+    // Counted as asked, before anything is read.
+    assert_copy_within_limit("items", limits.items, refs as u64)
+}
+
+/// The write of a prepared copy, all or nothing, as an import's
+/// ([`create_batch`]): `AnnotationCopyResult`, in the file's coordinates.
+pub fn write_annotation_copy(
+    session: &DocumentSession,
+    prepared: PreparedCopy,
+    services: &CreateServices<'_>,
+    cancel: &CancelToken,
+) -> Result<AnnotationImportResult, EngineError> {
+    let PreparedCopy { creates, resources, ref_map_from, dropped } = prepared;
+    let bytes = |id: &Option<String>| -> Option<&[u8]> {
+        let id = id.as_deref()?;
+        resources.iter().find(|(held, _)| held == id).map(|(_, bytes)| bytes.as_slice())
+    };
+    let batch: Vec<BatchCreate<'_>> = creates
+        .iter()
+        .map(|create| BatchCreate {
+            page: create.page.object_number(),
+            draft: create.draft.clone(),
+            reply_to: create.reply_to.map(|(at, reply_type)| (Planned(at), reply_type)),
+            parent: create.parent.map(Planned),
+            resources: DraftResources {
+                appearance: bytes(&create.appearance),
+                file: bytes(&create.file),
+            },
+            attribution: BatchAttribution::Stamp(create.actor.clone()),
+            file_dates: create.file_dates.clone(),
+            label: create.label.clone(),
+            object_number: create.object_number,
+        })
+        .collect();
+    let owned = session.document()?;
+    let created = create_batch(owned, &session.write_stamp()?, batch, services, cancel)?;
+    let annotations: Vec<Value> = created
+        .created
+        .iter()
+        .map(|record| serde_json::to_value(record).map_err(unserializable))
+        .collect::<Result<_, _>>()?;
+    let ref_map = ref_map_from
+        .into_iter()
+        .zip(&annotations)
+        .map(|(from, annotation)| json!({ "from": from, "to": annotation["ref"] }))
+        .collect();
+    Ok(AnnotationImportResult { annotations, ref_map, dropped, meta: created.meta })
 }

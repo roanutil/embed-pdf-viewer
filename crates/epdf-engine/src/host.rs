@@ -1696,6 +1696,7 @@ impl Host {
                         clock: self.clock.as_ref(),
                         ids: self.ids.as_ref(),
                         fonts: self.fonts.as_ref(),
+                        limits: f::transfer::limits::DEFAULT_BUNDLE_LIMITS,
                     },
                     f::changes::applier::ChangeSpace::Page,
                 )?;
@@ -1743,6 +1744,14 @@ impl Host {
                 for entry in &entries {
                     changes.push(server_change(entry, &payloads)?);
                 }
+                // The limits a copy inside the document must stay within;
+                // the defaults otherwise (5496eb084).
+                let limits = match body.get("limits") {
+                    None | Some(serde_json::Value::Null) => {
+                        f::transfer::limits::DEFAULT_BUNDLE_LIMITS
+                    }
+                    Some(_) => field(body, "limits")?,
+                };
                 let outcomes = f::changes::transaction::run_server_changes(
                     self.sessions.session_mut(&key)?,
                     changes,
@@ -1751,6 +1760,7 @@ impl Host {
                         clock: self.clock.as_ref(),
                         ids: self.ids.as_ref(),
                         fonts: self.fonts.as_ref(),
+                        limits,
                     },
                 )?;
                 let wire = outcomes
@@ -2690,6 +2700,7 @@ impl Host {
             clock: self.clock.as_ref(),
             ids: self.ids.as_ref(),
             fonts: self.fonts.as_ref(),
+            limits: crate::features::transfer::limits::DEFAULT_BUNDLE_LIMITS,
         };
         let answered = transaction::run_change(
             session,
@@ -3442,6 +3453,7 @@ fn strip_item(
         | ChangeItem::FormsReorderCalculations { .. }
         | ChangeItem::FormsUpdateWidget { .. }
         | ChangeItem::AnnotationsImport { .. }
+        | ChangeItem::AnnotationsCopy { .. }
         | ChangeItem::FormsImport { .. }
         | ChangeItem::FormsImportValues { .. }) => {
             let mut result = value(&item)?;

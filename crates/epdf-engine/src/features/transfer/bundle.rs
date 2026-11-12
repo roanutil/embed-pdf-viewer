@@ -349,6 +349,11 @@ pub struct PageMap {
 }
 
 impl PageMap {
+    /// Every page to itself: a copy inside one document.
+    pub fn identity() -> Self {
+        Self { table: HashMap::new() }
+    }
+
     /// Where `page` goes. Every page the rows name was checked to map
     /// somewhere; one that wasn't stays as it is.
     pub fn map(&self, page: PageRef) -> PageRef {

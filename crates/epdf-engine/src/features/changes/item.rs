@@ -96,6 +96,16 @@ pub enum ChangeItem {
         dropped: Vec<serde_json::Value>,
         meta: AnnotationMutationMeta,
     },
+    /// `AnnotationCopyResult`: the copies, in the order of the refs given,
+    /// each read back; each source's ref and its copy's; and what was left
+    /// out (1481e4556).
+    #[serde(rename = "annotations.copy", rename_all = "camelCase")]
+    AnnotationsCopy {
+        annotations: Vec<serde_json::Value>,
+        ref_map: Vec<serde_json::Value>,
+        dropped: Vec<serde_json::Value>,
+        meta: AnnotationMutationMeta,
+    },
     /// Only in an undo: what a delete removed, back, in `/Annots` order,
     /// each read as a listing reads it.
     #[serde(rename = "annotations.restore")]
@@ -356,6 +366,7 @@ impl ChangeItem {
             | Self::AnnotationsDelete { meta, .. }
             | Self::AnnotationsReorder { meta, .. }
             | Self::AnnotationsImport { meta, .. }
+            | Self::AnnotationsCopy { meta, .. }
             | Self::AnnotationsRestore { meta, .. } => &meta.meta,
             Self::PagesRotate { meta, .. }
             | Self::PagesSetScale { meta, .. }
@@ -404,6 +415,7 @@ impl ChangeItem {
             | Self::AnnotationsDelete { meta, .. }
             | Self::AnnotationsReorder { meta, .. }
             | Self::AnnotationsImport { meta, .. }
+            | Self::AnnotationsCopy { meta, .. }
             | Self::AnnotationsRestore { meta, .. } => &mut meta.meta,
             Self::PagesRotate { meta, .. }
             | Self::PagesSetScale { meta, .. }
@@ -446,7 +458,8 @@ impl ChangeItem {
     pub fn wrote(&self) -> bool {
         match self {
             Self::Skipped { .. } => false,
-            Self::AnnotationsImport { annotations, .. } => !annotations.is_empty(),
+            Self::AnnotationsImport { annotations, .. }
+            | Self::AnnotationsCopy { annotations, .. } => !annotations.is_empty(),
             Self::FormsImport { fields, .. } | Self::FormsImportValues { fields, .. } => {
                 !fields.is_empty()
             }
@@ -500,7 +513,8 @@ impl ChangeItem {
                     "order": to_value(order)?, "meta": to_value(meta)? }),
             ),
             // One `annotations.created` per annotation (`annotationImportFacts`).
-            Self::AnnotationsImport { annotations, meta, .. } => {
+            Self::AnnotationsImport { annotations, meta, .. }
+            | Self::AnnotationsCopy { annotations, meta, .. } => {
                 return Ok(crate::features::transfer::plan_annotation::annotation_import_facts(
                     annotations,
                     &to_value(meta)?,

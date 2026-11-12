@@ -686,6 +686,10 @@ pub fn change_op_in_file_space(
         | ChangeOp::AttachmentsCreate { .. }
         | ChangeOp::AttachmentsDelete { .. }
         | ChangeOp::AnnotationsReorder { .. }
+        // A copy names annotations and a distance in page points: it
+        // measures each source on its page and each copy on the page it goes
+        // to.
+        | ChangeOp::AnnotationsCopy { .. }
         | ChangeOp::PagesRotate { .. }
         // Each page takes the scale on its own visible box as it's written
         // (`scaleChanges.ts`).
@@ -735,6 +739,17 @@ pub fn change_item_in_page_space(
         }
         ChangeItem::AnnotationsImport { annotations, ref_map, dropped, meta } => {
             Ok(ChangeItem::AnnotationsImport {
+                annotations: annotations
+                    .into_iter()
+                    .map(|annotation| page_annotation_of(annotation, box_of))
+                    .collect::<Result<_, _>>()?,
+                ref_map,
+                dropped,
+                meta,
+            })
+        }
+        ChangeItem::AnnotationsCopy { annotations, ref_map, dropped, meta } => {
+            Ok(ChangeItem::AnnotationsCopy {
                 annotations: annotations
                     .into_iter()
                     .map(|annotation| page_annotation_of(annotation, box_of))

@@ -146,12 +146,29 @@ fn differences(actual: &Value, expected: &Value, at: &str, out: &mut Vec<String>
     }
 }
 
+/// The fixture opened as `LocalEngine` opens a document: with the first 64
+/// object numbers reserved for the session (`OBJECT_NUMBER_POOL_SIZE`), which
+/// is where a create's next free number starts and which numbers a copy may
+/// be given.
+fn open(fixture: &str, doc_id: &str) -> Replay {
+    let mut host = epdf_engine::host::Host::new();
+    let response = host.call_filled(
+        &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": doc_id,
+            "password": null, "reserveObjectNumbers": 64 })
+        .to_string(),
+        vec![test_support::fixture(fixture)],
+    );
+    let envelope: Value = serde_json::from_str(&response.json).expect("the open answers JSON");
+    assert!(envelope.get("error").is_none(), "{fixture} would not open: {envelope}");
+    Replay::adopt(host, doc_id)
+}
+
 fn replay_file(file: &str, kind: &str, cases: usize) {
     let vectors = load(file, kind);
     assert_eq!(vectors.cases.len(), cases, "{file}: the case list moved");
     let mut failures = Vec::new();
     for case in &vectors.cases {
-        let mut replay = Replay::open(&vectors.fixture, &format!("changes:{}", case.name));
+        let mut replay = open(&vectors.fixture, &format!("changes:{}", case.name));
         'steps: for (s, step) in case.steps.iter().enumerate() {
             for exchange in &step.exchanges {
                 let what = format!("{} step {s} {}", case.name, exchange.request["kind"]);
@@ -223,7 +240,6 @@ fn an_update_renames() {
 }
 
 #[test]
-#[ignore = "not ported yet"]
 fn annotations_copy() {
     replay_file("annotation-copy.json", "document.apply.annotations.copy", 10);
 }
