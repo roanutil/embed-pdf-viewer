@@ -65,7 +65,7 @@
           }
         ]
       ],
-      "covers": "Surviving fallback viewport storage uses setLocalViewports; removed independently cached public PAGE_SCALE state is archived. Current mirror-backed public projection is tested independently.",
+      "covers": "The session keeps its own viewports with setLocalViewports where the engine keeps no scale; a page with the service reads them from its layout. Removed cached public PAGE_SCALE state is archived; the public projection is selectPageScale.",
       "outcome": {
         "returned": {
           "pending": 1,
