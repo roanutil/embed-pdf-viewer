@@ -1,7 +1,7 @@
 {
   "total": {
-    "statements": "72180/77093",
-    "branches": "14078/15404",
+    "statements": "72242/77093",
+    "branches": "14109/15438",
     "unsnapshottedOnlyLines": 935,
     "unloadedFiles": 36
   },
@@ -9209,34 +9209,12 @@
       "uncoveredBranches": []
     },
     "packages/plugin/stage/src/camera/coasting.ts": {
-      "statements": "58/81",
-      "branches": "2/2",
-      "uncoveredLines": [
-        55,
-        56,
-        57,
-        58,
-        59,
-        60,
-        61,
-        62,
-        63,
-        64,
-        65,
-        66,
-        67,
-        68,
-        69,
-        70,
-        71,
-        72,
-        75,
-        76,
-        77,
-        78,
-        79
-      ],
-      "uncoveredBranches": []
+      "statements": "81/81",
+      "branches": "11/12",
+      "uncoveredLines": [],
+      "uncoveredBranches": [
+        "62:29#0"
+      ]
     },
     "packages/plugin/stage/src/camera/gestures.ts": {
       "statements": "182/182",
@@ -9245,40 +9223,9 @@
       "uncoveredBranches": []
     },
     "packages/plugin/stage/src/camera/wheel.ts": {
-      "statements": "53/83",
-      "branches": "2/2",
-      "uncoveredLines": [
-        46,
-        47,
-        48,
-        49,
-        50,
-        51,
-        52,
-        53,
-        58,
-        59,
-        60,
-        61,
-        62,
-        63,
-        64,
-        65,
-        66,
-        67,
-        68,
-        69,
-        70,
-        71,
-        72,
-        73,
-        74,
-        75,
-        76,
-        77,
-        78,
-        79
-      ],
+      "statements": "83/83",
+      "branches": "16/16",
+      "uncoveredLines": [],
       "uncoveredBranches": []
     },
     "packages/plugin/stage/src/camera/write.ts": {
@@ -9372,22 +9319,14 @@
       ]
     },
     "packages/plugin/stage/src/navigation/turn.ts": {
-      "statements": "180/189",
-      "branches": "57/59",
-      "uncoveredLines": [
-        144,
-        145,
-        180,
-        181,
-        182,
-        183,
-        184,
-        185,
-        186
-      ],
+      "statements": "189/189",
+      "branches": "65/69",
+      "uncoveredLines": [],
       "uncoveredBranches": [
         "73:26#0",
-        "75:15#0"
+        "75:15#0",
+        "180:61#0",
+        "185:54#0"
       ]
     },
     "packages/plugin/stage/src/navigation/zoom-drag.ts": {

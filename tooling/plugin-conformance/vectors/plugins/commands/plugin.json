@@ -4467,7 +4467,7 @@
     },
     {
       "name": "derivations",
-      "covers": "resolve() calls enabled, then visible, then iconAccent, then active, at most once per store change (7af98f4df), each with a CommandCtx bound to the explicit document, else the active one (null with none open, and an empty string is kept); their answers land on the resolved command.",
+      "covers": "resolve() calls enabled, then visible, then iconAccent, then active, at most once per store change (7af98f4df), each with a CommandCtx bound to the explicit document, else the active one (null with none open; an empty string also means the active one, so it shares that resolution); their answers land on the resolved command.",
       "plugins": [
         {
           "factory": "commands",
