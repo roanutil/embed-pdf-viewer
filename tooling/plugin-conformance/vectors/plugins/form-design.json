@@ -157449,6 +157449,3467 @@
           }
         }
       ]
+    },
+    {
+      "name": "duplicate-fields-and-widgets",
+      "covers": "duplicate (a390171cc) copies whole fields as one forms.copy op: the copy is a new field named after its original with the next free number (email becomes email_2), without its value unless asked, its widgets moved by the offset, under the object numbers the plugin takes, shown before the engine answers. duplicateWidgets copies a radio button as another button of its group (forms.addWidget) with the next free Choice<n>. An empty duplicate resolves with nothing; an unknown field or widget rejects not-found.",
+      "plugins": [
+        {
+          "factory": "form-live-diagnostics"
+        },
+        {
+          "factory": "interaction"
+        },
+        {
+          "factory": "form-current",
+          "config": {
+            "validation": "none"
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
+                "boxes": {
+                  "media": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "crop": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  }
+                }
+              },
+              {
+                "index": 1,
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 2
+                },
+                "label": null,
+                "size": {
+                  "width": 400,
+                  "height": 500
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 10,
+                  "bottom": 20,
+                  "right": 410,
+                  "top": 520
+                },
+                "boxes": {
+                  "media": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "crop": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 400,
+                    "height": 500
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": "*"
+            },
+            "objectNumbers": [
+              10001,
+              10002,
+              10003,
+              10004,
+              10005,
+              10006,
+              10007,
+              10008,
+              10009,
+              10010,
+              10011,
+              10012,
+              10013,
+              10014,
+              10015,
+              10016,
+              10017,
+              10018,
+              10019,
+              10020,
+              10021,
+              10022,
+              10023,
+              10024,
+              10025,
+              10026,
+              10027,
+              10028,
+              10029,
+              10030,
+              10031,
+              10032,
+              10033,
+              10034,
+              10035,
+              10036,
+              10037,
+              10038,
+              10039,
+              10040,
+              10041,
+              10042,
+              10043,
+              10044,
+              10045,
+              10046,
+              10047,
+              10048,
+              10049,
+              10050,
+              10051,
+              10052,
+              10053,
+              10054,
+              10055,
+              10056,
+              10057,
+              10058,
+              10059,
+              10060,
+              10061,
+              10062,
+              10063,
+              10064,
+              10065,
+              10066,
+              10067,
+              10068,
+              10069,
+              10070,
+              10071,
+              10072,
+              10073,
+              10074,
+              10075,
+              10076,
+              10077,
+              10078,
+              10079,
+              10080,
+              10081,
+              10082,
+              10083,
+              10084,
+              10085,
+              10086,
+              10087,
+              10088,
+              10089,
+              10090,
+              10091,
+              10092,
+              10093,
+              10094,
+              10095,
+              10096,
+              10097,
+              10098,
+              10099,
+              10100,
+              10101,
+              10102,
+              10103,
+              10104,
+              10105,
+              10106,
+              10107,
+              10108,
+              10109,
+              10110,
+              10111,
+              10112,
+              10113,
+              10114,
+              10115,
+              10116,
+              10117,
+              10118,
+              10119,
+              10120,
+              10121,
+              10122,
+              10123,
+              10124,
+              10125,
+              10126,
+              10127,
+              10128,
+              10129,
+              10130,
+              10131,
+              10132,
+              10133,
+              10134,
+              10135,
+              10136,
+              10137,
+              10138,
+              10139,
+              10140,
+              10141,
+              10142,
+              10143,
+              10144,
+              10145,
+              10146,
+              10147,
+              10148,
+              10149,
+              10150,
+              10151,
+              10152,
+              10153,
+              10154,
+              10155,
+              10156,
+              10157,
+              10158,
+              10159,
+              10160,
+              10161,
+              10162,
+              10163,
+              10164,
+              10165,
+              10166,
+              10167,
+              10168,
+              10169,
+              10170,
+              10171,
+              10172,
+              10173,
+              10174,
+              10175,
+              10176,
+              10177,
+              10178,
+              10179,
+              10180,
+              10181,
+              10182,
+              10183,
+              10184,
+              10185,
+              10186,
+              10187,
+              10188,
+              10189,
+              10190,
+              10191,
+              10192,
+              10193,
+              10194,
+              10195,
+              10196,
+              10197,
+              10198,
+              10199,
+              10200
+            ],
+            "responses": [
+              {
+                "path": "forms.list",
+                "value": {
+                  "formKind": "acroform",
+                  "needsAppearances": false,
+                  "fields": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 7
+                      },
+                      "name": "email",
+                      "origin": "acroform",
+                      "readOnly": false,
+                      "required": false,
+                      "noExport": false,
+                      "alternateName": null,
+                      "mappingName": null,
+                      "valueEntry": {
+                        "kind": "scalar",
+                        "value": "hello"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "groupId": null,
+                      "createdBy": null,
+                      "createdAt": null,
+                      "filledBy": null,
+                      "filledByName": null,
+                      "filledAt": null,
+                      "importedBy": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 107
+                          },
+                          "objectNumber": 107,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          }
+                        }
+                      ],
+                      "kind": "text",
+                      "value": "hello",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    },
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 9
+                      },
+                      "name": "choice",
+                      "origin": "acroform",
+                      "readOnly": false,
+                      "required": false,
+                      "noExport": false,
+                      "alternateName": null,
+                      "mappingName": null,
+                      "valueEntry": {
+                        "kind": "none"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "groupId": null,
+                      "createdBy": null,
+                      "createdAt": null,
+                      "filledBy": null,
+                      "filledByName": null,
+                      "filledAt": null,
+                      "importedBy": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 109
+                          },
+                          "objectNumber": 109,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "onState": "Choice1",
+                          "exportValue": "Choice1",
+                          "checked": false
+                        },
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 110
+                          },
+                          "objectNumber": 110,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "onState": "Choice2",
+                          "exportValue": "Choice2",
+                          "checked": false
+                        }
+                      ],
+                      "kind": "radio",
+                      "value": "Off",
+                      "radiosInUnison": false,
+                      "noToggleToOff": false
+                    }
+                  ],
+                  "widgets": [
+                    {
+                      "subtype": "widget",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 107
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "hasAppearance": false,
+                      "appearanceState": null,
+                      "structurePosition": null,
+                      "nm": null,
+                      "rect": {
+                        "x": 10,
+                        "y": 20,
+                        "width": 100,
+                        "height": 24
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "blendMode": "normal",
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false,
+                      "reply": null,
+                      "popup": null,
+                      "groupId": null,
+                      "author": null,
+                      "createdAt": null,
+                      "modifiedAt": null,
+                      "userId": null,
+                      "createdBy": null,
+                      "modifiedBy": null,
+                      "importedBy": null,
+                      "actions": null,
+                      "box": {
+                        "x": 10,
+                        "y": 20,
+                        "width": 100,
+                        "height": 24
+                      },
+                      "rotation": null,
+                      "color": null,
+                      "interiorColor": null,
+                      "strokeWidth": 1,
+                      "borderStyle": "solid",
+                      "dashArray": null,
+                      "fontFamily": null,
+                      "fontSize": null,
+                      "fontColor": null,
+                      "textAlign": "left",
+                      "caption": null,
+                      "checkStyle": null,
+                      "field": {
+                        "kind": "objectNumber",
+                        "objectNumber": 7
+                      },
+                      "fieldKind": "text",
+                      "hasMark": false
+                    },
+                    {
+                      "subtype": "widget",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 109
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "hasAppearance": false,
+                      "appearanceState": null,
+                      "structurePosition": null,
+                      "nm": null,
+                      "rect": {
+                        "x": 10,
+                        "y": 20,
+                        "width": 100,
+                        "height": 24
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "blendMode": "normal",
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false,
+                      "reply": null,
+                      "popup": null,
+                      "groupId": null,
+                      "author": null,
+                      "createdAt": null,
+                      "modifiedAt": null,
+                      "userId": null,
+                      "createdBy": null,
+                      "modifiedBy": null,
+                      "importedBy": null,
+                      "actions": null,
+                      "box": {
+                        "x": 10,
+                        "y": 20,
+                        "width": 100,
+                        "height": 24
+                      },
+                      "rotation": null,
+                      "color": null,
+                      "interiorColor": null,
+                      "strokeWidth": 1,
+                      "borderStyle": "solid",
+                      "dashArray": null,
+                      "fontFamily": null,
+                      "fontSize": null,
+                      "fontColor": null,
+                      "textAlign": "left",
+                      "caption": null,
+                      "checkStyle": null,
+                      "field": {
+                        "kind": "objectNumber",
+                        "objectNumber": 9
+                      },
+                      "fieldKind": "text",
+                      "hasMark": false
+                    },
+                    {
+                      "subtype": "widget",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 110
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "hasAppearance": false,
+                      "appearanceState": null,
+                      "structurePosition": null,
+                      "nm": null,
+                      "rect": {
+                        "x": 200,
+                        "y": 20,
+                        "width": 100,
+                        "height": 24
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "blendMode": "normal",
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false,
+                      "reply": null,
+                      "popup": null,
+                      "groupId": null,
+                      "author": null,
+                      "createdAt": null,
+                      "modifiedAt": null,
+                      "userId": null,
+                      "createdBy": null,
+                      "modifiedBy": null,
+                      "importedBy": null,
+                      "actions": null,
+                      "box": {
+                        "x": 200,
+                        "y": 20,
+                        "width": 100,
+                        "height": 24
+                      },
+                      "rotation": null,
+                      "color": null,
+                      "interiorColor": null,
+                      "strokeWidth": 1,
+                      "borderStyle": "solid",
+                      "dashArray": null,
+                      "fontFamily": null,
+                      "fontSize": null,
+                      "fontColor": null,
+                      "textAlign": "left",
+                      "caption": null,
+                      "checkStyle": null,
+                      "field": {
+                        "kind": "objectNumber",
+                        "objectNumber": 9
+                      },
+                      "fieldKind": "text",
+                      "hasMark": false
+                    }
+                  ],
+                  "calculationOrder": []
+                }
+              },
+              {
+                "path": "apply",
+                "times": 1,
+                "value": {
+                  "items": [
+                    {
+                      "type": "forms.copy",
+                      "fields": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "objectNumber": 10001
+                          },
+                          "name": "email_2",
+                          "origin": "acroform",
+                          "readOnly": false,
+                          "required": false,
+                          "noExport": false,
+                          "alternateName": null,
+                          "mappingName": null,
+                          "valueEntry": {
+                            "kind": "none"
+                          },
+                          "defaultValueEntry": {
+                            "kind": "none"
+                          },
+                          "groupId": null,
+                          "createdBy": null,
+                          "createdAt": null,
+                          "filledBy": null,
+                          "filledByName": null,
+                          "filledAt": null,
+                          "importedBy": null,
+                          "widgets": [
+                            {
+                              "ref": {
+                                "kind": "objectNumber",
+                                "page": {
+                                  "kind": "objectNumber",
+                                  "objectNumber": 1
+                                },
+                                "objectNumber": 10002
+                              },
+                              "objectNumber": 10002,
+                              "page": {
+                                "kind": "objectNumber",
+                                "objectNumber": 1
+                              }
+                            }
+                          ],
+                          "kind": "text",
+                          "value": "",
+                          "defaultValue": "",
+                          "maxLength": null,
+                          "multiline": false,
+                          "password": false,
+                          "comb": false
+                        }
+                      ],
+                      "widgets": [
+                        {
+                          "subtype": "widget",
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 10002
+                          },
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "hasAppearance": false,
+                          "appearanceState": null,
+                          "structurePosition": null,
+                          "nm": null,
+                          "rect": {
+                            "x": 10,
+                            "y": 50,
+                            "width": 100,
+                            "height": 24
+                          },
+                          "contents": null,
+                          "subject": null,
+                          "blendMode": "normal",
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false,
+                          "reply": null,
+                          "popup": null,
+                          "groupId": null,
+                          "author": null,
+                          "createdAt": null,
+                          "modifiedAt": null,
+                          "userId": null,
+                          "createdBy": null,
+                          "modifiedBy": null,
+                          "importedBy": null,
+                          "actions": null,
+                          "box": {
+                            "x": 10,
+                            "y": 50,
+                            "width": 100,
+                            "height": 24
+                          },
+                          "rotation": null,
+                          "color": null,
+                          "interiorColor": null,
+                          "strokeWidth": 1,
+                          "borderStyle": "solid",
+                          "dashArray": null,
+                          "fontFamily": null,
+                          "fontSize": null,
+                          "fontColor": null,
+                          "textAlign": "left",
+                          "caption": null,
+                          "checkStyle": null,
+                          "field": {
+                            "kind": "objectNumber",
+                            "objectNumber": 10001
+                          },
+                          "fieldKind": "text",
+                          "hasMark": false
+                        }
+                      ],
+                      "refMap": [
+                        {
+                          "from": {
+                            "kind": "objectNumber",
+                            "objectNumber": 7
+                          },
+                          "to": {
+                            "kind": "objectNumber",
+                            "objectNumber": 10001
+                          }
+                        }
+                      ],
+                      "dropped": [],
+                      "meta": {
+                        "affectedPages": [
+                          {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          }
+                        ],
+                        "cacheDelta": null,
+                        "opId": "00000000-0000-7000-8000-000000000001",
+                        "undoable": true,
+                        "changedFields": [
+                          {
+                            "kind": "objectNumber",
+                            "objectNumber": 10001
+                          }
+                        ],
+                        "changedWidgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "objectNumber": 1
+                              },
+                              "objectNumber": 10002
+                            },
+                            "objectNumber": 10002,
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            }
+                          }
+                        ],
+                        "redrawnWidgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "objectNumber": 1
+                              },
+                              "objectNumber": 10002
+                            },
+                            "objectNumber": 10002,
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "meta": {
+                    "affectedPages": [
+                      {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      }
+                    ],
+                    "cacheDelta": null,
+                    "opId": "00000000-0000-7000-8000-000000000001",
+                    "undoable": true,
+                    "changedFields": [
+                      {
+                        "kind": "objectNumber",
+                        "objectNumber": 10001
+                      }
+                    ],
+                    "changedWidgets": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "objectNumber": 10002
+                        },
+                        "objectNumber": 10002,
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        }
+                      }
+                    ],
+                    "redrawnWidgets": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "objectNumber": 10002
+                        },
+                        "objectNumber": 10002,
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        }
+                      }
+                    ]
+                  }
+                },
+                "events": [
+                  {
+                    "type": "forms.created",
+                    "field": {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 10001
+                      },
+                      "name": "email_2",
+                      "origin": "acroform",
+                      "readOnly": false,
+                      "required": false,
+                      "noExport": false,
+                      "alternateName": null,
+                      "mappingName": null,
+                      "valueEntry": {
+                        "kind": "none"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "groupId": null,
+                      "createdBy": null,
+                      "createdAt": null,
+                      "filledBy": null,
+                      "filledByName": null,
+                      "filledAt": null,
+                      "importedBy": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 10002
+                          },
+                          "objectNumber": 10002,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          }
+                        }
+                      ],
+                      "kind": "text",
+                      "value": "",
+                      "defaultValue": "",
+                      "maxLength": null,
+                      "multiline": false,
+                      "password": false,
+                      "comb": false
+                    },
+                    "widgets": [
+                      {
+                        "subtype": "widget",
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "objectNumber": 10002
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "hasAppearance": false,
+                        "appearanceState": null,
+                        "structurePosition": null,
+                        "nm": null,
+                        "rect": {
+                          "x": 10,
+                          "y": 50,
+                          "width": 100,
+                          "height": 24
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "blendMode": "normal",
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false,
+                        "reply": null,
+                        "popup": null,
+                        "groupId": null,
+                        "author": null,
+                        "createdAt": null,
+                        "modifiedAt": null,
+                        "userId": null,
+                        "createdBy": null,
+                        "modifiedBy": null,
+                        "importedBy": null,
+                        "actions": null,
+                        "box": {
+                          "x": 10,
+                          "y": 50,
+                          "width": 100,
+                          "height": 24
+                        },
+                        "rotation": null,
+                        "color": null,
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "borderStyle": "solid",
+                        "dashArray": null,
+                        "fontFamily": null,
+                        "fontSize": null,
+                        "fontColor": null,
+                        "textAlign": "left",
+                        "caption": null,
+                        "checkStyle": null,
+                        "field": {
+                          "kind": "objectNumber",
+                          "objectNumber": 10001
+                        },
+                        "fieldKind": "text",
+                        "hasMark": false
+                      }
+                    ],
+                    "meta": {
+                      "affectedPages": [
+                        {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        }
+                      ],
+                      "cacheDelta": null,
+                      "opId": "00000000-0000-7000-8000-000000000001",
+                      "undoable": true,
+                      "changedFields": [
+                        {
+                          "kind": "objectNumber",
+                          "objectNumber": 10001
+                        }
+                      ],
+                      "changedWidgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 10002
+                          },
+                          "objectNumber": 10002,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          }
+                        }
+                      ],
+                      "redrawnWidgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 10002
+                          },
+                          "objectNumber": 10002,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          }
+                        }
+                      ]
+                    },
+                    "origin": {
+                      "kind": "local",
+                      "sessionId": "s1",
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
+                        "id": "00000000-0000-7000-8000-000000000001",
+                        "index": 0,
+                        "count": 1
+                      }
+                    }
+                  }
+                ],
+                "defer": "copy"
+              },
+              {
+                "path": "apply",
+                "times": 1,
+                "value": {
+                  "items": [
+                    {
+                      "type": "forms.addWidget",
+                      "field": {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "objectNumber": 9
+                        },
+                        "name": "choice",
+                        "origin": "acroform",
+                        "readOnly": false,
+                        "required": false,
+                        "noExport": false,
+                        "alternateName": null,
+                        "mappingName": null,
+                        "valueEntry": {
+                          "kind": "none"
+                        },
+                        "defaultValueEntry": {
+                          "kind": "none"
+                        },
+                        "groupId": null,
+                        "createdBy": null,
+                        "createdAt": null,
+                        "filledBy": null,
+                        "filledByName": null,
+                        "filledAt": null,
+                        "importedBy": null,
+                        "widgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "objectNumber": 1
+                              },
+                              "objectNumber": 109
+                            },
+                            "objectNumber": 109,
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "onState": "Choice1",
+                            "exportValue": "Choice1",
+                            "checked": false
+                          },
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "objectNumber": 1
+                              },
+                              "objectNumber": 110
+                            },
+                            "objectNumber": 110,
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "onState": "Choice2",
+                            "exportValue": "Choice2",
+                            "checked": false
+                          },
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "objectNumber": 1
+                              },
+                              "objectNumber": 10003
+                            },
+                            "objectNumber": 10003,
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "onState": "Choice3",
+                            "exportValue": "Choice3",
+                            "checked": false
+                          }
+                        ],
+                        "kind": "radio",
+                        "value": "Off",
+                        "radiosInUnison": false,
+                        "noToggleToOff": false
+                      },
+                      "widgets": [
+                        {
+                          "subtype": "widget",
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 10003
+                          },
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "hasAppearance": false,
+                          "appearanceState": null,
+                          "structurePosition": null,
+                          "nm": null,
+                          "rect": {
+                            "x": 10,
+                            "y": 20,
+                            "width": 100,
+                            "height": 24
+                          },
+                          "contents": null,
+                          "subject": null,
+                          "blendMode": "normal",
+                          "invisible": false,
+                          "hidden": false,
+                          "print": true,
+                          "noZoom": false,
+                          "noRotate": false,
+                          "noView": false,
+                          "readOnly": false,
+                          "locked": false,
+                          "toggleNoView": false,
+                          "lockedContents": false,
+                          "reply": null,
+                          "popup": null,
+                          "groupId": null,
+                          "author": null,
+                          "createdAt": null,
+                          "modifiedAt": null,
+                          "userId": null,
+                          "createdBy": null,
+                          "modifiedBy": null,
+                          "importedBy": null,
+                          "actions": null,
+                          "box": {
+                            "x": 10,
+                            "y": 20,
+                            "width": 100,
+                            "height": 24
+                          },
+                          "rotation": null,
+                          "color": null,
+                          "interiorColor": null,
+                          "strokeWidth": 1,
+                          "borderStyle": "solid",
+                          "dashArray": null,
+                          "fontFamily": null,
+                          "fontSize": null,
+                          "fontColor": null,
+                          "textAlign": "left",
+                          "caption": null,
+                          "checkStyle": null,
+                          "field": {
+                            "kind": "objectNumber",
+                            "objectNumber": 9
+                          },
+                          "fieldKind": "text",
+                          "hasMark": false
+                        }
+                      ],
+                      "meta": {
+                        "affectedPages": [
+                          {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          }
+                        ],
+                        "cacheDelta": null,
+                        "opId": "00000000-0000-7000-8000-000000000002",
+                        "undoable": true,
+                        "changedFields": [
+                          {
+                            "kind": "objectNumber",
+                            "objectNumber": 9
+                          }
+                        ],
+                        "changedWidgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "objectNumber": 1
+                              },
+                              "objectNumber": 109
+                            },
+                            "objectNumber": 109,
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "onState": "Choice1",
+                            "exportValue": "Choice1",
+                            "checked": false
+                          },
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "objectNumber": 1
+                              },
+                              "objectNumber": 110
+                            },
+                            "objectNumber": 110,
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "onState": "Choice2",
+                            "exportValue": "Choice2",
+                            "checked": false
+                          },
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "objectNumber": 1
+                              },
+                              "objectNumber": 10003
+                            },
+                            "objectNumber": 10003,
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "onState": "Choice3",
+                            "exportValue": "Choice3",
+                            "checked": false
+                          }
+                        ],
+                        "redrawnWidgets": [
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "objectNumber": 1
+                              },
+                              "objectNumber": 109
+                            },
+                            "objectNumber": 109,
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "onState": "Choice1",
+                            "exportValue": "Choice1",
+                            "checked": false
+                          },
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "objectNumber": 1
+                              },
+                              "objectNumber": 110
+                            },
+                            "objectNumber": 110,
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "onState": "Choice2",
+                            "exportValue": "Choice2",
+                            "checked": false
+                          },
+                          {
+                            "ref": {
+                              "kind": "objectNumber",
+                              "page": {
+                                "kind": "objectNumber",
+                                "objectNumber": 1
+                              },
+                              "objectNumber": 10003
+                            },
+                            "objectNumber": 10003,
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "onState": "Choice3",
+                            "exportValue": "Choice3",
+                            "checked": false
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "meta": {
+                    "affectedPages": [
+                      {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      }
+                    ],
+                    "cacheDelta": null,
+                    "opId": "00000000-0000-7000-8000-000000000002",
+                    "undoable": true,
+                    "changedFields": [
+                      {
+                        "kind": "objectNumber",
+                        "objectNumber": 9
+                      }
+                    ],
+                    "changedWidgets": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "objectNumber": 109
+                        },
+                        "objectNumber": 109,
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "onState": "Choice1",
+                        "exportValue": "Choice1",
+                        "checked": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "objectNumber": 110
+                        },
+                        "objectNumber": 110,
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "onState": "Choice2",
+                        "exportValue": "Choice2",
+                        "checked": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "objectNumber": 10003
+                        },
+                        "objectNumber": 10003,
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "onState": "Choice3",
+                        "exportValue": "Choice3",
+                        "checked": false
+                      }
+                    ],
+                    "redrawnWidgets": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "objectNumber": 109
+                        },
+                        "objectNumber": 109,
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "onState": "Choice1",
+                        "exportValue": "Choice1",
+                        "checked": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "objectNumber": 110
+                        },
+                        "objectNumber": 110,
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "onState": "Choice2",
+                        "exportValue": "Choice2",
+                        "checked": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "objectNumber": 10003
+                        },
+                        "objectNumber": 10003,
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "onState": "Choice3",
+                        "exportValue": "Choice3",
+                        "checked": false
+                      }
+                    ]
+                  }
+                },
+                "events": [
+                  {
+                    "type": "forms.widgetAdded",
+                    "field": {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 9
+                      },
+                      "name": "choice",
+                      "origin": "acroform",
+                      "readOnly": false,
+                      "required": false,
+                      "noExport": false,
+                      "alternateName": null,
+                      "mappingName": null,
+                      "valueEntry": {
+                        "kind": "none"
+                      },
+                      "defaultValueEntry": {
+                        "kind": "none"
+                      },
+                      "groupId": null,
+                      "createdBy": null,
+                      "createdAt": null,
+                      "filledBy": null,
+                      "filledByName": null,
+                      "filledAt": null,
+                      "importedBy": null,
+                      "widgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 109
+                          },
+                          "objectNumber": 109,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "onState": "Choice1",
+                          "exportValue": "Choice1",
+                          "checked": false
+                        },
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 110
+                          },
+                          "objectNumber": 110,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "onState": "Choice2",
+                          "exportValue": "Choice2",
+                          "checked": false
+                        },
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 10003
+                          },
+                          "objectNumber": 10003,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "onState": "Choice3",
+                          "exportValue": "Choice3",
+                          "checked": false
+                        }
+                      ],
+                      "kind": "radio",
+                      "value": "Off",
+                      "radiosInUnison": false,
+                      "noToggleToOff": false
+                    },
+                    "widgets": [
+                      {
+                        "subtype": "widget",
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "objectNumber": 10003
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "hasAppearance": false,
+                        "appearanceState": null,
+                        "structurePosition": null,
+                        "nm": null,
+                        "rect": {
+                          "x": 10,
+                          "y": 20,
+                          "width": 100,
+                          "height": 24
+                        },
+                        "contents": null,
+                        "subject": null,
+                        "blendMode": "normal",
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false,
+                        "reply": null,
+                        "popup": null,
+                        "groupId": null,
+                        "author": null,
+                        "createdAt": null,
+                        "modifiedAt": null,
+                        "userId": null,
+                        "createdBy": null,
+                        "modifiedBy": null,
+                        "importedBy": null,
+                        "actions": null,
+                        "box": {
+                          "x": 10,
+                          "y": 20,
+                          "width": 100,
+                          "height": 24
+                        },
+                        "rotation": null,
+                        "color": null,
+                        "interiorColor": null,
+                        "strokeWidth": 1,
+                        "borderStyle": "solid",
+                        "dashArray": null,
+                        "fontFamily": null,
+                        "fontSize": null,
+                        "fontColor": null,
+                        "textAlign": "left",
+                        "caption": null,
+                        "checkStyle": null,
+                        "field": {
+                          "kind": "objectNumber",
+                          "objectNumber": 9
+                        },
+                        "fieldKind": "text",
+                        "hasMark": false
+                      }
+                    ],
+                    "meta": {
+                      "affectedPages": [
+                        {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        }
+                      ],
+                      "cacheDelta": null,
+                      "opId": "00000000-0000-7000-8000-000000000002",
+                      "undoable": true,
+                      "changedFields": [
+                        {
+                          "kind": "objectNumber",
+                          "objectNumber": 9
+                        }
+                      ],
+                      "changedWidgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 109
+                          },
+                          "objectNumber": 109,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "onState": "Choice1",
+                          "exportValue": "Choice1",
+                          "checked": false
+                        },
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 110
+                          },
+                          "objectNumber": 110,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "onState": "Choice2",
+                          "exportValue": "Choice2",
+                          "checked": false
+                        },
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 10003
+                          },
+                          "objectNumber": 10003,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "onState": "Choice3",
+                          "exportValue": "Choice3",
+                          "checked": false
+                        }
+                      ],
+                      "redrawnWidgets": [
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 109
+                          },
+                          "objectNumber": 109,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "onState": "Choice1",
+                          "exportValue": "Choice1",
+                          "checked": false
+                        },
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 110
+                          },
+                          "objectNumber": 110,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "onState": "Choice2",
+                          "exportValue": "Choice2",
+                          "checked": false
+                        },
+                        {
+                          "ref": {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 10003
+                          },
+                          "objectNumber": 10003,
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "onState": "Choice3",
+                          "exportValue": "Choice3",
+                          "checked": false
+                        }
+                      ]
+                    },
+                    "origin": {
+                      "kind": "local",
+                      "sessionId": "s1",
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
+                        "id": "00000000-0000-7000-8000-000000000002",
+                        "index": 0,
+                        "count": 1
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "snapshot": [
+        "form::a"
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "duplicate",
+          "args": [
+            [
+              {
+                "kind": "objectNumber",
+                "objectNumber": 7
+              }
+            ],
+            {
+              "offset": {
+                "x": 0,
+                "y": 30
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "settle",
+          "label": "copy",
+          "value": {
+            "items": [
+              {
+                "type": "forms.copy",
+                "fields": [
+                  {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 10001
+                    },
+                    "name": "email_2",
+                    "origin": "acroform",
+                    "readOnly": false,
+                    "required": false,
+                    "noExport": false,
+                    "alternateName": null,
+                    "mappingName": null,
+                    "valueEntry": {
+                      "kind": "none"
+                    },
+                    "defaultValueEntry": {
+                      "kind": "none"
+                    },
+                    "groupId": null,
+                    "createdBy": null,
+                    "createdAt": null,
+                    "filledBy": null,
+                    "filledByName": null,
+                    "filledAt": null,
+                    "importedBy": null,
+                    "widgets": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "objectNumber": 10002
+                        },
+                        "objectNumber": 10002,
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        }
+                      }
+                    ],
+                    "kind": "text",
+                    "value": "",
+                    "defaultValue": "",
+                    "maxLength": null,
+                    "multiline": false,
+                    "password": false,
+                    "comb": false
+                  }
+                ],
+                "widgets": [
+                  {
+                    "subtype": "widget",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10002
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "hasAppearance": false,
+                    "appearanceState": null,
+                    "structurePosition": null,
+                    "nm": null,
+                    "rect": {
+                      "x": 10,
+                      "y": 50,
+                      "width": 100,
+                      "height": 24
+                    },
+                    "contents": null,
+                    "subject": null,
+                    "blendMode": "normal",
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false,
+                    "reply": null,
+                    "popup": null,
+                    "groupId": null,
+                    "author": null,
+                    "createdAt": null,
+                    "modifiedAt": null,
+                    "userId": null,
+                    "createdBy": null,
+                    "modifiedBy": null,
+                    "importedBy": null,
+                    "actions": null,
+                    "box": {
+                      "x": 10,
+                      "y": 50,
+                      "width": 100,
+                      "height": 24
+                    },
+                    "rotation": null,
+                    "color": null,
+                    "interiorColor": null,
+                    "strokeWidth": 1,
+                    "borderStyle": "solid",
+                    "dashArray": null,
+                    "fontFamily": null,
+                    "fontSize": null,
+                    "fontColor": null,
+                    "textAlign": "left",
+                    "caption": null,
+                    "checkStyle": null,
+                    "field": {
+                      "kind": "objectNumber",
+                      "objectNumber": 10001
+                    },
+                    "fieldKind": "text",
+                    "hasMark": false
+                  }
+                ],
+                "refMap": [
+                  {
+                    "from": {
+                      "kind": "objectNumber",
+                      "objectNumber": 7
+                    },
+                    "to": {
+                      "kind": "objectNumber",
+                      "objectNumber": 10001
+                    }
+                  }
+                ],
+                "dropped": [],
+                "meta": {
+                  "affectedPages": [
+                    {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    }
+                  ],
+                  "cacheDelta": null,
+                  "opId": "00000000-0000-7000-8000-000000000001",
+                  "undoable": true,
+                  "changedFields": [
+                    {
+                      "kind": "objectNumber",
+                      "objectNumber": 10001
+                    }
+                  ],
+                  "changedWidgets": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 10002
+                      },
+                      "objectNumber": 10002,
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      }
+                    }
+                  ],
+                  "redrawnWidgets": [
+                    {
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 10002
+                      },
+                      "objectNumber": 10002,
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      }
+                    }
+                  ]
+                }
+              }
+            ],
+            "meta": {
+              "affectedPages": [
+                {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                }
+              ],
+              "cacheDelta": null,
+              "opId": "00000000-0000-7000-8000-000000000001",
+              "undoable": true,
+              "changedFields": [
+                {
+                  "kind": "objectNumber",
+                  "objectNumber": 10001
+                }
+              ],
+              "changedWidgets": [
+                {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "objectNumber": 10002
+                  },
+                  "objectNumber": 10002,
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  }
+                }
+              ],
+              "redrawnWidgets": [
+                {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "objectNumber": 10002
+                  },
+                  "objectNumber": 10002,
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "get",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 10001
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "duplicateWidgets",
+          "args": [
+            [
+              {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "objectNumber": 109
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "getWidgets",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 9
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "duplicate",
+          "args": [
+            []
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "duplicate",
+          "args": [
+            [
+              {
+                "kind": "objectNumber",
+                "objectNumber": 99
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "form",
+            "doc": "a"
+          },
+          "method": "duplicateWidgets",
+          "args": [
+            [
+              {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "objectNumber": 999
+              }
+            ]
+          ]
+        }
+      ],
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "plugins": {}
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
+              }
+            },
+            {
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "forms.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "plugins": {
+              "form::a": {
+                "focused": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "apply",
+              "args": [
+                {
+                  "ops": [
+                    {
+                      "type": "forms.copy",
+                      "fields": [
+                        {
+                          "kind": "objectNumber",
+                          "objectNumber": 7
+                        }
+                      ],
+                      "offset": {
+                        "x": 0,
+                        "y": 30
+                      },
+                      "values": false,
+                      "objectNumbers": [
+                        10001,
+                        10002
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "opId": "00000000-0000-7000-8000-000000000001"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "form::a": {
+                "focused": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 7
+                },
+                "name": "email",
+                "origin": "acroform",
+                "readOnly": false,
+                "required": false,
+                "noExport": false,
+                "alternateName": null,
+                "mappingName": null,
+                "valueEntry": {
+                  "kind": "scalar",
+                  "value": "hello"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "groupId": null,
+                "createdBy": null,
+                "createdAt": null,
+                "filledBy": null,
+                "filledByName": null,
+                "filledAt": null,
+                "importedBy": null,
+                "widgets": [
+                  {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 107
+                    },
+                    "objectNumber": 107,
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    }
+                  }
+                ],
+                "kind": "text",
+                "value": "hello",
+                "defaultValue": "",
+                "maxLength": null,
+                "multiline": false,
+                "password": false,
+                "comb": false
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 9
+                },
+                "name": "choice",
+                "origin": "acroform",
+                "readOnly": false,
+                "required": false,
+                "noExport": false,
+                "alternateName": null,
+                "mappingName": null,
+                "valueEntry": {
+                  "kind": "none"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "groupId": null,
+                "createdBy": null,
+                "createdAt": null,
+                "filledBy": null,
+                "filledByName": null,
+                "filledAt": null,
+                "importedBy": null,
+                "widgets": [
+                  {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 109
+                    },
+                    "objectNumber": 109,
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "onState": "Choice1",
+                    "exportValue": "Choice1",
+                    "checked": false
+                  },
+                  {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 110
+                    },
+                    "objectNumber": 110,
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "onState": "Choice2",
+                    "exportValue": "Choice2",
+                    "checked": false
+                  }
+                ],
+                "kind": "radio",
+                "value": "Off",
+                "radiosInUnison": false,
+                "noToggleToOff": false
+              },
+              {
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 10001
+                },
+                "name": "email_2",
+                "origin": "acroform",
+                "readOnly": false,
+                "required": false,
+                "noExport": false,
+                "alternateName": null,
+                "mappingName": null,
+                "valueEntry": {
+                  "kind": "none"
+                },
+                "defaultValueEntry": {
+                  "kind": "none"
+                },
+                "groupId": null,
+                "createdBy": null,
+                "createdAt": null,
+                "filledBy": null,
+                "filledByName": null,
+                "filledAt": null,
+                "importedBy": null,
+                "kind": "text",
+                "value": "",
+                "defaultValue": "",
+                "maxLength": null,
+                "multiline": false,
+                "password": false,
+                "comb": false,
+                "widgets": [
+                  {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10002
+                    },
+                    "objectNumber": 10002,
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "state": {
+            "plugins": {
+              "form::a": {
+                "focused": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "fields": [
+                  {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 10001
+                    },
+                    "name": "email_2",
+                    "origin": "acroform",
+                    "readOnly": false,
+                    "required": false,
+                    "noExport": false,
+                    "alternateName": null,
+                    "mappingName": null,
+                    "valueEntry": {
+                      "kind": "none"
+                    },
+                    "defaultValueEntry": {
+                      "kind": "none"
+                    },
+                    "groupId": null,
+                    "createdBy": null,
+                    "createdAt": null,
+                    "filledBy": null,
+                    "filledByName": null,
+                    "filledAt": null,
+                    "importedBy": null,
+                    "widgets": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "objectNumber": 10002
+                        },
+                        "objectNumber": 10002,
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        }
+                      }
+                    ],
+                    "kind": "text",
+                    "value": "",
+                    "defaultValue": "",
+                    "maxLength": null,
+                    "multiline": false,
+                    "password": false,
+                    "comb": false
+                  }
+                ],
+                "widgets": [
+                  {
+                    "subtype": "widget",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10002
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "hasAppearance": false,
+                    "appearanceState": null,
+                    "structurePosition": null,
+                    "nm": null,
+                    "rect": {
+                      "x": 10,
+                      "y": 50,
+                      "width": 100,
+                      "height": 24
+                    },
+                    "contents": null,
+                    "subject": null,
+                    "blendMode": "normal",
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false,
+                    "reply": null,
+                    "popup": null,
+                    "groupId": null,
+                    "author": null,
+                    "createdAt": null,
+                    "modifiedAt": null,
+                    "userId": null,
+                    "createdBy": null,
+                    "modifiedBy": null,
+                    "importedBy": null,
+                    "actions": null,
+                    "box": {
+                      "x": 10,
+                      "y": 50,
+                      "width": 100,
+                      "height": 24
+                    },
+                    "rotation": null,
+                    "color": null,
+                    "interiorColor": null,
+                    "strokeWidth": 1,
+                    "borderStyle": "solid",
+                    "dashArray": null,
+                    "fontFamily": null,
+                    "fontSize": null,
+                    "fontColor": null,
+                    "textAlign": "left",
+                    "caption": null,
+                    "checkStyle": null,
+                    "field": {
+                      "kind": "objectNumber",
+                      "objectNumber": 10001
+                    },
+                    "fieldKind": "text",
+                    "hasMark": false
+                  }
+                ],
+                "dropped": []
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "state": {
+            "plugins": {
+              "form::a": {
+                "focused": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "ref": {
+                "kind": "objectNumber",
+                "objectNumber": 10001
+              },
+              "name": "email_2",
+              "origin": "acroform",
+              "readOnly": false,
+              "required": false,
+              "noExport": false,
+              "alternateName": null,
+              "mappingName": null,
+              "valueEntry": {
+                "kind": "none"
+              },
+              "defaultValueEntry": {
+                "kind": "none"
+              },
+              "groupId": null,
+              "createdBy": null,
+              "createdAt": null,
+              "filledBy": null,
+              "filledByName": null,
+              "filledAt": null,
+              "importedBy": null,
+              "widgets": [
+                {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "objectNumber": 10002
+                  },
+                  "objectNumber": 10002,
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  }
+                }
+              ],
+              "kind": "text",
+              "value": "",
+              "defaultValue": "",
+              "maxLength": null,
+              "multiline": false,
+              "password": false,
+              "comb": false
+            }
+          },
+          "state": {
+            "plugins": {
+              "form::a": {
+                "focused": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "fields": [
+                  {
+                    "ref": {
+                      "kind": "objectNumber",
+                      "objectNumber": 9
+                    },
+                    "name": "choice",
+                    "origin": "acroform",
+                    "readOnly": false,
+                    "required": false,
+                    "noExport": false,
+                    "alternateName": null,
+                    "mappingName": null,
+                    "valueEntry": {
+                      "kind": "none"
+                    },
+                    "defaultValueEntry": {
+                      "kind": "none"
+                    },
+                    "groupId": null,
+                    "createdBy": null,
+                    "createdAt": null,
+                    "filledBy": null,
+                    "filledByName": null,
+                    "filledAt": null,
+                    "importedBy": null,
+                    "widgets": [
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "objectNumber": 109
+                        },
+                        "objectNumber": 109,
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "onState": "Choice1",
+                        "exportValue": "Choice1",
+                        "checked": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "objectNumber": 110
+                        },
+                        "objectNumber": 110,
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "onState": "Choice2",
+                        "exportValue": "Choice2",
+                        "checked": false
+                      },
+                      {
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "objectNumber": 10003
+                        },
+                        "objectNumber": 10003,
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "onState": "Choice3",
+                        "exportValue": "Choice3",
+                        "checked": false
+                      }
+                    ],
+                    "kind": "radio",
+                    "value": "Off",
+                    "radiosInUnison": false,
+                    "noToggleToOff": false
+                  }
+                ],
+                "widgets": [
+                  {
+                    "subtype": "widget",
+                    "ref": {
+                      "kind": "objectNumber",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "objectNumber": 10003
+                    },
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "hasAppearance": false,
+                    "appearanceState": null,
+                    "structurePosition": null,
+                    "nm": null,
+                    "rect": {
+                      "x": 10,
+                      "y": 20,
+                      "width": 100,
+                      "height": 24
+                    },
+                    "contents": null,
+                    "subject": null,
+                    "blendMode": "normal",
+                    "invisible": false,
+                    "hidden": false,
+                    "print": true,
+                    "noZoom": false,
+                    "noRotate": false,
+                    "noView": false,
+                    "readOnly": false,
+                    "locked": false,
+                    "toggleNoView": false,
+                    "lockedContents": false,
+                    "reply": null,
+                    "popup": null,
+                    "groupId": null,
+                    "author": null,
+                    "createdAt": null,
+                    "modifiedAt": null,
+                    "userId": null,
+                    "createdBy": null,
+                    "modifiedBy": null,
+                    "importedBy": null,
+                    "actions": null,
+                    "box": {
+                      "x": 10,
+                      "y": 20,
+                      "width": 100,
+                      "height": 24
+                    },
+                    "rotation": null,
+                    "color": null,
+                    "interiorColor": null,
+                    "strokeWidth": 1,
+                    "borderStyle": "solid",
+                    "dashArray": null,
+                    "fontFamily": null,
+                    "fontSize": null,
+                    "fontColor": null,
+                    "textAlign": "left",
+                    "caption": null,
+                    "checkStyle": null,
+                    "field": {
+                      "kind": "objectNumber",
+                      "objectNumber": 9
+                    },
+                    "fieldKind": "text",
+                    "hasMark": false
+                  }
+                ],
+                "dropped": []
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "apply",
+              "args": [
+                {
+                  "ops": [
+                    {
+                      "type": "forms.addWidget",
+                      "field": {
+                        "kind": "objectNumber",
+                        "objectNumber": 9
+                      },
+                      "placement": {
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "rect": {
+                          "x": 10,
+                          "y": 20,
+                          "width": 100,
+                          "height": 24
+                        },
+                        "strokeWidth": 1,
+                        "borderStyle": "solid",
+                        "textAlign": "left",
+                        "exportValue": "Choice3"
+                      },
+                      "objectNumber": 10003
+                    }
+                  ]
+                },
+                {
+                  "opId": "00000000-0000-7000-8000-000000000002"
+                }
+              ]
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 3
+          },
+          "state": {
+            "plugins": {
+              "form::a": {
+                "focused": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "subtype": "widget",
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "objectNumber": 109
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "hasAppearance": false,
+                "appearanceState": null,
+                "structurePosition": null,
+                "nm": null,
+                "rect": {
+                  "x": 10,
+                  "y": 20,
+                  "width": 100,
+                  "height": 24
+                },
+                "contents": null,
+                "subject": null,
+                "blendMode": "normal",
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false,
+                "reply": null,
+                "popup": null,
+                "groupId": null,
+                "author": null,
+                "createdAt": null,
+                "modifiedAt": null,
+                "userId": null,
+                "createdBy": null,
+                "modifiedBy": null,
+                "importedBy": null,
+                "actions": null,
+                "box": {
+                  "x": 10,
+                  "y": 20,
+                  "width": 100,
+                  "height": 24
+                },
+                "rotation": null,
+                "color": null,
+                "interiorColor": null,
+                "strokeWidth": 1,
+                "borderStyle": "solid",
+                "dashArray": null,
+                "fontFamily": null,
+                "fontSize": null,
+                "fontColor": null,
+                "textAlign": "left",
+                "caption": null,
+                "checkStyle": null,
+                "field": {
+                  "kind": "objectNumber",
+                  "objectNumber": 9
+                },
+                "fieldKind": "text",
+                "hasMark": false
+              },
+              {
+                "subtype": "widget",
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "objectNumber": 110
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "hasAppearance": false,
+                "appearanceState": null,
+                "structurePosition": null,
+                "nm": null,
+                "rect": {
+                  "x": 200,
+                  "y": 20,
+                  "width": 100,
+                  "height": 24
+                },
+                "contents": null,
+                "subject": null,
+                "blendMode": "normal",
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false,
+                "reply": null,
+                "popup": null,
+                "groupId": null,
+                "author": null,
+                "createdAt": null,
+                "modifiedAt": null,
+                "userId": null,
+                "createdBy": null,
+                "modifiedBy": null,
+                "importedBy": null,
+                "actions": null,
+                "box": {
+                  "x": 200,
+                  "y": 20,
+                  "width": 100,
+                  "height": 24
+                },
+                "rotation": null,
+                "color": null,
+                "interiorColor": null,
+                "strokeWidth": 1,
+                "borderStyle": "solid",
+                "dashArray": null,
+                "fontFamily": null,
+                "fontSize": null,
+                "fontColor": null,
+                "textAlign": "left",
+                "caption": null,
+                "checkStyle": null,
+                "field": {
+                  "kind": "objectNumber",
+                  "objectNumber": 9
+                },
+                "fieldKind": "text",
+                "hasMark": false
+              },
+              {
+                "subtype": "widget",
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "objectNumber": 10003
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "hasAppearance": false,
+                "appearanceState": null,
+                "structurePosition": null,
+                "nm": null,
+                "rect": {
+                  "x": 10,
+                  "y": 20,
+                  "width": 100,
+                  "height": 24
+                },
+                "contents": null,
+                "subject": null,
+                "blendMode": "normal",
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false,
+                "reply": null,
+                "popup": null,
+                "groupId": null,
+                "author": null,
+                "createdAt": null,
+                "modifiedAt": null,
+                "userId": null,
+                "createdBy": null,
+                "modifiedBy": null,
+                "importedBy": null,
+                "actions": null,
+                "box": {
+                  "x": 10,
+                  "y": 20,
+                  "width": 100,
+                  "height": 24
+                },
+                "rotation": null,
+                "color": null,
+                "interiorColor": null,
+                "strokeWidth": 1,
+                "borderStyle": "solid",
+                "dashArray": null,
+                "fontFamily": null,
+                "fontSize": null,
+                "fontColor": null,
+                "textAlign": "left",
+                "caption": null,
+                "checkStyle": null,
+                "field": {
+                  "kind": "objectNumber",
+                  "objectNumber": 9
+                },
+                "fieldKind": "text",
+                "hasMark": false
+              }
+            ]
+          },
+          "state": {
+            "plugins": {
+              "form::a": {
+                "focused": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "resolved": {
+                "fields": [],
+                "widgets": [],
+                "dropped": []
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 4
+          },
+          "state": {
+            "plugins": {
+              "form::a": {
+                "focused": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 5,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "copy: no form field obj:99",
+                  "code": "not-found",
+                  "capability": "form",
+                  "permission": null,
+                  "details": {
+                    "item": 0
+                  },
+                  "cause": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "copy: no form field obj:99",
+                      "code": "NotFound",
+                      "details": {
+                        "item": 0
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 5
+          },
+          "state": {
+            "plugins": {
+              "form::a": {
+                "focused": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 6,
+              "rejected": {
+                "$error": {
+                  "name": "PluginError",
+                  "message": "no widget obj:999",
+                  "code": "not-found",
+                  "capability": "form",
+                  "permission": null
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 6
+          },
+          "state": {
+            "plugins": {
+              "form::a": {
+                "focused": null
+              }
+            }
+          }
+        }
+      ]
     }
   ]
 }
