@@ -93,6 +93,10 @@ pub struct Scene {
     pub max_item_size: Size,
     #[serde(skip)]
     index: SceneIndex,
+    /// `itemOfPageFor`'s table: per page index below the layout's page
+    /// count, the item holding it, or -1 for a page the layout leaves out.
+    #[serde(skip)]
+    item_of: Vec<i32>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -709,9 +713,16 @@ impl Scene {
         }
     }
 
-    /// The index of the item holding a page; `None` for an empty scene,
-    /// where the TypeScript returns -1.
+    /// The index of the item holding a page, whatever order the groups
+    /// come in; a page the layout leaves out gets the nearest item before it
+    /// by first page. `None` for an empty scene, where the TypeScript
+    /// returns -1.
     pub fn item_of_page(&self, page_index: usize) -> Option<usize> {
+        // A page index out of range reads `undefined`, so -1.
+        let index = self.item_of.get(page_index).copied().unwrap_or(-1);
+        if index >= 0 {
+            return Some(index as usize);
+        }
         let first_page = match &self.index {
             SceneIndex::Linear { first_page, .. } | SceneIndex::Grid { first_page, .. } => {
                 first_page
@@ -833,6 +844,21 @@ fn item_scale(
         1.0
     };
     factor * view_units_per_point.unwrap_or(1.0)
+}
+
+/// `itemOfPageFor`'s table: an `Int32Array(page_count)` filled with -1,
+/// then each item's index written at each of its pages (a page past the
+/// end is dropped, as a typed array drops it).
+fn item_of_pages(items: &[SceneItem], page_count: usize) -> Vec<i32> {
+    let mut item_of = vec![-1; page_count];
+    for it in items {
+        for &pi in &it.page_indexes {
+            if let Some(slot) = item_of.get_mut(pi) {
+                *slot = it.index as i32;
+            }
+        }
+    }
+    item_of
 }
 
 /// An empty group has no first page: `undefined`, which every comparison
@@ -963,6 +989,7 @@ pub fn linear_layout(
         axis: if vertical { Axis::Y } else { Axis::X },
         max_item_size: Size { width: max_w, height: max_h },
         index: SceneIndex::Linear { vertical, mirrored, starts, ends, first_page },
+        item_of: item_of_pages(&items, pages.len()),
         items,
     })
 }
@@ -1078,6 +1105,7 @@ pub fn grid_layout(
 
     Ok(Scene {
         size,
+        item_of: item_of_pages(&items, pages.len()),
         items,
         item_count: n,
         axis: Axis::Grid,
