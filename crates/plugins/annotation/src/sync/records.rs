@@ -18,6 +18,7 @@ use std::cell::Cell;
 use std::collections::HashSet;
 use std::rc::Rc;
 
+use epdf_annotation_core::engine::copy::plan_annotation_copies;
 use epdf_annotation_core::engine::resolve::annotation_patch_between;
 use epdf_annotation_core::record::{annotation_after, annotation_of_new};
 use epdf_kernel::Error;
@@ -73,6 +74,12 @@ pub fn dto_of(stored: &Value) -> &Value {
 /// A record's appearance version.
 pub fn picture_version(stored: &Value) -> f64 {
     stored.get("pictureVersion").and_then(number).unwrap_or(0.0)
+}
+
+/// `record.copyOf`: on a copy this session asked for that the engine
+/// hasn't written, the annotation it copies.
+pub fn copy_of(stored: &Value) -> Option<&Value> {
+    stored.get("copyOf").filter(|c| c.is_object())
 }
 
 /// A record's identity.
@@ -381,6 +388,76 @@ pub fn core_error(error: epdf_annotation_core::CoreError) -> Error {
     out
 }
 
+/// `CopyOf`: one copy an `annotations.copy` op makes.
+#[derive(Clone, Debug)]
+pub struct CopyOf {
+    /// The ref it has: the page it goes on, and the object number the op gives it.
+    pub reference: Value,
+    /// The copy as the engine reads it back; `None` for one that can't be
+    /// read as a create is, which shows when the engine answers.
+    pub copy: Option<Object>,
+    /// The annotation it copies, and that one's place among the op's refs.
+    pub of: Value,
+    pub source: usize,
+}
+
+/// `copiesOf(records, op)`: the copies a copy makes, each with the
+/// annotation it copies: the engine's own rule (`planAnnotationCopies`) over
+/// the records, and each copy read as a create of the same data is. None for
+/// a copy the engine numbers itself, and none when the engine would refuse
+/// it (an annotation it names is gone).
+pub fn copies_of(records: &Value, op: &Value) -> Vec<CopyOf> {
+    let refs = op.get("refs").and_then(Value::as_array).cloned().unwrap_or_default();
+    let Some(numbers) = op.get("objectNumbers").and_then(Value::as_array) else {
+        return Vec::new();
+    };
+    if numbers.len() != refs.len() {
+        return Vec::new();
+    }
+    let byk = by_key(records);
+    let mut sources = Vec::with_capacity(refs.len());
+    for reference in &refs {
+        let Some(stored) = key_of(reference).and_then(|k| byk.get(&k)) else { return Vec::new() };
+        sources.push(dto_of(stored).as_object().cloned().unwrap_or_default());
+    }
+    let offset = op.get("offset").filter(|o| o.is_object()).map(|o| {
+        (
+            o.get("x").and_then(number).unwrap_or(f64::NAN),
+            o.get("y").and_then(number).unwrap_or(f64::NAN),
+        )
+    });
+    let page = op.get("page").filter(|p| epdf_annotation_core::json::truthy(Some(p)));
+    let plan = plan_annotation_copies(&sources, page, offset, |_| false);
+    let made: Vec<Value> = plan
+        .copies
+        .iter()
+        .map(|copy| {
+            json!({ "kind": "objectNumber", "page": copy.page, "objectNumber": numbers[copy.source] })
+        })
+        .collect();
+    plan.copies
+        .iter()
+        .enumerate()
+        .map(|(at, copy)| {
+            let mut draft = copy.data.clone();
+            if let Some((to, ty)) = &copy.reply_to {
+                draft.shift_remove("reply");
+                draft.insert("reply".into(), json!({ "to": made[*to], "type": ty }));
+            }
+            if let Some(parent) = copy.parent {
+                draft.shift_remove("parent");
+                draft.insert("parent".into(), made[parent].clone());
+            }
+            CopyOf {
+                reference: made[at].clone(),
+                copy: annotation_of_create(&draft, &made[at]).ok(),
+                of: sources[copy.source].get("ref").cloned().unwrap_or(Value::Null),
+                source: copy.source,
+            }
+        })
+        .collect()
+}
+
 /// The page's annotations, in drawing order.
 fn annotations_on(records: &Value, page: f64) -> Vec<&Value> {
     let byk = by_key(records);
@@ -487,6 +564,32 @@ pub fn predict_records(records: Rc<Value>, op: &Value) -> Result<Rc<Value>, Erro
                 _ => Ok(records),
             }
         }
+        "annotations.copy" => {
+            // Each copy shows under the object number it was given, after the
+            // annotations there are.
+            let byk = by_key(&records);
+            let made: Vec<(String, Object, Value)> = copies_of(&records, op)
+                .into_iter()
+                .filter_map(|c| {
+                    let copy = c.copy?;
+                    let key = key_of(&c.reference)?;
+                    (!byk.contains_key(&key)).then_some((key, copy, c.of))
+                })
+                .collect();
+            if made.is_empty() {
+                return Ok(records);
+            }
+            let mut next_byk = byk.clone();
+            let mut next_order = order(&records);
+            for (key, copy, of) in made {
+                next_byk.insert(
+                    key.clone(),
+                    json!({ "dto": copy, "pictureVersion": crate::js::num(0.0), "copyOf": of, "$v": fresh() }),
+                );
+                next_order.push(key);
+            }
+            Ok(with_parts(next_byk, next_order))
+        }
         "annotations.restore" => {
             let annotation = op.get("annotation").cloned().unwrap_or(Value::Null);
             let key = dto_key(&annotation)?;
@@ -555,6 +658,11 @@ fn undo_of_op(records: &Rc<Value>, op: &Value) -> Vec<Value> {
                 .map(|(i, a)| json!({ "type": "annotations.restore", "annotation": a, "index": i }))
                 .collect()
         }
+        // The copies go: a reply or a popup among them goes with its parent.
+        "annotations.copy" => copies_of(records, op)
+            .into_iter()
+            .map(|c| json!({ "type": "annotations.delete", "ref": c.reference }))
+            .collect(),
         "annotations.reorder" => {
             let page = op.get("page").and_then(page_number).unwrap_or(f64::NAN);
             let refs: Vec<Value> = annotations_on(records, page)

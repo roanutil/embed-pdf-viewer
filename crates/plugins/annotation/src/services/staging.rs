@@ -41,12 +41,40 @@ pub enum StoreChange {
         refs: Vec<Value>,
         position: Value,
     },
+    /// Copies of these annotations, which the engine makes in one op: moved
+    /// by `offset`, on `page` when one is named. `along` is copied after
+    /// them (an annotation's attached link), and its copies aren't among the
+    /// records the change names.
+    Copy {
+        refs: Vec<Value>,
+        along: Vec<Value>,
+        page: Option<Value>,
+        offset: Option<Value>,
+    },
 }
 
 impl StoreChange {
     pub fn is_create(&self) -> bool {
         matches!(self, StoreChange::Create { .. })
     }
+}
+
+/// `copiedBy(change)`: the annotations a stated copy copies: the ones it
+/// names, then what comes along.
+fn copied_by(refs: &[Value], along: &[Value]) -> Vec<Value> {
+    refs.iter().chain(along).cloned().collect()
+}
+
+/// The `annotations.copy` op of a stated copy, `objectNumbers` aside.
+fn copy_op(refs: &[Value], along: &[Value], page: &Option<Value>, offset: &Option<Value>) -> Value {
+    let mut op = json!({ "type": "annotations.copy", "refs": copied_by(refs, along) });
+    if let Some(page) = page {
+        op["page"] = page.clone();
+    }
+    if let Some(offset) = offset {
+        op["offset"] = offset.clone();
+    }
+    op
 }
 
 /// `opOfStated(change)`: a stated change as its op, as given.
@@ -72,6 +100,7 @@ pub fn op_of_stated(change: &StoreChange) -> Value {
         StoreChange::Reorder { page, refs, position } => {
             json!({ "type": "annotations.reorder", "page": page, "refs": refs, "position": position })
         }
+        StoreChange::Copy { refs, along, page, offset } => copy_op(refs, along, page, offset),
     }
 }
 
@@ -87,6 +116,14 @@ fn keys_of(op: &Value) -> Vec<String> {
                 None => Vec::new(),
             }
         }
+        // The copies: the annotations it copies stay as they are.
+        "annotations.copy" => op
+            .get("objectNumbers")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .map(|n| format!("obj:{}", crate::js::stringify(Some(n))))
+            .collect(),
         "annotations.update" | "annotations.delete" => {
             vec![key_or_none(op.get("ref").unwrap_or(&Value::Null))]
         }
@@ -134,6 +171,12 @@ pub fn label_of(ops: &[Value]) -> Value {
         "annotations" => "annotation".to_string(),
         "forms" => "form".to_string(),
         other => other.to_string(),
+    };
+    // `LABEL_VERBS`: the verb of this plugin that makes an op, where the
+    // engine names the op differently: `duplicate()` makes copies.
+    let verb = match kinds.as_slice() {
+        ["annotations.copy"] => "duplicate".to_string(),
+        _ => verb,
     };
     json!({ "key": format!("{owner}.{verb}"), "count": ids_of(ops).len() })
 }
@@ -242,6 +285,66 @@ fn not_found(reference: &Value) -> Error {
     )
 }
 
+/// `numbersFor(changes)`: how many object numbers stated changes take: one
+/// per create, and one per annotation a copy copies.
+pub fn numbers_for(changes: &[StoreChange]) -> usize {
+    changes
+        .iter()
+        .map(|change| match change {
+            StoreChange::Create { .. } => 1,
+            StoreChange::Copy { refs, along, .. } => refs.len() + along.len(),
+            _ => 0,
+        })
+        .sum()
+}
+
+/// What [`checked_copy_of`] made of a stated copy.
+pub struct CheckedCopy {
+    /// The copies of the annotations it names, in their order (one the
+    /// engine leaves out has none), each by the object number it gets.
+    pub ids: Vec<Id>,
+    pub op: Value,
+    /// The copies that draw live from now on.
+    pub live: Vec<Id>,
+    /// Every copy it makes, each with the annotation it copies.
+    pub copies: Vec<crate::sync::records::CopyOf>,
+}
+
+/// `checkedCopyOf(change, current, taken)`: a stated copy as its op, with an
+/// object number for each annotation it copies, so the copies show at once
+/// under them. Throws for an annotation the view doesn't have.
+pub fn checked_copy_of(
+    refs: &[Value],
+    along: &[Value],
+    page: &Option<Value>,
+    offset: &Option<Value>,
+    current: &Value,
+    taken: &mut Vec<u32>,
+) -> Result<CheckedCopy, Error> {
+    let all = copied_by(refs, along);
+    for reference in &all {
+        if !by_key(current).contains_key(&key_or_none(reference)) {
+            return Err(not_found(reference));
+        }
+    }
+    let count = all.len().min(taken.len());
+    let numbers: Vec<u32> = taken.drain(..count).collect();
+    let mut op = copy_op(refs, along, page, offset);
+    op["objectNumbers"] = json!(numbers);
+    let copies = crate::sync::records::copies_of(current, &op);
+    let ids = copies
+        .iter()
+        .filter(|c| c.source < refs.len())
+        .map(|c| key_or_none(&c.reference))
+        .collect();
+    let live = copies
+        .iter()
+        .filter(|c| c.copy.as_ref().is_some_and(|copy| source_of_new(copy) == Source::Vector))
+        .map(|c| key_or_none(&c.reference))
+        .collect();
+    Ok(CheckedCopy { ids, op, live, copies })
+}
+
 /// What [`checked_op_of`] made of one stated change.
 pub struct CheckedOp {
     pub id: Id,
@@ -297,6 +400,14 @@ pub fn checked_op_of(
             Ok(CheckedOp {
                 id,
                 op: Some(json!({ "type": "annotations.delete", "ref": reference })),
+                live: false,
+            })
+        }
+        StoreChange::Copy { refs, along, page, offset } => {
+            let copy = checked_copy_of(refs, along, page, offset, current, taken)?;
+            Ok(CheckedOp {
+                id: copy.ids.first().cloned().unwrap_or_default(),
+                op: Some(copy.op),
                 live: false,
             })
         }

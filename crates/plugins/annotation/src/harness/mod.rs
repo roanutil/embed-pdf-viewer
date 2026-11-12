@@ -70,6 +70,8 @@ fn noun_members(noun: &str) -> &'static [&'static str] {
             "ungroup",
             "canGroup",
             "canUngroup",
+            "duplicate",
+            "canDuplicate",
             "getAnchor",
             "getRotationAnchor",
         ],
@@ -265,6 +267,7 @@ struct ScriptedLender {
     undo_of: Callback,
     reorder_ops: Callback,
     authority: Callback,
+    copy_ops: Callback,
     picture_epoch: Callback,
     picture_version: Callback,
     pending: Callback,
@@ -304,6 +307,26 @@ impl AnnotationLender for ScriptedLender {
             json!(refs),
             position.clone(),
         ])))
+    }
+    fn copy_ops(
+        &self,
+        refs: &[Value],
+        page: Option<Value>,
+        offset: Option<Value>,
+    ) -> Promise<(Vec<Value>, Vec<Value>)> {
+        let mut placement = serde_json::Map::new();
+        if let Some(page) = page {
+            placement.insert("page".into(), page);
+        }
+        if let Some(offset) = offset {
+            placement.insert("offset".into(), offset);
+        }
+        answer_promise(self.copy_ops.call(vec![json!(refs), Value::Object(placement)]))
+            .map(|answer| Ok((list_of(answer["ops"].clone()), list_of(answer["copies"].clone()))))
+    }
+    fn may_copy(&self, record: &Object) -> bool {
+        let answer = answer_value(self.authority.call(vec![Value::Object(record.clone())]));
+        answer.get("copy").and_then(Value::as_bool).unwrap_or(false)
     }
     fn authority(&self, record: &Object) -> Authority {
         let answer = answer_value(self.authority.call(vec![Value::Object(record.clone())]));
@@ -392,6 +415,7 @@ const MEMBERS: &[&str] = &[
     "isPending",
     "getHovered",
     "isEditable",
+    "isMovable",
     "listChromeNodes",
     "getSelectionAnchorIn",
     "getAnnotationAnchor",
@@ -469,6 +493,7 @@ const MEMBERS: &[&str] = &[
     "canCreate",
     "canUpdate",
     "canDelete",
+    "canDuplicate",
     "onCreated",
     "onUpdated",
     "onDeleted",
@@ -619,6 +644,12 @@ fn call_noun(
         ("selection", "ungroup") => promise_unit(a.selection_ungroup(None)),
         ("selection", "canGroup") => Outcome::Returned(json!(a.selection_can_group())),
         ("selection", "canUngroup") => Outcome::Returned(json!(a.selection_can_ungroup())),
+        ("selection", "duplicate") => {
+            let offset =
+                arg(args, 0).and_then(|o| o.get("offset")).filter(|o| o.is_object()).cloned();
+            promise(a.selection_duplicate(offset, None))
+        }
+        ("selection", "canDuplicate") => Outcome::Returned(json!(a.selection_can_duplicate())),
         ("selection", "getAnchor") => Outcome::Returned(a.selection_get_anchor()),
         ("selection", "getRotationAnchor") => Outcome::Returned(a.rotation_anchor()),
         ("draft", "get") => Outcome::Returned(a.draft_get()),
@@ -713,6 +744,7 @@ fn call_capability(a: &AnnotationCapability, method: &str, args: &[Value], h: &H
         "isPending" => Outcome::Returned(json!(a.is_pending(&value(args, 0)))),
         "getHovered" => Outcome::Returned(opt_value(a.get_hovered())),
         "isEditable" => Outcome::Returned(json!(a.is_editable(&value(args, 0)))),
+        "isMovable" => Outcome::Returned(json!(a.is_movable(&value(args, 0)))),
         "getAt" => Outcome::Returned(opt_value(a.annotation_at(&value(args, 0), point(args, 1)))),
         "getStatus" => Outcome::Returned(json!(a.records.get_status().as_str())),
         "refresh" => promise_unit(a.cancellable(None, a.records.refresh())),
@@ -721,6 +753,7 @@ fn call_capability(a: &AnnotationCapability, method: &str, args: &[Value], h: &H
         "canCreate" => Outcome::Returned(json!(a.can_create())),
         "canUpdate" => Outcome::Returned(json!(a.can_update(&value(args, 0)))),
         "canDelete" => Outcome::Returned(json!(a.can_delete(&value(args, 0)))),
+        "canDuplicate" => Outcome::Returned(json!(a.can_duplicate(&refs(args, 0)))),
         // ── chrome ──
         "listChromeNodes" => Outcome::Returned(a.list_chrome_nodes(
             &value(args, 0),
@@ -814,6 +847,7 @@ fn call_capability(a: &AnnotationCapability, method: &str, args: &[Value], h: &H
                 owner: spec.get("owner").and_then(Value::as_str).unwrap_or_default().to_string(),
                 records: member_callback(h, &spec, "records"),
                 ops_of: member_callback(h, &spec, "opsOf"),
+                copy_ops: member_callback(h, &spec, "copyOps"),
                 undo_of: member_callback(h, &spec, "undoOf"),
                 reorder_ops: member_callback(h, &spec, "reorderOps"),
                 authority: member_callback(h, &spec, "getAuthority"),
@@ -881,6 +915,19 @@ fn call_capability(a: &AnnotationCapability, method: &str, args: &[Value], h: &H
         "export" => promise(a.export(&value(args, 0), None)),
         "import" => {
             promise(a.import(value(args, 0), arg(args, 1).cloned().unwrap_or(json!({})), None))
+        }
+        "duplicate" => {
+            let options = arg(args, 1).cloned().unwrap_or(json!({}));
+            let member = |key: &str| {
+                options.get(key).filter(|v| !v.is_null() && !epdf_kernel::is_undefined(v)).cloned()
+            };
+            let duplicate = crate::write::crud::DuplicateOptions {
+                page: member("page"),
+                offset: member("offset"),
+                select: epdf_annotation_core::json::truthy(options.get("select")),
+                signal: None,
+            };
+            promise(a.duplicate(refs(args, 0), duplicate, Vec::new()))
         }
         "downloadResource" => promise(a.download_resource(&value(args, 0), &text(args, 1), None)),
         // ── stamps and placement ──

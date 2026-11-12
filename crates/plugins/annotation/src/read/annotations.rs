@@ -189,6 +189,17 @@ impl Core {
         model.editing.as_ref().and_then(|id| model.by_id.get(id)).map(|r| annotation_value(r))
     }
 
+    /// `isMovable(ref)`: whether it is an annotation people move: its kind
+    /// moves, and it doesn't sit on text; `false` for one the document
+    /// doesn't have.
+    pub fn is_movable(&self, reference: &Value) -> bool {
+        let model = self.model();
+        model
+            .by_id
+            .get(&key_or_none(reference))
+            .is_some_and(|r| epdf_annotation_core::hit::is_movable(r))
+    }
+
     /// `isEditable(ref)`: whether the `editable` setting lets people change it by hand.
     pub fn is_editable(&self, reference: &Value) -> bool {
         let model = self.model();
