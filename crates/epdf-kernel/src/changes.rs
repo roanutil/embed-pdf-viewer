@@ -1,5 +1,9 @@
 //! A document's staged changes. Confirmed state belongs to mirrors; refusal
 //! removes predictions rather than restoring an old snapshot.
+//!
+//! A change one of the engine's own verbs makes (an import) has no ops. It is
+//! staged with how to send it, takes its place in the order like any change,
+//! and shows nothing until the engine's events arrive.
 use crate::{
     Error, Promise,
     error::{plugin_error, to_plugin_error},
@@ -15,6 +19,10 @@ use std::{
 };
 
 type Apply = Rc<dyn Fn(Value, Value) -> Promise<Value>>;
+/// `SendChange`: how a change one of the engine's verbs makes is sent: the
+/// verb's call under the `{ opId }` it is given, resolving the verb's result
+/// as a change's answer.
+pub type SendChange = Rc<dyn Fn(Value) -> Promise<Value>>;
 #[derive(Clone)]
 pub struct StagedChange {
     pub label: Value,
@@ -23,13 +31,49 @@ pub struct StagedChange {
     pub shows: Vec<Value>,
     pub undo: Vec<Value>,
     pub history: bool,
+    /// A change one of the engine's own verbs makes, in place of ops.
+    pub send: Option<SendChange>,
+    /// The id the caller of the verb chose, when it chose one; minted otherwise.
+    pub op_id: Option<String>,
 }
 impl StagedChange {
     pub fn ops(label: Value, ops: Vec<Value>) -> Self {
-        Self { label, shows: ops.clone(), ops, undo_of: None, undo: vec![], history: true }
+        Self {
+            label,
+            shows: ops.clone(),
+            ops,
+            undo_of: None,
+            undo: vec![],
+            history: true,
+            send: None,
+            op_id: None,
+        }
     }
     pub fn undo(label: Value, undo_of: String, shows: Vec<Value>) -> Self {
-        Self { label, ops: vec![], undo_of: Some(undo_of), shows, undo: vec![], history: false }
+        Self {
+            label,
+            ops: vec![],
+            undo_of: Some(undo_of),
+            shows,
+            undo: vec![],
+            history: false,
+            send: None,
+            op_id: None,
+        }
+    }
+    /// `{ label, send, opId?, history? }`: a change one of the engine's verbs
+    /// makes. Nothing shows for it until the engine's events arrive.
+    pub fn verb(label: Value, send: SendChange, op_id: Option<String>, history: bool) -> Self {
+        Self {
+            label,
+            ops: vec![],
+            undo_of: None,
+            shows: vec![],
+            undo: vec![],
+            history,
+            send: Some(send),
+            op_id,
+        }
     }
 }
 #[derive(Clone)]
@@ -158,7 +202,7 @@ impl DocumentChanges {
         held: bool,
         merge: Option<String>,
     ) -> PendingChange {
-        let op_id = crate::identity::generate_uuid_v7(None);
+        let op_id = change.op_id.clone().unwrap_or_else(|| crate::identity::generate_uuid_v7(None));
         let (result, resolver) = Promise::pending();
         let seq = self.0.seq.get();
         self.0.seq.set(seq + 1);
@@ -211,7 +255,11 @@ impl DocumentChanges {
     }
     fn send(&self, e: PendingChange) {
         e.0.held.set(false);
-        let answer = (self.0.apply)(e.wire(), json!({"opId":e.op_id()}));
+        let verb = e.0.change.borrow().send.clone();
+        let answer = match verb {
+            Some(verb) => verb(json!({"opId":e.op_id()})),
+            None => (self.0.apply)(e.wire(), json!({"opId":e.op_id()})),
+        };
         *e.0.abort.borrow_mut() = answer.abort_handle();
         let this = self.clone();
         rt::spawn(async move {
@@ -325,14 +373,27 @@ impl ChangeQueue {
     }
     pub fn stage(&self, change: StagedChange) -> Result<PendingChange, Error> {
         self.assert_open()?;
-        if change.undo_of.is_none() && change.ops.is_empty() {
-            return Err(self.invalid("a change needs at least one op"));
-        }
         let grouping = self.changes.0.group.borrow().clone();
-        if let Some((label, capability, entry)) = grouping {
-            if change.undo_of.is_some() {
+        if change.undo_of.is_some() {
+            if grouping.is_some() {
                 return Err(self.invalid("an undo can not join a group"));
             }
+        } else if change.send.is_some() {
+            if grouping.is_some() {
+                return Err(
+                    self.invalid("a change one of the engine's verbs makes can not join a group")
+                );
+            }
+            // Each change on its way is told from the others by its `opId`.
+            if let Some(id) = &change.op_id
+                && self.changes.0.entries.borrow().iter().any(|e| e.op_id() == id)
+            {
+                return Err(self.invalid(&format!("a change with the opId '{id}' is on its way")));
+            }
+        } else if change.ops.is_empty() {
+            return Err(self.invalid("a change needs at least one op"));
+        }
+        if let Some((label, capability, entry)) = grouping {
             let e = if let Some(e) = entry {
                 {
                     let mut current = e.0.change.borrow_mut();
