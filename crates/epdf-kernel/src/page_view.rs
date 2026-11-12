@@ -151,8 +151,8 @@ pub struct View {
 /// or `None` for an event that doesn't change them (annotations, metadata).
 pub fn layout_from_event(event: &Value) -> Option<&Value> {
     match event.get("type").and_then(Value::as_str)? {
-        "pages.reordered" | "pages.rotated" | "pages.deleted" | "pages.inserted"
-        | "pages.restored" => event.get("layout"),
+        "pages.reordered" | "pages.rotated" | "pages.scaleSet" | "pages.deleted"
+        | "pages.inserted" | "pages.restored" => event.get("layout"),
         _ => None,
     }
 }
@@ -162,7 +162,8 @@ pub fn layout_from_event(event: &Value) -> Option<&Value> {
 pub fn predict_pages(list: &Rc<PageList>, op: &Value) -> Result<Rc<PageList>, Error> {
     match op.get("type").and_then(Value::as_str) {
         Some(
-            "pages.rotate" | "pages.reorder" | "pages.delete" | "pages.insertBlank" | "pages.copy",
+            "pages.rotate" | "pages.setScale" | "pages.reorder" | "pages.delete"
+            | "pages.insertBlank" | "pages.copy",
         ) => pages_after(list, op),
         Some("pages.restore") => pages_after_restore(list, op.get("pages").unwrap_or(&Value::Null)),
         Some("pages.relabel") => pages_relabelled(list, op.get("labels").unwrap_or(&Value::Null)),

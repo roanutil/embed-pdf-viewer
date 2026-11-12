@@ -132,7 +132,7 @@ fn same_number(a: &Value, b: &Value) -> bool {
 
 /// `pagesAfter(list, op)`: `list` once `op` applies, or `list` itself when
 /// the engine would refuse it. `op` is one of the predictable page ops
-/// (`pages.rotate`, `pages.reorder`, `pages.delete`, `pages.insertBlank`,
+/// (`pages.rotate`, `pages.setScale`, `pages.reorder`, `pages.delete`, `pages.insertBlank`,
 /// `pages.copy`); any other answers `list`.
 pub fn pages_after(list: &Rc<PageList>, op: &Value) -> Result<Rc<PageList>, Error> {
     match op.get("type").and_then(Value::as_str) {
@@ -140,6 +140,11 @@ pub fn pages_after(list: &Rc<PageList>, op: &Value) -> Result<Rc<PageList>, Erro
             list,
             op.get("pages").unwrap_or(&Value::Null),
             op.get("rotation").unwrap_or(&Value::Null),
+        ),
+        Some("pages.setScale") => pages_after_scale(
+            list,
+            op.get("pages").unwrap_or(&Value::Null),
+            op.get("measure").unwrap_or(&Value::Null),
         ),
         Some("pages.reorder") => pages_after_reorder(
             list,
@@ -274,6 +279,126 @@ pub fn rotate_back_of(pages: &[Value], refs: &[Value]) -> Result<Vec<Value>, Err
             json!({ "type": "pages.rotate", "pages": group, "rotation": rotation })
         })
         .collect())
+}
+
+/// `CALIBRATION_VIEWPORT_NAME`: the name of the viewport a page's scale is
+/// written to, the one the engine `owned`.
+pub const CALIBRATION_VIEWPORT_NAME: &str = "EmbedPDF";
+
+/// `viewportsWithScale(viewports, size, measure)`
+/// (`engine/core/src/measure/viewport.ts`): a page's viewports once its
+/// scale is `measure`, as the engine writes it: the last viewport it owns
+/// becomes one over the visible page with the new scale, or one is added
+/// after the others; `null` removes every one it owns. Other viewports stay
+/// as they are.
+pub fn viewports_with_scale(viewports: &[Value], size: &Value, measure: &Value) -> Vec<Value> {
+    let owned = |viewport: &Value| {
+        member(viewport, "owned").is_some_and(|o| !matches!(o, Value::Null | Value::Bool(false)))
+    };
+    if measure.is_null() {
+        return viewports.iter().filter(|v| !owned(v)).cloned().collect();
+    }
+    let read = |key: &str| member(size, key).cloned().unwrap_or_else(crate::undefined);
+    let own = json!({
+        "bbox": { "x": 0, "y": 0, "width": read("width"), "height": read("height") },
+        "name": CALIBRATION_VIEWPORT_NAME,
+        "owned": true,
+        "measure": measure,
+    });
+    match viewports.iter().rposition(owned) {
+        None => viewports.iter().cloned().chain(std::iter::once(own)).collect(),
+        Some(last) => viewports
+            .iter()
+            .enumerate()
+            .map(|(index, v)| if index == last { own.clone() } else { v.clone() })
+            .collect(),
+    }
+}
+
+/// `scaleBackOf(pages, refs)`: the ops that put each of `refs` back to its
+/// own scale in `pages` (the measure of the last viewport the engine owns,
+/// or none): what undoes a scale change. Pages with the same scale go
+/// together.
+pub fn scale_back_of(pages: &[Value], refs: &[Value]) -> Result<Vec<Value>, Error> {
+    let mut scales: Vec<(String, Value)> = Vec::new();
+    for page in pages {
+        let key = key_of(page)?;
+        let scale = own_scale_of(page);
+        match scales.iter_mut().find(|(k, _)| *k == key) {
+            Some(entry) => entry.1 = scale,
+            None => scales.push((key, scale)),
+        }
+    }
+    let mut groups: Vec<(String, Value, Vec<Value>)> = Vec::new();
+    for page_ref in refs {
+        let key = encode_page_key(page_ref)?;
+        let Some((_, measure)) = scales.iter().find(|(k, _)| *k == key) else { continue };
+        // `JSON.stringify(measure)`: only compared with the other keys made here.
+        let text = serde_json::to_string(measure).unwrap_or_default();
+        match groups.iter_mut().find(|(t, _, _)| *t == text) {
+            Some((_, _, group)) => group.push(page_ref.clone()),
+            None => groups.push((text, measure.clone(), vec![page_ref.clone()])),
+        }
+    }
+    Ok(groups
+        .into_iter()
+        .map(|(_, measure, group)| {
+            json!({ "type": "pages.setScale", "pages": group, "measure": measure })
+        })
+        .collect())
+}
+
+/// `ownScaleOf(page)`: the scale of the last viewport the engine owns on
+/// `page`, or `null`.
+fn own_scale_of(page: &Value) -> Value {
+    let own = member(page, "viewports")
+        .and_then(Value::as_array)
+        .and_then(|list| {
+            list.iter().rev().find(|v| {
+                member(v, "owned").is_some_and(|o| !matches!(o, Value::Null | Value::Bool(false)))
+            })
+        })
+        .and_then(|v| member(v, "measure"));
+    match own {
+        Some(m) if member(m, "subtype").and_then(Value::as_str) == Some("rectilinear") => m.clone(),
+        _ => Value::Null,
+    }
+}
+
+/// `pagesAfterScale(list, refs, measure)`: each named page with its
+/// viewports once its scale is `measure`, `viewports` last as the spread
+/// puts it, and left out when none are left, as the layout reads.
+fn pages_after_scale(
+    list: &Rc<PageList>,
+    refs: &Value,
+    measure: &Value,
+) -> Result<Rc<PageList>, Error> {
+    let refs = array(refs, "length")?;
+    if refs.is_empty() {
+        return Ok(list.clone());
+    }
+    let pages = array(&list.pages, "map")?;
+    if !names_pages_once(pages, refs)? {
+        return Ok(list.clone());
+    }
+    let scaling = keys(refs)?;
+    let mut next = Vec::with_capacity(pages.len());
+    for page in pages {
+        if !scaling.contains(&key_of(page)?) {
+            next.push(page.clone());
+            continue;
+        }
+        let mut rest = page.as_object().cloned().unwrap_or_default();
+        let before = rest.shift_remove("viewports");
+        let before = before.as_ref().and_then(Value::as_array).cloned().unwrap_or_default();
+        let size = page.get("size").cloned().unwrap_or(Value::Null);
+        let viewports = viewports_with_scale(&before, &size, measure);
+        if !viewports.is_empty() {
+            rest.insert("viewports".into(), Value::Array(viewports));
+        }
+        next.push(Value::Object(rest));
+    }
+    Ok(PageList::new(Rc::new(Value::Array(next)), list.labels.clone()))
 }
 
 fn keys(refs: &[Value]) -> Result<HashSet<String>, Error> {
