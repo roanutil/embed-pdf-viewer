@@ -119,14 +119,8 @@ pub fn cell_text(state: &dyn std::any::Any) -> Option<String> {
     Some(format!("{{\"value\":{value},\"status\":{status}}}"))
 }
 /// The JSON of a cell leased through [`MirrorEnvironment::cell`]: a
-/// [`MirrorCell`], a page mirror's [`PageMirrorCell`], or a plain value (a
-/// page mirror's initial `{}`).
-///
-/// [`PageMirrorCell`]: crate::page_mirror::PageMirrorCell
+/// [`MirrorCell`], or a plain value (a page mirror's count of writes).
 pub fn cell_json(state: &dyn std::any::Any) -> Value {
-    if let Some(cell) = state.downcast_ref::<crate::page_mirror::PageMirrorCell>() {
-        return cell.to_json();
-    }
     if let Some(cell) = state.downcast_ref::<MirrorCell>() {
         let value = match &cell.to_json {
             Some(to_json) => to_json(&cell.value),

@@ -41,7 +41,6 @@ pub struct PageMirrorSpec {
 }
 #[derive(Clone)]
 pub(crate) struct Entry {
-    /// Shared, so copying the entries on write copies a pointer.
     page: Rc<Value>,
     value: Option<Rc<Value>>,
     status: ResourceStatus,
@@ -50,12 +49,13 @@ struct Inner {
     spec: PageMirrorSpec,
     env: MirrorEnvironment,
     cell: SliceLease,
-    /// Shared with the store cell's [`PageMirrorCell`], which the store
-    /// keeps until the next write, so every write copies the map: each
-    /// entry's key, its page and read by pointer, and its status. That is
-    /// the O(n) of `page-mirror.ts`'s `{ ...rest, [key]: entry }`, and no
-    /// read or page JSON is copied.
-    entries: RefCell<Rc<indexmap::IndexMap<String, Entry>>>,
+    /// The pages' entries live here, not in the store: the cell holds a
+    /// number each write bumps, so a write wakes the store's readers
+    /// without copying every other page's entry. In the order a `Map`
+    /// keeps: a key written again stays where it was.
+    entries: RefCell<indexmap::IndexMap<String, Entry>>,
+    /// What the cell holds: how many writes there were.
+    writes: Cell<u64>,
     epochs: RefCell<HashMap<String, u64>>,
     running: RefCell<HashMap<String, Promise<()>>>,
     kept: RefCell<HashMap<String, HashMap<String, (PendingChange, u64)>>>,
@@ -66,40 +66,6 @@ struct Inner {
 }
 #[derive(Clone)]
 pub struct PageMirror(Rc<Inner>);
-thread_local! {
-    static VALUE_COPIES: Cell<usize> = const { Cell::new(0) };
-}
-/// How many page reads this thread has deep-copied into a page mirror's
-/// store cell. The guard (`tests/current_contracts.rs`) holds it at none
-/// across loads and at one per page per store dump.
-#[doc(hidden)]
-pub fn page_cell_value_copies() -> usize {
-    VALUE_COPIES.with(Cell::get)
-}
-fn count_value_copy() {
-    VALUE_COPIES.with(|n| n.set(n.get() + 1));
-}
-/// A page mirror's store cell: its entries, kept by pointer and serialised
-/// only when the store is dumped (`mirror::cell_json`), as
-/// `{ [key]: { page, status, value? } }`.
-pub struct PageMirrorCell(Rc<indexmap::IndexMap<String, Entry>>);
-impl PageMirrorCell {
-    pub(crate) fn to_json(&self) -> Value {
-        let cells: serde_json::Map<String, Value> = self
-            .0
-            .iter()
-            .map(|(k, e)| {
-                let mut value = json!({"page":*e.page,"status":e.status.as_str()});
-                if let Some(v) = &e.value {
-                    count_value_copy();
-                    value["value"] = (**v).clone();
-                }
-                (k.clone(), value)
-            })
-            .collect();
-        Value::Object(cells)
-    }
-}
 /// A page read on its way: at once, or once the engine has a pending page.
 enum Read {
     Now(Promise<Value>),
@@ -111,12 +77,13 @@ fn key(page: &Value) -> String {
 }
 impl PageMirror {
     pub fn new(spec: PageMirrorSpec, env: MirrorEnvironment) -> Self {
-        let cell = (env.cell)(&format!("page-mirror/{}", spec.name), json!({}));
+        let cell = (env.cell)(&format!("page-mirror/{}", spec.name), json!(0));
         let this = Self(Rc::new(Inner {
             spec,
             env: env.clone(),
             cell: cell.clone(),
-            entries: RefCell::new(Rc::new(indexmap::IndexMap::new())),
+            entries: RefCell::new(indexmap::IndexMap::new()),
+            writes: Cell::new(0),
             epochs: RefCell::new(HashMap::new()),
             running: RefCell::new(HashMap::new()),
             kept: RefCell::new(HashMap::new()),
@@ -145,20 +112,24 @@ impl PageMirror {
     fn entry(&self, key: &str) -> Option<Entry> {
         self.0.entries.borrow().get(key).cloned()
     }
+    /// `setEntry`: once the cell is revoked, a write changes nothing.
     fn write(&self, k: String, entry: Option<Entry>) {
         if !self.live() {
             return;
         }
-        let entries = {
+        {
             let mut entries = self.0.entries.borrow_mut();
-            let map = Rc::make_mut(&mut entries);
-            map.shift_remove(&k);
-            if let Some(entry) = entry {
-                map.insert(k, entry);
+            match entry {
+                Some(entry) => {
+                    entries.insert(k, entry);
+                }
+                None => {
+                    entries.shift_remove(&k);
+                }
             }
-            entries.clone()
-        };
-        self.0.cell.write(Rc::new(PageMirrorCell(entries)));
+        }
+        self.0.writes.set(self.0.writes.get() + 1);
+        self.0.cell.write(Rc::new(json!(self.0.writes.get())));
     }
     fn bump(&self, k: &str) -> u64 {
         let mut epochs = self.0.epochs.borrow_mut();

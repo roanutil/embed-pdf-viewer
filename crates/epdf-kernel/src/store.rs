@@ -228,7 +228,7 @@ impl SliceLease {
         if current {
             store.leases.borrow_mut().shift_remove(&self.0.key);
             store.bump();
-            store.emit_change();
+            store.change();
         }
     }
 
@@ -267,6 +267,8 @@ pub struct Store {
     holds: Cell<u32>,
     held_change: Cell<bool>,
     pending: Cell<bool>,
+    /// `changes`: see [`Store::change_count`].
+    changes: Cell<u64>,
     report: Report,
     /// Moves on every change to core or to the set of slices or their
     /// states, before listeners hear of it.
@@ -294,6 +296,7 @@ impl Store {
             emitting: Cell::new(false),
             holds: Cell::new(0),
             held_change: Cell::new(false),
+            changes: Cell::new(0),
             pending: Cell::new(false),
             report,
             revision: Cell::new(0),
@@ -338,6 +341,20 @@ impl Store {
     /// Wake readers of resources and pending views, without a reducer action.
     pub fn notify(&self) {
         self.bump();
+        self.change();
+    }
+
+    /// `changeCount()`: how many times the store changed (a slice written
+    /// or revoked, the core patched, a `notify()`). It moves with the change
+    /// itself, also while the change stream is held.
+    pub fn change_count(&self) -> u64 {
+        self.changes.get()
+    }
+
+    /// A change: counted at once, and told to the subscribers (after the
+    /// last release, while held).
+    fn change(&self) {
+        self.changes.set(self.changes.get() + 1);
         self.emit_change();
     }
 
@@ -553,7 +570,7 @@ impl Store {
         *self.core.borrow_mut() = Rc::new(next);
         self.core_revision.set(self.core_revision.get() + 1);
         self.bump();
-        self.emit_change();
+        self.change();
         self.emit_action(action);
     }
 
@@ -599,6 +616,7 @@ impl Store {
     pub fn destroy(&self) {
         *self.core.borrow_mut() = Rc::new(CoreState::default());
         self.core_revision.set(self.core_revision.get() + 1);
+        self.changes.set(self.changes.get() + 1);
         self.bump();
         let leases: Vec<SliceLease> = self.leases.borrow().values().cloned().collect();
         for lease in leases {

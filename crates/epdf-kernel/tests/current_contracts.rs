@@ -1118,14 +1118,13 @@ fn when_settled_takes_the_typescripts_turns_and_skips_held_changes() {
     }
 }
 
-/// M35: a page mirror keeps its reads by pointer in its store cell and
-/// writes their JSON only when the store is dumped, as `MirrorCell` does
-/// for a whole-document mirror. `page-mirror.ts` spreads the entries into a
-/// new object per write, sharing each read; the count of deep copies is
-/// none across 200 loads and an event, and one per page per dump.
+/// M35, at `9b5125408`: a page mirror keeps its entries out of the store.
+/// Its store cell holds a number each write bumps, so a write wakes the
+/// store's readers without copying the other pages' entries; a page written
+/// again keeps its place, as a `Map` keeps a key.
 #[test]
-fn a_page_mirror_copies_no_read_until_the_store_is_dumped() {
-    use epdf_kernel::page_mirror::{Affected, PageMirror, PageMirrorSpec, page_cell_value_copies};
+fn a_page_mirror_cell_holds_a_count_of_writes() {
+    use epdf_kernel::page_mirror::{Affected, PageMirror, PageMirrorSpec};
     use epdf_kernel::store::Store;
     const PAGES: u64 = 200;
     rt::reset();
@@ -1161,28 +1160,19 @@ fn a_page_mirror_copies_no_read_until_the_store_is_dumped() {
         },
         env,
     );
-    let before = page_cell_value_copies();
+    assert_eq!(store.slice_json("page-mirror/page").unwrap(), json!(0));
     for n in 1..=PAGES {
         let _ = mirror.ensure_loaded(page(n));
     }
     rt::run_until_stalled();
+    // Each page: loading, then ready.
+    assert_eq!(store.slice_json("page-mirror/page").unwrap(), json!(2 * PAGES));
     events.emit(
         &json!({"type":"updated","page":page(7),"value":{"n":"seven"},"origin":{"kind":"remote"}}),
     );
-    assert_eq!(page_cell_value_copies(), before, "a write copied the reads into the cell");
-    let dumped = store.slice_json("page-mirror/page").unwrap();
-    assert_eq!(page_cell_value_copies(), before + PAGES as usize, "one copy per page per dump");
-    let cells = dumped.as_object().unwrap();
-    assert_eq!(cells.len(), PAGES as usize);
-    assert_eq!(
-        cells["obj:1"],
-        json!({"page":page(1),"status":"ready","value":{"n":1,"runs":[1,2,3]}})
-    );
-    assert_eq!(cells["obj:7"]["value"], json!({"n":"seven"}));
-    assert_eq!(cells.keys().next().map(String::as_str), Some("obj:1"));
-    // `setEntry` takes the key out and puts it back last, as
-    // `{ [key]: _replaced, ...rest }` then `{ ...rest, [key]: entry }` do.
-    assert_eq!(cells.keys().next_back().map(String::as_str), Some("obj:7"));
+    assert_eq!(store.slice_json("page-mirror/page").unwrap(), json!(2 * PAGES + 1));
+    assert_eq!(mirror.get(&page(1)).as_deref(), Some(&json!({"n":1,"runs":[1,2,3]})));
+    assert_eq!(mirror.get(&page(7)).as_deref(), Some(&json!({"n":"seven"})));
 }
 
 /// A hold (`changes.ts:499-506`): `send()` sends it, and answers its entry;

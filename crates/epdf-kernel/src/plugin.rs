@@ -663,6 +663,15 @@ impl ControllerContext {
         }
     }
 
+    /// `storeChangeCount()`: how many times the store changed (a state
+    /// write anywhere, a `notify()`), counted when the change happens, also
+    /// while the change stream is held. The input of a read whose answer
+    /// comes from functions it can't name the inputs of, such as a command's
+    /// `enabled`: it asks them again only after this moved.
+    pub fn store_change_count(&self) -> u64 {
+        self.0.services.upgrade().map_or(0, |s| s.store().change_count())
+    }
+
     pub fn settings(&self) -> Result<crate::settings::InstanceSettings, Error> {
         self.0
             .services
