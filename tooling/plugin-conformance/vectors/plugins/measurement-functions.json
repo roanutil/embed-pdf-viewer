@@ -12,7 +12,6 @@
           "pending": 0,
           "calibration": null,
           "reports": [],
-          "loadErrors": {},
           "localViewports": {}
         }
       }
@@ -25,7 +24,6 @@
           "pending": 1,
           "calibration": null,
           "reports": [],
-          "loadErrors": {},
           "localViewports": {}
         },
         2,
@@ -73,7 +71,6 @@
           "pending": 1,
           "calibration": null,
           "reports": [],
-          "loadErrors": {},
           "localViewports": {
             "2": [
               {
@@ -124,7 +121,6 @@
           "pending": 1,
           "calibration": null,
           "reports": [],
-          "loadErrors": {},
           "localViewports": {}
         }
       ],
@@ -133,7 +129,6 @@
           "pending": 2,
           "calibration": null,
           "reports": [],
-          "loadErrors": {},
           "localViewports": {}
         }
       }
@@ -146,7 +141,6 @@
           "pending": 0,
           "calibration": null,
           "reports": [],
-          "loadErrors": {},
           "localViewports": {}
         }
       ],
@@ -156,7 +150,6 @@
           "pending": 0,
           "calibration": null,
           "reports": [],
-          "loadErrors": {},
           "localViewports": {}
         }
       }
@@ -169,7 +162,6 @@
           "pending": 1,
           "calibration": null,
           "reports": [],
-          "loadErrors": {},
           "localViewports": {}
         },
         {
@@ -207,7 +199,6 @@
             "userSpaceLength": 1
           },
           "reports": [],
-          "loadErrors": {},
           "localViewports": {}
         }
       }
@@ -220,7 +211,6 @@
           "pending": 1,
           "calibration": null,
           "reports": [],
-          "loadErrors": {},
           "localViewports": {}
         },
         [
@@ -258,31 +248,6 @@
               }
             }
           ],
-          "loadErrors": {},
-          "localViewports": {}
-        }
-      }
-    },
-    {
-      "name": "reduce-unknown",
-      "fn": "clearLoadError",
-      "args": [
-        {
-          "pending": 1,
-          "calibration": null,
-          "reports": [],
-          "loadErrors": {},
-          "localViewports": {}
-        },
-        99
-      ],
-      "covers": "Unknown-action dispatch is archived; current absent-error clearing preserves identity without copied dispatch logic.",
-      "outcome": {
-        "returned": {
-          "pending": 1,
-          "calibration": null,
-          "reports": [],
-          "loadErrors": {},
           "localViewports": {}
         }
       }
@@ -2436,220 +2401,6 @@
           ],
           "distance": [],
           "area": []
-        }
-      }
-    },
-    {
-      "name": "page-scale-loading",
-      "fn": "pageScaleOf",
-      "args": [
-        {
-          "status": "loading",
-          "size": {
-            "width": 600,
-            "height": 800
-          },
-          "fallback": {
-            "subtype": "rectilinear",
-            "ratio": "1 in = 1 m",
-            "x": [
-              {
-                "unit": "m",
-                "conversion": 0.013888888888888888,
-                "precision": 100
-              }
-            ],
-            "distance": [
-              {
-                "unit": "m",
-                "conversion": 1,
-                "precision": 100
-              }
-            ],
-            "area": [
-              {
-                "unit": "m²",
-                "conversion": 1,
-                "precision": 100
-              }
-            ]
-          },
-          "persistent": true
-        }
-      ],
-      "outcome": {
-        "returned": {
-          "measure": null,
-          "source": "default",
-          "ready": false,
-          "persistent": true
-        }
-      }
-    },
-    {
-      "name": "page-scale-failed-known",
-      "fn": "pageScaleOf",
-      "args": [
-        {
-          "viewports": [
-            {
-              "bbox": {
-                "x": 0,
-                "y": 0,
-                "width": 600,
-                "height": 800
-              },
-              "measure": {
-                "subtype": "rectilinear",
-                "ratio": "1 in = 1 ft",
-                "x": [
-                  {
-                    "unit": "ft",
-                    "conversion": 0.013888888888888888,
-                    "precision": 100
-                  }
-                ],
-                "distance": [
-                  {
-                    "unit": "ft",
-                    "conversion": 1,
-                    "precision": 100
-                  }
-                ],
-                "area": [
-                  {
-                    "unit": "ft²",
-                    "conversion": 1,
-                    "precision": 100
-                  }
-                ]
-              },
-              "owned": true,
-              "name": null
-            }
-          ],
-          "status": "error",
-          "error": {
-            "code": "RuntimeUnavailable",
-            "message": "offline"
-          },
-          "size": {
-            "width": 600,
-            "height": 800
-          },
-          "fallback": {
-            "subtype": "rectilinear",
-            "ratio": "1 in = 1 m",
-            "x": [
-              {
-                "unit": "m",
-                "conversion": 0.013888888888888888,
-                "precision": 100
-              }
-            ],
-            "distance": [
-              {
-                "unit": "m",
-                "conversion": 1,
-                "precision": 100
-              }
-            ],
-            "area": [
-              {
-                "unit": "m²",
-                "conversion": 1,
-                "precision": 100
-              }
-            ]
-          },
-          "persistent": true
-        }
-      ],
-      "outcome": {
-        "returned": {
-          "measure": {
-            "subtype": "rectilinear",
-            "ratio": "1 in = 1 ft",
-            "x": [
-              {
-                "unit": "ft",
-                "conversion": 0.013888888888888888,
-                "precision": 100
-              }
-            ],
-            "distance": [
-              {
-                "unit": "ft",
-                "conversion": 1,
-                "precision": 100
-              }
-            ],
-            "area": [
-              {
-                "unit": "ft²",
-                "conversion": 1,
-                "precision": 100
-              }
-            ]
-          },
-          "source": "owned",
-          "ready": true,
-          "persistent": true,
-          "error": {
-            "code": "RuntimeUnavailable",
-            "message": "offline"
-          }
-        }
-      }
-    },
-    {
-      "name": "page-scale-failed-empty",
-      "fn": "pageScaleOf",
-      "args": [
-        {
-          "status": "error",
-          "error": {
-            "code": "RuntimeUnavailable",
-            "message": "offline"
-          },
-          "fallback": {
-            "subtype": "rectilinear",
-            "ratio": "1 in = 1 m",
-            "x": [
-              {
-                "unit": "m",
-                "conversion": 0.013888888888888888,
-                "precision": 100
-              }
-            ],
-            "distance": [
-              {
-                "unit": "m",
-                "conversion": 1,
-                "precision": 100
-              }
-            ],
-            "area": [
-              {
-                "unit": "m²",
-                "conversion": 1,
-                "precision": 100
-              }
-            ]
-          },
-          "persistent": false
-        }
-      ],
-      "outcome": {
-        "returned": {
-          "measure": null,
-          "source": "default",
-          "ready": false,
-          "persistent": false,
-          "error": {
-            "code": "RuntimeUnavailable",
-            "message": "offline"
-          }
         }
       }
     }

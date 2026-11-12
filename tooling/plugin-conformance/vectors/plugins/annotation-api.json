@@ -152851,7 +152851,7 @@
     },
     {
       "name": "remeasure-page",
-      "covers": "Recalibration reports actual updated, locked, foreign-measure and engine-refused records; other pages stay isolated.",
+      "covers": "stageRemeasure stages the page’s re-measurable dimensions in one change and reports them as updated, and locked, foreign-measure and unreadable ones as skipped; an engine refusal of that change puts every staged dimension back; other pages stay isolated.",
       "plugins": [
         {
           "factory": "interaction"
@@ -153678,6 +153678,15 @@
               {
                 "path": "apply",
                 "times": 1,
+                "error": {
+                  "name": "EngineError",
+                  "message": "intended stale measurement",
+                  "code": "Conflict"
+                }
+              },
+              {
+                "path": "apply",
+                "times": 1,
                 "value": {
                   "items": [
                     {
@@ -153800,7 +153809,7 @@
                           }
                         ],
                         "cacheDelta": null,
-                        "opId": "00000000-0000-7000-8000-000000000001",
+                        "opId": "00000000-0000-7000-8000-000000000002",
                         "undoable": true,
                         "changedRefs": [
                           {
@@ -153810,6 +153819,140 @@
                               "objectNumber": 1
                             },
                             "objectNumber": 1
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "type": "annotations.update",
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "annotation": {
+                        "subtype": "line",
+                        "ref": {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "objectNumber": 6
+                        },
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "hasAppearance": true,
+                        "appearanceState": null,
+                        "structurePosition": null,
+                        "nm": null,
+                        "rect": {
+                          "x": 99,
+                          "y": 82.63397459621557,
+                          "width": 146,
+                          "height": 17.366025403784434
+                        },
+                        "contents": "2.00 ft",
+                        "subject": null,
+                        "blendMode": "normal",
+                        "invisible": false,
+                        "hidden": false,
+                        "print": true,
+                        "noZoom": false,
+                        "noRotate": false,
+                        "noView": false,
+                        "readOnly": false,
+                        "locked": false,
+                        "toggleNoView": false,
+                        "lockedContents": false,
+                        "reply": null,
+                        "popup": null,
+                        "groupId": null,
+                        "author": null,
+                        "createdAt": null,
+                        "modifiedAt": null,
+                        "userId": null,
+                        "createdBy": null,
+                        "modifiedBy": null,
+                        "importedBy": null,
+                        "actions": null,
+                        "richText": null,
+                        "color": "#e5484d",
+                        "opacity": 1,
+                        "strokeWidth": 1,
+                        "borderStyle": "solid",
+                        "dashArray": null,
+                        "interiorColor": null,
+                        "linePoints": {
+                          "start": {
+                            "x": 100,
+                            "y": 100
+                          },
+                          "end": {
+                            "x": 244,
+                            "y": 100
+                          }
+                        },
+                        "lineEndings": {
+                          "start": "closed-arrow",
+                          "end": "closed-arrow"
+                        },
+                        "rotation": null,
+                        "intent": "line-dimension",
+                        "measure": {
+                          "subtype": "rectilinear",
+                          "ratio": "1 in = 1 ft",
+                          "x": [
+                            {
+                              "unit": "ft",
+                              "conversion": 0.013888888888888888
+                            }
+                          ],
+                          "distance": [
+                            {
+                              "unit": "ft",
+                              "conversion": 1
+                            }
+                          ],
+                          "area": [
+                            {
+                              "unit": "ft²",
+                              "conversion": 1
+                            }
+                          ]
+                        },
+                        "captionEnabled": true,
+                        "captionPosition": "inline",
+                        "captionOffset": null,
+                        "leader": {
+                          "length": 12,
+                          "extension": 5,
+                          "offset": 0
+                        }
+                      },
+                      "appearance": {
+                        "changed": false,
+                        "action": "preserved"
+                      },
+                      "meta": {
+                        "affectedPages": [
+                          {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          }
+                        ],
+                        "cacheDelta": null,
+                        "opId": "00000000-0000-7000-8000-000000000002",
+                        "undoable": true,
+                        "changedRefs": [
+                          {
+                            "kind": "objectNumber",
+                            "page": {
+                              "kind": "objectNumber",
+                              "objectNumber": 1
+                            },
+                            "objectNumber": 6
                           }
                         ]
                       }
@@ -153823,7 +153966,7 @@
                       }
                     ],
                     "cacheDelta": null,
-                    "opId": "00000000-0000-7000-8000-000000000001",
+                    "opId": "00000000-0000-7000-8000-000000000002",
                     "undoable": true
                   }
                 },
@@ -153948,7 +154091,7 @@
                         }
                       ],
                       "cacheDelta": null,
-                      "opId": "00000000-0000-7000-8000-000000000001",
+                      "opId": "00000000-0000-7000-8000-000000000002",
                       "undoable": true,
                       "changedRefs": [
                         {
@@ -153968,22 +154111,159 @@
                       "at": "1970-01-01T00:00:00.000Z",
                       "serverSequence": null,
                       "transaction": {
-                        "id": "00000000-0000-7000-8000-000000000001",
+                        "id": "00000000-0000-7000-8000-000000000002",
                         "index": 0,
-                        "count": 1
+                        "count": 2
+                      }
+                    }
+                  },
+                  {
+                    "type": "annotations.updated",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "annotation": {
+                      "subtype": "line",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 6
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "hasAppearance": true,
+                      "appearanceState": null,
+                      "structurePosition": null,
+                      "nm": null,
+                      "rect": {
+                        "x": 99,
+                        "y": 82.63397459621557,
+                        "width": 146,
+                        "height": 17.366025403784434
+                      },
+                      "contents": "2.00 ft",
+                      "subject": null,
+                      "blendMode": "normal",
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false,
+                      "reply": null,
+                      "popup": null,
+                      "groupId": null,
+                      "author": null,
+                      "createdAt": null,
+                      "modifiedAt": null,
+                      "userId": null,
+                      "createdBy": null,
+                      "modifiedBy": null,
+                      "importedBy": null,
+                      "actions": null,
+                      "richText": null,
+                      "color": "#e5484d",
+                      "opacity": 1,
+                      "strokeWidth": 1,
+                      "borderStyle": "solid",
+                      "dashArray": null,
+                      "interiorColor": null,
+                      "linePoints": {
+                        "start": {
+                          "x": 100,
+                          "y": 100
+                        },
+                        "end": {
+                          "x": 244,
+                          "y": 100
+                        }
+                      },
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      },
+                      "rotation": null,
+                      "intent": "line-dimension",
+                      "measure": {
+                        "subtype": "rectilinear",
+                        "ratio": "1 in = 1 ft",
+                        "x": [
+                          {
+                            "unit": "ft",
+                            "conversion": 0.013888888888888888
+                          }
+                        ],
+                        "distance": [
+                          {
+                            "unit": "ft",
+                            "conversion": 1
+                          }
+                        ],
+                        "area": [
+                          {
+                            "unit": "ft²",
+                            "conversion": 1
+                          }
+                        ]
+                      },
+                      "captionEnabled": true,
+                      "captionPosition": "inline",
+                      "captionOffset": null,
+                      "leader": {
+                        "length": 12,
+                        "extension": 5,
+                        "offset": 0
+                      }
+                    },
+                    "appearance": {
+                      "changed": false,
+                      "action": "preserved"
+                    },
+                    "meta": {
+                      "affectedPages": [
+                        {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        }
+                      ],
+                      "cacheDelta": null,
+                      "opId": "00000000-0000-7000-8000-000000000002",
+                      "undoable": true,
+                      "changedRefs": [
+                        {
+                          "kind": "objectNumber",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 1
+                          },
+                          "objectNumber": 6
+                        }
+                      ]
+                    },
+                    "origin": {
+                      "kind": "local",
+                      "sessionId": "s1",
+                      "subject": null,
+                      "at": "1970-01-01T00:00:00.000Z",
+                      "serverSequence": null,
+                      "transaction": {
+                        "id": "00000000-0000-7000-8000-000000000002",
+                        "index": 1,
+                        "count": 2
                       }
                     }
                   }
                 ]
-              },
-              {
-                "path": "apply",
-                "times": 1,
-                "error": {
-                  "name": "EngineError",
-                  "message": "intended stale measurement",
-                  "code": "Conflict"
-                }
               }
             ]
           }
@@ -154015,7 +154295,16 @@
             "token": "annotation",
             "doc": "a"
           },
-          "method": "remeasurePage",
+          "method": "whenRemeasurable",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "annotation",
+            "doc": "a"
+          },
+          "method": "stageRemeasure",
           "args": [
             {
               "kind": "objectNumber",
@@ -154060,7 +154349,52 @@
             "token": "annotation",
             "doc": "a"
           },
-          "method": "remeasurePage",
+          "method": "stageRemeasure",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 1
+            },
+            {
+              "subtype": "rectilinear",
+              "ratio": "1 in = 1 ft",
+              "x": [
+                {
+                  "unit": "ft",
+                  "conversion": 0.013888888888888888
+                }
+              ],
+              "distance": [
+                {
+                  "unit": "ft",
+                  "conversion": 1
+                }
+              ],
+              "area": [
+                {
+                  "unit": "ft²",
+                  "conversion": 1
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "annotation",
+            "doc": "a"
+          },
+          "method": "list",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "annotation",
+            "doc": "a"
+          },
+          "method": "stageRemeasure",
           "args": [
             {
               "kind": "objectNumber",
@@ -158732,85 +159066,172 @@
             {
               "promise": 2,
               "resolved": {
-                "page": {
-                  "kind": "objectNumber",
-                  "objectNumber": 1
-                },
-                "scale": {
-                  "subtype": "rectilinear",
-                  "ratio": "1 in = 1 ft",
-                  "x": [
-                    {
-                      "unit": "ft",
-                      "conversion": 0.013888888888888888
-                    }
-                  ],
-                  "distance": [
-                    {
-                      "unit": "ft",
-                      "conversion": 1
-                    }
-                  ],
-                  "area": [
-                    {
-                      "unit": "ft²",
-                      "conversion": 1
-                    }
-                  ]
-                },
-                "updated": [
-                  {
-                    "kind": "objectNumber",
-                    "page": {
-                      "kind": "objectNumber",
-                      "objectNumber": 1
-                    },
-                    "objectNumber": 1
-                  }
-                ],
-                "skipped": [
-                  {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "page": {
-                        "kind": "objectNumber",
-                        "objectNumber": 1
-                      },
-                      "objectNumber": 2
-                    },
-                    "reason": "locked"
-                  },
-                  {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "page": {
-                        "kind": "objectNumber",
-                        "objectNumber": 1
-                      },
-                      "objectNumber": 3
-                    },
-                    "reason": "foreign-measure"
-                  }
-                ],
-                "failed": [
-                  {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "page": {
-                        "kind": "objectNumber",
-                        "objectNumber": 1
-                      },
-                      "objectNumber": 6
-                    },
-                    "error": {
-                      "code": "Unknown",
-                      "message": "intended stale measurement"
-                    }
-                  }
-                ]
+                "$undefined": true
               }
             }
           ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "session": {
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "objectNumbers": [],
+                  "defaults": {
+                    "square": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "line-dimension",
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      },
+                      "captionEnabled": true,
+                      "captionPosition": "inline",
+                      "leader": {
+                        "length": 12,
+                        "extension": 5,
+                        "offset": 0
+                      }
+                    },
+                    "calibrate": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polyline-dimension",
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      },
+                      "captionEnabled": true
+                    },
+                    "area": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polygon-dimension",
+                      "captionEnabled": true
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply",
+                      "intent": "ink-highlight"
+                    },
+                    "free-text": {
+                      "color": "#e5484d",
+                      "strokeWidth": 2,
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6,
+                      "lineEnding": "open-arrow"
+                    },
+                    "highlight": {
+                      "color": "#ffe16a",
+                      "blendMode": "multiply"
+                    },
+                    "redact": {
+                      "color": "#e44234",
+                      "interiorColor": "#000000",
+                      "fontSize": 14,
+                      "fontColor": "#ffffff",
+                      "opacity": 1
+                    },
+                    "underline": {
+                      "color": "#ef4444"
+                    },
+                    "strikeout": {
+                      "color": "#ef4444"
+                    },
+                    "squiggly": {
+                      "color": "#ef4444"
+                    },
+                    "caret": {
+                      "color": "#ef4444"
+                    },
+                    "replace-text": {
+                      "color": "#ef4444"
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "alignment": true,
+                    "alignmentThresholdPx": 6,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThresholdDeg": 4
+                  },
+                  "editable": true
+                },
+                "vector": {},
+                "ghostAt": null,
+                "placing": null,
+                "textSelection": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
           "stateChanges": [
             {
               "slice": "annotation::a",
@@ -159092,295 +159513,6 @@
                   "editable": true
                 },
                 "vector": {
-                  "obj:1": true
-                },
-                "ghostAt": null,
-                "placing": null,
-                "textSelection": null
-              }
-            },
-            {
-              "slice": "annotation::a",
-              "previous": {
-                "session": {
-                  "selected": [],
-                  "hovered": null,
-                  "draft": null,
-                  "preview": null,
-                  "objectNumbers": [],
-                  "defaults": {
-                    "square": {
-                      "color": "#e5484d",
-                      "strokeWidth": 6
-                    },
-                    "circle": {
-                      "color": "#e5484d",
-                      "strokeWidth": 6
-                    },
-                    "line": {
-                      "color": "#e5484d",
-                      "strokeWidth": 6
-                    },
-                    "distance": {
-                      "color": "#e5484d",
-                      "strokeWidth": 1,
-                      "intent": "line-dimension",
-                      "lineEndings": {
-                        "start": "closed-arrow",
-                        "end": "closed-arrow"
-                      },
-                      "captionEnabled": true,
-                      "captionPosition": "inline",
-                      "leader": {
-                        "length": 12,
-                        "extension": 5,
-                        "offset": 0
-                      }
-                    },
-                    "calibrate": {
-                      "color": "#e5484d",
-                      "strokeWidth": 1
-                    },
-                    "polygon": {
-                      "color": "#e5484d",
-                      "strokeWidth": 6
-                    },
-                    "polyline": {
-                      "color": "#e5484d",
-                      "strokeWidth": 6
-                    },
-                    "perimeter": {
-                      "color": "#e5484d",
-                      "strokeWidth": 1,
-                      "intent": "polyline-dimension",
-                      "lineEndings": {
-                        "start": "none",
-                        "end": "none"
-                      },
-                      "captionEnabled": true
-                    },
-                    "area": {
-                      "color": "#e5484d",
-                      "strokeWidth": 1,
-                      "intent": "polygon-dimension",
-                      "captionEnabled": true
-                    },
-                    "ink": {
-                      "color": "#ef4444",
-                      "strokeWidth": 6,
-                      "blendMode": "normal"
-                    },
-                    "ink-highlight": {
-                      "color": "#ffcd45",
-                      "strokeWidth": 14,
-                      "blendMode": "multiply",
-                      "intent": "ink-highlight"
-                    },
-                    "free-text": {
-                      "color": "#e5484d",
-                      "strokeWidth": 2,
-                      "fontColor": "#ef4444"
-                    },
-                    "free-text-callout": {
-                      "color": "#e5484d",
-                      "strokeWidth": 6,
-                      "lineEnding": "open-arrow"
-                    },
-                    "highlight": {
-                      "color": "#ffe16a",
-                      "blendMode": "multiply"
-                    },
-                    "redact": {
-                      "color": "#e44234",
-                      "interiorColor": "#000000",
-                      "fontSize": 14,
-                      "fontColor": "#ffffff",
-                      "opacity": 1
-                    },
-                    "underline": {
-                      "color": "#ef4444"
-                    },
-                    "strikeout": {
-                      "color": "#ef4444"
-                    },
-                    "squiggly": {
-                      "color": "#ef4444"
-                    },
-                    "caret": {
-                      "color": "#ef4444"
-                    },
-                    "replace-text": {
-                      "color": "#ef4444"
-                    },
-                    "note": {
-                      "icon": "comment",
-                      "color": "#facc15"
-                    },
-                    "attachment": {
-                      "icon": "paperclip",
-                      "color": "#facc15"
-                    }
-                  },
-                  "hitMargin": 6,
-                  "editing": null,
-                  "snap": {
-                    "alignment": true,
-                    "alignmentThresholdPx": 6,
-                    "rotation": true,
-                    "rotationAngles": [
-                      0,
-                      90,
-                      180,
-                      270
-                    ],
-                    "rotationThresholdDeg": 4
-                  },
-                  "editable": true
-                },
-                "vector": {
-                  "obj:1": true
-                },
-                "ghostAt": null,
-                "placing": null,
-                "textSelection": null
-              },
-              "next": {
-                "session": {
-                  "selected": [],
-                  "hovered": null,
-                  "draft": null,
-                  "preview": null,
-                  "objectNumbers": [],
-                  "defaults": {
-                    "square": {
-                      "color": "#e5484d",
-                      "strokeWidth": 6
-                    },
-                    "circle": {
-                      "color": "#e5484d",
-                      "strokeWidth": 6
-                    },
-                    "line": {
-                      "color": "#e5484d",
-                      "strokeWidth": 6
-                    },
-                    "distance": {
-                      "color": "#e5484d",
-                      "strokeWidth": 1,
-                      "intent": "line-dimension",
-                      "lineEndings": {
-                        "start": "closed-arrow",
-                        "end": "closed-arrow"
-                      },
-                      "captionEnabled": true,
-                      "captionPosition": "inline",
-                      "leader": {
-                        "length": 12,
-                        "extension": 5,
-                        "offset": 0
-                      }
-                    },
-                    "calibrate": {
-                      "color": "#e5484d",
-                      "strokeWidth": 1
-                    },
-                    "polygon": {
-                      "color": "#e5484d",
-                      "strokeWidth": 6
-                    },
-                    "polyline": {
-                      "color": "#e5484d",
-                      "strokeWidth": 6
-                    },
-                    "perimeter": {
-                      "color": "#e5484d",
-                      "strokeWidth": 1,
-                      "intent": "polyline-dimension",
-                      "lineEndings": {
-                        "start": "none",
-                        "end": "none"
-                      },
-                      "captionEnabled": true
-                    },
-                    "area": {
-                      "color": "#e5484d",
-                      "strokeWidth": 1,
-                      "intent": "polygon-dimension",
-                      "captionEnabled": true
-                    },
-                    "ink": {
-                      "color": "#ef4444",
-                      "strokeWidth": 6,
-                      "blendMode": "normal"
-                    },
-                    "ink-highlight": {
-                      "color": "#ffcd45",
-                      "strokeWidth": 14,
-                      "blendMode": "multiply",
-                      "intent": "ink-highlight"
-                    },
-                    "free-text": {
-                      "color": "#e5484d",
-                      "strokeWidth": 2,
-                      "fontColor": "#ef4444"
-                    },
-                    "free-text-callout": {
-                      "color": "#e5484d",
-                      "strokeWidth": 6,
-                      "lineEnding": "open-arrow"
-                    },
-                    "highlight": {
-                      "color": "#ffe16a",
-                      "blendMode": "multiply"
-                    },
-                    "redact": {
-                      "color": "#e44234",
-                      "interiorColor": "#000000",
-                      "fontSize": 14,
-                      "fontColor": "#ffffff",
-                      "opacity": 1
-                    },
-                    "underline": {
-                      "color": "#ef4444"
-                    },
-                    "strikeout": {
-                      "color": "#ef4444"
-                    },
-                    "squiggly": {
-                      "color": "#ef4444"
-                    },
-                    "caret": {
-                      "color": "#ef4444"
-                    },
-                    "replace-text": {
-                      "color": "#ef4444"
-                    },
-                    "note": {
-                      "icon": "comment",
-                      "color": "#facc15"
-                    },
-                    "attachment": {
-                      "icon": "paperclip",
-                      "color": "#facc15"
-                    }
-                  },
-                  "hitMargin": 6,
-                  "editing": null,
-                  "snap": {
-                    "alignment": true,
-                    "alignmentThresholdPx": 6,
-                    "rotation": true,
-                    "rotationAngles": [
-                      0,
-                      90,
-                      180,
-                      270
-                    ],
-                    "rotationThresholdDeg": 4
-                  },
-                  "editable": true
-                },
-                "vector": {
                   "obj:1": true,
                   "obj:6": true
                 },
@@ -159433,20 +159565,7 @@
                           ]
                         }
                       }
-                    }
-                  ]
-                },
-                {
-                  "opId": "00000000-0000-7000-8000-000000000001"
-                }
-              ]
-            },
-            {
-              "doc": "a",
-              "path": "apply",
-              "args": [
-                {
-                  "ops": [
+                    },
                     {
                       "type": "annotations.update",
                       "ref": {
@@ -159486,7 +159605,7 @@
                   ]
                 },
                 {
-                  "opId": "00000000-0000-7000-8000-000000000002"
+                  "opId": "00000000-0000-7000-8000-000000000001"
                 }
               ]
             }
@@ -159500,7 +159619,77 @@
             }
           },
           "outcome": {
-            "promise": 2
+            "returned": {
+              "page": {
+                "kind": "objectNumber",
+                "objectNumber": 1
+              },
+              "scale": {
+                "subtype": "rectilinear",
+                "ratio": "1 in = 1 ft",
+                "x": [
+                  {
+                    "unit": "ft",
+                    "conversion": 0.013888888888888888
+                  }
+                ],
+                "distance": [
+                  {
+                    "unit": "ft",
+                    "conversion": 1
+                  }
+                ],
+                "area": [
+                  {
+                    "unit": "ft²",
+                    "conversion": 1
+                  }
+                ]
+              },
+              "updated": [
+                {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "objectNumber": 1
+                },
+                {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "objectNumber": 6
+                }
+              ],
+              "skipped": [
+                {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "objectNumber": 2
+                  },
+                  "reason": "locked"
+                },
+                {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "objectNumber": 3
+                  },
+                  "reason": "foreign-measure"
+                }
+              ],
+              "failed": []
+            }
           },
           "state": {
             "plugins": {
@@ -159685,12 +159874,12 @@
                 "structurePosition": null,
                 "nm": null,
                 "rect": {
-                  "x": 99,
-                  "y": 82.63397459621557,
-                  "width": 146,
-                  "height": 17.366025403784434
+                  "x": 0,
+                  "y": 0,
+                  "width": 0,
+                  "height": 0
                 },
-                "contents": "2.00 ft",
+                "contents": "2.00 m",
                 "subject": null,
                 "blendMode": "normal",
                 "invisible": false,
@@ -159739,22 +159928,22 @@
                 "intent": "line-dimension",
                 "measure": {
                   "subtype": "rectilinear",
-                  "ratio": "1 in = 1 ft",
+                  "ratio": "1 in = 1 m",
                   "x": [
                     {
-                      "unit": "ft",
+                      "unit": "m",
                       "conversion": 0.013888888888888888
                     }
                   ],
                   "distance": [
                     {
-                      "unit": "ft",
+                      "unit": "m",
                       "conversion": 1
                     }
                   ],
                   "area": [
                     {
-                      "unit": "ft²",
+                      "unit": "m²",
                       "conversion": 1
                     }
                   ]
@@ -160309,49 +160498,328 @@
           }
         },
         {
-          "settled": [
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [
             {
-              "promise": 3,
-              "resolved": {
-                "page": {
-                  "kind": "objectNumber",
-                  "objectNumber": 2
-                },
-                "scale": {
-                  "subtype": "rectilinear",
-                  "ratio": "1 in = 1 ft",
-                  "x": [
+              "doc": "a",
+              "path": "apply",
+              "args": [
+                {
+                  "ops": [
                     {
-                      "unit": "ft",
-                      "conversion": 0.013888888888888888
-                    }
-                  ],
-                  "distance": [],
-                  "area": [
+                      "type": "annotations.update",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 1
+                      },
+                      "patch": {
+                        "subtype": "line",
+                        "measure": {
+                          "subtype": "rectilinear",
+                          "ratio": "1 in = 1 ft",
+                          "x": [
+                            {
+                              "unit": "ft",
+                              "conversion": 0.013888888888888888
+                            }
+                          ],
+                          "distance": [
+                            {
+                              "unit": "ft",
+                              "conversion": 1
+                            }
+                          ],
+                          "area": [
+                            {
+                              "unit": "ft²",
+                              "conversion": 1
+                            }
+                          ]
+                        }
+                      }
+                    },
                     {
-                      "unit": "ft²",
-                      "conversion": 1
+                      "type": "annotations.update",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 6
+                      },
+                      "patch": {
+                        "subtype": "line",
+                        "measure": {
+                          "subtype": "rectilinear",
+                          "ratio": "1 in = 1 ft",
+                          "x": [
+                            {
+                              "unit": "ft",
+                              "conversion": 0.013888888888888888
+                            }
+                          ],
+                          "distance": [
+                            {
+                              "unit": "ft",
+                              "conversion": 1
+                            }
+                          ],
+                          "area": [
+                            {
+                              "unit": "ft²",
+                              "conversion": 1
+                            }
+                          ]
+                        }
+                      }
                     }
                   ]
                 },
-                "updated": [],
-                "skipped": [
-                  {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "page": {
-                        "kind": "objectNumber",
-                        "objectNumber": 2
-                      },
-                      "objectNumber": 20
-                    },
-                    "reason": "unavailable"
-                  }
-                ],
-                "failed": []
-              }
+                {
+                  "opId": "00000000-0000-7000-8000-000000000002"
+                }
+              ]
             }
           ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "page": {
+                "kind": "objectNumber",
+                "objectNumber": 1
+              },
+              "scale": {
+                "subtype": "rectilinear",
+                "ratio": "1 in = 1 ft",
+                "x": [
+                  {
+                    "unit": "ft",
+                    "conversion": 0.013888888888888888
+                  }
+                ],
+                "distance": [
+                  {
+                    "unit": "ft",
+                    "conversion": 1
+                  }
+                ],
+                "area": [
+                  {
+                    "unit": "ft²",
+                    "conversion": 1
+                  }
+                ]
+              },
+              "updated": [
+                {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "objectNumber": 1
+                },
+                {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "objectNumber": 6
+                }
+              ],
+              "skipped": [
+                {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "objectNumber": 2
+                  },
+                  "reason": "locked"
+                },
+                {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "objectNumber": 3
+                  },
+                  "reason": "foreign-measure"
+                }
+              ],
+              "failed": []
+            }
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "session": {
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "objectNumbers": [],
+                  "defaults": {
+                    "square": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "line-dimension",
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      },
+                      "captionEnabled": true,
+                      "captionPosition": "inline",
+                      "leader": {
+                        "length": 12,
+                        "extension": 5,
+                        "offset": 0
+                      }
+                    },
+                    "calibrate": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polyline-dimension",
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      },
+                      "captionEnabled": true
+                    },
+                    "area": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polygon-dimension",
+                      "captionEnabled": true
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply",
+                      "intent": "ink-highlight"
+                    },
+                    "free-text": {
+                      "color": "#e5484d",
+                      "strokeWidth": 2,
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6,
+                      "lineEnding": "open-arrow"
+                    },
+                    "highlight": {
+                      "color": "#ffe16a",
+                      "blendMode": "multiply"
+                    },
+                    "redact": {
+                      "color": "#e44234",
+                      "interiorColor": "#000000",
+                      "fontSize": 14,
+                      "fontColor": "#ffffff",
+                      "opacity": 1
+                    },
+                    "underline": {
+                      "color": "#ef4444"
+                    },
+                    "strikeout": {
+                      "color": "#ef4444"
+                    },
+                    "squiggly": {
+                      "color": "#ef4444"
+                    },
+                    "caret": {
+                      "color": "#ef4444"
+                    },
+                    "replace-text": {
+                      "color": "#ef4444"
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "alignment": true,
+                    "alignmentThresholdPx": 6,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThresholdDeg": 4
+                  },
+                  "editable": true
+                },
+                "vector": {
+                  "obj:1": true,
+                  "obj:6": true
+                },
+                "ghostAt": null,
+                "placing": null,
+                "textSelection": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
@@ -160364,7 +160832,701 @@
             }
           },
           "outcome": {
-            "promise": 3
+            "returned": [
+              {
+                "subtype": "line",
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "objectNumber": 1
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "hasAppearance": true,
+                "appearanceState": null,
+                "structurePosition": null,
+                "nm": null,
+                "rect": {
+                  "x": 99,
+                  "y": 82.63397459621557,
+                  "width": 146,
+                  "height": 17.366025403784434
+                },
+                "contents": "2.00 ft",
+                "subject": null,
+                "blendMode": "normal",
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false,
+                "reply": null,
+                "popup": null,
+                "groupId": null,
+                "author": null,
+                "createdAt": null,
+                "modifiedAt": null,
+                "userId": null,
+                "createdBy": null,
+                "modifiedBy": null,
+                "importedBy": null,
+                "actions": null,
+                "richText": null,
+                "color": "#e5484d",
+                "opacity": 1,
+                "strokeWidth": 1,
+                "borderStyle": "solid",
+                "dashArray": null,
+                "interiorColor": null,
+                "linePoints": {
+                  "start": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "end": {
+                    "x": 244,
+                    "y": 100
+                  }
+                },
+                "lineEndings": {
+                  "start": "closed-arrow",
+                  "end": "closed-arrow"
+                },
+                "rotation": null,
+                "intent": "line-dimension",
+                "measure": {
+                  "subtype": "rectilinear",
+                  "ratio": "1 in = 1 ft",
+                  "x": [
+                    {
+                      "unit": "ft",
+                      "conversion": 0.013888888888888888
+                    }
+                  ],
+                  "distance": [
+                    {
+                      "unit": "ft",
+                      "conversion": 1
+                    }
+                  ],
+                  "area": [
+                    {
+                      "unit": "ft²",
+                      "conversion": 1
+                    }
+                  ]
+                },
+                "captionEnabled": true,
+                "captionPosition": "inline",
+                "captionOffset": null,
+                "leader": {
+                  "length": 12,
+                  "extension": 5,
+                  "offset": 0
+                }
+              },
+              {
+                "subtype": "line",
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "objectNumber": 2
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "hasAppearance": true,
+                "appearanceState": null,
+                "structurePosition": null,
+                "nm": null,
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 0,
+                  "height": 0
+                },
+                "contents": "2.00 m",
+                "subject": null,
+                "blendMode": "normal",
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": true,
+                "toggleNoView": false,
+                "lockedContents": false,
+                "reply": null,
+                "popup": null,
+                "groupId": null,
+                "author": null,
+                "createdAt": null,
+                "modifiedAt": null,
+                "userId": null,
+                "createdBy": null,
+                "modifiedBy": null,
+                "importedBy": null,
+                "actions": null,
+                "richText": null,
+                "color": "#e5484d",
+                "opacity": 1,
+                "strokeWidth": 1,
+                "borderStyle": "solid",
+                "dashArray": null,
+                "interiorColor": null,
+                "linePoints": {
+                  "start": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "end": {
+                    "x": 244,
+                    "y": 100
+                  }
+                },
+                "lineEndings": {
+                  "start": "closed-arrow",
+                  "end": "closed-arrow"
+                },
+                "rotation": null,
+                "intent": "line-dimension",
+                "measure": {
+                  "subtype": "rectilinear",
+                  "ratio": "1 in = 1 m",
+                  "x": [
+                    {
+                      "unit": "m",
+                      "conversion": 0.013888888888888888
+                    }
+                  ],
+                  "distance": [
+                    {
+                      "unit": "m",
+                      "conversion": 1
+                    }
+                  ],
+                  "area": [
+                    {
+                      "unit": "m²",
+                      "conversion": 1
+                    }
+                  ]
+                },
+                "captionEnabled": true,
+                "captionPosition": "inline",
+                "captionOffset": null,
+                "leader": {
+                  "length": 12,
+                  "extension": 5,
+                  "offset": 0
+                }
+              },
+              {
+                "subtype": "line",
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "objectNumber": 3
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "hasAppearance": true,
+                "appearanceState": null,
+                "structurePosition": null,
+                "nm": null,
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 0,
+                  "height": 0
+                },
+                "contents": "2.00 m",
+                "subject": null,
+                "blendMode": "normal",
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false,
+                "reply": null,
+                "popup": null,
+                "groupId": null,
+                "author": null,
+                "createdAt": null,
+                "modifiedAt": null,
+                "userId": null,
+                "createdBy": null,
+                "modifiedBy": null,
+                "importedBy": null,
+                "actions": null,
+                "richText": null,
+                "color": "#e5484d",
+                "opacity": 1,
+                "strokeWidth": 1,
+                "borderStyle": "solid",
+                "dashArray": null,
+                "interiorColor": null,
+                "linePoints": {
+                  "start": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "end": {
+                    "x": 244,
+                    "y": 100
+                  }
+                },
+                "lineEndings": {
+                  "start": "closed-arrow",
+                  "end": "closed-arrow"
+                },
+                "rotation": null,
+                "intent": "line-dimension",
+                "measure": {
+                  "subtype": "geospatial"
+                },
+                "captionEnabled": true,
+                "captionPosition": "inline",
+                "captionOffset": null,
+                "leader": {
+                  "length": 12,
+                  "extension": 5,
+                  "offset": 0
+                }
+              },
+              {
+                "subtype": "line",
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "objectNumber": 6
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "hasAppearance": true,
+                "appearanceState": null,
+                "structurePosition": null,
+                "nm": null,
+                "rect": {
+                  "x": 99,
+                  "y": 82.63397459621557,
+                  "width": 146,
+                  "height": 17.366025403784434
+                },
+                "contents": "2.00 ft",
+                "subject": null,
+                "blendMode": "normal",
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false,
+                "reply": null,
+                "popup": null,
+                "groupId": null,
+                "author": null,
+                "createdAt": null,
+                "modifiedAt": null,
+                "userId": null,
+                "createdBy": null,
+                "modifiedBy": null,
+                "importedBy": null,
+                "actions": null,
+                "richText": null,
+                "color": "#e5484d",
+                "opacity": 1,
+                "strokeWidth": 1,
+                "borderStyle": "solid",
+                "dashArray": null,
+                "interiorColor": null,
+                "linePoints": {
+                  "start": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "end": {
+                    "x": 244,
+                    "y": 100
+                  }
+                },
+                "lineEndings": {
+                  "start": "closed-arrow",
+                  "end": "closed-arrow"
+                },
+                "rotation": null,
+                "intent": "line-dimension",
+                "measure": {
+                  "subtype": "rectilinear",
+                  "ratio": "1 in = 1 ft",
+                  "x": [
+                    {
+                      "unit": "ft",
+                      "conversion": 0.013888888888888888
+                    }
+                  ],
+                  "distance": [
+                    {
+                      "unit": "ft",
+                      "conversion": 1
+                    }
+                  ],
+                  "area": [
+                    {
+                      "unit": "ft²",
+                      "conversion": 1
+                    }
+                  ]
+                },
+                "captionEnabled": true,
+                "captionPosition": "inline",
+                "captionOffset": null,
+                "leader": {
+                  "length": 12,
+                  "extension": 5,
+                  "offset": 0
+                }
+              },
+              {
+                "subtype": "line",
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 2
+                  },
+                  "objectNumber": 20
+                },
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 2
+                },
+                "hasAppearance": true,
+                "appearanceState": null,
+                "structurePosition": null,
+                "nm": null,
+                "rect": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 0,
+                  "height": 0
+                },
+                "contents": "2.00 m",
+                "subject": null,
+                "blendMode": "normal",
+                "invisible": false,
+                "hidden": false,
+                "print": true,
+                "noZoom": false,
+                "noRotate": false,
+                "noView": false,
+                "readOnly": false,
+                "locked": false,
+                "toggleNoView": false,
+                "lockedContents": false,
+                "reply": null,
+                "popup": null,
+                "groupId": null,
+                "author": null,
+                "createdAt": null,
+                "modifiedAt": null,
+                "userId": null,
+                "createdBy": null,
+                "modifiedBy": null,
+                "importedBy": null,
+                "actions": null,
+                "richText": null,
+                "color": "#e5484d",
+                "opacity": 1,
+                "strokeWidth": 1,
+                "borderStyle": "solid",
+                "dashArray": null,
+                "interiorColor": null,
+                "linePoints": {
+                  "start": {
+                    "x": 100,
+                    "y": 100
+                  },
+                  "end": {
+                    "x": 244,
+                    "y": 100
+                  }
+                },
+                "lineEndings": {
+                  "start": "closed-arrow",
+                  "end": "closed-arrow"
+                },
+                "rotation": null,
+                "intent": "line-dimension",
+                "measure": {
+                  "subtype": "rectilinear",
+                  "ratio": "1 in = 1 m",
+                  "x": [
+                    {
+                      "unit": "m",
+                      "conversion": 0.013888888888888888
+                    }
+                  ],
+                  "distance": [
+                    {
+                      "unit": "m",
+                      "conversion": 1
+                    }
+                  ],
+                  "area": [
+                    {
+                      "unit": "m²",
+                      "conversion": 1
+                    }
+                  ]
+                },
+                "captionEnabled": true,
+                "captionPosition": "inline",
+                "captionOffset": null,
+                "leader": {
+                  "length": 12,
+                  "extension": 5,
+                  "offset": 0
+                }
+              }
+            ]
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "session": {
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "objectNumbers": [],
+                  "defaults": {
+                    "square": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "line-dimension",
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      },
+                      "captionEnabled": true,
+                      "captionPosition": "inline",
+                      "leader": {
+                        "length": 12,
+                        "extension": 5,
+                        "offset": 0
+                      }
+                    },
+                    "calibrate": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polyline-dimension",
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      },
+                      "captionEnabled": true
+                    },
+                    "area": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polygon-dimension",
+                      "captionEnabled": true
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply",
+                      "intent": "ink-highlight"
+                    },
+                    "free-text": {
+                      "color": "#e5484d",
+                      "strokeWidth": 2,
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6,
+                      "lineEnding": "open-arrow"
+                    },
+                    "highlight": {
+                      "color": "#ffe16a",
+                      "blendMode": "multiply"
+                    },
+                    "redact": {
+                      "color": "#e44234",
+                      "interiorColor": "#000000",
+                      "fontSize": 14,
+                      "fontColor": "#ffffff",
+                      "opacity": 1
+                    },
+                    "underline": {
+                      "color": "#ef4444"
+                    },
+                    "strikeout": {
+                      "color": "#ef4444"
+                    },
+                    "squiggly": {
+                      "color": "#ef4444"
+                    },
+                    "caret": {
+                      "color": "#ef4444"
+                    },
+                    "replace-text": {
+                      "color": "#ef4444"
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "alignment": true,
+                    "alignmentThresholdPx": 6,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThresholdDeg": 4
+                  },
+                  "editable": true
+                },
+                "vector": {
+                  "obj:1": true,
+                  "obj:6": true
+                },
+                "ghostAt": null,
+                "placing": null,
+                "textSelection": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "page": {
+                "kind": "objectNumber",
+                "objectNumber": 2
+              },
+              "scale": {
+                "subtype": "rectilinear",
+                "ratio": "1 in = 1 ft",
+                "x": [
+                  {
+                    "unit": "ft",
+                    "conversion": 0.013888888888888888
+                  }
+                ],
+                "distance": [],
+                "area": [
+                  {
+                    "unit": "ft²",
+                    "conversion": 1
+                  }
+                ]
+              },
+              "updated": [],
+              "skipped": [
+                {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 2
+                    },
+                    "objectNumber": 20
+                  },
+                  "reason": "unavailable"
+                }
+              ],
+              "failed": []
+            }
           },
           "state": {
             "plugins": {
@@ -160519,7 +161681,7 @@
     },
     {
       "name": "remeasure-without-authority-and-after-errors",
-      "covers": "No-authority dimensions are reported as skipped; an unreadable mirror reports its failure rather than a silent successful calibration.",
+      "covers": "No-authority dimensions are reported as skipped; when the annotations cannot be read again, whenRemeasurable still resolves and stageRemeasure reports the error with nothing staged, rather than a silent successful calibration.",
       "plugins": [
         {
           "factory": "interaction"
@@ -160996,7 +162158,7 @@
             "token": "annotation",
             "doc": "a"
           },
-          "method": "remeasurePage",
+          "method": "stageRemeasure",
           "args": [
             {
               "kind": "objectNumber",
@@ -161041,7 +162203,16 @@
             "token": "annotation",
             "doc": "a"
           },
-          "method": "remeasurePage",
+          "method": "whenRemeasurable",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "annotation",
+            "doc": "a"
+          },
+          "method": "stageRemeasure",
           "args": [
             {
               "kind": "objectNumber",
@@ -165714,57 +166885,397 @@
           }
         },
         {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "page": {
+                "kind": "objectNumber",
+                "objectNumber": 1
+              },
+              "scale": {
+                "subtype": "rectilinear",
+                "ratio": "1 in = 1 ft",
+                "x": [
+                  {
+                    "unit": "ft",
+                    "conversion": 0.013888888888888888
+                  }
+                ],
+                "distance": [
+                  {
+                    "unit": "ft",
+                    "conversion": 1
+                  }
+                ],
+                "area": [
+                  {
+                    "unit": "ft²",
+                    "conversion": 1
+                  }
+                ]
+              },
+              "updated": [],
+              "skipped": [
+                {
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "objectNumber": 1
+                  },
+                  "reason": "no-authority"
+                }
+              ],
+              "failed": []
+            }
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "session": {
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "objectNumbers": [],
+                  "defaults": {
+                    "square": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "line-dimension",
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      },
+                      "captionEnabled": true,
+                      "captionPosition": "inline",
+                      "leader": {
+                        "length": 12,
+                        "extension": 5,
+                        "offset": 0
+                      }
+                    },
+                    "calibrate": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polyline-dimension",
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      },
+                      "captionEnabled": true
+                    },
+                    "area": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polygon-dimension",
+                      "captionEnabled": true
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply",
+                      "intent": "ink-highlight"
+                    },
+                    "free-text": {
+                      "color": "#e5484d",
+                      "strokeWidth": 2,
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6,
+                      "lineEnding": "open-arrow"
+                    },
+                    "highlight": {
+                      "color": "#ffe16a",
+                      "blendMode": "multiply"
+                    },
+                    "redact": {
+                      "color": "#e44234",
+                      "interiorColor": "#000000",
+                      "fontSize": 14,
+                      "fontColor": "#ffffff",
+                      "opacity": 1
+                    },
+                    "underline": {
+                      "color": "#ef4444"
+                    },
+                    "strikeout": {
+                      "color": "#ef4444"
+                    },
+                    "squiggly": {
+                      "color": "#ef4444"
+                    },
+                    "caret": {
+                      "color": "#ef4444"
+                    },
+                    "replace-text": {
+                      "color": "#ef4444"
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "alignment": true,
+                    "alignmentThresholdPx": 6,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThresholdDeg": 4
+                  },
+                  "editable": true
+                },
+                "vector": {},
+                "ghostAt": null,
+                "placing": null,
+                "textSelection": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "annotations.list",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "session": {
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "objectNumbers": [],
+                  "defaults": {
+                    "square": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "line-dimension",
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      },
+                      "captionEnabled": true,
+                      "captionPosition": "inline",
+                      "leader": {
+                        "length": 12,
+                        "extension": 5,
+                        "offset": 0
+                      }
+                    },
+                    "calibrate": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polyline-dimension",
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      },
+                      "captionEnabled": true
+                    },
+                    "area": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polygon-dimension",
+                      "captionEnabled": true
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply",
+                      "intent": "ink-highlight"
+                    },
+                    "free-text": {
+                      "color": "#e5484d",
+                      "strokeWidth": 2,
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6,
+                      "lineEnding": "open-arrow"
+                    },
+                    "highlight": {
+                      "color": "#ffe16a",
+                      "blendMode": "multiply"
+                    },
+                    "redact": {
+                      "color": "#e44234",
+                      "interiorColor": "#000000",
+                      "fontSize": 14,
+                      "fontColor": "#ffffff",
+                      "opacity": 1
+                    },
+                    "underline": {
+                      "color": "#ef4444"
+                    },
+                    "strikeout": {
+                      "color": "#ef4444"
+                    },
+                    "squiggly": {
+                      "color": "#ef4444"
+                    },
+                    "caret": {
+                      "color": "#ef4444"
+                    },
+                    "replace-text": {
+                      "color": "#ef4444"
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "alignment": true,
+                    "alignmentThresholdPx": 6,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThresholdDeg": 4
+                  },
+                  "editable": true
+                },
+                "vector": {},
+                "ghostAt": null,
+                "placing": null,
+                "textSelection": null
+              }
+            }
+          }
+        },
+        {
           "settled": [
             {
               "promise": 2,
               "resolved": {
-                "page": {
-                  "kind": "objectNumber",
-                  "objectNumber": 1
-                },
-                "scale": {
-                  "subtype": "rectilinear",
-                  "ratio": "1 in = 1 ft",
-                  "x": [
-                    {
-                      "unit": "ft",
-                      "conversion": 0.013888888888888888
-                    }
-                  ],
-                  "distance": [
-                    {
-                      "unit": "ft",
-                      "conversion": 1
-                    }
-                  ],
-                  "area": [
-                    {
-                      "unit": "ft²",
-                      "conversion": 1
-                    }
-                  ]
-                },
-                "updated": [],
-                "skipped": [
-                  {
-                    "ref": {
-                      "kind": "objectNumber",
-                      "page": {
-                        "kind": "objectNumber",
-                        "objectNumber": 1
-                      },
-                      "objectNumber": 1
-                    },
-                    "reason": "no-authority"
-                  }
-                ],
-                "failed": []
+                "$undefined": true
               }
             }
           ],
           "stateChanges": [],
           "documentEvents": [],
-          "engine": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "annotations.list",
+              "args": []
+            }
+          ],
           "callbacks": [],
           "reports": [],
           "status": "started",
@@ -165926,217 +167437,7 @@
           "settled": [],
           "stateChanges": [],
           "documentEvents": [],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "annotations.list",
-              "args": []
-            }
-          ],
-          "callbacks": [],
-          "reports": [],
-          "status": "started",
-          "engineState": {
-            "a": {
-              "subscribers": 3
-            }
-          },
-          "state": {
-            "plugins": {
-              "annotation::a": {
-                "session": {
-                  "selected": [],
-                  "hovered": null,
-                  "draft": null,
-                  "preview": null,
-                  "objectNumbers": [],
-                  "defaults": {
-                    "square": {
-                      "color": "#e5484d",
-                      "strokeWidth": 6
-                    },
-                    "circle": {
-                      "color": "#e5484d",
-                      "strokeWidth": 6
-                    },
-                    "line": {
-                      "color": "#e5484d",
-                      "strokeWidth": 6
-                    },
-                    "distance": {
-                      "color": "#e5484d",
-                      "strokeWidth": 1,
-                      "intent": "line-dimension",
-                      "lineEndings": {
-                        "start": "closed-arrow",
-                        "end": "closed-arrow"
-                      },
-                      "captionEnabled": true,
-                      "captionPosition": "inline",
-                      "leader": {
-                        "length": 12,
-                        "extension": 5,
-                        "offset": 0
-                      }
-                    },
-                    "calibrate": {
-                      "color": "#e5484d",
-                      "strokeWidth": 1
-                    },
-                    "polygon": {
-                      "color": "#e5484d",
-                      "strokeWidth": 6
-                    },
-                    "polyline": {
-                      "color": "#e5484d",
-                      "strokeWidth": 6
-                    },
-                    "perimeter": {
-                      "color": "#e5484d",
-                      "strokeWidth": 1,
-                      "intent": "polyline-dimension",
-                      "lineEndings": {
-                        "start": "none",
-                        "end": "none"
-                      },
-                      "captionEnabled": true
-                    },
-                    "area": {
-                      "color": "#e5484d",
-                      "strokeWidth": 1,
-                      "intent": "polygon-dimension",
-                      "captionEnabled": true
-                    },
-                    "ink": {
-                      "color": "#ef4444",
-                      "strokeWidth": 6,
-                      "blendMode": "normal"
-                    },
-                    "ink-highlight": {
-                      "color": "#ffcd45",
-                      "strokeWidth": 14,
-                      "blendMode": "multiply",
-                      "intent": "ink-highlight"
-                    },
-                    "free-text": {
-                      "color": "#e5484d",
-                      "strokeWidth": 2,
-                      "fontColor": "#ef4444"
-                    },
-                    "free-text-callout": {
-                      "color": "#e5484d",
-                      "strokeWidth": 6,
-                      "lineEnding": "open-arrow"
-                    },
-                    "highlight": {
-                      "color": "#ffe16a",
-                      "blendMode": "multiply"
-                    },
-                    "redact": {
-                      "color": "#e44234",
-                      "interiorColor": "#000000",
-                      "fontSize": 14,
-                      "fontColor": "#ffffff",
-                      "opacity": 1
-                    },
-                    "underline": {
-                      "color": "#ef4444"
-                    },
-                    "strikeout": {
-                      "color": "#ef4444"
-                    },
-                    "squiggly": {
-                      "color": "#ef4444"
-                    },
-                    "caret": {
-                      "color": "#ef4444"
-                    },
-                    "replace-text": {
-                      "color": "#ef4444"
-                    },
-                    "note": {
-                      "icon": "comment",
-                      "color": "#facc15"
-                    },
-                    "attachment": {
-                      "icon": "paperclip",
-                      "color": "#facc15"
-                    }
-                  },
-                  "hitMargin": 6,
-                  "editing": null,
-                  "snap": {
-                    "alignment": true,
-                    "alignmentThresholdPx": 6,
-                    "rotation": true,
-                    "rotationAngles": [
-                      0,
-                      90,
-                      180,
-                      270
-                    ],
-                    "rotationThresholdDeg": 4
-                  },
-                  "editable": true
-                },
-                "vector": {},
-                "ghostAt": null,
-                "placing": null,
-                "textSelection": null
-              }
-            }
-          }
-        },
-        {
-          "settled": [
-            {
-              "promise": 3,
-              "resolved": {
-                "page": {
-                  "kind": "objectNumber",
-                  "objectNumber": 1
-                },
-                "scale": {
-                  "subtype": "rectilinear",
-                  "ratio": "1 in = 1 ft",
-                  "x": [
-                    {
-                      "unit": "ft",
-                      "conversion": 0.013888888888888888
-                    }
-                  ],
-                  "distance": [
-                    {
-                      "unit": "ft",
-                      "conversion": 1
-                    }
-                  ],
-                  "area": [
-                    {
-                      "unit": "ft²",
-                      "conversion": 1
-                    }
-                  ]
-                },
-                "updated": [],
-                "skipped": [],
-                "failed": [],
-                "error": {
-                  "code": "Unknown",
-                  "message": "the annotations of this document are not loaded"
-                }
-              }
-            }
-          ],
-          "stateChanges": [],
-          "documentEvents": [],
-          "engine": [
-            {
-              "doc": "a",
-              "path": "annotations.list",
-              "args": []
-            }
-          ],
+          "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
@@ -166146,7 +167447,41 @@
             }
           },
           "outcome": {
-            "promise": 3
+            "returned": {
+              "page": {
+                "kind": "objectNumber",
+                "objectNumber": 1
+              },
+              "scale": {
+                "subtype": "rectilinear",
+                "ratio": "1 in = 1 ft",
+                "x": [
+                  {
+                    "unit": "ft",
+                    "conversion": 0.013888888888888888
+                  }
+                ],
+                "distance": [
+                  {
+                    "unit": "ft",
+                    "conversion": 1
+                  }
+                ],
+                "area": [
+                  {
+                    "unit": "ft²",
+                    "conversion": 1
+                  }
+                ]
+              },
+              "updated": [],
+              "skipped": [],
+              "failed": [],
+              "error": {
+                "code": "Unknown",
+                "message": "the annotations of this document are not loaded"
+              }
+            }
           },
           "state": {
             "plugins": {

@@ -50,6 +50,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -99,6 +100,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -157,6 +159,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -206,6 +209,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -264,6 +268,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -313,6 +318,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -371,6 +377,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -420,6 +427,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -478,6 +486,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -529,6 +538,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -589,6 +599,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -638,6 +649,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -698,6 +710,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -749,6 +762,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -807,6 +821,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -856,6 +871,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -914,6 +930,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -963,6 +980,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -1023,6 +1041,7 @@
             "panFallback": true,
             "zoomGestures": true,
             "turnGestures": true,
+            "scrollChaining": true,
             "zoomBox": {
               "fill": null,
               "stroke": null
@@ -1064,6 +1083,7 @@
             "panFallback": "none",
             "zoomGestures": "none",
             "turnGestures": "none",
+            "scrollChaining": "none",
             "zoomBox": "none",
             "viewUnitsPerPoint": "scene"
           },
@@ -1091,6 +1111,7 @@
             "panFallback",
             "zoomGestures",
             "turnGestures",
+            "scrollChaining",
             "zoomBox",
             "viewUnitsPerPoint"
           ],
@@ -1815,6 +1836,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -1874,6 +1896,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -1929,6 +1952,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -1983,6 +2007,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -2038,6 +2063,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -2090,6 +2116,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -2253,6 +2280,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -2321,6 +2349,7 @@
             "panFallback": true,
             "zoomGestures": true,
             "turnGestures": true,
+            "scrollChaining": true,
             "zoomBox": {
               "fill": null,
               "stroke": null
@@ -2380,6 +2409,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -2448,6 +2478,7 @@
             "panFallback": true,
             "zoomGestures": true,
             "turnGestures": true,
+            "scrollChaining": true,
             "zoomBox": {
               "fill": null,
               "stroke": null
@@ -2505,6 +2536,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -2563,6 +2595,7 @@
             "panFallback": true,
             "zoomGestures": true,
             "turnGestures": true,
+            "scrollChaining": true,
             "zoomBox": {
               "fill": null,
               "stroke": null
@@ -2620,6 +2653,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -2720,6 +2754,7 @@
             "panFallback": true,
             "zoomGestures": true,
             "turnGestures": true,
+            "scrollChaining": true,
             "zoomBox": {
               "fill": null,
               "stroke": null
@@ -2781,6 +2816,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -2875,6 +2911,7 @@
             "panFallback": true,
             "zoomGestures": true,
             "turnGestures": true,
+            "scrollChaining": true,
             "zoomBox": {
               "fill": null,
               "stroke": null
@@ -2935,6 +2972,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -2999,6 +3037,7 @@
             "panFallback": true,
             "zoomGestures": true,
             "turnGestures": true,
+            "scrollChaining": true,
             "zoomBox": {
               "fill": null,
               "stroke": null
@@ -3078,6 +3117,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -3165,6 +3205,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -3243,6 +3284,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -3315,6 +3357,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -3389,6 +3432,7 @@
             "panFallback": true,
             "zoomGestures": true,
             "turnGestures": true,
+            "scrollChaining": true,
             "zoomBox": {
               "fill": null,
               "stroke": null
@@ -3463,6 +3507,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -3533,6 +3578,7 @@
             "panFallback": true,
             "zoomGestures": true,
             "turnGestures": true,
+            "scrollChaining": true,
             "zoomBox": {
               "fill": null,
               "stroke": null
@@ -3607,6 +3653,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -3677,6 +3724,7 @@
             "panFallback": true,
             "zoomGestures": true,
             "turnGestures": true,
+            "scrollChaining": true,
             "zoomBox": {
               "fill": null,
               "stroke": null
@@ -3751,6 +3799,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -3820,6 +3869,7 @@
             "panFallback": true,
             "zoomGestures": true,
             "turnGestures": true,
+            "scrollChaining": true,
             "zoomBox": {
               "fill": null,
               "stroke": null
@@ -3894,6 +3944,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -3963,6 +4014,7 @@
             "panFallback": true,
             "zoomGestures": true,
             "turnGestures": true,
+            "scrollChaining": true,
             "zoomBox": {
               "fill": null,
               "stroke": null
@@ -4037,6 +4089,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -4110,6 +4163,7 @@
             "panFallback": true,
             "zoomGestures": true,
             "turnGestures": true,
+            "scrollChaining": true,
             "zoomBox": {
               "fill": null,
               "stroke": null
@@ -4184,6 +4238,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -4254,6 +4309,7 @@
             "panFallback": true,
             "zoomGestures": true,
             "turnGestures": true,
+            "scrollChaining": true,
             "zoomBox": {
               "fill": null,
               "stroke": null
@@ -4328,6 +4384,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -4398,6 +4455,7 @@
             "panFallback": true,
             "zoomGestures": true,
             "turnGestures": true,
+            "scrollChaining": true,
             "zoomBox": {
               "fill": null,
               "stroke": null
@@ -4472,6 +4530,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -4542,6 +4601,7 @@
             "panFallback": true,
             "zoomGestures": true,
             "turnGestures": true,
+            "scrollChaining": true,
             "zoomBox": {
               "fill": null,
               "stroke": null
@@ -4616,6 +4676,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -4691,6 +4752,7 @@
             "panFallback": true,
             "zoomGestures": true,
             "turnGestures": true,
+            "scrollChaining": true,
             "zoomBox": {
               "fill": null,
               "stroke": null
@@ -4765,6 +4827,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -4835,6 +4898,7 @@
             "panFallback": true,
             "zoomGestures": true,
             "turnGestures": true,
+            "scrollChaining": true,
             "zoomBox": {
               "fill": null,
               "stroke": null
@@ -4909,6 +4973,7 @@
           "panFallback": true,
           "zoomGestures": true,
           "turnGestures": true,
+          "scrollChaining": true,
           "zoomBox": {
             "fill": null,
             "stroke": null
@@ -4983,6 +5048,7 @@
             "panFallback": true,
             "zoomGestures": true,
             "turnGestures": true,
+            "scrollChaining": true,
             "zoomBox": {
               "fill": null,
               "stroke": null

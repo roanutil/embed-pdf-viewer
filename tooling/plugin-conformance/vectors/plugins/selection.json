@@ -2138,7 +2138,7 @@
                 "highlightHidden": false,
                 "selecting": false
               },
-              "selection::a/page-mirror/geometry": {}
+              "selection::a/page-mirror/geometry": 0
             }
           }
         },
@@ -2458,7 +2458,7 @@
                 "highlightHidden": false,
                 "selecting": false
               },
-              "selection::a/page-mirror/geometry": {}
+              "selection::a/page-mirror/geometry": 0
             }
           }
         },
@@ -2675,7 +2675,7 @@
                 "highlightHidden": false,
                 "selecting": false
               },
-              "selection::a/page-mirror/geometry": {}
+              "selection::a/page-mirror/geometry": 0
             }
           }
         },
@@ -2892,7 +2892,7 @@
                 "highlightHidden": false,
                 "selecting": false
               },
-              "selection::a/page-mirror/geometry": {}
+              "selection::a/page-mirror/geometry": 0
             }
           }
         },
@@ -3115,7 +3115,7 @@
                 "highlightHidden": false,
                 "selecting": false
               },
-              "selection::a/page-mirror/geometry": {}
+              "selection::a/page-mirror/geometry": 0
             }
           }
         },
@@ -3332,7 +3332,7 @@
                 "highlightHidden": false,
                 "selecting": false
               },
-              "selection::a/page-mirror/geometry": {}
+              "selection::a/page-mirror/geometry": 0
             }
           }
         },
@@ -3549,7 +3549,7 @@
                 "highlightHidden": false,
                 "selecting": false
               },
-              "selection::a/page-mirror/geometry": {}
+              "selection::a/page-mirror/geometry": 0
             }
           }
         },
@@ -3766,7 +3766,7 @@
                 "highlightHidden": false,
                 "selecting": false
               },
-              "selection::a/page-mirror/geometry": {}
+              "selection::a/page-mirror/geometry": 0
             }
           }
         },
@@ -3983,7 +3983,7 @@
                 "highlightHidden": false,
                 "selecting": false
               },
-              "selection::a/page-mirror/geometry": {}
+              "selection::a/page-mirror/geometry": 0
             }
           }
         },
@@ -4200,7 +4200,7 @@
                 "highlightHidden": false,
                 "selecting": false
               },
-              "selection::a/page-mirror/geometry": {}
+              "selection::a/page-mirror/geometry": 0
             }
           }
         },
@@ -4417,7 +4417,7 @@
                 "highlightHidden": false,
                 "selecting": false
               },
-              "selection::a/page-mirror/geometry": {}
+              "selection::a/page-mirror/geometry": 0
             }
           }
         },
@@ -4634,7 +4634,7 @@
                 "highlightHidden": false,
                 "selecting": false
               },
-              "selection::a/page-mirror/geometry": {}
+              "selection::a/page-mirror/geometry": 0
             }
           }
         }

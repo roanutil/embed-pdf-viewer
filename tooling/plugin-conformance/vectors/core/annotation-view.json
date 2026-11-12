@@ -259121,7 +259121,8 @@
                       "y": 20
                     }
                   ]
-                ]
+                ],
+                "drawing": true
               },
               "preview": null,
               "objectNumbers": [
@@ -284773,13 +284774,14 @@
                       }
                     ]
                   ],
-                  "rotation": 0
+                  "rotation": 0,
+                  "drawing": true
                 },
                 "box": {
                   "x": 9.5,
                   "y": 9.5,
                   "width": 41,
-                  "height": 41.25415657726129
+                  "height": 41
                 },
                 "style": {
                   "color": "#ff0000",
@@ -284798,7 +284800,7 @@
                     "x": 9.5,
                     "y": 9.5,
                     "width": 41,
-                    "height": 41.25415657726129
+                    "height": 41
                   },
                   "rotation": 0,
                   "scale": 1

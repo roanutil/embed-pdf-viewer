@@ -12065,7 +12065,13 @@
           "settled": [],
           "stateChanges": [],
           "documentEvents": [],
-          "engine": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            }
+          ],
           "callbacks": [],
           "reports": [],
           "status": "started",

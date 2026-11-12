@@ -4467,7 +4467,7 @@
     },
     {
       "name": "derivations",
-      "covers": "resolve() calls active, then iconAccent, then enabled, then visible, each with a CommandCtx bound to the explicit document, else the active one (null with none open, and an empty string is kept); their answers land on the resolved command.",
+      "covers": "resolve() calls enabled, then visible, then iconAccent, then active, at most once per store change (7af98f4df), each with a CommandCtx bound to the explicit document, else the active one (null with none open, and an empty string is kept); their answers land on the resolved command.",
       "plugins": [
         {
           "factory": "commands",
@@ -4759,7 +4759,21 @@
           "engine": [],
           "callbacks": [
             {
-              "fn": "active",
+              "fn": "enabled",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "visible",
               "args": [
                 {
                   "documentId": null,
@@ -4787,21 +4801,7 @@
               ]
             },
             {
-              "fn": "enabled",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "visible",
+              "fn": "active",
               "args": [
                 {
                   "documentId": null,
@@ -5263,7 +5263,21 @@
           "engine": [],
           "callbacks": [
             {
-              "fn": "active",
+              "fn": "enabled",
+              "args": [
+                {
+                  "documentId": "b",
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "visible",
               "args": [
                 {
                   "documentId": "b",
@@ -5291,21 +5305,7 @@
               ]
             },
             {
-              "fn": "enabled",
-              "args": [
-                {
-                  "documentId": "b",
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "visible",
+              "fn": "active",
               "args": [
                 {
                   "documentId": "b",
@@ -5504,7 +5504,21 @@
           "engine": [],
           "callbacks": [
             {
-              "fn": "active",
+              "fn": "enabled",
+              "args": [
+                {
+                  "documentId": "a",
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "visible",
               "args": [
                 {
                   "documentId": "a",
@@ -5532,21 +5546,7 @@
               ]
             },
             {
-              "fn": "enabled",
-              "args": [
-                {
-                  "documentId": "a",
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "visible",
+              "fn": "active",
               "args": [
                 {
                   "documentId": "a",
@@ -5745,7 +5745,21 @@
           "engine": [],
           "callbacks": [
             {
-              "fn": "active",
+              "fn": "enabled",
+              "args": [
+                {
+                  "documentId": "zzz",
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "visible",
               "args": [
                 {
                   "documentId": "zzz",
@@ -5773,21 +5787,7 @@
               ]
             },
             {
-              "fn": "enabled",
-              "args": [
-                {
-                  "documentId": "zzz",
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "visible",
+              "fn": "active",
               "args": [
                 {
                   "documentId": "zzz",
@@ -5984,64 +5984,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "active",
-              "args": [
-                {
-                  "documentId": "",
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "accent",
-              "args": [
-                {
-                  "documentId": "",
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "enabled",
-              "args": [
-                {
-                  "documentId": "",
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "visible",
-              "args": [
-                {
-                  "documentId": "",
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
@@ -6064,7 +6007,7 @@
               "enabled": true,
               "active": false,
               "pressable": true,
-              "visible": true,
+              "visible": false,
               "categories": []
             }
           },
@@ -6225,64 +6168,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "active",
-              "args": [
-                {
-                  "documentId": "b",
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "accent",
-              "args": [
-                {
-                  "documentId": "b",
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "enabled",
-              "args": [
-                {
-                  "documentId": "b",
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "visible",
-              "args": [
-                {
-                  "documentId": "b",
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
@@ -6305,7 +6191,7 @@
               "enabled": true,
               "active": false,
               "pressable": true,
-              "visible": true,
+              "visible": false,
               "categories": []
             }
           },
@@ -6721,7 +6607,21 @@
           "engine": [],
           "callbacks": [
             {
-              "fn": "active",
+              "fn": "enabled",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "visible",
               "args": [
                 {
                   "documentId": null,
@@ -6749,21 +6649,7 @@
               ]
             },
             {
-              "fn": "enabled",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "visible",
+              "fn": "active",
               "args": [
                 {
                   "documentId": null,
@@ -6817,34 +6703,6 @@
           "engine": [],
           "callbacks": [
             {
-              "fn": "active",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "accent",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
               "fn": "enabled",
               "args": [
                 {
@@ -6894,64 +6752,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "active",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "accent",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "enabled",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "visible",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "created",
           "engineState": {},
@@ -8491,7 +8292,7 @@
     },
     {
       "name": "label-params-without-i18n",
-      "covers": "Without i18n, labelParams fill the {name} slots of label, else labelKey, else the id (ccc4bf7fe); a slot with no value stays as it is; one that throws gives none; it is asked on every resolve, before the derivations.",
+      "covers": "Without i18n, labelParams fill the {name} slots of label, else labelKey, else the id (ccc4bf7fe); a slot with no value stays as it is; one that throws gives none; it is asked once per store change, before the derivations (7af98f4df).",
       "plugins": [
         {
           "factory": "commands",
@@ -8956,43 +8757,14 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "live.labelParams",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "live.active",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "created",
           "engineState": {},
           "outcome": {
             "returned": {
               "id": "live",
-              "label": "2 selected",
+              "label": "1 selected",
               "shortcuts": [],
               "enabled": true,
               "active": true,
@@ -9016,106 +8788,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "delete.labelParams",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "key-only.labelParams",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "id.labelParams",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "partial.labelParams",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "throws.labelParams",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "live.labelParams",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "live.active",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "created",
           "engineState": {},
@@ -9123,7 +8796,7 @@
             "returned": [
               {
                 "id": "live",
-                "label": "2 selected",
+                "label": "1 selected",
                 "shortcuts": [],
                 "enabled": true,
                 "active": true,
@@ -27250,12 +26923,6 @@
           "engine": [],
           "callbacks": [
             {
-              "fn": "console.warn",
-              "args": [
-                "[i18n] missing translation \"probe\" or \"probe\" (locale: en)"
-              ]
-            },
-            {
               "fn": "probe.run",
               "args": [
                 {
@@ -34076,22 +33743,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "hidden.visible",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "created",
           "engineState": {},
@@ -34154,22 +33806,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "hidden.visible",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "created",
           "engineState": {},
@@ -34202,22 +33839,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "hidden.visible",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "created",
           "engineState": {},
@@ -34250,22 +33872,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "hidden.visible",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "created",
           "engineState": {},
@@ -34287,22 +33894,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "hidden.visible",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "created",
           "engineState": {},
@@ -34324,22 +33916,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "hidden.visible",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "created",
           "engineState": {},
@@ -34361,22 +33938,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "hidden.visible",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "created",
           "engineState": {},
@@ -34429,22 +33991,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "hidden.visible",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "created",
           "engineState": {},
@@ -34477,22 +34024,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "hidden.visible",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "created",
           "engineState": {},
@@ -34514,22 +34046,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "hidden.visible",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "created",
           "engineState": {},
@@ -34562,22 +34079,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "hidden.visible",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "created",
           "engineState": {},
@@ -34599,22 +34101,7 @@
           "stateChanges": [],
           "documentEvents": [],
           "engine": [],
-          "callbacks": [
-            {
-              "fn": "hidden.visible",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            }
-          ],
+          "callbacks": [],
           "reports": [],
           "status": "created",
           "engineState": {},
@@ -35800,34 +35287,6 @@
           "engine": [],
           "callbacks": [
             {
-              "fn": "live.active",
-              "args": [
-                {
-                  "documentId": "a",
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "live.accent",
-              "args": [
-                {
-                  "documentId": "a",
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
               "fn": "live.enabled",
               "args": [
                 {
@@ -35977,34 +35436,6 @@
           "engine": [],
           "callbacks": [
             {
-              "fn": "live.active",
-              "args": [
-                {
-                  "documentId": "a",
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "live.accent",
-              "args": [
-                {
-                  "documentId": "a",
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
               "fn": "live.enabled",
               "args": [
                 {
@@ -36132,7 +35563,21 @@
           "engine": [],
           "callbacks": [
             {
-              "fn": "live.active",
+              "fn": "live.enabled",
+              "args": [
+                {
+                  "documentId": "a",
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "live.visible",
               "args": [
                 {
                   "documentId": "a",
@@ -36160,21 +35605,7 @@
               ]
             },
             {
-              "fn": "live.enabled",
-              "args": [
-                {
-                  "documentId": "a",
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "live.visible",
+              "fn": "live.active",
               "args": [
                 {
                   "documentId": "a",
@@ -36675,20 +36106,6 @@
                     "third",
                     "late"
                   ]
-                }
-              ]
-            },
-            {
-              "fn": "third.visible",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
                 }
               ]
             },
@@ -37202,34 +36619,6 @@
               "fn": "b.visible:uses",
               "args": [
                 {}
-              ]
-            },
-            {
-              "fn": "c.visible",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
-              ]
-            },
-            {
-              "fn": "d.visible",
-              "args": [
-                {
-                  "documentId": null,
-                  "get": {
-                    "$function": true
-                  },
-                  "tryGet": {
-                    "$function": true
-                  }
-                }
               ]
             }
           ],

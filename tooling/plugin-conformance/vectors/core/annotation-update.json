@@ -190156,7 +190156,8 @@
                           "y": 10
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -190241,7 +190242,8 @@
                           "y": 40
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -190636,7 +190638,8 @@
                           "y": 10
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -190721,7 +190724,8 @@
                           "y": 30
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -190810,7 +190814,8 @@
                           "y": 10
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -191217,7 +191222,8 @@
                           "y": 10
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -191302,7 +191308,8 @@
                           "y": 11
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -191512,7 +191519,8 @@
                           "y": 10
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -191722,7 +191730,8 @@
                           "y": 10
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -191807,7 +191816,8 @@
                           "y": 10
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -191863,7 +191873,7 @@
                 }
               },
               {
-                "same": true,
+                "same": false,
                 "effects": [],
                 "change": {
                   "put": [],
@@ -191892,7 +191902,8 @@
                           "y": 10
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": false
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -191983,7 +191994,104 @@
                           "y": 30
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
+                  },
+                  "preview": null,
+                  "objectNumbers": [
+                    1000001,
+                    1000002,
+                    1000003,
+                    1000004,
+                    1000005,
+                    1000006,
+                    1000007,
+                    1000008,
+                    1000009,
+                    1000010,
+                    1000011,
+                    1000012,
+                    1000013,
+                    1000014,
+                    1000015,
+                    1000016,
+                    1000017,
+                    1000018,
+                    1000019,
+                    1000020,
+                    1000021,
+                    1000022,
+                    1000023,
+                    1000024,
+                    1000025,
+                    1000026,
+                    1000027,
+                    1000028,
+                    1000029,
+                    1000030,
+                    1000031,
+                    1000032
+                  ],
+                  "defaults": {},
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "alignment": true,
+                    "alignmentThresholdPx": 6,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThresholdDeg": 4
+                  },
+                  "editable": true
+                }
+              },
+              {
+                "same": false,
+                "effects": [],
+                "change": {
+                  "put": [],
+                  "drop": [],
+                  "patches": {}
+                },
+                "session": {
+                  "selected": [],
+                  "hovered": null,
+                  "draft": {
+                    "kind": "create-ink",
+                    "subtype": "ink",
+                    "preset": "ink",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "strokes": [
+                      [
+                        {
+                          "x": 10,
+                          "y": 10
+                        },
+                        {
+                          "x": 60,
+                          "y": 10
+                        }
+                      ],
+                      [
+                        {
+                          "x": 10,
+                          "y": 30
+                        },
+                        {
+                          "x": 60,
+                          "y": 32
+                        }
+                      ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -192078,102 +192186,8 @@
                           "y": 32
                         }
                       ]
-                    ]
-                  },
-                  "preview": null,
-                  "objectNumbers": [
-                    1000001,
-                    1000002,
-                    1000003,
-                    1000004,
-                    1000005,
-                    1000006,
-                    1000007,
-                    1000008,
-                    1000009,
-                    1000010,
-                    1000011,
-                    1000012,
-                    1000013,
-                    1000014,
-                    1000015,
-                    1000016,
-                    1000017,
-                    1000018,
-                    1000019,
-                    1000020,
-                    1000021,
-                    1000022,
-                    1000023,
-                    1000024,
-                    1000025,
-                    1000026,
-                    1000027,
-                    1000028,
-                    1000029,
-                    1000030,
-                    1000031,
-                    1000032
-                  ],
-                  "defaults": {},
-                  "hitMargin": 6,
-                  "editing": null,
-                  "snap": {
-                    "alignment": true,
-                    "alignmentThresholdPx": 6,
-                    "rotation": true,
-                    "rotationAngles": [
-                      0,
-                      90,
-                      180,
-                      270
                     ],
-                    "rotationThresholdDeg": 4
-                  },
-                  "editable": true
-                }
-              },
-              {
-                "same": true,
-                "effects": [],
-                "change": {
-                  "put": [],
-                  "drop": [],
-                  "patches": {}
-                },
-                "session": {
-                  "selected": [],
-                  "hovered": null,
-                  "draft": {
-                    "kind": "create-ink",
-                    "subtype": "ink",
-                    "preset": "ink",
-                    "page": {
-                      "kind": "objectNumber",
-                      "objectNumber": 1
-                    },
-                    "strokes": [
-                      [
-                        {
-                          "x": 10,
-                          "y": 10
-                        },
-                        {
-                          "x": 60,
-                          "y": 10
-                        }
-                      ],
-                      [
-                        {
-                          "x": 10,
-                          "y": 30
-                        },
-                        {
-                          "x": 60,
-                          "y": 32
-                        }
-                      ]
-                    ]
+                    "drawing": false
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -192598,7 +192612,8 @@
                           "y": 10
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -192683,7 +192698,8 @@
                           "y": 10
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -192739,7 +192755,7 @@
                 }
               },
               {
-                "same": true,
+                "same": false,
                 "effects": [],
                 "change": {
                   "put": [],
@@ -192768,7 +192784,8 @@
                           "y": 10
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": false
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -192849,7 +192866,8 @@
                           "y": 30
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -192923,7 +192941,8 @@
                       "y": 30
                     }
                   ]
-                ]
+                ],
+                "drawing": true
               },
               "preview": null,
               "objectNumbers": [
@@ -193010,7 +193029,8 @@
                           "y": 0
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -193095,7 +193115,8 @@
                           "y": 2
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -193184,7 +193205,8 @@
                           "y": 1
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -193580,6 +193602,7 @@
                         }
                       ]
                     ],
+                    "drawing": true,
                     "intent": "ink-highlight",
                     "flags": {
                       "print": false
@@ -193674,6 +193697,7 @@
                         }
                       ]
                     ],
+                    "drawing": true,
                     "intent": "ink-highlight",
                     "flags": {
                       "print": false
@@ -194219,7 +194243,8 @@
                           "y": 10
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -194275,7 +194300,7 @@
                 }
               },
               {
-                "same": true,
+                "same": false,
                 "effects": [],
                 "change": {
                   "put": [],
@@ -194300,7 +194325,8 @@
                           "y": 10
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": false
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -205582,7 +205608,8 @@
                           "y": 10
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -205667,7 +205694,8 @@
                           "y": 10
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -206062,7 +206090,8 @@
                           "y": 10
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -206118,7 +206147,7 @@
                 }
               },
               {
-                "same": true,
+                "same": false,
                 "effects": [],
                 "change": {
                   "put": [],
@@ -206143,7 +206172,8 @@
                           "y": 10
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": false
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -206230,7 +206260,8 @@
                           "y": 90
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": true
                   },
                   "preview": null,
                   "objectNumbers": [
@@ -206286,7 +206317,7 @@
                 }
               },
               {
-                "same": true,
+                "same": false,
                 "effects": [],
                 "change": {
                   "put": [],
@@ -206317,7 +206348,8 @@
                           "y": 90
                         }
                       ]
-                    ]
+                    ],
+                    "drawing": false
                   },
                   "preview": null,
                   "objectNumbers": [
