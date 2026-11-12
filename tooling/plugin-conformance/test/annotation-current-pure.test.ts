@@ -33,7 +33,20 @@ const suites = [...repository.suites, ...pure.suites] as FunctionSuite[];
 const expectedFailures = new Map<string, [string, string]>([
   ['fromDTO/no-ref', ['TypeError', "undefined (reading 'kind')"]],
   ['fromDTO/null-ref', ['TypeError', "null (reading 'kind')"]],
-  ['buildToolRegistry/unknown-base', ['Error', "tool 'nope' extends an unknown tool"]],
+  // Tool entries apply in order and extends names an earlier tool (f0bb7b047).
+  [
+    'buildToolRegistry/unknown-base',
+    ['Error', "tool 'orphan' extends 'nope', which isn't defined before it"],
+  ],
+  [
+    'buildToolRegistry/self-extends',
+    ['Error', "tool 'loop' extends 'loop', which isn't defined before it"],
+  ],
+  ['buildToolRegistry/cycle', ['Error', "tool 'a' extends 'b', which isn't defined before it"]],
+  [
+    'buildToolRegistry/extends-forward',
+    ['Error', "tool 'first' extends 'second', which isn't defined before it"],
+  ],
   ...[
     ['bad-default', 'square', 'fontSize', 'square'],
     ['bad-default-line', 'bad-line', 'icon', 'line'],
@@ -186,7 +199,7 @@ test('all843 current calls have exactly their named outcomes, immutable args and
   assert.deepEqual(observed, []);
   assert.equal(calls, 843);
   assert.equal(failures, expectedFailures.size);
-  assert.equal(failures, 24);
+  assert.equal(failures, 27);
   assert.equal(nonfiniteResults, 7);
 });
 

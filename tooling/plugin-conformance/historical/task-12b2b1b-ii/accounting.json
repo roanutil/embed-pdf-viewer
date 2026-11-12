@@ -848,10 +848,10 @@
           "after": "fixed-bytes-stamp-tool",
           "status": "retained",
           "oldCanonicalInputSha256": "1965412236590b454b8ff860e275089156888c4e61c22178919edfcde120ebf4",
-          "currentCanonicalInputSha256": "0a12ff056e2de681627fcefbbfbd3110774da04137cbcb8d3a596be31876478e",
+          "currentCanonicalInputSha256": "7f5ae7b93b8fcab442a7adbf16ef3336b2cfd1a88e27efe7d1136bc208891250",
           "task11InputDrift": false,
           "beforeCovers": "registerTool at runtime: a stamp preset with fixed bytes places on click with no picker; an upright tool counter-rotates on a rotated page. The unregister removes it (the hub’s tool too); a same-id registration replaces; an invalid one throws.",
-          "afterCovers": "tools.register at runtime: a stamp preset with fixed bytes places on click with no picker; an upright tool counter-rotates on a rotated page. The unregister removes it (the hub’s tool too); a same-id registration replaces; an invalid one throws.",
+          "afterCovers": "tools.register at runtime: a stamp preset with fixed bytes places on click with no picker; an upright tool counter-rotates on a rotated page. A same-id registration replaces; removing the first registration then leaves the replacement in place, and removing the replacement too removes the tool (the hub’s tool too); an invalid one throws.",
           "migrationNotes": "Actual current live factory, nested nouns, complete page-space engine records, stable-born refs, typed pre-execution apply confirmations and current public/session/engine outcomes replace the archived aliases and service tables.",
           "upstreamEvidence": "packages/plugin/annotation/src/tools/handlers.ts:425-535; tools/definitions.ts:508-526; write/stamps.ts:171-175"
         },

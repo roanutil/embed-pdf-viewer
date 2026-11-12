@@ -1757,7 +1757,7 @@
     {
       "slice": "ii",
       "path": "tooling/plugin-conformance/historical/task-12b2b3-ii/accounting.json",
-      "sha256": "a2e768b6c6b3478be705e23e52cf2fcd075504084e41d00ec6a20d159915e54c",
+      "sha256": "d4d01ce852b3d1d49df88e77996ecf592871ab47c739f3d856729d5f92e4632e",
       "original": 50,
       "current": 57,
       "mappings": [
@@ -3454,7 +3454,7 @@
     {
       "slice": "iii",
       "path": "tooling/plugin-conformance/historical/task-12b2b3-iii/accounting.json",
-      "sha256": "3d2c418c6774da1d00726eacd9ceb2d702a8065bafe8fd3e0c434bb681100d1f",
+      "sha256": "da12f99293f923c516809a500cf35628d98b521ff17fc0ea1966d8a7d7f67618",
       "original": 40,
       "current": 43,
       "mappings": [
@@ -4282,7 +4282,7 @@
     {
       "slice": "iv",
       "path": "tooling/plugin-conformance/historical/task-12b2b3-iv/accounting.json",
-      "sha256": "4c7ffee6644de2512fa0afdf0aded1e2c2354bd732ccdf0fe77c9ca8ae286734",
+      "sha256": "ceda3edfb1cfd30e5627177a72ec25749b5f51bd27088b68a03fb85b6f1a5f0e",
       "original": 41,
       "current": 41,
       "mappings": [
@@ -5100,7 +5100,7 @@
     {
       "slice": "v",
       "path": "tooling/plugin-conformance/historical/task-12b2b3-v/accounting.json",
-      "sha256": "ab059c6b9e98d857608102cf93f56764fdd899d27ee35872d488d5e3ead2c62e",
+      "sha256": "f5e3845b00a14d4d3015ad5335fa0fb4c1172f7423757bf247b619ddfc00f5d9",
       "original": 19,
       "current": 22,
       "mappings": [
@@ -5638,18 +5638,18 @@
     },
     {
       "path": "packages/core/annotation/src/update/draw.ts",
-      "sha256": "cea31a293232000cfbf921a2914ef19bedb395e66038b22c7a6e757b8d1bc708",
-      "commit": "5f4686dc817b9563721ba1367b7b245dfc8254f4"
+      "sha256": "6b52eadbd37dc3c4e04de828dbd556ea8cecd874e46c76be10a9c20b848114ed",
+      "commit": "59864ae011f46036c11cf3fea6da2e388033d1d5"
     },
     {
       "path": "packages/core/main/src/changes.ts",
-      "sha256": "80afb6e91f78537e26cc7a9540bbc8a756b04748689b4416683a4e8120595d4a",
-      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
+      "sha256": "9eb5e280c2433cba56ee5ceccfb3ac569c4f0f5e2f994927d5af3d31162232da",
+      "commit": "b3f1c447e441ae35975ea8fa5e6b20a51ac5ab67"
     },
     {
       "path": "packages/core/main/src/context.ts",
-      "sha256": "663cefa2bb6b2a6e5dafde02b0d2f66de5198d6dad06447a1ea06d237de0da0a",
-      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
+      "sha256": "6dac07e5ce4ec33e09e7010c0618bfa8208060d6e4801c21031dff2d6543dd5f",
+      "commit": "95fb3b5672098ab6d0a4856dcac16a5c57cd7fe1"
     },
     {
       "path": "packages/core/main/src/event-hook.ts",
@@ -5668,13 +5668,13 @@
     },
     {
       "path": "packages/core/main/src/testing.ts",
-      "sha256": "b2e4e0e9dfa76ea33421e86ad704ff2a2b1a62a6416b35151cf3f6414a56fd96",
-      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
+      "sha256": "4b71e83ac42cfb04e7cefd593ca9d020ed039080559a51642d4ad6a0ebc0d24e",
+      "commit": "95fb3b5672098ab6d0a4856dcac16a5c57cd7fe1"
     },
     {
       "path": "packages/core/main/src/types.ts",
-      "sha256": "02c533621880ca3750fcdc18053afba20490d2f2112a2ceb02d52c6c013f66e3",
-      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
+      "sha256": "06aa3921494996696e5900ececdf0773629e3e8562600d368ae2b6a092ea4bc7",
+      "commit": "b3f1c447e441ae35975ea8fa5e6b20a51ac5ab67"
     },
     {
       "path": "packages/engine/core/src/auth/scope/types.ts",
@@ -5718,8 +5718,8 @@
     },
     {
       "path": "packages/engine/core/src/engine/DocumentPagesService.ts",
-      "sha256": "c03100c1a135171f65a95f3643198fee8f1931b935ac10495246a908c770a531",
-      "commit": "b32e74e4a788045e5f4f2b91eda44365f9af5e68"
+      "sha256": "fbe56f438451c2c8f76bacc8fb81c99da03af0f99df4fea9fd786dc390b3ac03",
+      "commit": "c7f8d75ffb2ce4aeaf1dafcb17009484fa1c0cbe"
     },
     {
       "path": "packages/engine/core/src/engine/LocalDocumentHandle.ts",
@@ -5768,13 +5768,13 @@
     },
     {
       "path": "packages/engine/core/src/mutation/AnnotationMutationResults.ts",
-      "sha256": "a08ca9ce77bdd509448a0885a3796f87339401ae019f9014e99f96bc8fab37b8",
-      "commit": "26a68650294f31c471948f1d5b83d87c130eecb6"
+      "sha256": "9f2b137be03f2a2134e7a068b87102df6034e87472248efb985eada1a13f2821",
+      "commit": "756f8e56b9a2a47be14150c4b65d25f05ea60b72"
     },
     {
       "path": "packages/engine/core/src/mutation/MutationMeta.ts",
-      "sha256": "48736f145b99052fcd4f92d56fcbb443ab9bc9d5173f7def06a6fda0922930ff",
-      "commit": "5b7fed8942c319370f57087fa2f390ccca0fa675"
+      "sha256": "dd12d6f570168f0a868b906c46c85b7b05fa7c166868dc12b3bdde66df39f641",
+      "commit": "65b0f137e2c35b95394adbcbab64f0f56fe6c128"
     },
     {
       "path": "packages/engine/core/src/mutation/PageFlattenResult.ts",
@@ -5828,18 +5828,18 @@
     },
     {
       "path": "packages/plugin/annotation/src/contract.ts",
-      "sha256": "0568f9081e3afaa41dd92495ebcb7873dadca2b9db9698d4721bcf7615c96927",
-      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
+      "sha256": "a6226088f9057e4c55abad36c2e51928ebf246c21b26f1405bea138390758fcf",
+      "commit": "1481e455665649afaeee9f69cd743725a0bf976c"
     },
     {
       "path": "packages/plugin/annotation/src/host-contract.ts",
-      "sha256": "88e76a213804f04330a4ca19f6707c98e52df16377250210a76335a4aca4e088",
-      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
+      "sha256": "84059c05e4d777fe79385e868d014d5ca07ab10bb73c40b55c545fe673c27cb3",
+      "commit": "a390171cc89f6ec5181545b9505d3ba04794c9ea"
     },
     {
       "path": "packages/plugin/annotation/src/services/authority.ts",
-      "sha256": "6c264853e69fd139efb94e350c1aac40476e849486f62092a18c998e92563112",
-      "commit": "e2ee5215f43d6ef03484ed07af0bfc69a365e6db"
+      "sha256": "4047af9bd20d1ad22149ff7871e1dfae6ccd0e509665cbe5a8803af4d4b07863",
+      "commit": "1481e455665649afaeee9f69cd743725a0bf976c"
     },
     {
       "path": "packages/plugin/annotation/src/services/file-picker.ts",
@@ -5848,13 +5848,13 @@
     },
     {
       "path": "packages/plugin/annotation/src/tools/definitions.ts",
-      "sha256": "326a59696eaa2f53de6c868d69b909841bacd566c71e69a4f3341db01c71af1d",
-      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
+      "sha256": "70ad6ad51c67324308a79828cce874606af2ecfd1fb489183283d92774445203",
+      "commit": "f0bb7b047ec2c699c67408a7d8c3ec1470e4aa53"
     },
     {
       "path": "packages/plugin/annotation/src/write/crud.ts",
-      "sha256": "a053081381bd2afeae000583b9767a9cde80a86bf7320e26f2d92cc2af23f619",
-      "commit": "5f4686dc817b9563721ba1367b7b245dfc8254f4"
+      "sha256": "52ba472fde0dcc1c1e3ac0d5ab8f2fb915afcbd60781feca0d3853a02adb5e4b",
+      "commit": "1b0f0975ebb2d1e1d9984a702ecf1f20673d0039"
     },
     {
       "path": "packages/plugin/annotation/src/write/markup.ts",
@@ -5863,8 +5863,8 @@
     },
     {
       "path": "packages/plugin/annotation/src/write/measurement.ts",
-      "sha256": "13b11cb813df8edda551a0ba8bc5cbbd142113edb19ac381d39d67f555b0553b",
-      "commit": "b979f2aef00ca2cc14ba6d84d659e97a6b7a7db7"
+      "sha256": "4a4df4fe7c19541e88f0224a39e8bbc89923a69abdd536d0d31071089835025f",
+      "commit": "8bc6546e558b60331274af0e06a76e1d7caf3de4"
     },
     {
       "path": "packages/plugin/annotation/src/write/ops.ts",
@@ -5883,13 +5883,13 @@
     },
     {
       "path": "packages/plugin/measurement/src/contract.ts",
-      "sha256": "e09b1c47bd40440696b87ef7a072ff63ebd1c5e8dbfe923ce43bd8ce9c191052",
-      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
+      "sha256": "c1536adbc7a3d112906057a68240511e0b4b5eaa20d49d5e850af63348b16dd7",
+      "commit": "8bc6546e558b60331274af0e06a76e1d7caf3de4"
     },
     {
       "path": "packages/plugin/measurement/src/model.ts",
-      "sha256": "2a49d386fa8183d3520d648223ae83b0772d04ebee6ac5425725f8d4590ce195",
-      "commit": "7c0aaff8d7b17a2dfbe73fe2a64ec359ecd75f3a"
+      "sha256": "b26d7c0056488e3a8d1fc63c8f109a1831e0296881132e7bfc4fa831182dcc9b",
+      "commit": "8bc6546e558b60331274af0e06a76e1d7caf3de4"
     },
     {
       "path": "packages/plugin/measurement/src/read/scale.ts",
@@ -5913,8 +5913,8 @@
     },
     {
       "path": "packages/plugin/measurement/src/sync/viewports.ts",
-      "sha256": "bf5aa52a9f027ed623c219824754c2cc1ab3a16f8d8e547abaaddc0728143580",
-      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
+      "sha256": "a1f97f6ab574fd8532f355fb6782698c7f9e9bf7faf9932e958ea2a2f5c827a4",
+      "commit": "8bc6546e558b60331274af0e06a76e1d7caf3de4"
     },
     {
       "path": "packages/plugin/measurement/src/write/calibration.ts",
@@ -5928,8 +5928,8 @@
     },
     {
       "path": "packages/plugin/measurement/src/write/scale.ts",
-      "sha256": "de1faffa8cd46ea01540dc120c88347d2efefb659891f50b5e2d5c1603443957",
-      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+      "sha256": "5c7b49ddb573bb6c43061b92c3e9475bb92d8fbd50d1112890c4d11d42c99293",
+      "commit": "8bc6546e558b60331274af0e06a76e1d7caf3de4"
     },
     {
       "path": "packages/plugin/redaction/src/model.ts",

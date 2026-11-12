@@ -35,9 +35,8 @@ export const expectedRefusals: Readonly<
     [14, 'settled', ['a stamp must be PNG, JPEG, or one-page PDF bytes']],
     [15, 'settled', ['page 7 is not in this document']],
   ],
-  'remeasure-page': [[2, 'settled', ['failed:1', 'intended stale measurement']]],
   'remeasure-without-authority-and-after-errors': [
-    [4, 'settled', ['the annotations of this document are not loaded']],
+    [5, 'outcome', ['the annotations of this document are not loaded']],
   ],
   'v3-document-events': [[5, 'reports', ['intended busy']]],
   'awaited-writes-and-pending-text': [[3, 'settled', ['intended locked rotation']]],

@@ -725,7 +725,11 @@ test('bundle interchange carries complete current fields and widget rows, maps i
   assert.equal(imported.name, 'imported');
   assert.equal(imported.value, 'Imported');
   assert.deepEqual(imported.widgets, []);
-  assert.deepEqual(array(engineImports[0]!.args)[1], { attribution: 'stamp' });
+  // An import is one change to undo, so it carries its opId (b3f1c447e).
+  assert.deepEqual(array(engineImports[0]!.args)[1], {
+    attribution: 'stamp',
+    opId: '00000000-0000-7000-8000-000000000001',
+  });
 });
 
 import { readFile } from 'node:fs/promises';

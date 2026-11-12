@@ -598,13 +598,13 @@
     },
     {
       "path": "packages/core/main/src/types.ts",
-      "sha256": "02c533621880ca3750fcdc18053afba20490d2f2112a2ceb02d52c6c013f66e3",
-      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
+      "sha256": "06aa3921494996696e5900ececdf0773629e3e8562600d368ae2b6a092ea4bc7",
+      "commit": "b3f1c447e441ae35975ea8fa5e6b20a51ac5ab67"
     },
     {
       "path": "packages/core/main/src/testing.ts",
-      "sha256": "b2e4e0e9dfa76ea33421e86ad704ff2a2b1a62a6416b35151cf3f6414a56fd96",
-      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
+      "sha256": "4b71e83ac42cfb04e7cefd593ca9d020ed039080559a51642d4ad6a0ebc0d24e",
+      "commit": "95fb3b5672098ab6d0a4856dcac16a5c57cd7fe1"
     },
     {
       "path": "packages/plugin/stamp/src/write/marks.ts",
@@ -633,8 +633,8 @@
     },
     {
       "path": "packages/plugin/annotation/src/contract.ts",
-      "sha256": "0568f9081e3afaa41dd92495ebcb7873dadca2b9db9698d4721bcf7615c96927",
-      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
+      "sha256": "a6226088f9057e4c55abad36c2e51928ebf246c21b26f1405bea138390758fcf",
+      "commit": "1481e455665649afaeee9f69cd743725a0bf976c"
     },
     {
       "path": "packages/plugin/annotation/src/write/ops.ts",
@@ -643,8 +643,8 @@
     },
     {
       "path": "packages/core/main/src/context.ts",
-      "sha256": "663cefa2bb6b2a6e5dafde02b0d2f66de5198d6dad06447a1ea06d237de0da0a",
-      "commit": "2ce3f7bc57bf98998735c87e6393ee3d52d4be3f"
+      "sha256": "6dac07e5ce4ec33e09e7010c0618bfa8208060d6e4801c21031dff2d6543dd5f",
+      "commit": "95fb3b5672098ab6d0a4856dcac16a5c57cd7fe1"
     },
     {
       "path": "packages/core/main/src/serial-queue.ts",
@@ -653,8 +653,8 @@
     },
     {
       "path": "packages/core/main/src/changes.ts",
-      "sha256": "80afb6e91f78537e26cc7a9540bbc8a756b04748689b4416683a4e8120595d4a",
-      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
+      "sha256": "9eb5e280c2433cba56ee5ceccfb3ac569c4f0f5e2f994927d5af3d31162232da",
+      "commit": "b3f1c447e441ae35975ea8fa5e6b20a51ac5ab67"
     },
     {
       "path": "packages/engine/core/src/resource/BinarySource.ts",
@@ -663,13 +663,13 @@
     },
     {
       "path": "packages/engine/core/src/mutation/MutationMeta.ts",
-      "sha256": "48736f145b99052fcd4f92d56fcbb443ab9bc9d5173f7def06a6fda0922930ff",
-      "commit": "5b7fed8942c319370f57087fa2f390ccca0fa675"
+      "sha256": "dd12d6f570168f0a868b906c46c85b7b05fa7c166868dc12b3bdde66df39f641",
+      "commit": "65b0f137e2c35b95394adbcbab64f0f56fe6c128"
     },
     {
       "path": "packages/engine/core/src/mutation/AnnotationMutationResults.ts",
-      "sha256": "a08ca9ce77bdd509448a0885a3796f87339401ae019f9014e99f96bc8fab37b8",
-      "commit": "26a68650294f31c471948f1d5b83d87c130eecb6"
+      "sha256": "9f2b137be03f2a2134e7a068b87102df6034e87472248efb985eada1a13f2821",
+      "commit": "756f8e56b9a2a47be14150c4b65d25f05ea60b72"
     },
     {
       "path": "packages/engine/core/src/mutation/PageNameInput.ts",
@@ -683,8 +683,8 @@
     },
     {
       "path": "packages/engine/core/src/engine/DocumentPagesService.ts",
-      "sha256": "c03100c1a135171f65a95f3643198fee8f1931b935ac10495246a908c770a531",
-      "commit": "b32e74e4a788045e5f4f2b91eda44365f9af5e68"
+      "sha256": "fbe56f438451c2c8f76bacc8fb81c99da03af0f99df4fea9fd786dc390b3ac03",
+      "commit": "c7f8d75ffb2ce4aeaf1dafcb17009484fa1c0cbe"
     },
     {
       "path": "packages/plugin/actions/src/scripting/environment.ts",
@@ -718,8 +718,8 @@
     },
     {
       "path": "packages/plugin/annotation/src/host-contract.ts",
-      "sha256": "88e76a213804f04330a4ca19f6707c98e52df16377250210a76335a4aca4e088",
-      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
+      "sha256": "84059c05e4d777fe79385e868d014d5ca07ab10bb73c40b55c545fe673c27cb3",
+      "commit": "a390171cc89f6ec5181545b9505d3ba04794c9ea"
     },
     {
       "path": "packages/plugin/form/src/scripting/controller.ts",

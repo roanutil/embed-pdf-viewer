@@ -109,8 +109,8 @@
     "src/suites/annotation-current-fixtures.ts": "b563a2d1f0964b2ed5e4233b8306cbd5007aefcc21660333425d3091db8c551d",
     "src/suites/annotation-live-fixtures.ts": "01cdbff63619e5ed16b8a66e95be265fd54e78750ccd23e1c95c672279856fbd",
     "src/suites/annotation-reconciliation.ts": "c3c4c80471e59c79e2508ed30fceb3461d995e7db3f8d3d55ab1b65a18c5244a",
-    "test/annotation-live.test.ts": "2fd472c6cd03ac041ce5b556848b0c548ca2d7dd5122dbe06a40269d6339fede",
-    "test/annotation-live-refusals.ts": "8532b8b8e2885426fc3c66555f6fb11cc0008ae4f4b27596aeb20fb2e05ff3a5",
+    "test/annotation-live.test.ts": "2fce3e9c1a0f0b7dfe10cd08278b90473e974b470d6c7347aac64615f196ab64",
+    "test/annotation-live-refusals.ts": "90871f1902fce7c06ff303bcdf2882e57805ecabac0f4f9ac516c8d81738f6a9",
     "historical/task-12b2b1b-i/reconciliation.json": "51e72ed0a4723edf69341ab9240ca23803c25144ab5a1d06832d060ac619cdc5"
   },
   "legacyConsumers": [

@@ -513,7 +513,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c10/preservation.json",
-      "sha256": "b56307bfe2d007f3fa4f66244eec804898a0edc5ee98a94df9788603d5d0bdbe"
+      "sha256": "e15bc75a64e6b6641d0ceff10221d07c107ea57f6c2b04efd421203aea958f71"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c10/red.out",
@@ -1053,7 +1053,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c5/preservation.json",
-      "sha256": "41a00c2528a97282a83cdb1513eab5970a85f0bc459a93c22c0aae11ac86f0f2"
+      "sha256": "2ba1ba6eed70576f16f562e5fc059d4881f2580e683d108affeac4652ec4dea0"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c5/red.out",
@@ -1181,7 +1181,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c6/fix1-preservation.json",
-      "sha256": "3e2ad7f6c31ec78d774b0f3fd7224d5c466d0a90d90d1eb8285220f6d6b26a46"
+      "sha256": "2c1ae5ad8258c3bc56b6acf07079d6431613f4589384c750c91eb547760a65ba"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c6/fix1-preservation.out",
@@ -1289,7 +1289,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c6/preservation.json",
-      "sha256": "ac5c59f3a5a4113cd2c293ed2337c0b7eec906d401fa79c023ffdfcdb6186960"
+      "sha256": "afa2a9627e17a34aac239cfa44c0e10a6b2b09d267e9a906b0765a455c22a2b8"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c6/red.out",
@@ -1525,7 +1525,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c7/preservation.json",
-      "sha256": "1c6135f16d544649d6522bd4884ae831d4bc264eff531452fb0b189f337721f9"
+      "sha256": "80a4d3a74c41c2a7c6a8a6c5f37a155dc53d9d7780a2a8f8696ce58a8adb096d"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c7/red.out",
@@ -1605,7 +1605,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c8/fix1/audit.json",
-      "sha256": "78ff6ea4a0565a184e981b35f2f9feea512835d7b95d3a741b7e8f268fa9a19b"
+      "sha256": "c98fde109d2541b323c4c31a4711e43ac4d8366949539cf5b186c43c9edc1b31"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c8/fix1/audit.out",
@@ -1633,7 +1633,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c8/fix1/integrity.json",
-      "sha256": "722f215ae6237f4b0edd87f3eb3207ccc945e32bd44e58e0c605b989045d07f8"
+      "sha256": "104df8bf22f1609e65f28af0d948127db68b45099b22c7e981950a09e7fab564"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c8/fix1/layout-tests.out",
@@ -1761,7 +1761,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c8/preservation.json",
-      "sha256": "6050c324272b8caa63ee913e2d4c5234e35960f38f6a98c64bbc2f22951ea5c6"
+      "sha256": "11677957a9f9e1c3e81d41b1290895276bd5b505665bea020b5d84268be25c4b"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c8/red.out.gz",
@@ -1913,7 +1913,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c9/preservation.json",
-      "sha256": "db16ffd8b2aa84a463d83ff83013dd6859ce29350bcfd52b51a3e410cbc9106b"
+      "sha256": "6bb97c334d54d5bb56ba3d5269d380cb341febfa29e6248a6846b0705e35b899"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c9/red.out",
@@ -2381,7 +2381,7 @@
     },
     {
       "path": "tooling/plugin-conformance/test/annotation-live-refusals.ts",
-      "sha256": "8532b8b8e2885426fc3c66555f6fb11cc0008ae4f4b27596aeb20fb2e05ff3a5"
+      "sha256": "90871f1902fce7c06ff303bcdf2882e57805ecabac0f4f9ac516c8d81738f6a9"
     },
     {
       "path": "tooling/plugin-conformance/test/annotation-live.test.ts",

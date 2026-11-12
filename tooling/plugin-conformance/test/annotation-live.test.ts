@@ -526,29 +526,42 @@ test('measurement drafts and recalibration assert successful metric labels and e
     .filter((c) => c.fn === 'captured');
   assert.equal(captured.length, 1);
   assert.equal((captured[0]!.args[0] as { tool: string }).tool, 'calibrate');
+  // stageRemeasure (8bc6546e5) stages the page's updates in one change and reports synchronously.
   const report = read<{
     updated: unknown[];
     skipped: { reason: string }[];
-    failed: { ref: unknown }[];
-  }>('remeasure-page', 'remeasurePage', 0);
-  assert.deepEqual(report.updated, [objRef(1)]);
+    failed: unknown[];
+  }>('remeasure-page', 'stageRemeasure', 0);
+  assert.deepEqual(report.updated, [objRef(1), objRef(6)]);
   assert.deepEqual(
     report.skipped.map((x) => x.reason),
     ['locked', 'foreign-measure'],
   );
+  assert.deepEqual(report.failed, []);
+  // The engine refused that change: every staged dimension is back; the next change lands.
+  assert.equal(read<Annotation[]>('remeasure-page', 'list', 0)[0]!.contents, '2.00 m');
+  assert.equal(read<Annotation[]>('remeasure-page', 'list', 1)[0]!.contents, '2.00 ft');
+  const unreadable = read<{ skipped: { reason: string }[] }>('remeasure-page', 'stageRemeasure', 2);
   assert.deepEqual(
-    report.failed.map((x) => x.ref),
-    [objRef(6)],
+    unreadable.skipped.map((x) => x.reason),
+    ['unavailable'],
   );
   const denied = read<{ skipped: { reason: string }[] }>(
     'remeasure-without-authority-and-after-errors',
-    'remeasurePage',
+    'stageRemeasure',
     0,
   );
   assert.deepEqual(
     denied.skipped.map((x) => x.reason),
     ['no-authority'],
   );
+  const unloaded = read<{ updated: unknown[]; error?: { message: string } }>(
+    'remeasure-without-authority-and-after-errors',
+    'stageRemeasure',
+    1,
+  );
+  assert.deepEqual(unloaded.updated, []);
+  assert.equal(unloaded.error?.message, 'the annotations of this document are not loaded');
   assert.equal(read('calibration-needs-modify', 'draft.get', 0), null);
   assert.equal(session('calibration-needs-modify', 6).draft?.kind, 'create-rect');
 });

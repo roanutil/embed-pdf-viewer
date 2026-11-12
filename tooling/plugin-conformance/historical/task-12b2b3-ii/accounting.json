@@ -1958,8 +1958,8 @@
     },
     {
       "path": "packages/plugin/annotation/src/tools/definitions.ts",
-      "sha256": "326a59696eaa2f53de6c868d69b909841bacd566c71e69a4f3341db01c71af1d",
-      "commit": "fbbb417a6a4a8498e24e9dc734fc389812b55387"
+      "sha256": "70ad6ad51c67324308a79828cce874606af2ecfd1fb489183283d92774445203",
+      "commit": "f0bb7b047ec2c699c67408a7d8c3ec1470e4aa53"
     },
     {
       "path": "packages/plugin/annotation/src/write/markup.ts",
@@ -1968,8 +1968,8 @@
     },
     {
       "path": "packages/plugin/annotation/src/services/authority.ts",
-      "sha256": "6c264853e69fd139efb94e350c1aac40476e849486f62092a18c998e92563112",
-      "commit": "e2ee5215f43d6ef03484ed07af0bfc69a365e6db"
+      "sha256": "4047af9bd20d1ad22149ff7871e1dfae6ccd0e509665cbe5a8803af4d4b07863",
+      "commit": "1481e455665649afaeee9f69cd743725a0bf976c"
     },
     {
       "path": "packages/engine/core/src/identity/AnnotationRef.ts",

@@ -24,7 +24,7 @@
     {
       "owner": "mirror",
       "path": "packages/core/main/src/page-mirror.ts",
-      "sha256": "7c268f1b676650ea1fe7b4f5d7f881cf341232c9ec626ae4313c0f909abb63f4"
+      "sha256": "5ae9ce402609368a13f95f673ddbb7eb32cb60698a5ec750b456f12a08f559a6"
     },
     {
       "owner": "eventHook",
@@ -39,7 +39,7 @@
     {
       "owner": "annotation",
       "path": "packages/plugin/annotation/src/controller.ts",
-      "sha256": "c70437dfa0fcc8c872c3985f5f1225d213951f551eb8b5ab0f2717d77d1e9283"
+      "sha256": "960c78bde1a76911b18c662c02e9d7cbfae2a4994280a725e861f921768322ca"
     },
     {
       "owner": "pageRef",
@@ -54,7 +54,7 @@
     {
       "owner": "changes",
       "path": "packages/engine/core/src/mutation/Change.ts",
-      "sha256": "18ad383168baedea6919c22f53c101738da8fe7547cb640daea1f0fe31700cfe"
+      "sha256": "28cd1772bb19bb4eba9be509dce0da0b0f7ddc40d0ec37b318a973148f472758"
     },
     {
       "owner": "actions",

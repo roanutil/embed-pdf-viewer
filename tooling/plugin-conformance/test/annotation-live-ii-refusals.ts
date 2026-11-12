@@ -47,6 +47,6 @@ export const expectedRefusals: Readonly<
       'callbacks',
       ['console.error:["[annotation]","a stamp must be PNG, JPEG, or one-page PDF bytes"]'],
     ],
-    [20, 'outcome', ["[annotation] tool 'bad' does not support default 'fontSize' for 'square'"]],
+    [22, 'outcome', ["[annotation] tool 'bad' does not support default 'fontSize' for 'square'"]],
   ],
 };
