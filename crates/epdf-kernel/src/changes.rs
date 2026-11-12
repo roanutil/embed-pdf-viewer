@@ -571,6 +571,12 @@ fn named_by(change: &Value) -> HashSet<u64> {
                         out.extend(ns.iter().filter_map(Value::as_u64));
                     }
                 }
+                // A copy names the object numbers its copies take.
+                "annotations.copy" | "forms.copy" => {
+                    if let Some(ns) = op["objectNumbers"].as_array() {
+                        out.extend(ns.iter().filter_map(Value::as_u64));
+                    }
+                }
                 "pages.insertBlank" | "pages.insert" | "pages.copy" => {
                     if let Some(ns) = op["objectNumbers"].as_array() {
                         out.extend(ns.iter().filter_map(Value::as_u64));
