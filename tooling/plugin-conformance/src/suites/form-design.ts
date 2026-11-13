@@ -877,11 +877,19 @@ const cases: ScenarioCase[] = [
     ],
     snapshot(
       [EMAIL, GROUP],
-      [row(107, EMAIL.ref, 1, BOX), row(109, GROUP.ref, 1, BOX), row(110, GROUP.ref, 1, { ...BOX, x: 200 })],
+      [
+        row(107, EMAIL.ref, 1, BOX),
+        row(109, GROUP.ref, 1, BOX, { fieldKind: 'radio' }),
+        row(110, GROUP.ref, 1, { ...BOX, x: 200 }, { fieldKind: 'radio' }),
+      ],
     ),
     [
       apply({ ...copyAnswer(1, [EMAIL_COPY], [row(10002, EMAIL_COPY.ref, 1, MOVED)], [EMAIL]), defer: 'copy' } as never),
-      apply(fieldAnswer('forms.addWidget', 2, GROUP_GROWN, [row(10003, GROUP.ref, 1, BOX)])),
+      apply(
+        fieldAnswer('forms.addWidget', 2, GROUP_GROWN, [
+          row(10003, GROUP.ref, 1, BOX, { fieldKind: 'radio' }),
+        ]),
+      ),
     ],
   ),
 ];
