@@ -389229,7 +389229,7 @@
     },
     {
       "name": "register-over-a-tool-and-take-it-back",
-      "covers": "tools.register is one more entry after the setting's (f0bb7b047): a registration with a taken id changes that tool, defaults merged over its own. Its remover puts back the tool it replaced, defaults included (replaceDefaults), in any removal order: removing the older of two registrations of one id hands what it replaced to the newer, and removing the newer then puts back the built-in, on the hub too. A remover called twice changes nothing. A registration can extend a tool registered before it, and keeps its copy when that one goes.",
+      "covers": "tools.register is one more entry after the setting's (f0bb7b047): a registration with a taken id changes that tool, defaults merged over its own. Its remover puts back the tool it replaced, defaults included (replaceDefaults), in any removal order: removing the older of two registrations of one id hands what it replaced to the newer, and removing the newer then puts back the built-in, on the hub too. A remover called twice changes nothing. A registration can extend a tool registered before it, and keeps its copy when that one goes. A tool extending one with its own afterCreate registers (the merged afterCreate is not printed: tools.get leaves it out).",
       "plugins": [
         {
           "factory": "interaction"
@@ -389784,6 +389784,51 @@
           "method": "tools.getDefaults",
           "args": [
             "fine-pen"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "annotation",
+            "doc": "a"
+          },
+          "method": "tools.register",
+          "args": [
+            {
+              "id": "quick-note",
+              "extends": "note",
+              "afterCreate": {
+                "select": false
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "annotation",
+            "doc": "a"
+          },
+          "method": "tools.register",
+          "args": [
+            {
+              "id": "quick-note-2",
+              "extends": "quick-note",
+              "afterCreate": {
+                "tool": "pointer"
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "annotation",
+            "doc": "a"
+          },
+          "method": "tools.get",
+          "args": [
+            "quick-note-2"
           ]
         },
         {
@@ -399050,7 +399095,309 @@
         },
         {
           "settled": [],
-          "stateChanges": [],
+          "stateChanges": [
+            {
+              "slice": "annotation::a",
+              "previous": {
+                "session": {
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "objectNumbers": [],
+                  "defaults": {
+                    "square": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "line-dimension",
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      },
+                      "captionEnabled": true,
+                      "captionPosition": "inline",
+                      "leader": {
+                        "length": 12,
+                        "extension": 5,
+                        "offset": 0
+                      }
+                    },
+                    "calibrate": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polyline-dimension",
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      },
+                      "captionEnabled": true
+                    },
+                    "area": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polygon-dimension",
+                      "captionEnabled": true
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply",
+                      "intent": "ink-highlight"
+                    },
+                    "free-text": {
+                      "color": "#e5484d",
+                      "strokeWidth": 2,
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6,
+                      "lineEnding": "open-arrow"
+                    },
+                    "highlight": {
+                      "color": "#ffe16a",
+                      "blendMode": "multiply"
+                    },
+                    "redact": {
+                      "color": "#e44234",
+                      "interiorColor": "#000000",
+                      "fontSize": 14,
+                      "fontColor": "#ffffff",
+                      "opacity": 1
+                    },
+                    "underline": {
+                      "color": "#ef4444"
+                    },
+                    "strikeout": {
+                      "color": "#ef4444"
+                    },
+                    "squiggly": {
+                      "color": "#ef4444"
+                    },
+                    "caret": {
+                      "color": "#ef4444"
+                    },
+                    "replace-text": {
+                      "color": "#ef4444"
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "fine-pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 1,
+                      "blendMode": "normal",
+                      "opacity": 0.5
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "alignment": true,
+                    "alignmentThresholdPx": 6,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThresholdDeg": 4
+                  },
+                  "editable": true
+                },
+                "vector": {},
+                "ghostAt": null,
+                "placing": null,
+                "textSelection": null
+              },
+              "next": {
+                "session": {
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "objectNumbers": [],
+                  "defaults": {
+                    "square": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "line-dimension",
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      },
+                      "captionEnabled": true,
+                      "captionPosition": "inline",
+                      "leader": {
+                        "length": 12,
+                        "extension": 5,
+                        "offset": 0
+                      }
+                    },
+                    "calibrate": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polyline-dimension",
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      },
+                      "captionEnabled": true
+                    },
+                    "area": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polygon-dimension",
+                      "captionEnabled": true
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply",
+                      "intent": "ink-highlight"
+                    },
+                    "free-text": {
+                      "color": "#e5484d",
+                      "strokeWidth": 2,
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6,
+                      "lineEnding": "open-arrow"
+                    },
+                    "highlight": {
+                      "color": "#ffe16a",
+                      "blendMode": "multiply"
+                    },
+                    "redact": {
+                      "color": "#e44234",
+                      "interiorColor": "#000000",
+                      "fontSize": 14,
+                      "fontColor": "#ffffff",
+                      "opacity": 1
+                    },
+                    "underline": {
+                      "color": "#ef4444"
+                    },
+                    "strikeout": {
+                      "color": "#ef4444"
+                    },
+                    "squiggly": {
+                      "color": "#ef4444"
+                    },
+                    "caret": {
+                      "color": "#ef4444"
+                    },
+                    "replace-text": {
+                      "color": "#ef4444"
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "fine-pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 1,
+                      "blendMode": "normal",
+                      "opacity": 0.5
+                    },
+                    "quick-note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "alignment": true,
+                    "alignmentThresholdPx": 6,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThresholdDeg": 4
+                  },
+                  "editable": true
+                },
+                "vector": {},
+                "ghostAt": null,
+                "placing": null,
+                "textSelection": null
+              }
+            }
+          ],
           "documentEvents": [],
           "engine": [],
           "callbacks": [],
@@ -399062,7 +399409,9 @@
             }
           },
           "outcome": {
-            "returned": []
+            "returned": {
+              "$ref": 3
+            }
           },
           "state": {
             "plugins": {
@@ -399190,6 +399539,690 @@
                       "strokeWidth": 1,
                       "blendMode": "normal",
                       "opacity": 0.5
+                    },
+                    "quick-note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "alignment": true,
+                    "alignmentThresholdPx": 6,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThresholdDeg": 4
+                  },
+                  "editable": true
+                },
+                "vector": {},
+                "ghostAt": null,
+                "placing": null,
+                "textSelection": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [
+            {
+              "slice": "annotation::a",
+              "previous": {
+                "session": {
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "objectNumbers": [],
+                  "defaults": {
+                    "square": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "line-dimension",
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      },
+                      "captionEnabled": true,
+                      "captionPosition": "inline",
+                      "leader": {
+                        "length": 12,
+                        "extension": 5,
+                        "offset": 0
+                      }
+                    },
+                    "calibrate": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polyline-dimension",
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      },
+                      "captionEnabled": true
+                    },
+                    "area": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polygon-dimension",
+                      "captionEnabled": true
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply",
+                      "intent": "ink-highlight"
+                    },
+                    "free-text": {
+                      "color": "#e5484d",
+                      "strokeWidth": 2,
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6,
+                      "lineEnding": "open-arrow"
+                    },
+                    "highlight": {
+                      "color": "#ffe16a",
+                      "blendMode": "multiply"
+                    },
+                    "redact": {
+                      "color": "#e44234",
+                      "interiorColor": "#000000",
+                      "fontSize": 14,
+                      "fontColor": "#ffffff",
+                      "opacity": 1
+                    },
+                    "underline": {
+                      "color": "#ef4444"
+                    },
+                    "strikeout": {
+                      "color": "#ef4444"
+                    },
+                    "squiggly": {
+                      "color": "#ef4444"
+                    },
+                    "caret": {
+                      "color": "#ef4444"
+                    },
+                    "replace-text": {
+                      "color": "#ef4444"
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "fine-pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 1,
+                      "blendMode": "normal",
+                      "opacity": 0.5
+                    },
+                    "quick-note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "alignment": true,
+                    "alignmentThresholdPx": 6,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThresholdDeg": 4
+                  },
+                  "editable": true
+                },
+                "vector": {},
+                "ghostAt": null,
+                "placing": null,
+                "textSelection": null
+              },
+              "next": {
+                "session": {
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "objectNumbers": [],
+                  "defaults": {
+                    "square": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "line-dimension",
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      },
+                      "captionEnabled": true,
+                      "captionPosition": "inline",
+                      "leader": {
+                        "length": 12,
+                        "extension": 5,
+                        "offset": 0
+                      }
+                    },
+                    "calibrate": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polyline-dimension",
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      },
+                      "captionEnabled": true
+                    },
+                    "area": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polygon-dimension",
+                      "captionEnabled": true
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply",
+                      "intent": "ink-highlight"
+                    },
+                    "free-text": {
+                      "color": "#e5484d",
+                      "strokeWidth": 2,
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6,
+                      "lineEnding": "open-arrow"
+                    },
+                    "highlight": {
+                      "color": "#ffe16a",
+                      "blendMode": "multiply"
+                    },
+                    "redact": {
+                      "color": "#e44234",
+                      "interiorColor": "#000000",
+                      "fontSize": 14,
+                      "fontColor": "#ffffff",
+                      "opacity": 1
+                    },
+                    "underline": {
+                      "color": "#ef4444"
+                    },
+                    "strikeout": {
+                      "color": "#ef4444"
+                    },
+                    "squiggly": {
+                      "color": "#ef4444"
+                    },
+                    "caret": {
+                      "color": "#ef4444"
+                    },
+                    "replace-text": {
+                      "color": "#ef4444"
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "fine-pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 1,
+                      "blendMode": "normal",
+                      "opacity": 0.5
+                    },
+                    "quick-note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "quick-note-2": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "alignment": true,
+                    "alignmentThresholdPx": 6,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThresholdDeg": 4
+                  },
+                  "editable": true
+                },
+                "vector": {},
+                "ghostAt": null,
+                "placing": null,
+                "textSelection": null
+              }
+            }
+          ],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$ref": 4
+            }
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "session": {
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "objectNumbers": [],
+                  "defaults": {
+                    "square": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "line-dimension",
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      },
+                      "captionEnabled": true,
+                      "captionPosition": "inline",
+                      "leader": {
+                        "length": 12,
+                        "extension": 5,
+                        "offset": 0
+                      }
+                    },
+                    "calibrate": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polyline-dimension",
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      },
+                      "captionEnabled": true
+                    },
+                    "area": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polygon-dimension",
+                      "captionEnabled": true
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply",
+                      "intent": "ink-highlight"
+                    },
+                    "free-text": {
+                      "color": "#e5484d",
+                      "strokeWidth": 2,
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6,
+                      "lineEnding": "open-arrow"
+                    },
+                    "highlight": {
+                      "color": "#ffe16a",
+                      "blendMode": "multiply"
+                    },
+                    "redact": {
+                      "color": "#e44234",
+                      "interiorColor": "#000000",
+                      "fontSize": 14,
+                      "fontColor": "#ffffff",
+                      "opacity": 1
+                    },
+                    "underline": {
+                      "color": "#ef4444"
+                    },
+                    "strikeout": {
+                      "color": "#ef4444"
+                    },
+                    "squiggly": {
+                      "color": "#ef4444"
+                    },
+                    "caret": {
+                      "color": "#ef4444"
+                    },
+                    "replace-text": {
+                      "color": "#ef4444"
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "fine-pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 1,
+                      "blendMode": "normal",
+                      "opacity": 0.5
+                    },
+                    "quick-note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "quick-note-2": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "alignment": true,
+                    "alignmentThresholdPx": 6,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThresholdDeg": 4
+                  },
+                  "editable": true
+                },
+                "vector": {},
+                "ghostAt": null,
+                "placing": null,
+                "textSelection": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": {
+              "id": "quick-note-2",
+              "subtype": "text",
+              "preset": "quick-note-2",
+              "cursor": "crosshair",
+              "enables": [
+                "annotation-place",
+                "annotation-edit"
+              ],
+              "defaults": {
+                "icon": "comment",
+                "color": "#facc15"
+              },
+              "ghost": {
+                "opacity": 0.5
+              }
+            }
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "session": {
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "objectNumbers": [],
+                  "defaults": {
+                    "square": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "line-dimension",
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      },
+                      "captionEnabled": true,
+                      "captionPosition": "inline",
+                      "leader": {
+                        "length": 12,
+                        "extension": 5,
+                        "offset": 0
+                      }
+                    },
+                    "calibrate": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polyline-dimension",
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      },
+                      "captionEnabled": true
+                    },
+                    "area": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polygon-dimension",
+                      "captionEnabled": true
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply",
+                      "intent": "ink-highlight"
+                    },
+                    "free-text": {
+                      "color": "#e5484d",
+                      "strokeWidth": 2,
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6,
+                      "lineEnding": "open-arrow"
+                    },
+                    "highlight": {
+                      "color": "#ffe16a",
+                      "blendMode": "multiply"
+                    },
+                    "redact": {
+                      "color": "#e44234",
+                      "interiorColor": "#000000",
+                      "fontSize": 14,
+                      "fontColor": "#ffffff",
+                      "opacity": 1
+                    },
+                    "underline": {
+                      "color": "#ef4444"
+                    },
+                    "strikeout": {
+                      "color": "#ef4444"
+                    },
+                    "squiggly": {
+                      "color": "#ef4444"
+                    },
+                    "caret": {
+                      "color": "#ef4444"
+                    },
+                    "replace-text": {
+                      "color": "#ef4444"
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "fine-pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 1,
+                      "blendMode": "normal",
+                      "opacity": 0.5
+                    },
+                    "quick-note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "quick-note-2": {
+                      "icon": "comment",
+                      "color": "#facc15"
                     }
                   },
                   "hitMargin": 6,
@@ -399358,6 +400391,190 @@
                       "strokeWidth": 1,
                       "blendMode": "normal",
                       "opacity": 0.5
+                    },
+                    "quick-note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "quick-note-2": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    }
+                  },
+                  "hitMargin": 6,
+                  "editing": null,
+                  "snap": {
+                    "alignment": true,
+                    "alignmentThresholdPx": 6,
+                    "rotation": true,
+                    "rotationAngles": [
+                      0,
+                      90,
+                      180,
+                      270
+                    ],
+                    "rotationThresholdDeg": 4
+                  },
+                  "editable": true
+                },
+                "vector": {},
+                "ghostAt": null,
+                "placing": null,
+                "textSelection": null
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": []
+          },
+          "state": {
+            "plugins": {
+              "annotation::a": {
+                "session": {
+                  "selected": [],
+                  "hovered": null,
+                  "draft": null,
+                  "preview": null,
+                  "objectNumbers": [],
+                  "defaults": {
+                    "square": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "circle": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "line": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "distance": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "line-dimension",
+                      "lineEndings": {
+                        "start": "closed-arrow",
+                        "end": "closed-arrow"
+                      },
+                      "captionEnabled": true,
+                      "captionPosition": "inline",
+                      "leader": {
+                        "length": 12,
+                        "extension": 5,
+                        "offset": 0
+                      }
+                    },
+                    "calibrate": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1
+                    },
+                    "polygon": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "polyline": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6
+                    },
+                    "perimeter": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polyline-dimension",
+                      "lineEndings": {
+                        "start": "none",
+                        "end": "none"
+                      },
+                      "captionEnabled": true
+                    },
+                    "area": {
+                      "color": "#e5484d",
+                      "strokeWidth": 1,
+                      "intent": "polygon-dimension",
+                      "captionEnabled": true
+                    },
+                    "ink": {
+                      "color": "#ef4444",
+                      "strokeWidth": 6,
+                      "blendMode": "normal"
+                    },
+                    "ink-highlight": {
+                      "color": "#ffcd45",
+                      "strokeWidth": 14,
+                      "blendMode": "multiply",
+                      "intent": "ink-highlight"
+                    },
+                    "free-text": {
+                      "color": "#e5484d",
+                      "strokeWidth": 2,
+                      "fontColor": "#ef4444"
+                    },
+                    "free-text-callout": {
+                      "color": "#e5484d",
+                      "strokeWidth": 6,
+                      "lineEnding": "open-arrow"
+                    },
+                    "highlight": {
+                      "color": "#ffe16a",
+                      "blendMode": "multiply"
+                    },
+                    "redact": {
+                      "color": "#e44234",
+                      "interiorColor": "#000000",
+                      "fontSize": 14,
+                      "fontColor": "#ffffff",
+                      "opacity": 1
+                    },
+                    "underline": {
+                      "color": "#ef4444"
+                    },
+                    "strikeout": {
+                      "color": "#ef4444"
+                    },
+                    "squiggly": {
+                      "color": "#ef4444"
+                    },
+                    "caret": {
+                      "color": "#ef4444"
+                    },
+                    "replace-text": {
+                      "color": "#ef4444"
+                    },
+                    "note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "attachment": {
+                      "icon": "paperclip",
+                      "color": "#facc15"
+                    },
+                    "fine-pen": {
+                      "color": "#ef4444",
+                      "strokeWidth": 1,
+                      "blendMode": "normal",
+                      "opacity": 0.5
+                    },
+                    "quick-note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "quick-note-2": {
+                      "icon": "comment",
+                      "color": "#facc15"
                     }
                   },
                   "hitMargin": 6,
@@ -399526,6 +400743,14 @@
                       "strokeWidth": 1,
                       "blendMode": "normal",
                       "opacity": 0.5
+                    },
+                    "quick-note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "quick-note-2": {
+                      "icon": "comment",
+                      "color": "#facc15"
                     }
                   },
                   "hitMargin": 6,
@@ -399694,6 +400919,14 @@
                       "strokeWidth": 1,
                       "blendMode": "normal",
                       "opacity": 0.5
+                    },
+                    "quick-note": {
+                      "icon": "comment",
+                      "color": "#facc15"
+                    },
+                    "quick-note-2": {
+                      "icon": "comment",
+                      "color": "#facc15"
                     }
                   },
                   "hitMargin": 6,
