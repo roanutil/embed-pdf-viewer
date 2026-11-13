@@ -482,7 +482,7 @@ impl CommandRunner for LockRunner {
 }
 #[test]
 fn a_native_command_lock_disables_resolution_and_releases() {
-    let (_thread, commands) = handle();
+    let (thread, commands) = handle();
     let runner = Arc::new(LockRunner(std::sync::atomic::AtomicBool::new(true)));
     let mut def = definition("view:single", None, vec![CommandHook::Locked]);
     def.runner = Some(runner.clone());
@@ -495,6 +495,9 @@ fn a_native_command_lock_disables_resolution_and_releases() {
         CommandExecuteResult::Rejected { reason: CommandRejectReason::Disabled }
     );
     runner.0.store(false, std::sync::atomic::Ordering::SeqCst);
+    // A command's derivations are asked once per store change (upstream
+    // 7af98f4df), so the released lock shows after the next one.
+    block_on(thread.call(|kernel| kernel.kernel.store().notify())).unwrap();
     assert!(
         block_on(commands.resolve_command("view:single".into(), None)).unwrap().unwrap().enabled
     );
