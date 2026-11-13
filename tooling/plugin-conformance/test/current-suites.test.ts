@@ -142,8 +142,10 @@ test('all owned cases have unique names and exactly their current shipping outco
       }
     }
   }
-  assert.equal(total, 1292);
-  assert.equal(scenarios, 176);
+  // The 2026-11-12 catch-up added three stage-turns cases for upstream 13305a14b and 138c54fe7:
+  // wheelBy, scrollChaining and coasting.
+  assert.equal(total, 1292 + 3);
+  assert.equal(scenarios, 176 + 3);
   console.log(JSON.stringify({ total, functions, scenarios, unexpected: 0, duplicates: 0 }));
 });
 const geometry: PageGeometrySnapshot = {

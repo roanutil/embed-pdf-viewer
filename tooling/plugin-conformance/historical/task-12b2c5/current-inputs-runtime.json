@@ -7120,7 +7120,7 @@
     "name": "derivations",
     "input": {
       "name": "derivations",
-      "covers": "resolve() calls enabled, then visible, then iconAccent, then active, at most once per store change (7af98f4df), each with a CommandCtx bound to the explicit document, else the active one (null with none open, and an empty string is kept); their answers land on the resolved command.",
+      "covers": "resolve() calls enabled, then visible, then iconAccent, then active, at most once per store change (7af98f4df), each with a CommandCtx bound to the explicit document, else the active one (null with none open; an empty string also means the active one, so it shares that resolution); their answers land on the resolved command.",
       "plugins": [
         {
           "factory": "commands",
@@ -7405,7 +7405,7 @@
         }
       ]
     },
-    "inputSha256": "7c53866f8ab8ea915e0a83a4b6487842a045299f7c14ef4aceac888c00724e11",
+    "inputSha256": "a04ad2238d45cd84969c54537ed546b4054393f9840176077a3f44c43317dbb3",
     "result": {
       "trace": [
         {
@@ -12035,6 +12035,3452 @@
     "file": "plugins/commands/plugin.json",
     "kind": "scenario",
     "index": 10,
+    "name": "label-params-that-are-not-finite",
+    "input": {
+      "name": "label-params-that-are-not-finite",
+      "covers": "A labelParams number that isn't finite reaches a resolved label as null: the answers keep labelParams as JSON and the label is translated from that JSON parsed back (7af98f4df), so a slot shows null and a null count picks no plural form, falling back to label; getRefusal reads labelParams directly and shows the number as it is.",
+      "plugins": [
+        {
+          "factory": "commands-current-i18n",
+          "config": {
+            "locales": [
+              {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "pages": {
+                    "delete": {
+                      "one": "Delete {count} page",
+                      "other": "Delete {count} pages"
+                    },
+                    "rotate": "Rotate {count} pages by {degrees}°"
+                  }
+                }
+              }
+            ],
+            "locale": "en"
+          }
+        },
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "nan",
+                "labelKey": "nan",
+                "label": "{count} selected",
+                "labelParams": {
+                  "$fn": "nan.labelParams",
+                  "returns": {
+                    "count": {
+                      "$number": "NaN"
+                    }
+                  }
+                }
+              },
+              {
+                "id": "infinite",
+                "labelKey": "infinite",
+                "label": "{count} of {total}",
+                "labelParams": {
+                  "$fn": "infinite.labelParams",
+                  "returns": {
+                    "count": {
+                      "$number": "Infinity"
+                    },
+                    "total": {
+                      "$number": "-Infinity"
+                    }
+                  }
+                }
+              },
+              {
+                "id": "plural",
+                "labelKey": "pages.delete",
+                "label": "Delete {count} (no plural)",
+                "labelParams": {
+                  "$fn": "plural.labelParams",
+                  "returns": {
+                    "count": {
+                      "$number": "NaN"
+                    }
+                  }
+                }
+              },
+              {
+                "id": "off",
+                "labelKey": "off",
+                "label": "Print {count}",
+                "labelParams": {
+                  "$fn": "off.labelParams",
+                  "returns": {
+                    "count": {
+                      "$number": "NaN"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "nan"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "infinite"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "plural"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "disableCommand",
+          "args": [
+            "off"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "getRefusal",
+          "args": [
+            "off"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "off"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "fbe291e03c1168ddbc8ecc82696043bd14b5bac5c80cb1f0077743cfffaba375",
+    "result": {
+      "trace": [
+        {
+          "settled": [],
+          "stateChanges": [
+            {
+              "slice": "i18n",
+              "previous": {
+                "locale": "",
+                "locales": {},
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              },
+              "next": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "pages": {
+                        "delete": {
+                          "one": "Delete {count} page",
+                          "other": "Delete {count} pages"
+                        },
+                        "rotate": "Rotate {count} pages by {degrees}°"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          ],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "nan.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "nan",
+              "label": "null selected",
+              "shortcuts": [],
+              "enabled": true,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "pages": {
+                        "delete": {
+                          "one": "Delete {count} page",
+                          "other": "Delete {count} pages"
+                        },
+                        "rotate": "Rotate {count} pages by {degrees}°"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "infinite.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "infinite",
+              "label": "null of null",
+              "shortcuts": [],
+              "enabled": true,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "pages": {
+                        "delete": {
+                          "one": "Delete {count} page",
+                          "other": "Delete {count} pages"
+                        },
+                        "rotate": "Rotate {count} pages by {degrees}°"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "plural.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "plural",
+              "label": "Delete null (no plural)",
+              "shortcuts": [],
+              "enabled": true,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "pages": {
+                        "delete": {
+                          "one": "Delete {count} page",
+                          "other": "Delete {count} pages"
+                        },
+                        "rotate": "Rotate {count} pages by {degrees}°"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "pages": {
+                        "delete": {
+                          "one": "Delete {count} page",
+                          "other": "Delete {count} pages"
+                        },
+                        "rotate": "Rotate {count} pages by {degrees}°"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "off.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "reason": "turned-off",
+              "message": "Print NaN isn't available"
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "pages": {
+                        "delete": {
+                          "one": "Delete {count} page",
+                          "other": "Delete {count} pages"
+                        },
+                        "rotate": "Rotate {count} pages by {degrees}°"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "off.labelParams",
+              "args": [
+                {
+                  "documentId": null,
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "created",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "id": "off",
+              "label": "Print null",
+              "shortcuts": [],
+              "enabled": false,
+              "active": false,
+              "pressable": false,
+              "visible": false,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "pages": {
+                        "delete": {
+                          "one": "Delete {count} page",
+                          "other": "Delete {count} pages"
+                        },
+                        "rotate": "Rotate {count} pages by {degrees}°"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        }
+      ],
+      "unmatched": []
+    }
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "index": 11,
+    "name": "refusal-sentences-with-i18n",
+    "input": {
+      "name": "refusal-sentences-with-i18n",
+      "covers": "With i18n, a refusal's sentence is translated (7af98f4df): turned-off under commands.turnedOff; not-allowed under the missing permission's key, else the command's notAllowedKey, each falling back to commands.notAllowed.default; locked under the lock's reasonKey, else commands.locked.default; a locked that throws is no lock. A resolved command that shows disabled carries the same sentence as its disabledReason.",
+      "plugins": [
+        {
+          "factory": "commands-current-i18n",
+          "config": {
+            "locales": [
+              {
+                "code": "en",
+                "name": "English",
+                "translations": {
+                  "commands": {
+                    "notAllowed": {
+                      "default": "{label} is not permitted here",
+                      "doc-print": "This file does not let you {label}"
+                    },
+                    "locked": {
+                      "default": "{label} is held",
+                      "held-by-app": "The app holds {label}"
+                    },
+                    "turnedOff": "{label} is switched off"
+                  }
+                }
+              }
+            ],
+            "locale": "en"
+          }
+        },
+        {
+          "factory": "commands",
+          "config": {
+            "commands": [
+              {
+                "id": "print",
+                "labelKey": "print",
+                "label": "Print",
+                "requires": [
+                  "doc.print"
+                ]
+              },
+              {
+                "id": "fill",
+                "labelKey": "fill",
+                "label": "Fill",
+                "requires": [
+                  "doc.forms.fill"
+                ]
+              },
+              {
+                "id": "custom",
+                "labelKey": "custom",
+                "label": "Custom",
+                "allowed": {
+                  "$fn": "custom.allowed",
+                  "returns": false
+                },
+                "notAllowedKey": "commands.notAllowed.custom"
+              },
+              {
+                "id": "held",
+                "labelKey": "held",
+                "label": "Held",
+                "locked": {
+                  "$fn": "held.locked",
+                  "returns": {
+                    "by": "app",
+                    "reasonKey": "commands.locked.held-by-app"
+                  }
+                }
+              },
+              {
+                "id": "held-default",
+                "labelKey": "held-default",
+                "label": "Also held",
+                "locked": {
+                  "$fn": "held-default.locked",
+                  "returns": {
+                    "by": "app"
+                  }
+                }
+              },
+              {
+                "id": "held-throws",
+                "labelKey": "held-throws",
+                "label": "Never held",
+                "locked": {
+                  "$fn": "held-throws.locked",
+                  "throws": {
+                    "name": "Error",
+                    "message": "held-throws.locked failed"
+                  }
+                }
+              },
+              {
+                "id": "off",
+                "labelKey": "off",
+                "label": "Off"
+              }
+            ]
+          }
+        }
+      ],
+      "engine": {
+        "documents": {
+          "a": {
+            "pages": [
+              {
+                "index": 0,
+                "ref": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "label": null,
+                "size": {
+                  "width": 600,
+                  "height": 800
+                },
+                "rotation": 0,
+                "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
+                "boxes": {
+                  "media": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "crop": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  }
+                }
+              }
+            ],
+            "security": {
+              "allows": []
+            }
+          }
+        }
+      },
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": "documents",
+          "method": "open",
+          "args": [
+            {
+              "kind": "bytes",
+              "id": "a",
+              "bytes": {
+                "$bytes": ""
+              }
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "updateSettings",
+          "args": [
+            {
+              "notAllowed": "disable"
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "print"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "getRefusal",
+          "args": [
+            "print"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "fill"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "getRefusal",
+          "args": [
+            "fill"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "custom"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "getRefusal",
+          "args": [
+            "custom"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "held"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "getRefusal",
+          "args": [
+            "held"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "held-default"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "getRefusal",
+          "args": [
+            "held-default"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "resolveCommand",
+          "args": [
+            "held-throws"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "getRefusal",
+          "args": [
+            "held-throws"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "disableCommand",
+          "args": [
+            "off"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "getRefusal",
+          "args": [
+            "off"
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "commands"
+          },
+          "method": "execute",
+          "args": [
+            "held"
+          ]
+        }
+      ]
+    },
+    "inputSha256": "a81fda7deb9d73340f9a6b0dc64e26cdb9e755c256fbe439fa776b05d74a98c1",
+    "result": {
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "stateChanges": [
+            {
+              "slice": "i18n",
+              "previous": {
+                "locale": "",
+                "locales": {},
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              },
+              "next": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "notAllowed": {
+                          "default": "{label} is not permitted here",
+                          "doc-print": "This file does not let you {label}"
+                        },
+                        "locked": {
+                          "default": "{label} is held",
+                          "held-by-app": "The app holds {label}"
+                        },
+                        "turnedOff": "{label} is switched off"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          ],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          },
+          "state": {
+            "core": {
+              "documents": {},
+              "pending": {},
+              "order": [],
+              "activeId": null
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "notAllowed": {
+                          "default": "{label} is not permitted here",
+                          "doc-print": "This file does not let you {label}"
+                        },
+                        "locked": {
+                          "default": "{label} is held",
+                          "held-by-app": "The app holds {label}"
+                        },
+                        "turnedOff": "{label} is switched off"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 1,
+                  "hasUnsavedChanges": false
+                }
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
+              }
+            },
+            {
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 1,
+                  "hasUnsavedChanges": false
+                }
+              }
+            }
+          ],
+          "engine": [
+            {
+              "doc": null,
+              "path": "open",
+              "args": [
+                {
+                  "kind": "bytes",
+                  "id": "a",
+                  "bytes": {
+                    "$bytes": ""
+                  }
+                },
+                {}
+              ]
+            },
+            {
+              "doc": "a",
+              "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 1
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "notAllowed": {
+                          "default": "{label} is not permitted here",
+                          "doc-print": "This file does not let you {label}"
+                        },
+                        "locked": {
+                          "default": "{label} is held",
+                          "held-by-app": "The app holds {label}"
+                        },
+                        "turnedOff": "{label} is switched off"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "notAllowed": {
+                          "default": "{label} is not permitted here",
+                          "doc-print": "This file does not let you {label}"
+                        },
+                        "locked": {
+                          "default": "{label} is held",
+                          "held-by-app": "The app holds {label}"
+                        },
+                        "turnedOff": "{label} is switched off"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "id": "print",
+              "label": "Print",
+              "shortcuts": [],
+              "enabled": false,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": [],
+              "disabledReason": "This file does not let you Print"
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "notAllowed": {
+                          "default": "{label} is not permitted here",
+                          "doc-print": "This file does not let you {label}"
+                        },
+                        "locked": {
+                          "default": "{label} is held",
+                          "held-by-app": "The app holds {label}"
+                        },
+                        "turnedOff": "{label} is switched off"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "reason": "not-allowed",
+              "message": "This file does not let you Print"
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "notAllowed": {
+                          "default": "{label} is not permitted here",
+                          "doc-print": "This file does not let you {label}"
+                        },
+                        "locked": {
+                          "default": "{label} is held",
+                          "held-by-app": "The app holds {label}"
+                        },
+                        "turnedOff": "{label} is switched off"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "id": "fill",
+              "label": "Fill",
+              "shortcuts": [],
+              "enabled": false,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": [],
+              "disabledReason": "Fill is not permitted here"
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "notAllowed": {
+                          "default": "{label} is not permitted here",
+                          "doc-print": "This file does not let you {label}"
+                        },
+                        "locked": {
+                          "default": "{label} is held",
+                          "held-by-app": "The app holds {label}"
+                        },
+                        "turnedOff": "{label} is switched off"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "reason": "not-allowed",
+              "message": "Fill is not permitted here"
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "notAllowed": {
+                          "default": "{label} is not permitted here",
+                          "doc-print": "This file does not let you {label}"
+                        },
+                        "locked": {
+                          "default": "{label} is held",
+                          "held-by-app": "The app holds {label}"
+                        },
+                        "turnedOff": "{label} is switched off"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "custom.allowed",
+              "args": [
+                {
+                  "documentId": "a",
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "id": "custom",
+              "label": "Custom",
+              "shortcuts": [],
+              "enabled": false,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": [],
+              "disabledReason": "Custom is not permitted here"
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "notAllowed": {
+                          "default": "{label} is not permitted here",
+                          "doc-print": "This file does not let you {label}"
+                        },
+                        "locked": {
+                          "default": "{label} is held",
+                          "held-by-app": "The app holds {label}"
+                        },
+                        "turnedOff": "{label} is switched off"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "custom.allowed",
+              "args": [
+                {
+                  "documentId": "a",
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "reason": "not-allowed",
+              "message": "Custom is not permitted here"
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "notAllowed": {
+                          "default": "{label} is not permitted here",
+                          "doc-print": "This file does not let you {label}"
+                        },
+                        "locked": {
+                          "default": "{label} is held",
+                          "held-by-app": "The app holds {label}"
+                        },
+                        "turnedOff": "{label} is switched off"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "held.locked",
+              "args": [
+                {
+                  "documentId": "a",
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "id": "held",
+              "label": "Held",
+              "shortcuts": [],
+              "enabled": false,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": [],
+              "disabledReason": "The app holds Held"
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "notAllowed": {
+                          "default": "{label} is not permitted here",
+                          "doc-print": "This file does not let you {label}"
+                        },
+                        "locked": {
+                          "default": "{label} is held",
+                          "held-by-app": "The app holds {label}"
+                        },
+                        "turnedOff": "{label} is switched off"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "held.locked",
+              "args": [
+                {
+                  "documentId": "a",
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "reason": "locked",
+              "message": "The app holds Held"
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "notAllowed": {
+                          "default": "{label} is not permitted here",
+                          "doc-print": "This file does not let you {label}"
+                        },
+                        "locked": {
+                          "default": "{label} is held",
+                          "held-by-app": "The app holds {label}"
+                        },
+                        "turnedOff": "{label} is switched off"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "held-default.locked",
+              "args": [
+                {
+                  "documentId": "a",
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "id": "held-default",
+              "label": "Also held",
+              "shortcuts": [],
+              "enabled": false,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": [],
+              "disabledReason": "Also held is held"
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "notAllowed": {
+                          "default": "{label} is not permitted here",
+                          "doc-print": "This file does not let you {label}"
+                        },
+                        "locked": {
+                          "default": "{label} is held",
+                          "held-by-app": "The app holds {label}"
+                        },
+                        "turnedOff": "{label} is switched off"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "held-default.locked",
+              "args": [
+                {
+                  "documentId": "a",
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "reason": "locked",
+              "message": "Also held is held"
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "notAllowed": {
+                          "default": "{label} is not permitted here",
+                          "doc-print": "This file does not let you {label}"
+                        },
+                        "locked": {
+                          "default": "{label} is held",
+                          "held-by-app": "The app holds {label}"
+                        },
+                        "turnedOff": "{label} is switched off"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "held-throws.locked",
+              "args": [
+                {
+                  "documentId": "a",
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "id": "held-throws",
+              "label": "Never held",
+              "shortcuts": [],
+              "enabled": true,
+              "active": false,
+              "pressable": false,
+              "visible": true,
+              "categories": []
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "notAllowed": {
+                          "default": "{label} is not permitted here",
+                          "doc-print": "This file does not let you {label}"
+                        },
+                        "locked": {
+                          "default": "{label} is held",
+                          "held-by-app": "The app holds {label}"
+                        },
+                        "turnedOff": "{label} is switched off"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "held-throws.locked",
+              "args": [
+                {
+                  "documentId": "a",
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": null
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "notAllowed": {
+                          "default": "{label} is not permitted here",
+                          "doc-print": "This file does not let you {label}"
+                        },
+                        "locked": {
+                          "default": "{label} is held",
+                          "held-by-app": "The app holds {label}"
+                        },
+                        "turnedOff": "{label} is switched off"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "notAllowed": {
+                          "default": "{label} is not permitted here",
+                          "doc-print": "This file does not let you {label}"
+                        },
+                        "locked": {
+                          "default": "{label} is held",
+                          "held-by-app": "The app holds {label}"
+                        },
+                        "turnedOff": "{label} is switched off"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "reason": "turned-off",
+              "message": "Off is switched off"
+            }
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "notAllowed": {
+                          "default": "{label} is not permitted here",
+                          "doc-print": "This file does not let you {label}"
+                        },
+                        "locked": {
+                          "default": "{label} is held",
+                          "held-by-app": "The app holds {label}"
+                        },
+                        "turnedOff": "{label} is switched off"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "status": "rejected",
+                "reason": "disabled"
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "held.locked",
+              "args": [
+                {
+                  "documentId": "a",
+                  "get": {
+                    "$function": true
+                  },
+                  "tryGet": {
+                    "$function": true
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "promise": 2
+          },
+          "state": {
+            "core": {
+              "documents": {
+                "a": {
+                  "id": "a",
+                  "instanceId": "a#1",
+                  "pageCount": 1,
+                  "pages": [
+                    {
+                      "index": 0,
+                      "ref": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "label": null,
+                      "size": {
+                        "width": 600,
+                        "height": 800
+                      },
+                      "rotation": 0,
+                      "userUnit": 1,
+                      "tabOrder": null,
+                      "pdfCropBox": {
+                        "left": 0,
+                        "bottom": 0,
+                        "right": 600,
+                        "top": 800
+                      },
+                      "boxes": {
+                        "media": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "crop": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "bleed": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "trim": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        },
+                        "art": {
+                          "x": 0,
+                          "y": 0,
+                          "width": 600,
+                          "height": 800
+                        }
+                      }
+                    }
+                  ],
+                  "pageLabels": [],
+                  "pendingPages": {
+                    "$map": []
+                  },
+                  "pagesSequence": 0,
+                  "renderPolicy": {
+                    "kind": "continuous"
+                  },
+                  "hasUnsavedChanges": false
+                }
+              },
+              "pending": {},
+              "order": [
+                "a"
+              ],
+              "activeId": "a"
+            },
+            "plugins": {
+              "i18n": {
+                "locale": "en",
+                "locales": {
+                  "en": {
+                    "code": "en",
+                    "name": "English",
+                    "translations": {
+                      "commands": {
+                        "notAllowed": {
+                          "default": "{label} is not permitted here",
+                          "doc-print": "This file does not let you {label}"
+                        },
+                        "locked": {
+                          "default": "{label} is held",
+                          "held-by-app": "The app holds {label}"
+                        },
+                        "turnedOff": "{label} is switched off"
+                      }
+                    }
+                  }
+                },
+                "loading": null,
+                "loadingFallback": null,
+                "fetched": {},
+                "waitingTranslations": {}
+              }
+            }
+          }
+        }
+      ],
+      "unmatched": []
+    }
+  },
+  {
+    "file": "plugins/commands/plugin.json",
+    "kind": "scenario",
+    "index": 12,
     "name": "pressable",
     "input": {
       "name": "pressable",
@@ -12477,7 +15923,7 @@
   {
     "file": "plugins/commands/plugin.json",
     "kind": "scenario",
-    "index": 11,
+    "index": 13,
     "name": "i18n-labels",
     "input": {
       "name": "i18n-labels",
@@ -13436,7 +16882,7 @@
   {
     "file": "plugins/commands/plugin.json",
     "kind": "scenario",
-    "index": 12,
+    "index": 14,
     "name": "shell-derived-active",
     "input": {
       "name": "shell-derived-active",
@@ -21272,7 +24718,7 @@
   {
     "file": "plugins/commands/plugin.json",
     "kind": "scenario",
-    "index": 13,
+    "index": 15,
     "name": "execute-routing",
     "input": {
       "name": "execute-routing",
@@ -26374,7 +29820,7 @@
   {
     "file": "plugins/commands/plugin.json",
     "kind": "scenario",
-    "index": 14,
+    "index": 16,
     "name": "execute-guards-and-run",
     "input": {
       "name": "execute-guards-and-run",
@@ -29146,7 +32592,7 @@
   {
     "file": "plugins/commands/plugin.json",
     "kind": "scenario",
-    "index": 15,
+    "index": 17,
     "name": "command-ctx",
     "input": {
       "name": "command-ctx",
@@ -33829,7 +37275,7 @@
   {
     "file": "plugins/commands/plugin.json",
     "kind": "scenario",
-    "index": 16,
+    "index": 18,
     "name": "follows-the-active-document",
     "input": {
       "name": "follows-the-active-document",
@@ -36262,7 +39708,7 @@
   {
     "file": "plugins/commands/plugin.json",
     "kind": "scenario",
-    "index": 17,
+    "index": 19,
     "name": "search",
     "input": {
       "name": "search",
@@ -36922,7 +40368,7 @@
   {
     "file": "plugins/commands/plugin.json",
     "kind": "scenario",
-    "index": 18,
+    "index": 20,
     "name": "match-stroke",
     "input": {
       "name": "match-stroke",
@@ -37703,7 +41149,7 @@
   {
     "file": "plugins/commands/plugin.json",
     "kind": "scenario",
-    "index": 19,
+    "index": 21,
     "name": "registered-functions",
     "input": {
       "name": "registered-functions",
@@ -38537,7 +41983,7 @@
   {
     "file": "plugins/commands/plugin.json",
     "kind": "scenario",
-    "index": 20,
+    "index": 22,
     "name": "re-entrant-registry",
     "input": {
       "name": "re-entrant-registry",
@@ -39060,7 +42506,7 @@
   {
     "file": "plugins/commands/plugin.json",
     "kind": "scenario",
-    "index": 21,
+    "index": 23,
     "name": "unregister-behind-a-search",
     "input": {
       "name": "unregister-behind-a-search",
@@ -39512,7 +42958,7 @@
   {
     "file": "plugins/commands/plugin.json",
     "kind": "scenario",
-    "index": 22,
+    "index": 24,
     "name": "register-many-shortcuts-and-can-execute",
     "input": {
       "name": "register-many-shortcuts-and-can-execute",
@@ -41882,7 +45328,7 @@
   {
     "file": "plugins/commands/plugin.json",
     "kind": "scenario",
-    "index": 23,
+    "index": 25,
     "name": "execute-events",
     "input": {
       "name": "execute-events",
@@ -45419,7 +48865,7 @@
   {
     "file": "plugins/commands/plugin.json",
     "kind": "scenario",
-    "index": 24,
+    "index": 26,
     "name": "get-and-list-commands",
     "input": {
       "name": "get-and-list-commands",
@@ -46374,7 +49820,7 @@
   {
     "file": "plugins/commands/plugin.json",
     "kind": "scenario",
-    "index": 25,
+    "index": 27,
     "name": "a-bad-config-refuses-the-kernel",
     "input": {
       "name": "a-bad-config-refuses-the-kernel",
@@ -46441,7 +49887,7 @@
   {
     "file": "plugins/commands/plugin.json",
     "kind": "scenario",
-    "index": 26,
+    "index": 28,
     "name": "a-bad-config-shortcut-refuses-the-kernel",
     "input": {
       "name": "a-bad-config-shortcut-refuses-the-kernel",
@@ -46508,7 +49954,7 @@
   {
     "file": "plugins/commands/plugin.json",
     "kind": "scenario",
-    "index": 27,
+    "index": 29,
     "name": "after-destroy",
     "input": {
       "name": "after-destroy",

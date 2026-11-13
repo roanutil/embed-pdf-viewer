@@ -410,6 +410,9 @@ test('state diff events have exact payloads, order and unsubscribe silence', asy
 
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+/** Commands cases the 2026-11-12 catch-up added after the migration archive, for upstream
+ * 7af98f4df: labelParams that aren't finite, and the translated refusal sentences. */
+const commandsCaughtUp = 2;
 type Saved = {
   file: string;
   kind: string;
@@ -472,7 +475,7 @@ test('prior i18n676 and actions160 commands83 link37 metadata17 and page-edit20 
       }
     }
   }
-  assert.equal(count, 993);
+  assert.equal(count, 993 + commandsCaughtUp);
 });
 test('all current shell inputs and complete outcomes remain independently replayable', async () => {
   const rows = saved('current-inputs-runtime.json') as Saved[];

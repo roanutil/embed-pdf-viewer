@@ -746,10 +746,13 @@ test('prior current actions160, commands83 and link37 keep their complete actual
       }
     }
   }
-  assert.equal(count, 280);
+  assert.equal(count, 280 + commandsCaughtUp);
 });
 
 import { createHash } from 'node:crypto';
+/** Commands cases the 2026-11-12 catch-up added after the migration archive, for upstream
+ * 7af98f4df: labelParams that aren't finite, and the translated refusal sentences. */
+const commandsCaughtUp = 2;
 const history = new URL('../historical/task-12b2c7/', import.meta.url);
 const read = (p: string): unknown => JSON.parse(readFileSync(new URL(p, history), 'utf8'));
 const hash = (v: unknown) => createHash('sha256').update(JSON.stringify(v)).digest('hex');

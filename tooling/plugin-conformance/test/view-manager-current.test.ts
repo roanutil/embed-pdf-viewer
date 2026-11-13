@@ -451,6 +451,9 @@ test('complete live snapshots retain pane records, pane/document order, focus an
 
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+/** Commands cases the 2026-11-12 catch-up added after the migration archive, for upstream
+ * 7af98f4df: labelParams that aren't finite, and the translated refusal sentences. */
+const commandsCaughtUp = 2;
 type Saved = {
   file: string;
   kind: string;
@@ -512,7 +515,7 @@ test('prior shell47 i18n676 and actions160 commands83 link37 metadata17 and page
       }
     }
   }
-  assert.equal(count, 1040);
+  assert.equal(count, 1040 + commandsCaughtUp);
 });
 
 const history = new URL('../historical/task-12b2c11/', import.meta.url);

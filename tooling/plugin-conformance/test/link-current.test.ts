@@ -637,6 +637,9 @@ test('caller cancellation rejects immediately while the shared page load can com
   await kernel.destroy();
 });
 import { createHash } from 'node:crypto';
+/** Commands cases the 2026-11-12 catch-up added after the migration archive, for upstream
+ * 7af98f4df: labelParams that aren't finite, and the translated refusal sentences. */
+const commandsCaughtUp = 2;
 const history = new URL('../historical/task-12b2c6/', import.meta.url);
 const read = (name: string): unknown => JSON.parse(readFileSync(new URL(name, history), 'utf8'));
 const sha = (v: unknown) => createHash('sha256').update(JSON.stringify(v)).digest('hex');
@@ -747,7 +750,7 @@ test('prior current actions160 and commands83 keep their complete actual inputs 
       }
     }
   }
-  assert.equal(count, 243);
+  assert.equal(count, 243 + commandsCaughtUp);
 });
 test('immutable evidence and the one-time prior-tooling audit manifest remain exact', () => {
   const manifest = object(read('preservation.json'));

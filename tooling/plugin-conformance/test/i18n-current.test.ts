@@ -589,6 +589,9 @@ test('cancellation stops the waiter, preserves late registration, and an already
 });
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+/** Commands cases the 2026-11-12 catch-up added after the migration archive, for upstream
+ * 7af98f4df: labelParams that aren't finite, and the translated refusal sentences. */
+const commandsCaughtUp = 2;
 type Saved = {
   file: string;
   kind: string;
@@ -649,7 +652,7 @@ test('prior actions160 commands83 link37 metadata17 and page-edit20 retain all i
       }
     }
   }
-  assert.equal(count, 317);
+  assert.equal(count, 317 + commandsCaughtUp);
 });
 test('all current i18n inputs and complete outcomes remain independently replayable', async () => {
   const rows = saved('current-inputs-runtime.json') as Saved[];

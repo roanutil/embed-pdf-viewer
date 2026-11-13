@@ -6,7 +6,7 @@ import { runScenario } from '../src/scenario';
 test('all 76 original command occurrences and current reason comparisons call surviving shipping owners', () => {
   assert.equal(
     suites.reduce((n, s) => n + s.cases.length, 0),
-    83,
+    83 + caughtUp.length,
   );
   assert.doesNotMatch(
     readFileSync(new URL('../src/suites/commands.ts', import.meta.url), 'utf8'),
@@ -423,6 +423,9 @@ test('permission and setting refusals preserve hidden/disabled distinction and s
 });
 
 import { createHash } from 'node:crypto';
+/** Commands cases the 2026-11-12 catch-up added after the migration archive, for upstream
+ * 7af98f4df: labelParams that aren't finite, and the translated refusal sentences. */
+const caughtUp = ['label-params-that-are-not-finite', 'refusal-sentences-with-i18n'];
 const history = new URL('../historical/task-12b2c5/', import.meta.url);
 const read = (name: string): unknown => JSON.parse(readFileSync(new URL(name, history), 'utf8'));
 const sha = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -435,8 +438,8 @@ test('all current cases reproduce complete inputs and every diagnostic channel e
     outcome?: unknown;
     result?: unknown;
   }[];
-  assert.equal(saved.length, 83);
-  assert.equal(new Set(saved.map((s) => s.file + '/' + s.name)).size, 83);
+  assert.equal(saved.length, 83 + caughtUp.length);
+  assert.equal(new Set(saved.map((s) => s.file + '/' + s.name)).size, 83 + caughtUp.length);
   for (const row of saved) {
     const suite = suites.find((s) => s.file === row.file)!;
     const c = suite.cases.find((c) => c.name === row.name)!;

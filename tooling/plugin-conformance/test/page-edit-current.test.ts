@@ -1028,7 +1028,7 @@ test('prior actions160, commands83, link37 and metadata17 retain complete inputs
       }
     }
   }
-  assert.equal(count, 297);
+  assert.equal(count, 297 + commandsCaughtUp);
 });
 test('reorder and whole-PDF insert label the exact history scope, and returned answers alone cannot change registry', async () => {
   const h = await harness([
@@ -1334,6 +1334,9 @@ test('both cross-document placements preserve every source page and confirm comp
     ]);
 });
 import type { ChangeResult, DocumentEvent } from '@embedpdf/engine-core/runtime';
+/** Commands cases the 2026-11-12 catch-up added after the migration archive, for upstream
+ * 7af98f4df: labelParams that aren't finite, and the translated refusal sentences. */
+const commandsCaughtUp = 2;
 /** Read actual delivered values independently from the binding metadata chosen by the fixture. */
 const assertDirectIdentity = (h: Awaited<ReturnType<typeof harness>>, ordered = true) => {
   const requests = h.fake.log.filter(
