@@ -601,6 +601,59 @@ const cases: ScenarioCase[] = [
       refused('copy refused'),
     ],
   ),
+  scenario(
+    'import-staged-and-copy-answers',
+    "import (b3f1c447e) is staged on the change queue as the engine verb's call: annotations.import runs under the queue's opId, and its result resolves annotations, refMap and dropped once the records hold the copies. A duplicate (1481e4556) whose answer holds no annotations.copy item rejects operation-failed, and a refused copy reports the refs it copied to onWriteFailed.",
+    [
+      call('onWriteFailed', [{ $fn: 'writeFailed' }]),
+      call('import', [
+        {
+          format: 'embedpdf/annotations',
+          version: 1,
+          pages: [],
+          items: [{ data: square(40), resources: {} }],
+          resources: {},
+        },
+      ]),
+      call('list'),
+      call('duplicate', [[objRef(1)]]),
+      call('duplicate', [[objRef(1)]]),
+    ],
+    [
+      hydrate([square(1)]),
+      {
+        path: 'annotations.import',
+        times: 1,
+        value: {
+          annotations: [square(10001)],
+          refMap: [{ from: objRef(40), to: objRef(10001) }],
+          dropped: [],
+          meta: { affectedPages: [pr(1)], cacheDelta: null, opId: operationAt(1), undoable: true },
+        },
+        events: annotationImportFacts({
+          annotations: [square(10001)],
+          meta: { affectedPages: [pr(1)], cacheDelta: null, opId: operationAt(1), undoable: true },
+        } as unknown as Parameters<typeof annotationImportFacts>[0]).map(
+          (fact): DocumentEvent => ({
+            type: 'annotations.created',
+            ...fact,
+            origin: { ...LOCAL, transaction: { id: operationAt(1), index: 0, count: 1 } },
+          }),
+        ),
+      },
+      // An answer with no annotations.copy item.
+      {
+        path: 'apply',
+        times: 1,
+        value: {
+          items: [],
+          meta: { affectedPages: [pr(1)], cacheDelta: null, opId: operationAt(2), undoable: true },
+        },
+        events: [],
+      },
+      refused('copy refused'),
+    ],
+  ),
 ];
 export const suites: Suite[] = [
   {

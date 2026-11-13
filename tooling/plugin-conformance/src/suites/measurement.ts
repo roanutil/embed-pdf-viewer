@@ -787,6 +787,20 @@ const cases: ScenarioCase[] = [
     ],
   },
   {
+    name: 'default-scale-change-retells-pages',
+    covers:
+      "A new defaultScale setting (8bc6546e5) makes a page without a scale read the new default, and tells the annotation plugin every page's viewports again with the new fallback; the trace shows the page scale, not the annotation plugin's copy.",
+    plugins: PLUGINS,
+    engine: { documents: { a: docOf([]) } },
+    snapshot: SNAP,
+    steps: [
+      ...boot,
+      m('getPageScale', [pr(1)]),
+      m('updateSettings', [{ defaultScale: 'imperial' }]),
+      m('getPageScale', [pr(1)]),
+    ],
+  },
+  {
     name: 'pages-inserted-and-removed',
     covers:
       'A page inserted after the plugin connected brings its scale on its layout; a structural event that keeps the same pages changes no scale. A deleted page reads no scale, and a later change on it rejects not-found.',

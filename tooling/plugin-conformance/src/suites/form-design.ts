@@ -159,6 +159,57 @@ const GROUP_GROWN = radio(9, 'choice', [
   ...GROUP.widgets,
   { ...placed(10003), onState: 'Choice3', exportValue: 'Choice3', checked: false },
 ]);
+/**
+ * An answer of several items, each with its event, under one opId: a
+ * `forms.copy` item publishes one `forms.created` per field.
+ */
+const itemsAnswer = (
+  n: number,
+  items: { type: string; fields?: FormField[]; field?: FormField; widgets?: WidgetAnnotation[]; widget?: WidgetAnnotation; [k: string]: unknown }[],
+) => {
+  const allFields = items.flatMap((i) => i.fields ?? (i.field ? [i.field] : []));
+  const allRows = items.flatMap((i) => i.widgets ?? (i.widget ? [i.widget] : []));
+  const meta = mutationMeta(n, allFields, allRows);
+  const facts = items.flatMap((item): Record<string, unknown>[] => {
+    const { type, ...rest } = item;
+    if (type === 'forms.copy')
+      return (rest.fields ?? []).map((field) => ({
+        type: 'forms.created',
+        field,
+        widgets: (rest.widgets ?? []).filter((w) =>
+          field.widgets.some((own) => w.ref.kind === 'objectNumber' && own.objectNumber === w.ref.objectNumber),
+        ),
+      }));
+    if (type === 'forms.addWidget') return [{ type: 'forms.widgetAdded', field: rest.field, widgets: rest.widgets }];
+    if (type === 'forms.updateWidget') return [{ type: 'forms.widgetUpdated', widget: rest.widget }];
+    return [];
+  });
+  const events = facts.map(
+    (fact, index): DocumentEvent =>
+      ({
+        ...fact,
+        meta,
+        origin: { ...LOCAL, transaction: { id: meta.opId, index, count: facts.length } },
+      }) as unknown as DocumentEvent,
+  );
+  return { value: { items: items.map((item) => ({ ...item, meta })), meta }, events };
+};
+const PICK = radio(12, 'pick', [
+  { ...placed(112), onState: 'Choice1', exportValue: 'Choice1', checked: false },
+]);
+const PICK_ROW = row(112, PICK.ref, 1, { ...BOX, x: 300 }, { fieldKind: 'radio', hidden: true, locked: true });
+const PICK_GROWN = radio(12, 'pick', [
+  ...PICK.widgets,
+  { ...placed(10003), onState: 'Choice2', exportValue: 'Choice2', checked: false },
+]);
+const SHIFTED = { ...BOX, y: BOX.y + 40 };
+const PICKED_COPY = row(10003, PICK.ref, 1, { ...BOX, x: 300, y: BOX.y + 40 }, {
+  fieldKind: 'radio',
+  hidden: true,
+  locked: true,
+});
+const ORPHAN = row(111, null, 1, { ...BOX, x: 500 });
+const CHOICE = combobox(14, 'choice_list', '', { widgets: [placed(114)] });
 const cases: ScenarioCase[] = [
   scenario(
     'init-without-annotation',
@@ -891,6 +942,80 @@ const cases: ScenarioCase[] = [
         ]),
       ),
     ],
+  ),
+  scenario(
+    'duplicate-widgets-by-the-designers-rule',
+    "duplicateWidgets (a390171cc) copies a text field's widget as a new field (forms.copy naming the widgets, its numbers the plan's: the field's, then its widget's), a radio button as another button of its group (forms.addWidget with the next Choice<n>) with a forms.updateWidget after it for the hidden and locked flags a new widget lacks, and drops a widget in no field (no-field). It resolves the fields made or grown, the copies' rows in the order their originals were given, and what was left out, read off the forms.copy, forms.addWidget and forms.updateWidget items.",
+    [
+      call('duplicateWidgets', [[objRef(107), objRef(111), objRef(112)], { offset: { x: 0, y: 40 } }]),
+      call('list'),
+    ],
+    snapshot(
+      [EMAIL, PICK],
+      [row(107, EMAIL.ref, 1, BOX), ORPHAN, PICK_ROW],
+    ),
+    [
+      apply(
+        itemsAnswer(1, [
+          {
+            type: 'forms.copy',
+            fields: [EMAIL_COPY],
+            widgets: [row(10002, EMAIL_COPY.ref, 1, SHIFTED)],
+            refMap: [{ from: EMAIL.ref, to: EMAIL_COPY.ref }],
+            dropped: [],
+          },
+          { type: 'forms.addWidget', field: PICK_GROWN, widgets: [PICKED_COPY] },
+          { type: 'forms.updateWidget', widget: PICKED_COPY },
+        ]) as never,
+      ),
+    ],
+  ),
+  scenario(
+    'duplicate-widgets-with-nothing-to-copy-or-refused',
+    "duplicateWidgets (a390171cc) of a widget in no field takes no numbers and stages nothing: it resolves its no-field drop. A refused duplicateWidgets rejects. addWidget on a choice field shows the new widget at once with the field's options (the prediction of forms.addWidget).",
+    [
+      call('duplicateWidgets', [[objRef(111)]]),
+      call('duplicateWidgets', [[objRef(107)]]),
+      call('addWidget', [ref(14), { page: pr(1), rect: { ...BOX, y: 200 } } satisfies WidgetPlacement]),
+      call('getWidgets', [ref(14)]),
+    ],
+    snapshot([EMAIL, CHOICE], [row(107, EMAIL.ref, 1, BOX), ORPHAN, row(114, CHOICE.ref, 1, BOX, { fieldKind: 'combobox' })]),
+    [
+      refused('copy refused', 'Refused'),
+      apply(
+        // The refused copy took 10001 and 10002.
+        fieldAnswer('forms.addWidget', 2, { ...CHOICE, widgets: [...CHOICE.widgets, placed(10003)] }, [
+          row(10003, CHOICE.ref, 1, { ...BOX, y: 200 }, { fieldKind: 'combobox' }),
+        ]),
+      ),
+    ],
+  ),
+  scenario(
+    'selection-duplicate-hands-widgets-to-the-form',
+    "In form design the annotation plugin's selection.duplicate (1481e4556, a390171cc) hands a selected widget to the form's lender, whose forms.copy joins the change under the label form.duplicate; selection.canDuplicate asks the lender, and the copy is selected once the engine answers.",
+    [
+      tool('form-edit'),
+      anno('selection.select', [[objRef(107)]]),
+      anno('selection.canDuplicate'),
+      anno('selection.duplicate'),
+      anno('selection.getSelected'),
+    ],
+    snapshot([EMAIL], [row(107, EMAIL.ref, 1, BOX)]),
+    [
+      apply(
+        itemsAnswer(1, [
+          {
+            type: 'forms.copy',
+            fields: [EMAIL_COPY],
+            widgets: [row(10002, EMAIL_COPY.ref, 1, { ...BOX, x: BOX.x + 10, y: BOX.y + 10 })],
+            refMap: [{ from: EMAIL.ref, to: EMAIL_COPY.ref }],
+            dropped: [],
+          },
+        ]) as never,
+      ),
+    ],
+    {},
+    true,
   ),
 ];
 export const suites: ScenarioSuite[] = [

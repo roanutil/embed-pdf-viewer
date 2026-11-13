@@ -1207,7 +1207,7 @@ const cases: ScenarioCase[] = [
   {
     name: 'register-over-a-tool-and-take-it-back',
     covers:
-      "tools.register is one more entry after the setting's (f0bb7b047): a registration with a taken id changes that tool, defaults merged over its own. Its remover puts back the tool it replaced, defaults included (replaceDefaults), in any removal order: removing the older of two registrations of one id hands what it replaced to the newer, and removing the newer then puts back the built-in, on the hub too. A remover called twice changes nothing. A registration can extend a tool registered before it, and keeps its copy when that one goes.",
+      "tools.register is one more entry after the setting's (f0bb7b047): a registration with a taken id changes that tool, defaults merged over its own. Its remover puts back the tool it replaced, defaults included (replaceDefaults), in any removal order: removing the older of two registrations of one id hands what it replaced to the newer, and removing the newer then puts back the built-in, on the hub too. A remover called twice changes nothing. A registration can extend a tool registered before it, and keeps its copy when that one goes. A tool extending one with its own afterCreate registers (the merged afterCreate is not printed: tools.get leaves it out).",
     plugins: PLUGINS,
     engine: { documents: { a: doc([hydrate()]) } },
     snapshot: SNAP,
@@ -1231,6 +1231,9 @@ const cases: ScenarioCase[] = [
       call('tools.getDefaults', ['ink']),
       call('tools.get', ['fine-pen']),
       call('tools.getDefaults', ['fine-pen']),
+      call('tools.register', [{ id: 'quick-note', extends: 'note', afterCreate: { select: false } }]),
+      call('tools.register', [{ id: 'quick-note-2', extends: 'quick-note', afterCreate: { tool: 'pointer' } }]),
+      call('tools.get', ['quick-note-2']),
     ],
   },
   {
