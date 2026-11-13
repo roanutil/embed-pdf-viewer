@@ -101,3 +101,80 @@ The failures by crate and cause, the coverage gaps in upstream's new code, and t
 behaviour that still needs engine cases (CU-C4) are in
 [`reports/CU-C3.md`](docs/research/upstream-catchup-2026-11-12/reports/CU-C3.md). The port jobs
 CU-C4 to CU-C6 start from this branch.
+
+### Port (CU-C4 to CU-C6)
+
+Three jobs ported upstream `074a190c9..ed064e0c8` from CU-C3's tip, each on its own branch.
+
+| Job | Branch tip | Result |
+|---|---|---|
+| CU-C4 | `4fffe696b` | New engine group `changes` (41 kinds, viewports, scale, rename, widget rename, annotation and form copy) and the `epdf-engine`/`pdfium` port that replays it. [Report](docs/research/upstream-catchup-2026-11-12/reports/CU-C4.md) |
+| CU-C5 | `756b8cf16` | Annotation, form, measurement, stamp and signature crates, annotation and form-field duplicate, four kernel changes. Evidence 679 of 679. [Report](docs/research/upstream-catchup-2026-11-12/reports/CU-C5.md) |
+| CU-C6 | `063eb2285` | Kernel, stage (wheel, scroll chaining, coasting) and the remaining plugins; CU-C5's kernel commits taken as cherry-picks. [Report](docs/research/upstream-catchup-2026-11-12/reports/CU-C6.md) |
+
+None made a NEW DIVERGENCE or changed `packages/**`.
+
+### Integration (CU-C7)
+
+`c339af05d`, `c4b25c066` and `87b752368` merge c4, c5 and c6 into this branch; only `coverage.json`
+conflicted, and it was regenerated. CU-C7 then fixed the one cargo failure and the eight evidence
+failures the merge exposed, matched upstream for `labelParams` that aren't finite, added a commands
+case for the translated refusal sentences, fixed the payload script to use emsdk 4's own toolchain,
+built the Rust-core `wasm32` payload and ran `core-wasm`, `epdf-web` and the `platforms/` wrappers
+against the starting plugins tip. [Report](docs/research/upstream-catchup-2026-11-12/reports/CU-C7.md).
+Every decision of the catch-up, NEW DIVERGENCE first (there are none), is in
+[`decisions.md`](docs/research/upstream-catchup-2026-11-12/decisions.md).
+
+## Final state
+
+On `research/catchup-2026-11-12-plugins` at `4fd6375ee` (code; the docs commit after it changes no
+code), in the container. "Start" is plugins `7990560d6`, except where the cell says otherwise.
+
+| Check | Start | Now |
+|---|---|---|
+| `cargo test --workspace` | 3,292 passed, 0 failed | 3,305 passed, 0 failed (1 ignored) |
+| engine `:check` scripts | 34 of 34 | 35 of 35 (new `changes:check`) |
+| plugin `vectors:check`, `coverage:check`, `test:harness`, `typecheck` | all pass | all pass; statements 72,853 of 77,093 |
+| plugin evidence tests | 677 tests at CU-C3 (661 passing after the regeneration) | 679 of 679 |
+| TS package tests (`packages/**`) | 98 of 98 | 98 of 98 |
+| `core-wasm` vitest, `test:gc` (Rust-core payload) | 92 of 92, 13 of 13 (2026-11-07 final) | 102 of 102, 13 of 13 |
+| `epdf-web` wasm tests | | all pass (9 binaries) |
+| `.NET` `dotnet test`, parity, packaging | 33 of 33, 16 of 16, OK | 33 of 33, 16 of 16, OK |
+| `.NET` `pack.sh` + `validate.sh --rid linux-arm64` | PASS | PASS |
+| Kotlin `test-command-context.sh` on a desktop JVM | pass | pass |
+| Swift on Linux (smoke; Swift Testing) | 8 of 8; 466 of 504 | 8 of 8; 466 of 504, the same 38 failing |
+
+The Swift failures are the harness's stubs (keychain, JavaScriptCore, image decoding) and three
+Linux differences, listed in the CU-C7 report. The `@mfb/embedpdf-rust-viewer` typecheck still fails
+on `#inline-transport`, as in 2026-11-07.
+
+Impl (`research/catchup-2026-11-12-impl`, `a7c75f5ad`) has the upstream merge; its Rust stays red on
+vector shape as at its start (D-03). The local `research/multi-platform-rust-core-impl` is
+fast-forwarded to it (`e4c17f48d..a7c75f5ad`).
+
+## Moving the plugins branch
+
+`research/multi-platform-rust-core-impl-plugins` is checked out in `/Users/andrew/repos/embed-pdf-viewer`
+with uncommitted work that isn't part of this catch-up, so it wasn't moved (D-02). It's a
+fast-forward: `7990560d6` is an ancestor of `research/catchup-2026-11-12-plugins`. Once that checkout
+is clean or its work is committed, from that checkout:
+
+```sh
+git merge --ff-only research/catchup-2026-11-12-plugins
+```
+
+From any other worktree while it isn't checked out anywhere, `git fetch . research/catchup-2026-11-12-plugins:research/multi-platform-rust-core-impl-plugins`
+does the same and refuses anything but a fast-forward.
+
+## Not done
+
+- No push of any branch, viewer or runtime (D-04). The runtime-src pointer names `17d8073d4`, which
+  exists only in the local `~/repos/embed-pdf-runtime` on `catchup/2026-11-12-runtime`.
+- No releases: no `runtime-payloads-*` payload, no `apple-engine-*` framework and no `Package.swift`
+  pin. Each is published from the Mac with `scripts/publish-engine-payload.mjs`.
+- No Mac work (D-06): Xcode builds, iOS and macOS tests, the SwiftUI layer, demos, the iOS and macOS
+  fork slices for `17d8073d4`.
+- No Android work (D-06): the AAR, its 16 KB checks and the emulator smoke test.
+- The four other `.NET` RIDs.
+- The plugins canonical fast-forward (above).
+- Remaining findings and gaps are in the reports' "Known gaps" sections and the manager's roll-up.
