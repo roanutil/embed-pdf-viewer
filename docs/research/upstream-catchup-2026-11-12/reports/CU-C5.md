@@ -196,10 +196,19 @@ finishing run, and R3 by the cleanup below.
 
 ## Cleanup
 
-Runs once the branch is on the host; the commit after this one lists what was removed. It removes
-the container worktree `/workspaces/wt/c5` and its `target/` by exact path, and the scratch files
-`/tmp/show.js` and `/tmp/chainpins-c5.py` in the container. The container, its volume and
-`/workspaces/logs/CU-C5-*` stay for CU-C7 and the manager.
+Done after the branch reached the host at `bd22776bd`, each by exact path, in the container:
+
+| Removed | Size |
+|---|---|
+| `/workspaces/wt/c5/target` | 9.8G |
+| worktree `/workspaces/wt/c5` (`git worktree remove`, clean at `bd22776bd`) | |
+| `/tmp/show.js` | 892 bytes |
+| `/tmp/chainpins-c5.py` | 1452 bytes |
+
+The container, its volume, the branch ref in `/workspaces/embed-pdf-viewer`,
+`/workspaces/bundles/CU-C5.bundle` and `/workspaces/logs/CU-C5-*` stay for CU-C7 and the manager.
+Log: `logs/CU-C5-cleanup.log`, sha256 `a20cdfb8`. The host scratch directory `/tmp/cu1112/c5work`
+stays until the review closes.
 
 FEEDBACK: BROKEN The sync from a host checkout to the container copied every file changed against
 the host's HEAD, so a stale host copy overwrote a vector freshly regenerated in the container. A
