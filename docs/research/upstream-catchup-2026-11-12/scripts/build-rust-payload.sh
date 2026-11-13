@@ -8,6 +8,9 @@ cd "$1" || exit 2
 # emcc 4.0.0 expects its own binaryen (121), so drop both before sourcing emsdk 4.
 unset EM_BINARYEN_ROOT EM_CONFIG
 source /workspaces/emsdk4/emsdk_env.sh > /dev/null 2>&1
+# With its own config, emcc 4.0.0 starts from an empty cache. pdfium-sys runs bindgen
+# against the cache's sysroot before emcc has installed any headers there.
+embuilder build sysroot > /dev/null || { echo "FAILED embuilder build sysroot"; exit 1; }
 export PATH="/workspaces/bin:$PATH" CI=true NPM_TOKEN=""
 export CARGO_TARGET_DIR="$1/target" CARGO_BUILD_JOBS=4 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
 export PDF_RUNTIME_BUILD_FILE=/workspaces/wasm32-eh-pin.json
