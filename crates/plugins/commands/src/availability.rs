@@ -84,6 +84,22 @@ pub fn params_json(params: &Params) -> String {
     out
 }
 
+/// `JSON.parse(JSON.stringify(labelParams))`: the params the answers memo
+/// translates its label from. A number that isn't finite comes back as
+/// `null`, which a slot shows as `null` and which picks no plural form.
+pub fn params_through_json(params: &Params) -> Params {
+    params
+        .iter()
+        .map(|(key, value)| {
+            let value = match value {
+                Param::Number(n) if !n.is_finite() => Param::Text("null".to_string()),
+                other => other.clone(),
+            };
+            (key.to_string(), value)
+        })
+        .collect()
+}
+
 /// `sessionHolds`: what `ctx.allows` answers for a document-scoped plugin,
 /// asked of the command's document.
 fn session_holds(security: &dyn DocumentSecurity, permission: &str) -> bool {

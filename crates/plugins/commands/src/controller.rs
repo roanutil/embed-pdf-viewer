@@ -34,7 +34,8 @@ use serde_json::Value;
 
 use crate::availability::{
     Translate, is_turned_off, label_of, label_params_of, locked_key_of, locked_message,
-    not_allowed_key_of, not_allowed_message, params_json, refusal_of, translate_of,
+    not_allowed_key_of, not_allowed_message, params_json, params_through_json, refusal_of,
+    translate_of,
 };
 use crate::contract::{
     AccentDerivation, CommandCtx, CommandDef, CommandExecutedEvent, CommandExecutionFailedEvent,
@@ -564,8 +565,8 @@ impl CommandsCapability {
         let def = &entry.def;
         let Availability { enabled, visible, not_allowed_key, locked_key } =
             self.availability_of(def, context);
-        let label_params =
-            label_params_of(def, context).map(|params| (params_json(&params), params));
+        let label_params = label_params_of(def, context)
+            .map(|params| (params_json(&params), params_through_json(&params)));
         let translate = translate_of(context);
         let accent = derive_accent(def.icon_accent.as_ref(), context);
         let active = Self::active_of(def, context);
