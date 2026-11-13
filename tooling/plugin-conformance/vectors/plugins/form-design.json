@@ -158054,7 +158054,7 @@
                         "kind": "objectNumber",
                         "objectNumber": 9
                       },
-                      "fieldKind": "text",
+                      "fieldKind": "radio",
                       "hasMark": false
                     },
                     {
@@ -158127,7 +158127,7 @@
                         "kind": "objectNumber",
                         "objectNumber": 9
                       },
-                      "fieldKind": "text",
+                      "fieldKind": "radio",
                       "hasMark": false
                     }
                   ],
@@ -158745,7 +158745,7 @@
                             "kind": "objectNumber",
                             "objectNumber": 9
                           },
-                          "fieldKind": "text",
+                          "fieldKind": "radio",
                           "hasMark": false
                         }
                       ],
@@ -159170,7 +159170,7 @@
                           "kind": "objectNumber",
                           "objectNumber": 9
                         },
-                        "fieldKind": "text",
+                        "fieldKind": "radio",
                         "hasMark": false
                       }
                     ],
@@ -160477,7 +160477,7 @@
                       "kind": "objectNumber",
                       "objectNumber": 9
                     },
-                    "fieldKind": "text",
+                    "fieldKind": "radio",
                     "hasMark": false
                   }
                 ],
@@ -160630,7 +160630,7 @@
                   "kind": "objectNumber",
                   "objectNumber": 9
                 },
-                "fieldKind": "text",
+                "fieldKind": "radio",
                 "hasMark": false
               },
               {
@@ -160703,7 +160703,7 @@
                   "kind": "objectNumber",
                   "objectNumber": 9
                 },
-                "fieldKind": "text",
+                "fieldKind": "radio",
                 "hasMark": false
               },
               {
@@ -160776,7 +160776,7 @@
                   "kind": "objectNumber",
                   "objectNumber": 9
                 },
-                "fieldKind": "text",
+                "fieldKind": "radio",
                 "hasMark": false
               }
             ]
