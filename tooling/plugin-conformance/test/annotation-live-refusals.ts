@@ -80,4 +80,10 @@ export const expectedRefusals: Readonly<
   // 1481e4556: an unknown ref, and a copy the engine refuses.
   'duplicate-copies-as-one-change': [[12, 'settled', ['no annotation obj:9']]],
   'selection-duplicate-lands-beside': [[8, 'settled', ['copy refused']]],
+  // b3f1c447e, 1481e4556: an answer with no copy item, and a refused copy told to onWriteFailed.
+  'import-staged-and-copy-answers': [
+    [5, 'settled', ['the annotations could not be copied']],
+    [6, 'settled', ['copy refused']],
+    [6, 'callbacks', ['copy refused']],
+  ],
 };

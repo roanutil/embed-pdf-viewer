@@ -743,6 +743,29 @@ test('scale changes remeasure actual refs skip locked records and clear back to 
   assert.equal(reset.ready, true);
   assert.equal(reset.persistent, true);
   assert.deepEqual(value(t, 19), settlement(t, 14));
+  // Each answer's events: pages.scaleSet, then annotations.updated for the re-measured line
+  // (appearance regenerated, changedRefs [objRef(1)]), all under the write's opId.
+  const responses = scenario('set-scale-on-one-page').engine!.documents!.a!.responses!.filter(
+    (r) => r.path === 'apply',
+  );
+  assert.equal(responses.length, 3);
+  for (const [i, response] of responses.entries()) {
+    const opId = (writes[i]!.args[1] as { opId: string }).opId;
+    const events = response.events ?? [];
+    assert.equal(events.length, opsOf(i).length);
+    events.forEach((event, j) => {
+      assert.deepEqual(event.origin.transaction, { id: opId, index: j, count: events.length });
+    });
+    assert.equal(events[0]!.type, 'pages.scaleSet');
+    const updated = events[1];
+    if (i === 1) {
+      assert.equal(updated, undefined, 'recalculate false re-measures nothing');
+      continue;
+    }
+    assert.ok(updated && updated.type === 'annotations.updated');
+    assert.equal(updated.appearance.changed, true);
+    assert.deepEqual(updated.meta.changedRefs, [objRef(1)]);
+  }
 });
 test('multi-page strict preflight and tolerant scale errors remain separate channels', async () => {
   const t = (await run('set-scale-on-several-pages')).trace;
@@ -1040,8 +1063,8 @@ test('the complete original B3 archive, its 61 measurement mappings and the 2026
   const current = suites.flatMap((s) =>
     s.cases.map((c) => ({ file: s.file, name: c.name, input: canonical(c) })),
   );
-  assert.equal(current.length, 59);
-  assert.equal(new Set(current.map((c) => c.file + ':' + c.name)).size, 59);
+  assert.equal(current.length, 60);
+  assert.equal(new Set(current.map((c) => c.file + ':' + c.name)).size, 60);
   const mapped = new Set<string>();
   for (const row of catchUp.mappings) {
     assert.ok(row.reason);
@@ -1067,7 +1090,7 @@ test('the complete original B3 archive, its 61 measurement mappings and the 2026
     assert.equal(mapped.has(row.file + ':' + row.name), false);
     mapped.add(row.file + ':' + row.name);
   }
-  assert.equal(mapped.size, 59);
+  assert.equal(mapped.size, 60);
   assert.deepEqual(
     [
       catchUp.previous,
@@ -1077,7 +1100,7 @@ test('the complete original B3 archive, its 61 measurement mappings and the 2026
       catchUp.retired,
       catchUp.added,
     ],
-    [64, 59, 36, 22, 6, 1],
+    [64, 60, 36, 22, 6, 2],
   );
   assert.deepEqual(
     accounting.additions.map((c) => c.name),

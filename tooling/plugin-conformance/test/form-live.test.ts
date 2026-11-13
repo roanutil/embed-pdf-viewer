@@ -5,10 +5,10 @@ import { suites as fill } from '../src/suites/form-fill';
 import { suites as design } from '../src/suites/form-design';
 import { runScenario } from '../src/scenario';
 
-test('all 61 fill/design scenarios use the current form boundary without throws or unmatched calls', async () => {
+test('all 64 fill/design scenarios use the current form boundary without throws or unmatched calls', async () => {
   const cases = [...fill, ...design].flatMap((s) => s.cases);
-  // 61: form-design's duplicate-fields-and-widgets (upstream a390171cc).
-  assert.equal(cases.length, 61);
+  // 64: form-design's four duplicate cases (upstream a390171cc).
+  assert.equal(cases.length, 64);
   const broken: unknown[] = [];
   for (const input of cases) {
     assert.ok('steps' in input);
@@ -178,6 +178,9 @@ const expectedRejections: Record<string, unknown[]> = {
   'attach-widget': [pluginRefusal('cannot add widget', 'InvalidArg', 'invalid-input')],
   // Upstream a390171cc: planFormCopies refuses a field the form doesn't have, and
   // duplicateWidgets a widget it doesn't show.
+  'duplicate-widgets-with-nothing-to-copy-or-refused': [
+    pluginRefusal('copy refused', 'Refused', 'operation-failed'),
+  ],
   'duplicate-fields-and-widgets': [
     {
       $error: {

@@ -242,7 +242,12 @@ const currentCases = owned.flatMap((s) => (s.kind === 'scenario' ? s.cases : [])
 /** Cases the 2026-11-12 catch-up added after the migration archive, for new upstream behaviour. */
 const caughtUp: Record<string, string[]> = {
   // 1481e4556: annotation duplicate.
-  'plugins/annotation-crud.json': ['duplicate-copies-as-one-change', 'selection-duplicate-lands-beside'],
+  'plugins/annotation-crud.json': [
+    'duplicate-copies-as-one-change',
+    'selection-duplicate-lands-beside',
+    // b3f1c447e and 1481e4556: an import staged as a verb change, and copy answers.
+    'import-staged-and-copy-answers',
+  ],
 };
 const caughtUpCount = Object.values(caughtUp).flat().length;
 const runs = new Map<string, { input: ScenarioCase; trace: TraceEntry[] }>();
@@ -365,10 +370,13 @@ test('every successful apply has matching current ops/items/events/opId/birth re
       if (!response.value) return;
       const result = response.value as ChangeResult;
       assert.equal(call.args[1].opId, result.meta.opId, name);
-      assert.equal(result.items.length, call.args[0].ops.length, name);
+      if (!(call.args[0].ops[0]?.type === 'annotations.copy' && result.items.length === 0))
+        assert.equal(result.items.length, call.args[0].ops.length, name);
       // A copy (1481e4556) is one item and one annotations.created per copy, under the op's numbers.
       const [copyOp] = call.args[0].ops;
       if (copyOp?.type === 'annotations.copy') {
+        // A deliberate negative: an answer without the copy item, which duplicate refuses.
+        if (result.items.length === 0) return;
         const item = result.items[0]!;
         assert.ok(item.type === 'annotations.copy', name);
         assert.deepEqual(

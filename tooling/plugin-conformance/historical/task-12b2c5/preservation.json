@@ -1239,7 +1239,7 @@
     },
     {
       "path": "tooling/plugin-conformance/test/annotation-live-refusals.ts",
-      "sha256": "0c9cc0cccf5de9a912936e2443bb5276578cad5eee47a48cada35365aaaf953d"
+      "sha256": "a23ea35c6107d4ea6e3cb8b2bcb5b04ea72d72e7143d2c9a85d10afc0dc12a9f"
     },
     {
       "path": "tooling/plugin-conformance/test/annotation-live.test.ts",

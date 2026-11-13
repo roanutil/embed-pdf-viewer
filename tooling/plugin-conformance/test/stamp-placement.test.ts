@@ -980,7 +980,7 @@ test('aggregate accounts for all original211 and preserves every reviewed earlie
   // The 2026-11-12 catch-up rewrote the measurement slice (upstream c7f8d75ff, 8bc6546e5): 64
   // of its cases became 59. Its accounting maps each measurement row this archive pins to the
   // case that carries it now, or retires it with its reason.
-  assert.equal(current.size, 222);
+  assert.equal(current.size, 223);
   const catchUp: {
     previousAccounting: { path: string; sha256: string };
     mappings: { before: Row; after: Row | null }[];
@@ -1056,7 +1056,7 @@ test('aggregate accounts for all original211 and preserves every reviewed earlie
   }
   assert.equal(before.size, 211);
   assert.equal(caughtUpRetirements, 6);
-  assert.equal(mapped.size, 222);
+  assert.equal(mapped.size, 223);
   assert.equal(retired, 2);
   assert.equal(added, 18);
   for (const row of aggregate.sourceEvidence) {

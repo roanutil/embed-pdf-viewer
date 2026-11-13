@@ -929,7 +929,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c5/preservation.json",
-      "sha256": "97dfef058feb0b36da2f31fa72a52aeea626b7f7d441b86e4e6545af31b6a3b7"
+      "sha256": "5fd863173075fc73b497faa7b136cbc43a2d5205981721311d8cea5045ecf80a"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c5/red.out",
@@ -1057,7 +1057,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c6/fix1-preservation.json",
-      "sha256": "89564b900684fd4785467bf92a2729eff80716499d658456618ce7e3ac727d02"
+      "sha256": "393de74f800b6348440f2b988b014aa70376612f8e560ce75bd12ecdb1e37eef"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c6/fix1-preservation.out",
@@ -1165,7 +1165,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c6/preservation.json",
-      "sha256": "79b49602535456ee73711f8dfe1f7b01a376beb75ecbc5ce2841ffdcc08cb8d5"
+      "sha256": "06c0f112b66952d8c937a17959d994bbc97523e4f1e33e668351791e22aeec70"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c6/red.out",
@@ -1401,7 +1401,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c7/preservation.json",
-      "sha256": "2f9415713ae5e5ff087eeca4432e588b5aee7bd9e828b88b5541e83bfca93a68"
+      "sha256": "6200eecddf6e902d319ab8933d1456e82f85b109dd92e8d2aacdeea838735923"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c7/red.out",
@@ -1481,7 +1481,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c8/fix1/audit.json",
-      "sha256": "48b8af062b7ecb9169f2cdfdaa34eb165b9a38c44525c4b05bb9700ade95bce4"
+      "sha256": "95ef38e0e28a9b4f2668f9d7dd738b5b8ce41ffd3c9188912f325db518858007"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c8/fix1/audit.out",
@@ -1509,7 +1509,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c8/fix1/integrity.json",
-      "sha256": "4f9498189e6be078dd628cfa7c3a9cafd169f9ad77f134b3c9a655c0be751ee1"
+      "sha256": "955345473105ea5f14e68e469ab839bec21c4ca18fcc3122ccb6f113f6c7a136"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c8/fix1/layout-tests.out",
@@ -1637,7 +1637,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c8/preservation.json",
-      "sha256": "d55b159ce7951621a68493efbb3cf7a76a8200b3d55463253a451b8f3f725d07"
+      "sha256": "03258d5820ab84c603fb85c0056c53484de1483552706b6199da82f8f7b23f42"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c8/red.out.gz",
@@ -1789,7 +1789,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c9/preservation.json",
-      "sha256": "1ab827f885035f45e00a47163f142efb6107e6c05b5a640e4d344725cb766e20"
+      "sha256": "301dc151fedfbec2638984fadc0624bbfef0d8e55db445a4a440554810cfd555"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c9/red.out",
@@ -2257,7 +2257,7 @@
     },
     {
       "path": "tooling/plugin-conformance/test/annotation-live-refusals.ts",
-      "sha256": "0c9cc0cccf5de9a912936e2443bb5276578cad5eee47a48cada35365aaaf953d"
+      "sha256": "a23ea35c6107d4ea6e3cb8b2bcb5b04ea72d72e7143d2c9a85d10afc0dc12a9f"
     },
     {
       "path": "tooling/plugin-conformance/test/annotation-live.test.ts",

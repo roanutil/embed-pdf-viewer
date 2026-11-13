@@ -6,11 +6,11 @@
     "sha256": "f0d5cf7664eec1b9aa683b2d2e4f8f2dd28d92a69712e6edec18596b4d4c91f0"
   },
   "previous": 64,
-  "current": 59,
+  "current": 60,
   "unchanged": 36,
   "rewritten": 22,
   "retired": 6,
-  "added": 1,
+  "added": 2,
   "mappings": [
     {
       "before": {
@@ -1031,6 +1031,15 @@
       "upstream": [
         "8bc6546e5",
         "a4805a492"
+      ]
+    },
+    {
+      "file": "plugins/measurement.json",
+      "name": "default-scale-change-retells-pages",
+      "inputSha256": "b7ac61b7bf1774dae454aabe2863ede68785c6df46ef7d9bf0b24ee5e07b8c8b",
+      "reason": "A new defaultScale makes a page without a scale read the new default and tells the annotation plugin every page's viewports again.",
+      "upstream": [
+        "8bc6546e5"
       ]
     }
   ]

@@ -58,6 +58,8 @@ const RETIRED: Record<string, string> = {
   'page-scale-failed-empty': 'pageScaleOf and its read error are gone.',
 };
 const ADDED: Record<string, string> = {
+  'default-scale-change-retells-pages':
+    "A new defaultScale makes a page without a scale read the new default and tells the annotation plugin every page's viewports again.",
   'scale-events-move-the-layout':
     "A page's scale comes with its layout: canMeasure and ensureLoaded answer at once, another session's pages.scaleSet moves it, stream.desynced re-reads the page list (a4805a492), and document.versioned changes nothing.",
 };
@@ -80,7 +82,8 @@ const additions = [...current.entries()]
   .map(([, row]) => {
     const reason = ADDED[row.name];
     if (!reason) throw new Error(`no addition reason for ${row.file}:${row.name}`);
-    return { ...row, reason, upstream: ['8bc6546e5', 'a4805a492'] };
+    const upstream = row.name === 'scale-events-move-the-layout' ? ['8bc6546e5', 'a4805a492'] : ['8bc6546e5'];
+    return { ...row, reason, upstream };
   });
 const out = {
   catchUp: '2026-11-12',

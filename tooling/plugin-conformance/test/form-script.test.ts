@@ -1006,6 +1006,17 @@ test('exact 59-case migration closes every original 220 input against immutable 
   // each is new, and none of the archive's mappings name it.
   const caughtUp = [
     { file: 'plugins/form-design.json', name: 'duplicate-fields-and-widgets', upstream: 'a390171cc' },
+    { file: 'plugins/form-design.json', name: 'duplicate-widgets-by-the-designers-rule', upstream: 'a390171cc' },
+    {
+      file: 'plugins/form-design.json',
+      name: 'duplicate-widgets-with-nothing-to-copy-or-refused',
+      upstream: 'a390171cc',
+    },
+    {
+      file: 'plugins/form-design.json',
+      name: 'selection-duplicate-hands-widgets-to-the-form',
+      upstream: 'a390171cc',
+    },
   ];
   for (const added of caughtUp)
     assert.ok(whole.some((row) => row.file === added.file && row.name === added.name), added.name);
