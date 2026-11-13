@@ -254,10 +254,11 @@ impl StageCapability {
     /// longer axis: the camera can move that way, or a turn has a page to
     /// turn to.
     pub(crate) fn leads_somewhere(&self, delta: Push) -> bool {
-        let y = !(delta.x.abs() > delta.y.abs());
-        let next = self.ahead(delta).axis(y) > 0.0;
+        // `Math.abs(x) > Math.abs(y) ? 'x' : 'y'`: a tie, or NaN, is `y`.
+        let along_x = delta.x.abs() > delta.y.abs();
+        let next = self.ahead(delta).axis(!along_x) > 0.0;
         let edges = self.edges_now();
-        let at_edge = match (next, y) {
+        let at_edge = match (next, !along_x) {
             (true, true) => edges.next_y,
             (true, false) => edges.next_x,
             (false, true) => edges.previous_y,
