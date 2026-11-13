@@ -7,14 +7,14 @@
 //! brings back the picture it had.
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use epdf_annotation_core::flags::viewable;
 use epdf_annotation_core::object::Json;
 use epdf_annotation_core::plane::is_substrate_only;
 use epdf_annotation_core::record::{group_of, shape_of};
-use epdf_annotation_core::types::{Model, Shape, Source, ViewEnv};
+use epdf_annotation_core::types::{Model, ModelAnnotation, Shape, Source, ViewEnv};
 use epdf_annotation_core::view::page_items;
 use epdf_kernel::rt::Promise;
 use epdf_kernel::signal::AbortSignal;
@@ -22,7 +22,8 @@ use epdf_plugin_render::{AppearanceFamily, AppearanceItem, AppearancesOptions, R
 use serde_json::{Map, Value, json};
 
 use crate::controller::Core;
-use crate::js::{key_or_none, num, page_object_number};
+use crate::host_contract::StampPreviewProvider;
+use crate::js::{key_or_none, num, page_number, page_object_number};
 use crate::model::{ForeignPlacement, GhostPointer};
 use crate::read::chrome::core_page;
 use crate::text_item::{TextItemFonts, build_text_items};
@@ -164,19 +165,88 @@ impl Core {
         value
     }
 
-    /// The engine's last pictures of a record, kept a while after it left its page.
-    fn kept_of(&self, id: &str, reference: &Value) -> Vec<Value> {
+    /// `originalsOf(id)`: the annotations a copy the engine hasn't written
+    /// stands in for, nearest first: the one it copies, then, while that one
+    /// is such a copy too, the one behind it, and last the source noted when
+    /// the copy was staged, which still holds once the engine wrote a copy in
+    /// between.
+    fn originals_of(&self, id: &str) -> Vec<Value> {
+        let view = self.records.view();
+        let byk = crate::sync::records::by_key(&view);
+        let mut originals: Vec<Value> = Vec::new();
+        let mut seen: HashSet<String> = HashSet::from([id.to_string()]);
+        let mut next = byk.get(id).and_then(crate::sync::records::copy_of).cloned();
+        while let Some(original) = next {
+            let key = key_or_none(&original);
+            if !seen.insert(key.clone()) {
+                break;
+            }
+            originals.push(original);
+            next = byk.get(&key).and_then(crate::sync::records::copy_of).cloned();
+        }
+        if let Some(noted) = self.copy_source_of(id)
+            && !seen.contains(&key_or_none(&noted))
+        {
+            originals.push(noted);
+        }
+        originals
+    }
+
+    /// `previewOf(record)`: the preview a record the engine hasn't written
+    /// shows: the one it was placed with (a stamp this session placed), or,
+    /// for a copy of a stamp that is still being placed, that stamp's.
+    fn preview_or_original(&self, record: &ModelAnnotation) -> Option<StampPreviewProvider> {
+        let own = self.look_of(record);
+        if own.is_some() || record.unconfirmed != Some(true) {
+            return own;
+        }
+        for original in self.originals_of(&record.id) {
+            let page = page_number(&original).unwrap_or(f64::NAN);
+            let model = self.page_model(page);
+            let look =
+                model.by_id.get(&key_or_none(&original)).and_then(|placed| self.look_of(placed));
+            if look.is_some() {
+                return look;
+            }
+        }
+        None
+    }
+
+    /// `keptOf(record)`: the pictures a record the engine hasn't written
+    /// shows when it has no live drawing: the engine's last pictures of it,
+    /// kept a while after it left its page (an undo brings it back), or, for
+    /// a copy, the ones of the annotation it copies, where the copy is.
+    fn kept_of(&self, record: &ModelAnnotation) -> Vec<Value> {
         let Ok(Some(render)) = self.cx.try_get(&RENDER) else { return Vec::new() };
-        let family = if self.lending.owns(id) {
+        let family = if self.lending.owns(&record.id) {
             AppearanceFamily::Widgets
         } else {
             AppearanceFamily::Annotations
         };
-        render
-            .get_kept_appearances(family, reference)
-            .iter()
-            .map(|p| serde_json::to_value(p).unwrap_or(Value::Null))
-            .collect()
+        let reference = record.annotation.get("ref").cloned().unwrap_or(Value::Null);
+        let as_json = |pictures: &[_]| -> Vec<Value> {
+            pictures.iter().map(|p| serde_json::to_value(p).unwrap_or(Value::Null)).collect()
+        };
+        let own = render.get_kept_appearances(family, &reference);
+        if !own.is_empty() {
+            return as_json(&own);
+        }
+        for original in self.originals_of(&record.id) {
+            let kept = render.get_kept_appearances(AppearanceFamily::Annotations, &original);
+            if !kept.is_empty() {
+                return as_json(&kept)
+                    .into_iter()
+                    .map(|mut each| {
+                        each["ref"] = reference.clone();
+                        if let Some(ap_box) = &record.ap_box {
+                            each["rect"] = ap_box.json();
+                        }
+                        each
+                    })
+                    .collect();
+            }
+        }
+        Vec::new()
     }
 
     fn epoch_of(&self, page: &Value) -> Epoch {
@@ -194,10 +264,9 @@ impl Core {
                 continue;
             }
             if record.unconfirmed == Some(true) {
-                let reference = record.annotation.get("ref").cloned().unwrap_or(Value::Null);
-                if self.look_of(record).is_some() {
+                if self.preview_or_original(record).is_some() {
                     placed.push(format!("{id}@placed"));
-                } else if !self.kept_of(id, &reference).is_empty() {
+                } else if !self.kept_of(record).is_empty() {
                     placed.push(format!("{id}@kept"));
                 }
                 continue;
@@ -319,9 +388,9 @@ impl Core {
             }
             let version = record.picture_version.unwrap_or(0.0);
             let reference = record.annotation.get("ref").cloned().unwrap_or(Value::Null);
-            let Some(look) = self.look_of(&record) else {
+            let Some(look) = self.preview_or_original(&record) else {
                 let kept: Vec<Value> = self
-                    .kept_of(id, &reference)
+                    .kept_of(&record)
                     .into_iter()
                     .map(|mut kept| {
                         kept["version"] = num(version);

@@ -5,9 +5,10 @@ import { suites as fill } from '../src/suites/form-fill';
 import { suites as design } from '../src/suites/form-design';
 import { runScenario } from '../src/scenario';
 
-test('all 60 fill/design scenarios use the current form boundary without throws or unmatched calls', async () => {
+test('all 64 fill/design scenarios use the current form boundary without throws or unmatched calls', async () => {
   const cases = [...fill, ...design].flatMap((s) => s.cases);
-  assert.equal(cases.length, 60);
+  // 64: form-design's four duplicate cases (upstream a390171cc).
+  assert.equal(cases.length, 64);
   const broken: unknown[] = [];
   for (const input of cases) {
     assert.ok('steps' in input);
@@ -175,6 +176,40 @@ const expectedRejections: Record<string, unknown[]> = {
     pluginRefusal('unknown field', 'NotFound', 'not-found'),
   ],
   'attach-widget': [pluginRefusal('cannot add widget', 'InvalidArg', 'invalid-input')],
+  // Upstream a390171cc: planFormCopies refuses a field the form doesn't have, and
+  // duplicateWidgets a widget it doesn't show.
+  'duplicate-widgets-with-nothing-to-copy-or-refused': [
+    pluginRefusal('copy refused', 'Refused', 'operation-failed'),
+  ],
+  'duplicate-fields-and-widgets': [
+    {
+      $error: {
+        name: 'PluginError',
+        message: 'copy: no form field obj:99',
+        code: 'not-found',
+        capability: 'form',
+        permission: null,
+        details: { item: 0 },
+        cause: {
+          $error: {
+            name: 'EngineError',
+            message: 'copy: no form field obj:99',
+            code: 'NotFound',
+            details: { item: 0 },
+          },
+        },
+      },
+    },
+    {
+      $error: {
+        name: 'PluginError',
+        message: 'no widget obj:999',
+        code: 'not-found',
+        capability: 'form',
+        permission: null,
+      },
+    },
+  ],
 };
 test('all named refusals and diagnostics use exact rejection, report and callback channels; no tracked promise is left pending', async () => {
   const previousError = console.error,

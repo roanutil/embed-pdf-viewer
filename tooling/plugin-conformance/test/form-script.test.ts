@@ -1002,8 +1002,29 @@ test('exact 59-case migration closes every original 220 input against immutable 
   const whole = [...core, ...lifecycle, ...fill, ...design, ...scripting, ...actions].flatMap(
     (suite) => suite.cases.map((input) => ({ file: suite.file, name: input.name, input })),
   );
-  assert.equal(whole.length, 221);
-  assert.equal(new Set(whole.map((row) => row.file + ':' + row.name)).size, 221);
+  // Cases the 2026-11-12 catch-up added for new upstream behaviour, after this archive:
+  // each is new, and none of the archive's mappings name it.
+  const caughtUp = [
+    { file: 'plugins/form-design.json', name: 'duplicate-fields-and-widgets', upstream: 'a390171cc' },
+    { file: 'plugins/form-design.json', name: 'duplicate-widgets-by-the-designers-rule', upstream: 'a390171cc' },
+    {
+      file: 'plugins/form-design.json',
+      name: 'duplicate-widgets-with-nothing-to-copy-or-refused',
+      upstream: 'a390171cc',
+    },
+    {
+      file: 'plugins/form-design.json',
+      name: 'selection-duplicate-hands-widgets-to-the-form',
+      upstream: 'a390171cc',
+    },
+  ];
+  for (const added of caughtUp)
+    assert.ok(whole.some((row) => row.file === added.file && row.name === added.name), added.name);
+  assert.equal(whole.length, 221 + caughtUp.length);
+  assert.equal(
+    new Set(whole.map((row) => row.file + ':' + row.name)).size,
+    221 + caughtUp.length,
+  );
   const mappings = array(account.mappings).map(object),
     allMappings = array(family.mappings).map(object);
   assert.equal(mappings.length, 59);
@@ -1027,6 +1048,7 @@ test('exact 59-case migration closes every original 220 input against immutable 
     assert.equal(hash(JSON.stringify(old.input)), from.canonicalInputSha256);
     assert.equal(hash(JSON.stringify(canonical(current.input))), to.canonicalInputSha256);
     assert.equal(mapping.task11InputDrift, false);
+    assert.ok(!caughtUp.some((added) => added.file === to.file && added.name === to.name));
   }
   const first = object(await read('accounting.json', oldHistory));
   const second = object(await read('accounting.json', new URL('historical/task-12b2b2-ii/', root)));

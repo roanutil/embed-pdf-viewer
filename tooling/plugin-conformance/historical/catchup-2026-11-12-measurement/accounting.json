@@ -1,0 +1,1046 @@
+{
+  "catchUp": "2026-11-12",
+  "upstream": "ed064e0c867e7688234ad36c0350377544ef93f9",
+  "previousAccounting": {
+    "path": "tooling/plugin-conformance/historical/task-12b2b3-i/accounting.json",
+    "sha256": "f0d5cf7664eec1b9aa683b2d2e4f8f2dd28d92a69712e6edec18596b4d4c91f0"
+  },
+  "previous": 64,
+  "current": 60,
+  "unchanged": 36,
+  "rewritten": 22,
+  "retired": 6,
+  "added": 2,
+  "mappings": [
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "reads-without-a-measure-service",
+        "inputSha256": "ec737e164f8960d654409e3f252829a307190cfcae48c87566dc342410428263"
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "reads-without-a-measure-service",
+        "inputSha256": "2a56633773e6942d1c1e6d7b6ff6825316aa618b8b1fdf689d72b08f6603dcd4"
+      },
+      "disposition": "rewritten",
+      "reason": "Rewritten for scales on the page layout and a scale change as one change: pages carry their viewports, and the engine answers pages.setScale through apply in place of page.measure reads and writes (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "c7f8d75ff",
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "imperial-default-and-custom-presets",
+        "inputSha256": "69274a373d9037e7b33613c2fd5390de4d616412fc006ca60b786e7ffeb53c1a"
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "imperial-default-and-custom-presets",
+        "inputSha256": "e5195c23d79a91ab5f6570f85da037d93ec3615a8b51eb927e26c4084fa0a4e1"
+      },
+      "disposition": "rewritten",
+      "reason": "Rewritten for scales on the page layout and a scale change as one change: pages carry their viewports, and the engine answers pages.setScale through apply in place of page.measure reads and writes (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "c7f8d75ff",
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "custom-default-measure",
+        "inputSha256": "6811ae8609dd9d3a44cc604fb6e607300b6a9b7b74fad8a7794cea2f613bbef5"
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "custom-default-measure",
+        "inputSha256": "5213a89548dc34bd5f250e74e6c99804f3ec98077cfea6bde635da17734d163e"
+      },
+      "disposition": "rewritten",
+      "reason": "Rewritten for scales on the page layout and a scale change as one change: pages carry their viewports, and the engine answers pages.setScale through apply in place of page.measure reads and writes (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "c7f8d75ff",
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "measure-service-viewports",
+        "inputSha256": "d82ee9121ab3b84367b5beab2ec9764364acc871297dc0eb1702fb6e67b2b19f"
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "measure-service-viewports",
+        "inputSha256": "054bc5c763c7b0d8fe589b4f5ec36f28839d18df11ee63ae7ef254f71e1dc6d8"
+      },
+      "disposition": "rewritten",
+      "reason": "Rewritten for scales on the page layout and a scale change as one change: pages carry their viewports, and the engine answers pages.setScale through apply in place of page.measure reads and writes (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "c7f8d75ff",
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "viewport-reads-fail-refresh-and-rehydrate",
+        "inputSha256": "31ce288f28a4c35f7deb2785f0d79611ca80be8b9dfd10f97fe58bf53a905cbd"
+      },
+      "after": null,
+      "disposition": "retired",
+      "reason": "The viewports page mirror, its failed reads and retries are gone: a page's viewports come with its layout. scale-events-move-the-layout covers what replaced them.",
+      "upstream": [
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "refresh-epochs",
+        "inputSha256": "714ff521a1224a57b65441e9c538397227f680e0a677130da578017afecb2f12"
+      },
+      "after": null,
+      "disposition": "retired",
+      "reason": "The mirror's read epochs are gone with it. scale-events-move-the-layout covers a desync re-reading the page list.",
+      "upstream": [
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "set-scale-on-one-page",
+        "inputSha256": "6f2c497f708893d61b726ff3f0e85d98ac26272fab634a4e0a205eb82876a4e6"
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "set-scale-on-one-page",
+        "inputSha256": "9e24ef03bc9487e10ca25668a730ce9de73f327df22f48f7199ae7368403a490"
+      },
+      "disposition": "rewritten",
+      "reason": "Rewritten for scales on the page layout and a scale change as one change: pages carry their viewports, and the engine answers pages.setScale through apply in place of page.measure reads and writes (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "c7f8d75ff",
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "set-scale-on-several-pages",
+        "inputSha256": "6f16287257e638f7ed35731abe4c844decda97cddca5366dd03b80cb117eb975"
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "set-scale-on-several-pages",
+        "inputSha256": "a8d85bff36a817de3c14bed5c61dfe96640873e0e1242942ba568c8f33553f15"
+      },
+      "disposition": "rewritten",
+      "reason": "Rewritten for scales on the page layout and a scale change as one change: pages carry their viewports, and the engine answers pages.setScale through apply in place of page.measure reads and writes (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "c7f8d75ff",
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "set-scale-preflight",
+        "inputSha256": "e362e8028fc5735b2211e1bc4608fa0e95338ec5aa561dd00ea17cf0dd683f74"
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "set-scale-preflight",
+        "inputSha256": "009577d1a07fe0df4fac1570fe0319c860e28def0d1024317c133e5dc2036fe4"
+      },
+      "disposition": "rewritten",
+      "reason": "Rewritten for scales on the page layout and a scale change as one change: pages carry their viewports, and the engine answers pages.setScale through apply in place of page.measure reads and writes (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "c7f8d75ff",
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "units-precision-and-presets",
+        "inputSha256": "254ac1ea317b4b8a25a6c63f4b99a35bba754fe0d56f1f72661cd0e5077bbbce"
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "units-precision-and-presets",
+        "inputSha256": "7df596d40a6214672ce95636d80c32604f66695b3431b8b76bf60333e1f4e982"
+      },
+      "disposition": "rewritten",
+      "reason": "Rewritten for scales on the page layout and a scale change as one change: pages carry their viewports, and the engine answers pages.setScale through apply in place of page.measure reads and writes (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "c7f8d75ff",
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "service-writes-and-foreign-scales",
+        "inputSha256": "0cbe6ef7867bcfb819313f02c2ede649cb5d0ba5d6060399ce175d10669765ad"
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "service-writes-and-foreign-scales",
+        "inputSha256": "40abcde117e9eaf4caab6ab867602faae2051da441ba9eba55eb77037d979a04"
+      },
+      "disposition": "rewritten",
+      "reason": "Rewritten for scales on the page layout and a scale change as one change: pages carry their viewports, and the engine answers pages.setScale through apply in place of page.measure reads and writes (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "c7f8d75ff",
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "calibration-flow",
+        "inputSha256": "ddc78ce0a7612398ae4255383566887df99b734178b54550d25b4cee1b45bc92"
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "calibration-flow",
+        "inputSha256": "4b21a641f51da733ba803ac27b72c7b127f610ce3c084e4cb088d2aba0e21d72"
+      },
+      "disposition": "rewritten",
+      "reason": "Rewritten for scales on the page layout and a scale change as one change: pages carry their viewports, and the engine answers pages.setScale through apply in place of page.measure reads and writes (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "c7f8d75ff",
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "zero-length-capture",
+        "inputSha256": "2210b9b873a674c4102ac00c60d18d4c0a32384c407a598567030756f228b0e8"
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "zero-length-capture",
+        "inputSha256": "27d521fd50121054ed1ba932b5425bd2e4d9f3481e5c9b29904ff7a5289fef49"
+      },
+      "disposition": "rewritten",
+      "reason": "Rewritten for scales on the page layout and a scale change as one change: pages carry their viewports, and the engine answers pages.setScale through apply in place of page.measure reads and writes (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "c7f8d75ff",
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "without-authority",
+        "inputSha256": "15107bbb19663a38dcde53343681132d9e7b74bdaf5c519ce559bd88ebbb3de0"
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "without-authority",
+        "inputSha256": "f8dd841b11c3dc11ac19d22183d1d9ed4a87525fc8ed997e954f60af42a77e9e"
+      },
+      "disposition": "rewritten",
+      "reason": "Rewritten for scales on the page layout and a scale change as one change: pages carry their viewports, and the engine answers pages.setScale through apply in place of page.measure reads and writes (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "c7f8d75ff",
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "create-measurement",
+        "inputSha256": "1d6fdf187fd02e32efd23ab24e4d6c8c6fbf98dbc1319c23ea8165f7f38abf18"
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "create-measurement",
+        "inputSha256": "682be20ec6df555cd3d240b4746771e2353e84db9f4208695727fcaf9392dc27"
+      },
+      "disposition": "rewritten",
+      "reason": "Rewritten for scales on the page layout and a scale change as one change: pages carry their viewports, and the engine answers pages.setScale through apply in place of page.measure reads and writes (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "c7f8d75ff",
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "listener-throws",
+        "inputSha256": "ab7c3a785d324cc13f33e7d5847c0529eb9ddd80f89c0be353f0f0efd65ce86f"
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "listener-throws",
+        "inputSha256": "c2a7c0e4555c16d8cd068367c111f0d42d181aad7718a8198a19971b366aaed8"
+      },
+      "disposition": "rewritten",
+      "reason": "Rewritten for scales on the page layout and a scale change as one change: pages carry their viewports, and the engine answers pages.setScale through apply in place of page.measure reads and writes (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "c7f8d75ff",
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "pages-inserted-and-removed",
+        "inputSha256": "55a0cfa1df9847247fcf158918775d3e3fe6b303e2ebc2f96829dc99c0bddcb6"
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "pages-inserted-and-removed",
+        "inputSha256": "101b53b672f5a881f6a4c8d0509e9dc820597467b7dd070cf49387256c3ff506"
+      },
+      "disposition": "rewritten",
+      "reason": "Rewritten for scales on the page layout and a scale change as one change: pages carry their viewports, and the engine answers pages.setScale through apply in place of page.measure reads and writes (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "c7f8d75ff",
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "page-removed-while-a-change-waits",
+        "inputSha256": "13cce4ad310759459dc9944e91de2d1ed6c768c6f2a612949c292732785f349e"
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "page-removed-while-a-change-waits",
+        "inputSha256": "858f444d99cd417a113b77408e3f4d26e728a63696b2912c8be93ca83bebcdd7"
+      },
+      "disposition": "rewritten",
+      "reason": "Rewritten for scales on the page layout and a scale change as one change: pages carry their viewports, and the engine answers pages.setScale through apply in place of page.measure reads and writes (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "c7f8d75ff",
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "close-mid-flight",
+        "inputSha256": "802bbadc3fd345cb7a887fbf98fa1d5fcd1dd306b81740176d905695a4ab53c3"
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "close-mid-flight",
+        "inputSha256": "9a87d71026ea34a0b1c750510a15736f17060596edbdc1093842306f0f14e89b"
+      },
+      "disposition": "rewritten",
+      "reason": "Rewritten for scales on the page layout and a scale change as one change: pages carry their viewports, and the engine answers pages.setScale through apply in place of page.measure reads and writes (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "c7f8d75ff",
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "initial-state",
+        "inputSha256": "922ff7523e06a147eb16d9fd37a92bbe6b07b53c2cbd47be9bc9610d0aa7e0fe"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "initial-state",
+        "inputSha256": "922ff7523e06a147eb16d9fd37a92bbe6b07b53c2cbd47be9bc9610d0aa7e0fe"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-page-scale",
+        "inputSha256": "07c9a73ffb9d6b49b611adab6b1e53a81cf6116e4180f7244a948795074a55e8"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-page-scale",
+        "inputSha256": "264115d6966dfa91ae654022c983bfbfc6d0ae002150768165e89a961a104d3c"
+      },
+      "disposition": "rewritten",
+      "reason": "Its state argument lost loadErrors with the viewport mirror (generator c74ec3e9d (CU-C3-D3)), and its covers text names the layout's viewports (finding 019a6653-693d-4d30-9c72-4424baa54cba/R2).",
+      "upstream": [
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-pending-up",
+        "inputSha256": "773d656516359bda782b8729196825c6c074b2e913d95e8228d77dd74f40a73d"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-pending-up",
+        "inputSha256": "c4ce520cca57f1f0e7c36a8b903a58c29647872522e495b622b942527e332983"
+      },
+      "disposition": "rewritten",
+      "reason": "Its state argument lost loadErrors with the viewport mirror (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-pending-floors-at-zero",
+        "inputSha256": "55bd7b203f6ed2d765c72edc5e3f56d35fc9cf661b2e3c25a305714dc70222a4"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-pending-floors-at-zero",
+        "inputSha256": "d0c37cc1b91807172986fb8d35bad9d6bbe544eb0ee88a4100f88414c8b3e55d"
+      },
+      "disposition": "rewritten",
+      "reason": "Its state argument lost loadErrors with the viewport mirror (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-calibration",
+        "inputSha256": "fa336fd29f09f4acfe5740fda1e1172d85721e6379f53e93891f96c7727a6d57"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-calibration",
+        "inputSha256": "a8459f9a97b9c20cb7bf9002bfb2d9e7f0d391ca9ec30d4a2f05802cfa609745"
+      },
+      "disposition": "rewritten",
+      "reason": "Its state argument lost loadErrors with the viewport mirror (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-reports",
+        "inputSha256": "2916fd338f8c73621652b8d6682068d00ce6156d2aa275beb7847941e4a6cad6"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-reports",
+        "inputSha256": "5e9626c0309b13379e00a446498351375ebc7fe91f49f596f5f7a36fb015bf63"
+      },
+      "disposition": "rewritten",
+      "reason": "Its state argument lost loadErrors with the viewport mirror (generator c74ec3e9d (CU-C3-D3)).",
+      "upstream": [
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-unknown",
+        "inputSha256": "3fc1ccb4ec313eb1af27c16a3c8579ea2b5bda211cb6745b3aa8fc8275e23aa7"
+      },
+      "after": null,
+      "disposition": "retired",
+      "reason": "clearLoadError, which it called on an absent page entry, is gone with loadErrors.",
+      "upstream": [
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-presets",
+        "inputSha256": "68aa622c1a796c1b1b805f57af9bb1829f233641b36acda8cf4bee2e34a0f6b1"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-presets",
+        "inputSha256": "68aa622c1a796c1b1b805f57af9bb1829f233641b36acda8cf4bee2e34a0f6b1"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-metric",
+        "inputSha256": "af0c0f0e0e73167c1dad632a178c5866c4cf339ced2a51e96bbcc8eec41f7dbd"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-metric",
+        "inputSha256": "af0c0f0e0e73167c1dad632a178c5866c4cf339ced2a51e96bbcc8eec41f7dbd"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-imperial-user-unit",
+        "inputSha256": "c53697dab80ad2872e5dfeda8215a66551e1948edfdfce00ad9a725784301134"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-imperial-user-unit",
+        "inputSha256": "c53697dab80ad2872e5dfeda8215a66551e1948edfdfce00ad9a725784301134"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-explicit-metric",
+        "inputSha256": "3e1124dcc7d92766ec8161f3840590581b8a57fee7dc049417c9c6b951397a7d"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-explicit-metric",
+        "inputSha256": "3e1124dcc7d92766ec8161f3840590581b8a57fee7dc049417c9c6b951397a7d"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-object",
+        "inputSha256": "fb0e87da925ae7df3ca0033519755071583779f82c86058cb59db7253e700df1"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-object",
+        "inputSha256": "fb0e87da925ae7df3ca0033519755071583779f82c86058cb59db7253e700df1"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-bad-user-unit",
+        "inputSha256": "dca23cb63d9ebfeb7949e09beecd2d39255d4ba2faaf76de365132f5de6977ce"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-bad-user-unit",
+        "inputSha256": "dca23cb63d9ebfeb7949e09beecd2d39255d4ba2faaf76de365132f5de6977ce"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-owned",
+        "inputSha256": "cada50fa495cd18c324bb67bdd3d750991285fabc7e06ce35ea077e361836c12"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-owned",
+        "inputSha256": "cada50fa495cd18c324bb67bdd3d750991285fabc7e06ce35ea077e361836c12"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-last-containing",
+        "inputSha256": "4d79010e0e1bc69ea80a7eb1f78ed11d68084975cef6a1b0fe35e84884cb9f62"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-last-containing",
+        "inputSha256": "4d79010e0e1bc69ea80a7eb1f78ed11d68084975cef6a1b0fe35e84884cb9f62"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-foreign-without-measure",
+        "inputSha256": "cef8c00ea0c2424508bc663f9ed4601feefa01de588a16b61b72253cb7029c72"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-foreign-without-measure",
+        "inputSha256": "cef8c00ea0c2424508bc663f9ed4601feefa01de588a16b61b72253cb7029c72"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-default",
+        "inputSha256": "e9424c3c0735e7c3d99476c3dd8d32704d1ebc51c54d583c63fab7a99f0806a2"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-default",
+        "inputSha256": "e9424c3c0735e7c3d99476c3dd8d32704d1ebc51c54d583c63fab7a99f0806a2"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-none",
+        "inputSha256": "44ae3c78ef8d06aba47510a3b8a8474c2cc7f04d09484d89ef2a0c4093b97884"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-none",
+        "inputSha256": "44ae3c78ef8d06aba47510a3b8a8474c2cc7f04d09484d89ef2a0c4093b97884"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-beside-the-centre",
+        "inputSha256": "bb429f0336520b4bce2a7ec161a7d8cf1d3721fc51ab43590a49b128d528dbb4"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-beside-the-centre",
+        "inputSha256": "bb429f0336520b4bce2a7ec161a7d8cf1d3721fc51ab43590a49b128d528dbb4"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-on-a-raised-crop",
+        "inputSha256": "4cc0103c590ffe59dbef13c4482ca756db31e07bd8842c8aa261e86ea3dd0195"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-on-a-raised-crop",
+        "inputSha256": "4cc0103c590ffe59dbef13c4482ca756db31e07bd8842c8aa261e86ea3dd0195"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit",
+        "inputSha256": "d667a77e9fba6fe2a8947ae1cbcce9dd6efc17cda34920e83ea9de1156d37fa7"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit",
+        "inputSha256": "d667a77e9fba6fe2a8947ae1cbcce9dd6efc17cda34920e83ea9de1156d37fa7"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-and-area",
+        "inputSha256": "afa953a2146b551177e699081000e0337ca8d853f96783e07ae490086145e342"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-and-area",
+        "inputSha256": "afa953a2146b551177e699081000e0337ca8d853f96783e07ae490086145e342"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-from-fraction",
+        "inputSha256": "a79d20f5e4e86389fda30ae510c950fde8e3d868a8f67cb10e60fcd650ae1bbd"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-from-fraction",
+        "inputSha256": "a79d20f5e4e86389fda30ae510c950fde8e3d868a8f67cb10e60fcd650ae1bbd"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-keeps-precision",
+        "inputSha256": "83609ce8af0e66b164d2248144e09ca51437c372f2c165d83ee73c630be23580"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-keeps-precision",
+        "inputSha256": "83609ce8af0e66b164d2248144e09ca51437c372f2c165d83ee73c630be23580"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-no-precision",
+        "inputSha256": "d54fbb13629de1c13419905a8a5f69013b6f1e37afd197e54459256b0e9ecd4a"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-no-precision",
+        "inputSha256": "d54fbb13629de1c13419905a8a5f69013b6f1e37afd197e54459256b0e9ecd4a"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-no-distance",
+        "inputSha256": "5723ec8973fe95cb22af4b28f7c73333b419f12c945411011670fa0ea5761c59"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-no-distance",
+        "inputSha256": "5723ec8973fe95cb22af4b28f7c73333b419f12c945411011670fa0ea5761c59"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-unknown-base",
+        "inputSha256": "63e276c8e4d0e7345515d9c55fbaf7e3da40b821b013e0abe34a6a6bc16cd013"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-unknown-base",
+        "inputSha256": "63e276c8e4d0e7345515d9c55fbaf7e3da40b821b013e0abe34a6a6bc16cd013"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-no-x",
+        "inputSha256": "a3c61a2f6bd9d16b197819b8699304c723bdf3411b81ea049e22b278abe6a49a"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-no-x",
+        "inputSha256": "a3c61a2f6bd9d16b197819b8699304c723bdf3411b81ea049e22b278abe6a49a"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-padded-base",
+        "inputSha256": "85b6f3e49ef829e4ee74478f2fbb89d843799e40b2e40677baad9ecc998c9453"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-padded-base",
+        "inputSha256": "85b6f3e49ef829e4ee74478f2fbb89d843799e40b2e40677baad9ecc998c9453"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit",
+        "inputSha256": "b3e34e4847e71112cf59c7a16fa22dc8b7731bb510671dc97de9e1816715b46b"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit",
+        "inputSha256": "b3e34e4847e71112cf59c7a16fa22dc8b7731bb510671dc97de9e1816715b46b"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-from-fraction",
+        "inputSha256": "80e8d5d110fd4821f31b873c313d4b5d8d9bc62195bd01dce70920486de9dec8"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-from-fraction",
+        "inputSha256": "80e8d5d110fd4821f31b873c313d4b5d8d9bc62195bd01dce70920486de9dec8"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-no-precision",
+        "inputSha256": "15d43eb5d61e02a1a400eca623b32b6aaf18ac0ecf909914afbc7fc54e0943f5"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-no-precision",
+        "inputSha256": "15d43eb5d61e02a1a400eca623b32b6aaf18ac0ecf909914afbc7fc54e0943f5"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-no-area",
+        "inputSha256": "48fcd992447e718356beb758ee9426da033465b8f5fd08071b5bd63f156635a8"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-no-area",
+        "inputSha256": "48fcd992447e718356beb758ee9426da033465b8f5fd08071b5bd63f156635a8"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-unknown-base",
+        "inputSha256": "95ce9643f6cca582ac692e2125f315f19b2612028df57a83bb4bdfe2b0d98c78"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-unknown-base",
+        "inputSha256": "95ce9643f6cca582ac692e2125f315f19b2612028df57a83bb4bdfe2b0d98c78"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-no-x",
+        "inputSha256": "7f4f64b6d00ddcb56b5113c42239d0e3fc387c88b6b6151a285715e382aec63e"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-no-x",
+        "inputSha256": "7f4f64b6d00ddcb56b5113c42239d0e3fc387c88b6b6151a285715e382aec63e"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision",
+        "inputSha256": "a0a2cc186738580530537cec26738156be9fee22d0e37c17f7832bf0220ef9e9"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision",
+        "inputSha256": "a0a2cc186738580530537cec26738156be9fee22d0e37c17f7832bf0220ef9e9"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-one",
+        "inputSha256": "a7735325771e806da73e589d1ef8f0641414a3a4c6e335adcbcbd13bd34cd536"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-one",
+        "inputSha256": "a7735325771e806da73e589d1ef8f0641414a3a4c6e335adcbcbd13bd34cd536"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-max",
+        "inputSha256": "d0ffc4d562abd2180bdbea95fd3cffa16fc6a78c2b05914cb78881a249379756"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-max",
+        "inputSha256": "d0ffc4d562abd2180bdbea95fd3cffa16fc6a78c2b05914cb78881a249379756"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-too-big",
+        "inputSha256": "e6c37987f7e5b4cdcdfd404436dcf3c27f9ddd821bbd629c66f4a06ed83bdb89"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-too-big",
+        "inputSha256": "e6c37987f7e5b4cdcdfd404436dcf3c27f9ddd821bbd629c66f4a06ed83bdb89"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-not-power",
+        "inputSha256": "937c410e490da9cdb7893a66c5638f1d25bcc39518097c0ceb48ea34a13a2494"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-not-power",
+        "inputSha256": "937c410e490da9cdb7893a66c5638f1d25bcc39518097c0ceb48ea34a13a2494"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-fraction",
+        "inputSha256": "e5e21ad3d76ecff5ebf1c55724197eb90d18ee077c386096b6bab1da047969e0"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-fraction",
+        "inputSha256": "e5e21ad3d76ecff5ebf1c55724197eb90d18ee077c386096b6bab1da047969e0"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-empty-lists",
+        "inputSha256": "d2f821ac634fbfe362c8cb8a12f5406903f7f2b9f512ea116a8ebd2def40b8f3"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-empty-lists",
+        "inputSha256": "d2f821ac634fbfe362c8cb8a12f5406903f7f2b9f512ea116a8ebd2def40b8f3"
+      },
+      "disposition": "unchanged",
+      "reason": "Input unchanged.",
+      "upstream": []
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "page-scale-loading",
+        "inputSha256": "fa9b6f059968f7db59e8a1803e9aa78dcdbb73e9d6c2b82a98cdc55e2369bfb9"
+      },
+      "after": null,
+      "disposition": "retired",
+      "reason": "pageScaleOf is gone: a page of an open document is always ready.",
+      "upstream": [
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "page-scale-failed-known",
+        "inputSha256": "64447c49058908ace391a8b0ec052f07c024e44526cf4e0cd9b9b274795e2f3c"
+      },
+      "after": null,
+      "disposition": "retired",
+      "reason": "pageScaleOf and its read error are gone.",
+      "upstream": [
+        "8bc6546e5"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "page-scale-failed-empty",
+        "inputSha256": "73a875817278a68c4d1efaed0ddcaab9fd2682b34de6b73a7d2b46612b20ce61"
+      },
+      "after": null,
+      "disposition": "retired",
+      "reason": "pageScaleOf and its read error are gone.",
+      "upstream": [
+        "8bc6546e5"
+      ]
+    }
+  ],
+  "additions": [
+    {
+      "file": "plugins/measurement.json",
+      "name": "scale-events-move-the-layout",
+      "inputSha256": "7cba00ab114205b039d747ab00368b3c6870d2332cb7ac8233f7a0fdda76351f",
+      "reason": "A page's scale comes with its layout: canMeasure and ensureLoaded answer at once, another session's pages.scaleSet moves it, stream.desynced re-reads the page list (a4805a492), and document.versioned changes nothing.",
+      "upstream": [
+        "8bc6546e5",
+        "a4805a492"
+      ]
+    },
+    {
+      "file": "plugins/measurement.json",
+      "name": "default-scale-change-retells-pages",
+      "inputSha256": "b7ac61b7bf1774dae454aabe2863ede68785c6df46ef7d9bf0b24ee5e07b8c8b",
+      "reason": "A new defaultScale makes a page without a scale read the new default and tells the annotation plugin every page's viewports again.",
+      "upstream": [
+        "8bc6546e5"
+      ]
+    }
+  ]
+}

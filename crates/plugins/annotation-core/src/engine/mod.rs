@@ -5,6 +5,7 @@
 //! build for any target, `wasm32` included.
 
 pub mod appearance;
+pub mod copy;
 pub mod facts;
 pub mod geom;
 pub mod kind_facts;

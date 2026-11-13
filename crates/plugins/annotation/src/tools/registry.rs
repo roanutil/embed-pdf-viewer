@@ -1,8 +1,7 @@
 //! `tools/registry.ts`: the resolved tool table (built-ins and the `tools`
 //! setting). A tool maps its id to a routing subtype, a defaults key
 //! (`preset`), the kind whose properties it shows and, for stamps, a source
-//! spec. The setting's tools are kept so `tools.register` can re-resolve
-//! `extends` against the same base pool.
+//! spec. `tools.register` applies one more entry to the same table.
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -13,14 +12,14 @@ use epdf_annotation_core::props::properties_of;
 use epdf_annotation_core::record::{read_of_defaults, text_of};
 use epdf_annotation_core::update::defaults_for;
 use epdf_kernel::{Error, Unsubscribe};
-use epdf_plugin_interaction::{INTERACTION, RegisterToolOptions, Tool};
+use epdf_plugin_interaction::{INTERACTION, RegisterToolOptions, Tool, Unregister};
 use indexmap::IndexMap;
 use serde_json::{Map, Value, json};
 
 use crate::controller::Core;
 use crate::js::Object;
 use crate::read::property_values::{PropertySources, property_values};
-use crate::tools::definitions::{ResolvedTool, build_tool_registry, tool_touch_of};
+use crate::tools::definitions::{ResolvedTool, apply_tool, build_tool_registry, tool_touch_of};
 
 /// A tool's defaults and style panel, cached while its defaults stay the same.
 #[derive(Clone)]
@@ -33,10 +32,16 @@ struct ToolProperties {
 #[derive(Default)]
 pub struct ToolsState {
     registry: RefCell<IndexMap<String, Rc<ResolvedTool>>>,
-    config_tools: RefCell<Vec<Value>>,
+    /// The registrations in place, per tool id, oldest first, each with the
+    /// tool it replaced.
+    registrations: RefCell<IndexMap<String, Vec<Registration>>>,
     properties: RefCell<IndexMap<String, ToolProperties>>,
     projections: RefCell<Vec<(Rc<ResolvedTool>, Value)>>,
 }
+
+/// One `tools.register` call: the tool it replaced, handed on when an older
+/// registration of the same id is removed first.
+type Registration = Rc<RefCell<Option<Rc<ResolvedTool>>>>;
 
 /// The tool as the hub registers it.
 pub fn hub_tool(tool: &ResolvedTool) -> Rc<Tool> {
@@ -65,7 +70,6 @@ impl Core {
     pub(crate) fn create_tool_registry(&self) -> Result<(), Error> {
         let config = self.parsed().tools();
         let registry = build_tool_registry(&config)?;
-        *self.tools.config_tools.borrow_mut() = config;
         *self.tools.registry.borrow_mut() = registry.clone();
         for tool in registry.values() {
             if let Some(defaults) = &tool.defaults {
@@ -194,38 +198,78 @@ impl Core {
         self.tool(id).map_or(Value::Null, |t| self.project_tool(&t))
     }
 
-    /// `tools.register(definition)`: re-resolved against the same base pool,
-    /// registered with the hub, its defaults seeded. Returns the remover.
+    /// `registerOnHub(tool)`: put `tool` on the hub, in place of any tool with its id.
+    fn register_on_hub(&self, tool: &ResolvedTool) -> Result<Option<Unregister>, Error> {
+        match self.cx.try_get(&INTERACTION).ok().flatten() {
+            Some(interaction) => Ok(Some(
+                interaction.register_tool(hub_tool(tool), RegisterToolOptions { replace: true })?,
+            )),
+            None => Ok(None),
+        }
+    }
+
+    /// `tools.register(definition)`: one more entry after the `tools`
+    /// setting's. The remover takes it back: a tool it added goes away, a
+    /// tool it changed goes back to what it was. Removing the newest
+    /// registration of an id puts back the tool it replaced; removing an
+    /// older one hands what it replaced to the one after it, so removals in
+    /// any order end with the tool the first registration replaced.
     pub fn tools_register(&self, definition: Value) -> Result<Unsubscribe, Error> {
-        let id = definition.get("id").and_then(Value::as_str).unwrap_or("undefined").to_string();
-        let mut pool = self.tools.config_tools.borrow().clone();
-        pool.push(definition);
-        let resolved = build_tool_registry(&pool)?
-            .get(&id)
-            .cloned()
-            .ok_or_else(|| Error::new(format!("[annotation] could not resolve tool '{id}'")))?;
-        self.tools.registry.borrow_mut().insert(resolved.id.clone(), resolved.clone());
-        let unregister = match self.cx.try_get(&INTERACTION).ok().flatten() {
-            Some(interaction) => Some(
-                interaction
-                    .register_tool(hub_tool(&resolved), RegisterToolOptions { replace: true })?,
-            ),
-            None => None,
+        let id = match definition.get("id") {
+            Some(Value::String(s)) => s.clone(),
+            Some(other) => crate::js::stringify(Some(other)),
+            None => "undefined".into(),
         };
-        if let Some(defaults) = &resolved.defaults {
+        let replaced = self.tool(&id);
+        let tool = apply_tool(&mut self.tools.registry.borrow_mut(), &definition)?;
+        let unregister = self.register_on_hub(&tool)?;
+        if let Some(defaults) = &tool.defaults {
             self.commit_json(
-                json!({ "type": "setDefaults", "preset": resolved.preset, "patch": defaults }),
+                json!({ "type": "setDefaults", "preset": tool.preset, "patch": defaults }),
             )?;
         }
+        let registration: Registration = Rc::new(RefCell::new(replaced));
+        self.tools
+            .registrations
+            .borrow_mut()
+            .entry(tool.id.clone())
+            .or_default()
+            .push(registration.clone());
         let me = self.weak();
-        let tool_id = resolved.id.clone();
+        let tool_id = tool.id.clone();
         Ok(Unsubscribe::new(move || {
-            if let Some(core) = me.upgrade() {
+            let Some(core) = me.upgrade() else { return };
+            let stack =
+                core.tools.registrations.borrow().get(&tool_id).cloned().unwrap_or_default();
+            let Some(at) = stack.iter().position(|r| Rc::ptr_eq(r, &registration)) else {
+                return;
+            };
+            let rest: Vec<Registration> =
+                stack.iter().filter(|r| !Rc::ptr_eq(r, &registration)).cloned().collect();
+            if rest.is_empty() {
+                core.tools.registrations.borrow_mut().shift_remove(&tool_id);
+            } else {
+                core.tools.registrations.borrow_mut().insert(tool_id.clone(), rest);
+            }
+            if let Some(newer) = stack.get(at + 1) {
+                *newer.borrow_mut() = registration.borrow().clone();
+                return;
+            }
+            let previous = registration.borrow().clone();
+            let Some(previous) = previous else {
                 core.tools.registry.borrow_mut().shift_remove(&tool_id);
-            }
-            if let Some(unregister) = &unregister {
-                unregister.call();
-            }
+                if let Some(unregister) = &unregister {
+                    unregister.call();
+                }
+                return;
+            };
+            core.tools.registry.borrow_mut().insert(previous.id.clone(), previous.clone());
+            let _ = core.register_on_hub(&previous);
+            let _ = core.commit_json(json!({
+                "type": "replaceDefaults",
+                "preset": previous.preset,
+                "defaults": previous.defaults.clone().unwrap_or_default(),
+            }));
         }))
     }
 

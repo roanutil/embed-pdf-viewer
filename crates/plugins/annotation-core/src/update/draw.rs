@@ -163,13 +163,18 @@ pub fn create_pointer(
                     {
                         let mut strokes = d.strokes.clone();
                         strokes.push(vec![input.point]);
-                        Some(Draft::CreateInk(CreateInk { strokes, ..d.clone() }))
+                        Some(Draft::CreateInk(CreateInk {
+                            strokes,
+                            drawing: Some(true),
+                            ..d.clone()
+                        }))
                     }
                     _ => Some(Draft::CreateInk(CreateInk {
                         subtype: subtype.into(),
                         preset: Some(preset),
                         page: input.page(),
                         strokes: vec![vec![input.point]],
+                        drawing: Some(true),
                         intent: message.intent.clone(),
                         flags: message.flags.clone(),
                         order: Default::default(),
@@ -222,20 +227,20 @@ pub fn create_pointer(
             let active = model.draft().cloned();
             match active {
                 Some(Draft::CreateInk(d)) => {
-                    let mut next = model.clone();
-                    if let (Some(options), false) = (&message.straighten_ink, d.strokes.is_empty())
-                    {
-                        let mut strokes = d.strokes.clone();
+                    let mut strokes = d.strokes.clone();
+                    if let (Some(options), false) = (&message.straighten_ink, strokes.is_empty()) {
                         let last = strokes.len() - 1;
                         strokes[last] = straighten_ink_stroke(&strokes[last], options);
-                        next = Model {
-                            draft: Some(Rc::new(Draft::CreateInk(CreateInk {
-                                strokes,
-                                ..d.clone()
-                            }))),
-                            ..model.clone()
-                        };
                     }
+                    // The pen is up: the stroke draws as the curves it commits with.
+                    let next = Model {
+                        draft: Some(Rc::new(Draft::CreateInk(CreateInk {
+                            strokes,
+                            drawing: Some(false),
+                            ..d.clone()
+                        }))),
+                        ..model.clone()
+                    };
                     if message.defer_ink_commit == Some(true) {
                         Ok((next, Vec::new()))
                     } else {
@@ -330,6 +335,7 @@ pub fn finish_ink_create(model: &Model) -> CoreResult<(Model, Vec<Effect>)> {
     let shape = Shape::Ink(InkShape {
         ink_list: d.strokes.clone(),
         rotation: 0.0,
+        drawing: None,
         order: Default::default(),
     });
     let mut fields = Object::new();

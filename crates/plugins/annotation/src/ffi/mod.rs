@@ -19,7 +19,7 @@
 //! rich-text editing members (`draftRichText`, `setTextSelection` ranges
 //! beyond a caret), and the hooks other plugins call
 //! (`registerBehavior`, `pruneEngagedSelection`, `getBehaviorFor`,
-//! `commitScriptEffects`, `lend`, `setPageViewports`, `remeasurePage`,
+//! `commitScriptEffects`, `lend`, `setPageViewports`, `whenRemeasurable`, `stageRemeasure`,
 //! `distanceCreationPage`, `tools.register`).
 
 mod drafts;

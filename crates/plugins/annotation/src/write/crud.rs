@@ -4,9 +4,16 @@
 //! once and is sent, answered and refused exactly like a gesture's, and each
 //! resolves with what the engine wrote for it.
 
+use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
+
 use epdf_annotation_core::engine::facts::field_names;
+use epdf_annotation_core::links::link_children_of;
+use epdf_annotation_core::types::Id;
 use epdf_annotation_core::update::defaults_for;
+
 use epdf_kernel::Error;
+use epdf_kernel::changes::{SendChange, StagedChange};
 use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::rt::Promise;
 use epdf_kernel::signal::AbortSignal;
@@ -16,6 +23,7 @@ use crate::controller::{CAPABILITY, Core};
 use crate::engine::anchor_of;
 use crate::js::{Object, key_or_none, page_object_number};
 use crate::services::staging::StoreChange;
+use crate::services::store::{Applied, ApplyOptions};
 use crate::write::outcomes::{applied_annotation_of, applied_or_throw};
 
 fn not_found(reference: &Value) -> Error {
@@ -285,7 +293,9 @@ impl Core {
         })
     }
 
-    /// `import(bundle, options)`.
+    /// `import(bundle, options)`: one change on the queue, staged as the
+    /// engine verb's call: what was typed is sent first, and the history keeps
+    /// it as one step unless `history: false` says it isn't one.
     pub fn import(
         &self,
         bundle: Value,
@@ -295,28 +305,212 @@ impl Core {
         if let Err(e) = self.assert_allowed("annotations:create", "annotation.import") {
             return Promise::rejected(e);
         }
-        let doc = match self.doc_or_throw() {
-            Ok(d) => d,
+        // `const { signal, history, ...importOptions } = options`.
+        let history = options.get("history").cloned();
+        let mut import_options = options.as_object().cloned().unwrap_or_default();
+        import_options.shift_remove("signal");
+        import_options.shift_remove("history");
+        let op_id = import_options.get("opId").and_then(Value::as_str).map(str::to_string);
+        let send: SendChange = {
+            let me = self.weak();
+            Rc::new(move |write: Value| {
+                let Some(core) = me.upgrade() else {
+                    return Promise::rejected(Error::new("closed"));
+                };
+                let doc = match core.doc_or_throw() {
+                    Ok(d) => d,
+                    Err(e) => return Promise::rejected(e),
+                };
+                let mut options = import_options.clone();
+                options.insert("opId".into(), write.get("opId").cloned().unwrap_or(Value::Null));
+                let call = core.cancellable(
+                    signal.clone(),
+                    doc.call(
+                        "annotations.import",
+                        None,
+                        vec![bundle.clone(), Value::Object(options)],
+                    ),
+                );
+                Promise::spawn(async move { Ok(verb_answer("annotations.import", call.await?)) })
+            })
+        };
+        let staged = self.cx.changes().and_then(|changes| {
+            changes.stage(StagedChange::verb(
+                json!({ "key": "annotation.import" }),
+                send,
+                op_id,
+                history != Some(Value::Bool(false)),
+            ))
+        });
+        let change = match staged {
+            Ok(change) => change,
             Err(e) => return Promise::rejected(e),
         };
-        let call =
-            self.cancellable(signal, doc.call("annotations.import", None, vec![bundle, options]));
+        let result = change.result();
         let me = self.weak();
         Promise::spawn(async move {
-            let result = call.await?;
+            let answer = result.await?;
+            let imported =
+                answer.get("items").and_then(|i| i.get(0)).cloned().unwrap_or(Value::Null);
+            // The engine published one `annotations.created` per annotation:
+            // once the records hold them, `list()` shows them.
             if let Some(core) = me.upgrade() {
                 let settled = core.records.settled();
                 drop(core);
                 settled.await?;
             }
-            // `{ annotations: result.annotations, ... }`: a member the engine
-            // left out is `undefined`, as the TypeScript's literal has it.
-            let member = |k: &str| result.get(k).cloned().unwrap_or_else(epdf_kernel::undefined);
+            // A member the engine left out is `undefined`, as the TypeScript's literal has it.
+            let member = |k: &str| imported.get(k).cloned().unwrap_or_else(epdf_kernel::undefined);
             Ok(json!({
                 "annotations": member("annotations"),
                 "refMap": member("refMap"),
                 "dropped": member("dropped"),
             }))
+        })
+    }
+
+    /// `duplicate(refs, options, lent)`: copy annotations in this document,
+    /// as one change: the copies show at once, and it is one step to undo. A
+    /// copy carries its original's fields, its drawing, its file and its
+    /// link; it has its own ref and name. Resolves `{ annotations, dropped }`.
+    ///
+    /// `lent` are the selection's lent records (a form's widgets, in design
+    /// mode), which only the selection's own duplicate passes: their lender
+    /// says which ops copy them, and those join the same change.
+    pub fn duplicate(
+        &self,
+        refs: Vec<Value>,
+        options: DuplicateOptions,
+        lent: Vec<Value>,
+    ) -> Promise<Value> {
+        if (!refs.is_empty() || lent.is_empty())
+            && let Err(e) = self.assert_allowed("annotations:create", "annotation.duplicate")
+        {
+            return Promise::rejected(e);
+        }
+        if refs.is_empty() && lent.is_empty() {
+            return Promise::resolved(json!({ "annotations": [], "dropped": [] }));
+        }
+        let page = match &options.page {
+            None => None,
+            Some(page) => match self.page_ref_of(page) {
+                Ok(reference) => Some(reference),
+                Err(e) => return Promise::rejected(e),
+            },
+        };
+        let offset = options.offset.clone();
+        let lender = if lent.is_empty() { None } else { self.lending.lender() };
+        // The copies, staged on the store once the lender's ops are there.
+        let start = {
+            let (me, refs, page, offset) =
+                (self.weak(), refs.clone(), page.clone(), offset.clone());
+            let select = options.select;
+            move |lent_copy: Option<(Vec<Value>, Vec<Value>)>| -> Result<(Promise<Applied>, Vec<Id>), Error> {
+                let core = me.upgrade().ok_or_else(|| Error::new("closed"))?;
+                let model = core.model();
+                let stated: HashSet<String> = refs.iter().map(key_or_none).collect();
+                let along: Vec<Value> = refs
+                    .iter()
+                    .flat_map(|reference| {
+                        link_children_of(&model, &key_or_none(reference))
+                            .into_iter()
+                            .filter_map(|child| child.annotation.get("ref").cloned())
+                            .collect::<Vec<_>>()
+                    })
+                    .filter(|child| !stated.contains(&key_or_none(child)))
+                    .collect();
+                let lent_ids: Vec<Id> =
+                    lent_copy.as_ref().map(|(_, copies)| copies.iter().map(key_or_none).collect()).unwrap_or_default();
+                let changes = if refs.is_empty() {
+                    Vec::new()
+                } else {
+                    vec![StoreChange::Copy { refs: refs.clone(), along, page: page.clone(), offset: offset.clone() }]
+                };
+                let owner = core.lending.lender().map(|l| l.owner()).unwrap_or_default();
+                let options = ApplyOptions {
+                    select,
+                    label: lent_copy.as_ref().map(|_| {
+                        let key = if refs.is_empty() { format!("{owner}.duplicate") } else { "annotation.duplicate".to_string() };
+                        json!({ "key": key, "count": refs.len() + lent_ids.len() })
+                    }),
+                    lent: lent_copy.map(|(ops, _)| (ops, lent_ids.clone())),
+                };
+                Ok((core.apply_when_numbered_with(changes, options), lent_ids))
+            }
+        };
+        let start = Rc::new(start);
+        let started = match &lender {
+            None => match start(None) {
+                Ok(started) => Some(started),
+                Err(e) => return Promise::rejected(e),
+            },
+            Some(_) => None,
+        };
+        let copy_ops = lender.map(|l| l.copy_ops(&lent, page, offset));
+        let me = self.weak();
+        let signal = options.signal.clone();
+        let named_refs = !refs.is_empty();
+        Promise::spawn(async move {
+            let (applied, lent_ids) = match (started, copy_ops) {
+                (Some(started), _) => started,
+                (None, Some(copy_ops)) => start(Some(copy_ops.await?))?,
+                (None, None) => start(None)?,
+            };
+            let applied = applied.await?;
+            let core = me.upgrade().ok_or_else(|| Error::new("closed"))?;
+            let outcome = core.cancellable(signal, applied_or_throw(&applied));
+            drop(core);
+            let outcome = outcome.await?;
+            let items: Vec<Value> = outcome
+                .written
+                .result
+                .as_ref()
+                .and_then(|r| r.get("items"))
+                .and_then(Value::as_array)
+                .cloned()
+                .unwrap_or_default();
+            let copied = items
+                .iter()
+                .find(|item| item.get("type").and_then(Value::as_str) == Some("annotations.copy"));
+            if named_refs && copied.is_none() {
+                return Err(plugin_error(
+                    code::OPERATION_FAILED,
+                    CAPABILITY,
+                    "the annotations could not be copied",
+                    None,
+                    None,
+                ));
+            }
+            // The copies of the annotations named: a link that came along isn't one.
+            let named: HashSet<&str> = applied.ids.iter().map(String::as_str).collect();
+            let mut annotations: Vec<Value> = copied
+                .and_then(|c| c.get("annotations"))
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .filter(|copy| {
+                    named.contains(key_or_none(copy.get("ref").unwrap_or(&Value::Null)).as_str())
+                })
+                .cloned()
+                .collect();
+            // A lent record's copy, as the last op that names it left it.
+            let mut rows: HashMap<String, Value> = HashMap::new();
+            for item in &items {
+                let made: Vec<Value> = match item.get("type").and_then(Value::as_str) {
+                    Some("forms.copy" | "forms.addWidget") => {
+                        item.get("widgets").and_then(Value::as_array).cloned().unwrap_or_default()
+                    }
+                    Some("forms.updateWidget") => item.get("widget").cloned().into_iter().collect(),
+                    _ => Vec::new(),
+                };
+                for row in made {
+                    rows.insert(key_or_none(row.get("ref").unwrap_or(&Value::Null)), row);
+                }
+            }
+            annotations.extend(lent_ids.iter().filter_map(|id| rows.get(id).cloned()));
+            let dropped =
+                copied.and_then(|c| c.get("dropped")).cloned().unwrap_or_else(|| json!([]));
+            Ok(json!({ "annotations": annotations, "dropped": dropped }))
         })
     }
 
@@ -354,4 +548,31 @@ impl Core {
             call.reaction().await
         })
     }
+}
+
+/// `AnnotationDuplicateOptions & OperationOptions`.
+#[derive(Clone, Default)]
+pub struct DuplicateOptions {
+    /// The page the copies go on, as a ref or an index; `None`: each on its own page.
+    pub page: Option<Value>,
+    /// How far each copy moves, `{ x, y }` in page points; `None`: not at all.
+    pub offset: Option<Value>,
+    /// Select the copies as they show.
+    pub select: bool,
+    pub signal: Option<AbortSignal>,
+}
+
+/// `{ items: [{ type, ...result }], meta: result.meta }`: a verb's result as
+/// a change's answer.
+fn verb_answer(kind: &str, result: Value) -> Value {
+    let mut item = Map::new();
+    item.insert("type".into(), json!(kind));
+    for (k, v) in result.as_object().into_iter().flatten() {
+        item.insert(k.clone(), v.clone());
+    }
+    let mut answer = Map::new();
+    answer.insert("items".into(), json!([item]));
+    answer
+        .insert("meta".into(), result.get("meta").cloned().unwrap_or_else(epdf_kernel::undefined));
+    Value::Object(answer)
 }

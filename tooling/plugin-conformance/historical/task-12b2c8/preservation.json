@@ -929,7 +929,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c5/preservation.json",
-      "sha256": "2ba1ba6eed70576f16f562e5fc059d4881f2580e683d108affeac4652ec4dea0"
+      "sha256": "5fd863173075fc73b497faa7b136cbc43a2d5205981721311d8cea5045ecf80a"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c5/red.out",
@@ -1057,7 +1057,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c6/fix1-preservation.json",
-      "sha256": "2c1ae5ad8258c3bc56b6acf07079d6431613f4589384c750c91eb547760a65ba"
+      "sha256": "393de74f800b6348440f2b988b014aa70376612f8e560ce75bd12ecdb1e37eef"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c6/fix1-preservation.out",
@@ -1165,7 +1165,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c6/preservation.json",
-      "sha256": "afa2a9627e17a34aac239cfa44c0e10a6b2b09d267e9a906b0765a455c22a2b8"
+      "sha256": "06c0f112b66952d8c937a17959d994bbc97523e4f1e33e668351791e22aeec70"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c6/red.out",
@@ -1401,7 +1401,7 @@
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c7/preservation.json",
-      "sha256": "80a4d3a74c41c2a7c6a8a6c5f37a155dc53d9d7780a2a8f8696ce58a8adb096d"
+      "sha256": "6200eecddf6e902d319ab8933d1456e82f85b109dd92e8d2aacdeea838735923"
     },
     {
       "path": "tooling/plugin-conformance/historical/task-12b2c7/red.out",
@@ -1833,7 +1833,7 @@
     },
     {
       "path": "tooling/plugin-conformance/test/annotation-live-refusals.ts",
-      "sha256": "90871f1902fce7c06ff303bcdf2882e57805ecabac0f4f9ac516c8d81738f6a9"
+      "sha256": "a23ea35c6107d4ea6e3cb8b2bcb5b04ea72d72e7143d2c9a85d10afc0dc12a9f"
     },
     {
       "path": "tooling/plugin-conformance/test/annotation-live.test.ts",

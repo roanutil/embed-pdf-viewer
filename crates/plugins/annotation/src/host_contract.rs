@@ -40,8 +40,22 @@ pub trait AnnotationLender {
     fn undo_of(&self, ops: &[Value]) -> Vec<Value>;
     /// The ops that move these records of one page to `position`.
     fn reorder_ops(&self, page: &Value, refs: &[Value], position: &Value) -> Vec<Value>;
+    /// `copyOps(refs, placement)`: the ops that copy these records, as the
+    /// lender copies its own (a form's widgets: a radio button's copy joins
+    /// its group, any other widget's is a new field), each moved by `offset`,
+    /// on `page` when one is named; and the copies' refs, in the order of the
+    /// records given. A record it leaves out has no copy. Resolves once the
+    /// object numbers the ops take are there.
+    fn copy_ops(
+        &self,
+        refs: &[Value],
+        page: Option<Value>,
+        offset: Option<Value>,
+    ) -> Promise<(Vec<Value>, Vec<Value>)>;
     /// Whether this session may change and delete the record.
     fn authority(&self, record: &Object) -> Authority;
+    /// `getAuthority(record).copy`: whether this session may copy the record.
+    fn may_copy(&self, record: &Object) -> bool;
     /// What its records' pictures on a page depend on.
     fn picture_epoch(&self, page: &Value) -> String;
     /// A record's confirmed picture version.

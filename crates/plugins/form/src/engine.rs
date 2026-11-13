@@ -1328,6 +1328,7 @@ pub fn widget_after_patch(row: &Value, patch: &Value) -> Result<Value, Error> {
     Ok(crate::value::spread(&after, [("rect", rect)]))
 }
 
+pub mod copy;
 mod tab_order;
 pub use tab_order::{compare_structure_positions, tab_order_of};
 

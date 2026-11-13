@@ -1,17 +1,16 @@
 //! `model.ts`: the measurement session. Scale changes in flight, the pending
-//! calibration, the last change's reports, why a page's viewport read
-//! failed, and the session-only viewports of an engine that cannot persist
-//! a scale. The pages' viewports themselves are engine data held by a page
-//! mirror. Every transition is pure and answers the same `Rc` when nothing
-//! changes, so the kernel records no state change; the controller applies
-//! them with `update_state`. `select_page_scale` and `page_scale_of` are the
-//! pure projections from viewports to the public [`PageScale`].
+//! calibration, the last change's reports, and the session-only viewports
+//! of an engine that cannot persist a scale. The pages' viewports
+//! themselves are on their layouts. Every transition is pure and answers
+//! the same `Rc` when nothing changes, so the kernel records no state
+//! change; the controller applies them with `update_state`.
+//! `select_page_scale` is the pure projection from viewports to the public
+//! [`PageScale`].
 
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use epdf_kernel::geometry::Point;
-use epdf_kernel::mirror::ResourceStatus;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -28,14 +27,10 @@ pub struct MeasurementState {
     pub pending: f64,
     pub calibration: Option<CalibrationRequest>,
     pub reports: Rc<Vec<ScaleChangeReport>>,
-    /// Page object number → why the last read of the page's viewports
-    /// failed (a serialized engine error). Shared, so a page's scale can
-    /// tell a recorded error from an equal one recorded again, as the
-    /// TypeScript's identity check does.
-    pub load_errors: BTreeMap<u32, Rc<Value>>,
     /// Page object number → the page's viewports, when the engine has no
-    /// page measure service.
-    pub local_viewports: BTreeMap<u32, Value>,
+    /// page measure service. Shared, so a page's scale is the same until
+    /// its list is set again, as the TypeScript's identity check has it.
+    pub local_viewports: BTreeMap<u32, Rc<Value>>,
 }
 
 /// `initialMeasurementState()`.
@@ -79,30 +74,6 @@ pub fn set_reports(
     Rc::new(MeasurementState { reports, ..(**state).clone() })
 }
 
-/// `recordLoadError`.
-pub fn record_load_error(
-    state: &Rc<MeasurementState>,
-    page_object_number: u32,
-    error: Value,
-) -> Rc<MeasurementState> {
-    let mut next = (**state).clone();
-    next.load_errors.insert(page_object_number, Rc::new(error));
-    Rc::new(next)
-}
-
-/// `clearLoadError`: a page with no error changes nothing.
-pub fn clear_load_error(
-    state: &Rc<MeasurementState>,
-    page_object_number: u32,
-) -> Rc<MeasurementState> {
-    if !state.load_errors.contains_key(&page_object_number) {
-        return state.clone();
-    }
-    let mut next = (**state).clone();
-    next.load_errors.remove(&page_object_number);
-    Rc::new(next)
-}
-
 /// `setLocalViewports`.
 pub fn set_local_viewports(
     state: &Rc<MeasurementState>,
@@ -110,7 +81,7 @@ pub fn set_local_viewports(
     viewports: Value,
 ) -> Rc<MeasurementState> {
     let mut next = (**state).clone();
-    next.local_viewports.insert(page_object_number, viewports);
+    next.local_viewports.insert(page_object_number, Rc::new(viewports));
     Rc::new(next)
 }
 
@@ -158,40 +129,4 @@ pub fn select_page_scale(
         None => (fallback.clone(), "default"),
     };
     PageScale { measure, source, ready: true, persistent, error: None }
-}
-
-/// `PageScaleInputs`: the page's mirrored viewports and read state, and its
-/// layout.
-#[derive(Clone, Debug)]
-pub struct PageScaleInputs<'a> {
-    /// The last confirmed viewports; `None` until the first read lands.
-    pub viewports: Option<&'a Value>,
-    pub status: ResourceStatus,
-    pub error: Option<&'a Value>,
-    /// The page's size; `None` when the page is not in the registry.
-    pub size: Option<PageSize>,
-    pub fallback: &'a Value,
-    pub persistent: bool,
-}
-
-/// `pageScaleOf(inputs)`: a page is ready once its viewports were read; a
-/// failed re-read keeps the last confirmed viewports in effect and reports
-/// its error alongside them.
-pub fn page_scale_of(inputs: &PageScaleInputs) -> PageScale {
-    let error = (inputs.status == ResourceStatus::Error)
-        .then_some(inputs.error)
-        .flatten()
-        .filter(|e| truthy(Some(e)))
-        .cloned();
-    let (Some(viewports), Some(size)) = (inputs.viewports, inputs.size) else {
-        return PageScale {
-            measure: Value::Null,
-            source: "default",
-            ready: false,
-            persistent: inputs.persistent,
-            error,
-        };
-    };
-    let list = viewports.as_array().map(Vec::as_slice).unwrap_or(&[]);
-    PageScale { error, ..select_page_scale(list, size, inputs.fallback, inputs.persistent) }
 }

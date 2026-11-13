@@ -199,12 +199,13 @@ pub struct PageScale {
     pub measure: Value,
     /// `owned`, `foreign` or `default`.
     pub source: &'static str,
-    /// The page's viewports are known.
+    /// The page's viewports are known: always, for a page of an open
+    /// document (its layout carries them).
     pub ready: bool,
     /// The engine can persist a scale into the document.
     pub persistent: bool,
-    /// Why the last read of the page's viewports failed; the last known
-    /// viewports stay in effect.
+    /// Not set: a page's viewports come with its layout, so there is no read
+    /// of them to fail. Kept so code written for 3.0 still compiles.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<Value>,
 }
@@ -264,7 +265,7 @@ pub struct CalibrateInput {
 #[derive(Clone, Debug, PartialEq)]
 pub enum ScaleChangeReport {
     /// `{ page, scale, updated, skipped, failed, error? }`, as
-    /// `remeasurePage` answered it (or the same shape with nothing
+    /// `stageRemeasure` answered it (or the same shape with nothing
     /// re-measured).
     Recalibrated(Value),
     /// `{ page, updated: [], skipped: [], failed: [], scaleError }`.

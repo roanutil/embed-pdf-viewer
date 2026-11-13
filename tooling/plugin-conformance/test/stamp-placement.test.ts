@@ -977,12 +977,49 @@ test('aggregate accounts for all original211 and preserves every reviewed earlie
       assert.equal(current.has(key), false, key);
       current.set(key, sha(JSON.stringify(canonical(c))));
     }
-  assert.equal(current.size, 227);
+  // The 2026-11-12 catch-up rewrote the measurement slice (upstream c7f8d75ff, 8bc6546e5): 64
+  // of its cases became 59. Its accounting maps each measurement row this archive pins to the
+  // case that carries it now, or retires it with its reason.
+  assert.equal(current.size, 223);
+  const catchUp: {
+    previousAccounting: { path: string; sha256: string };
+    mappings: { before: Row; after: Row | null }[];
+    additions: Row[];
+  } = JSON.parse(
+    await readFile(
+      new URL('../historical/catchup-2026-11-12-measurement/accounting.json', import.meta.url),
+      'utf8',
+    ),
+  );
+  const measurementSlice = aggregate.slices.find(
+    (s) => s.path === catchUp.previousAccounting.path,
+  );
+  assert.equal(measurementSlice?.sha256, catchUp.previousAccounting.sha256);
+  const moved = new Map<string, Row | null>(
+    catchUp.mappings.map((m) => [
+      JSON.stringify([m.before.file, m.before.name, m.before.inputSha256]),
+      m.after,
+    ]),
+  );
+  let caughtUpRetirements = 0;
   const original: Row[] = JSON.parse(
     await readFile(new URL('../task-12b2b3/original-inputs.json', history), 'utf8'),
   );
   const before = new Set<string>();
   const mapped = new Set<string>();
+  /** A row this archive pins, where it is now: itself, or the case the catch-up moved it to. */
+  const land = (row: Row) => {
+    const step = moved.get(JSON.stringify([row.file, row.name, row.inputSha256]));
+    if (step === null) {
+      caughtUpRetirements++;
+      return;
+    }
+    const now = step ?? row;
+    const key = JSON.stringify([now.file, now.name]);
+    assert.equal(current.get(key), now.inputSha256);
+    assert.equal(mapped.has(key), false);
+    mapped.add(key);
+  };
   let retired = 0,
     added = 0;
   for (const s of aggregate.slices) {
@@ -1000,25 +1037,26 @@ test('aggregate accounts for all original211 and preserves every reviewed earlie
         m.before.inputSha256,
       );
       if (m.after) {
-        const key = JSON.stringify([m.after.file, m.after.name]);
-        assert.equal(current.get(key), m.after.inputSha256);
-        assert.equal(mapped.has(key), false);
-        mapped.add(key);
+        land(m.after);
       } else {
         assert.equal(m.disposition, 'retired');
         retired++;
       }
     }
     for (const a of s.additions) {
-      const key = JSON.stringify([a.file, a.name]);
-      assert.equal(current.get(key), a.inputSha256);
-      assert.equal(mapped.has(key), false);
-      mapped.add(key);
+      land(a);
       added++;
     }
   }
+  for (const a of catchUp.additions) {
+    const key = JSON.stringify([a.file, a.name]);
+    assert.equal(current.get(key), a.inputSha256);
+    assert.equal(mapped.has(key), false);
+    mapped.add(key);
+  }
   assert.equal(before.size, 211);
-  assert.equal(mapped.size, 227);
+  assert.equal(caughtUpRetirements, 6);
+  assert.equal(mapped.size, 223);
   assert.equal(retired, 2);
   assert.equal(added, 18);
   for (const row of aggregate.sourceEvidence) {

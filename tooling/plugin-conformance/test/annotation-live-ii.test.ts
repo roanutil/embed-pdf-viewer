@@ -845,12 +845,17 @@ test('every original66 definition and canonical input maps exactly to the curren
     ],
     [66, 68, 66, 0, 6, 2],
   );
+  // Cases the 2026-11-12 catch-up added after this archive, for new upstream behaviour.
+  const caughtUp: Record<string, string[]> = {
+    'plugins/annotation-tools.json': ['register-over-a-tool-and-take-it-back'], // f0bb7b047
+  };
   let original = 0,
     current = 0,
     renamed = 0,
     drifts = 0,
     added = 0;
   for (const row of manifest.suites) {
+    const later = caughtUp[row.file] ?? [];
     const suite = suites.find((suite) => suite.file === row.file);
     assert.ok(suite && suite.kind === 'scenario');
     const source = await readFile(
@@ -859,7 +864,7 @@ test('every original66 definition and canonical input maps exactly to the curren
     );
     assert.equal(digest(source), row.originalSourceSha256);
     assert.equal(row.before, row.cases.length);
-    assert.equal(suite.cases.length, row.after);
+    assert.equal(suite.cases.length, row.after + later.length);
     assert.equal(new Set(row.cases.map((row) => row.before)).size, row.before);
     for (const entry of row.cases) {
       assert.ok(source.includes(`name: '${entry.before}'`), entry.before);
@@ -887,7 +892,7 @@ test('every original66 definition and canonical input maps exactly to the curren
       added++;
     }
     assert.deepEqual(
-      [...row.cases.map((row) => row.after), ...row.added.map((row) => row.name)].sort(),
+      [...row.cases.map((row) => row.after), ...row.added.map((row) => row.name), ...later].sort(),
       suite.cases.map((input) => input.name).sort(),
     );
     original += row.before;

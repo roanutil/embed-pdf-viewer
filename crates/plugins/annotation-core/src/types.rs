@@ -138,6 +138,8 @@ js_object! {
     pub struct InkShape {
         "inkList" => pub ink_list: Vec<Vec<Point>>,
         "rotation" => pub rotation: f64,
+        /// The last stroke is still being drawn (an ink draft with the pen down): it draws as its points.
+        "drawing" => pub drawing: Option<bool>,
     }
 }
 
@@ -536,6 +538,8 @@ js_object! {
         "preset" => pub preset: Option<String>,
         "page" => pub page: PageRef,
         "strokes" => pub strokes: Vec<Vec<Point>>,
+        /// The pen is down: the last stroke is still being drawn.
+        "drawing" => pub drawing: Option<bool>,
         "intent" => pub intent: Option<String>,
         "flags" => pub flags: Option<Object>,
     }
@@ -1786,6 +1790,11 @@ pub enum Message {
         preset: String,
         patch: FieldValues,
     },
+    /// Set a tool's defaults to exactly these, dropping any field they leave out.
+    ReplaceDefaults {
+        preset: String,
+        defaults: FieldValues,
+    },
     SetSnap {
         patch: Object,
     },
@@ -1916,6 +1925,10 @@ impl Message {
             "setDefaults" => Message::SetDefaults {
                 preset: read_member(object, "preset")?,
                 patch: read_member(object, "patch")?,
+            },
+            "replaceDefaults" => Message::ReplaceDefaults {
+                preset: read_member(object, "preset")?,
+                defaults: read_member(object, "defaults")?,
             },
             "setSnap" => Message::SetSnap { patch: read_member(object, "patch")? },
             "rotateSelection" => {

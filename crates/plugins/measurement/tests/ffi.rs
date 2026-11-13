@@ -3,10 +3,13 @@
 //! the current plugin (page-space viewports from `page.measure.listViewports`,
 //! `rectilinear` measures, the annotation plugin's 13.17 records).
 
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use epdf_ffi::{CancelToken, KernelThread, PageRef, Point, ViewerError};
+use epdf_kernel::page_predict::viewports_with_scale;
 use epdf_plugin_annotation::annotation_plugin;
 use epdf_plugin_interaction::{InteractionConfig, interaction_plugin};
 use epdf_plugin_measurement::ffi::{
@@ -50,18 +53,6 @@ fn page(pon: u32, w: f64, h: f64) -> Value {
     })
 }
 
-/// `pages.scaleSet`, which the engine publishes before a scale write
-/// resolves.
-fn scale_set(pon: u32) -> Value {
-    json!({
-        "type": "pages.scaleSet",
-        "page": page_ref(pon),
-        "meta": { "affectedPages": [page_ref(pon)], "cacheDelta": null, "opId": "set", "undoable": true },
-        "origin": { "kind": "local", "sessionId": "s1",
-            "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": null }
-    })
-}
-
 /// The rectilinear measure the conformance vectors use: 1 in on paper is
 /// 1 m.
 fn metric() -> PdfMeasurement {
@@ -95,21 +86,19 @@ fn metric() -> PdfMeasurement {
 /// `page.measure` service that keeps viewports per page in memory and
 /// fails writes to `fail_pon`.
 fn spec(service: bool, foreign: bool, fail_pon: Option<u32>) -> TestSpec {
-    let viewports: std::rc::Rc<std::cell::RefCell<std::collections::HashMap<u32, Value>>> =
-        Default::default();
+    // The pages as the engine has them: their viewports ride on the layout.
+    let pages: Rc<RefCell<Vec<Value>>> =
+        Rc::new(RefCell::new(vec![page(1, 600.0, 800.0), page(2, 400.0, 500.0)]));
     if foreign {
-        viewports.borrow_mut().insert(
-            1,
-            json!([{
-                "bbox": { "x": 0, "y": 0, "width": 600, "height": 800 },
-                "name": "Acrobat", "owned": false,
-                "measure": serde_json::to_value(metric()).unwrap()
-            }]),
-        );
+        pages.borrow_mut()[0]["viewports"] = json!([{
+            "bbox": { "x": 0, "y": 0, "width": 600, "height": 800 },
+            "name": "Acrobat", "owned": false,
+            "measure": serde_json::to_value(metric()).unwrap()
+        }]);
     }
     let mut engine = json!({
         "documents": { "a": {
-            "pages": [page(1, 600.0, 800.0), page(2, 400.0, 500.0)],
+            "pages": pages.borrow().clone(),
             "security": { "allows": "*" },
             "responses": [{ "path": "annotations.list", "value": { "annotations": [] } }]
         } }
@@ -117,42 +106,49 @@ fn spec(service: bool, foreign: bool, fail_pon: Option<u32>) -> TestSpec {
     if service {
         engine["documents"]["a"]["services"] = json!(["page.measure"]);
     }
-    let read = viewports.clone();
-    let write = viewports.clone();
     let spec =
         if service { TestSpec::new(engine) } else { TestSpec::new(engine).lacking("page.measure") };
-    spec.respond_page("page.measure.listViewports", move |pon, _| {
-            let list = read.borrow().get(&pon).cloned().unwrap_or(json!([]));
-            Ok(Reply::value(json!({ "viewports": list })))
-        })
-        .respond_page("page.measure.setScale", move |pon, args| {
-            if Some(pon) == fail_pon {
-                return Err(epdf_kernel::Error::engine("Unknown", "Unknown: the write failed"));
+    // A change of `pages.setScale` ops: all of it applies, or a refusal of
+    // one page refuses the whole change. The `pages.scaleSet` event carries
+    // the new layout, published before the answer.
+    spec.respond("apply", move |args| {
+        let ops = args.first().and_then(|c| c["ops"].as_array()).cloned().unwrap_or_default();
+        let named = |op: &Value| -> Vec<u32> {
+            op["pages"].as_array().into_iter().flatten().filter_map(|p| p["objectNumber"].as_u64()).map(|n| n as u32).collect()
+        };
+        if ops.iter().any(|op| fail_pon.is_some_and(|f| named(op).contains(&f))) {
+            return Err(epdf_kernel::Error::engine("Unknown", "Unknown: the write failed"));
+        }
+        let mut list = pages.borrow_mut();
+        let mut events = Vec::new();
+        for op in ops.iter().filter(|op| op["type"] == "pages.setScale") {
+            for pon in named(op) {
+                let layout = &mut list[(pon - 1) as usize];
+                let before = layout["viewports"].as_array().cloned().unwrap_or_default();
+                let after = viewports_with_scale(&before, &layout["size"], &op["measure"]);
+                let fields = layout.as_object_mut().unwrap();
+                fields.shift_remove("viewports");
+                if !after.is_empty() {
+                    fields.insert("viewports".into(), Value::Array(after));
+                }
             }
-            let mut all = write.borrow_mut();
-            let mut list: Vec<Value> = all
-                .get(&pon)
-                .and_then(Value::as_array)
-                .cloned()
-                .unwrap_or_default()
-                .into_iter()
-                .filter(|v| v["owned"] != json!(true))
-                .collect();
-            if let Some(measure) = args.first().filter(|m| !m.is_null()) {
-                list.push(json!({
-                    "bbox": { "x": 0, "y": 0, "width": 600, "height": 800 },
-                    "name": "EmbedPDF", "owned": true, "measure": measure
-                }));
-            }
-            all.insert(pon, Value::Array(list));
-            Ok(Reply {
-                value: json!({
-                    "page": page_ref(pon),
-                    "meta": { "affectedPages": [page_ref(pon)], "cacheDelta": null, "opId": "set", "undoable": true }
-                }),
-                events: vec![scale_set(pon)],
-            })
+            events.push(json!({
+                "type": "pages.scaleSet",
+                "pages": op["pages"],
+                "layout": { "pages": list.clone(), "labels": [] },
+                "meta": { "affectedPages": op["pages"], "cacheDelta": null, "opId": "set", "undoable": true },
+                "origin": { "kind": "local", "sessionId": "s1",
+                    "subject": null, "at": "1970-01-01T00:00:00.000Z", "serverSequence": null }
+            }));
+        }
+        Ok(Reply {
+            value: json!({
+                "items": [],
+                "meta": { "affectedPages": [], "cacheDelta": null, "opId": "set", "undoable": true }
+            }),
+            events,
         })
+    })
 }
 
 fn handle_over(
@@ -189,37 +185,16 @@ fn token() -> Arc<CancelToken> {
 }
 
 #[test]
-fn a_page_reads_loading_until_ensure_loaded() {
-    // The plugin loads every page's viewports when it connects, so page 2's
-    // read is held open by the fake engine (`defer`) until the test settles
-    // it; until then the page reads as loading.
-    let (thread, m) = handle_over(|| {
-        TestSpec::new(json!({
-            "documents": { "a": {
-                "pages": [page(1, 600.0, 800.0), page(2, 400.0, 500.0)],
-                "security": { "allows": "*" },
-                "services": ["page.measure"],
-                "responses": [
-                    { "path": "annotations.list", "value": { "annotations": [] } },
-                    { "path": "page.measure.listViewports", "pon": 1, "value": { "viewports": [] } },
-                    { "path": "page.measure.listViewports", "pon": 2, "defer": "page-2" }
-                ]
-            } }
-        }))
-    });
-    let before = block_on(m.page_scale(P2)).unwrap();
-    assert!(!before.ready);
-    assert_eq!(before.measure, None);
-    let loaded = m.ensure_loaded(P2, token());
-    let settled =
-        block_on(thread.call(|k| k.engine.settle("page-2", Ok(json!({ "viewports": [] })))))
-            .unwrap();
-    assert!(settled, "page 2's viewport read was not pending");
-    block_on(loaded).unwrap();
-    let after = block_on(m.page_scale(P2)).unwrap();
-    assert!(after.ready);
-    assert_eq!(after.source, MeasurementScaleSource::Default);
-    assert!(after.persistent);
+fn a_page_scale_is_known_once_the_document_opens() {
+    // A page's viewports come with its layout: no read of them, and the
+    // page is ready at once; `ensure_loaded` resolves for a page that is
+    // there.
+    let (_thread, m) = handle_over(|| spec(true, false, None));
+    let scale = block_on(m.page_scale(P2)).unwrap();
+    assert!(scale.ready);
+    assert_eq!(scale.source, MeasurementScaleSource::Default);
+    assert!(scale.persistent);
+    block_on(m.ensure_loaded(P2, token())).unwrap();
 }
 
 #[test]
@@ -272,7 +247,9 @@ fn set_scale_keeps_a_foreign_viewport() {
 }
 
 #[test]
-fn a_failed_page_write_is_reported_and_the_rest_land() {
+fn a_refused_change_fails_every_page_of_it() {
+    // A scale change is one change: the engine refusing page 2 refuses page
+    // 1 with it, and each page reports why.
     let (_thread, m) = handle_over(|| spec(true, false, Some(2)));
     let reports = block_on(m.set_scale(
         MeasurementPageTarget::All,
@@ -282,13 +259,13 @@ fn a_failed_page_write_is_reported_and_the_rest_land() {
     ))
     .unwrap();
     assert_eq!(reports.len(), 2);
-    assert!(
-        reports
-            .iter()
-            .any(|r| matches!(r, ScaleChangeReport::Recalibrated { report } if report.page == P1))
-    );
-    assert!(reports.iter().any(|r| matches!(r, ScaleChangeReport::ScaleFailed { page, error } if *page == P2 && error.code == "Unknown")));
-    assert_eq!(block_on(m.page_scale(P1)).unwrap().source, MeasurementScaleSource::Owned);
+    for (report, page) in reports.iter().zip([P1, P2]) {
+        assert!(
+            matches!(report, ScaleChangeReport::ScaleFailed { page: p, error } if *p == page && error.code == "Unknown"),
+            "{report:?}"
+        );
+    }
+    assert_eq!(block_on(m.page_scale(P1)).unwrap().source, MeasurementScaleSource::Default);
 }
 
 #[test]

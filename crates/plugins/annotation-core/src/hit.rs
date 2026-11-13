@@ -60,13 +60,15 @@ fn text_bound(record: &ModelAnnotation) -> bool {
         && matches!(shape_of(&record.annotation), Shape::Quads(_))
 }
 
+/// `isMovable(record)`: an annotation people move at all: its kind moves,
+/// and it isn't bound to text. Whether it can be moved now is [`can_move`].
+pub fn is_movable(record: &ModelAnnotation) -> bool {
+    kind_of(&record.annotation).caps.movable && !text_bound(record)
+}
+
 /// `canMove(model, id)`.
 pub fn can_move(model: &Model, id: &str) -> bool {
-    model.record(id).is_some_and(|r| {
-        is_transformable_by_hand(&model.editable, r)
-            && kind_of(&r.annotation).caps.movable
-            && !text_bound(r)
-    })
+    model.record(id).is_some_and(|r| is_transformable_by_hand(&model.editable, r) && is_movable(r))
 }
 
 fn has_handles(model: &Model, record: &ModelAnnotation) -> bool {

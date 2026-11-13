@@ -17,12 +17,22 @@ use epdf_kernel::signal::AbortSignal;
 use serde_json::{Map, Value, json};
 
 use crate::controller::Core;
-use crate::js::{Object, key_or_none, page_object_number};
+use crate::js::{Object, key_or_none, num, page_object_number};
 use crate::read::chrome::core_page;
 use crate::rich_text::{rich_doc_of, run_delta_for_fields};
 use crate::services::staging::StoreChange;
 use crate::services::store::{Commit, refs_of_in};
+use crate::write::crud::DuplicateOptions;
 use crate::write::outcomes::{applied_or_throw, batch_result_of, throw_if_failed};
+
+/// `DUPLICATE_OFFSET`: how far a duplicate lands from its original, in page points.
+const DUPLICATE_OFFSET: f64 = 10.0;
+
+/// A record's `rect` as a box.
+fn rect_of(value: &Value) -> Option<Rect> {
+    let read = |key: &str| value.get(key).and_then(epdf_annotation_core::json::number);
+    Some(Rect { x: read("x")?, y: read("y")?, width: read("width")?, height: read("height")? })
+}
 
 /// A patch for the selection: the same for each member, or one per member.
 pub enum SelectionPatch {
@@ -319,6 +329,81 @@ impl Core {
     }
 
     /// `selection.canUngroup()`.
+    /// `byOwner(refs)`: this plugin's own records and the lent ones (a
+    /// form's widgets, in design mode).
+    fn by_owner(&self, refs: Vec<Value>) -> (Vec<Value>, Vec<Value>) {
+        refs.into_iter().partition(|reference| !self.lending.owns(&key_or_none(reference)))
+    }
+
+    /// `beside()`: where copies of the selection land: right and down of the
+    /// originals, or left or up where that keeps on its page a copy that
+    /// would leave it.
+    fn beside(&self) -> Value {
+        let boxes: Vec<(Rect, Rect)> = self
+            .selected_records()
+            .iter()
+            .filter_map(|record| {
+                let page = self.page_box_of(record.page_number()?)?;
+                let rect = rect_of(record.annotation.get("rect")?)?;
+                Some((rect, page))
+            })
+            .collect();
+        let flips = |far: fn(&Rect) -> f64, near: fn(&Rect) -> f64, size: fn(&Rect) -> f64| {
+            boxes.iter().any(|(rect, page)| far(rect) + DUPLICATE_OFFSET > size(page))
+                && boxes.iter().all(|(rect, _)| near(rect) - DUPLICATE_OFFSET >= 0.0)
+        };
+        let x = if flips(|r| r.x + r.width, |r| r.x, |p| p.width) {
+            -DUPLICATE_OFFSET
+        } else {
+            DUPLICATE_OFFSET
+        };
+        let y = if flips(|r| r.y + r.height, |r| r.y, |p| p.height) {
+            -DUPLICATE_OFFSET
+        } else {
+            DUPLICATE_OFFSET
+        };
+        json!({ "x": num(x), "y": num(y) })
+    }
+
+    /// `selection.duplicate({ offset, signal })`: copy the selected
+    /// annotations beside the originals and select the copies, as one step
+    /// to undo. A lent record (a form's widget) is its lender's to copy, in
+    /// the same change.
+    pub fn selection_duplicate(
+        &self,
+        offset: Option<Value>,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        let (own, lent) = self.by_owner(self.selected_refs());
+        let offset = offset.unwrap_or_else(|| self.beside());
+        self.duplicate(
+            own,
+            DuplicateOptions { page: None, offset: Some(offset), select: true, signal },
+            lent,
+        )
+    }
+
+    /// `selection.canDuplicate()`: something is selected, the user may
+    /// create annotations, and nothing selected is locked.
+    pub fn selection_can_duplicate(&self) -> bool {
+        let (own, lent) = self.by_owner(self.selected_refs());
+        if own.is_empty() && lent.is_empty() {
+            return false;
+        }
+        if !own.is_empty() && !self.can_duplicate(&own) {
+            return false;
+        }
+        let lender = self.lending.lender();
+        let model = self.model();
+        // A locked copy could neither be moved nor deleted by hand, whoever owns it.
+        lent.iter().all(|reference| {
+            model.by_id.get(&key_or_none(reference)).is_some_and(|record| {
+                !epdf_annotation_core::json::truthy(record.annotation.get("locked"))
+                    && lender.as_ref().is_some_and(|l| l.may_copy(&record.annotation))
+            })
+        })
+    }
+
     pub fn selection_can_ungroup(&self) -> bool {
         let subs = self.subordinates();
         !subs.is_empty()

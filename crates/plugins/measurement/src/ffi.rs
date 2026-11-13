@@ -278,7 +278,8 @@ fn decode_error(value: &Value) -> Result<MeasurementErrorInfo, Error> {
 pub struct MeasurementPageScale {
     pub measure: Option<PdfMeasurement>,
     pub source: MeasurementScaleSource,
-    /// The page's viewports are known.
+    /// The page's viewports are known: always, for a page of an open
+    /// document (its layout carries them).
     pub ready: bool,
     /// The engine can persist a scale into the document.
     pub persistent: bool,
@@ -593,12 +594,12 @@ impl MeasurementHandle {
 #[uniffi::export]
 impl MeasurementHandle {
     /// Whether this caller may measure `page`: `annotations:create`, and the
-    /// page's scale has loaded.
+    /// page is there.
     pub async fn can_measure(&self, page: PageRef) -> Result<bool, ViewerError> {
         self.cap.call(move |c| open(c)?.can_measure(page_input(page))).await
     }
 
-    /// `ready` is false until the page's viewports load (`ensure_loaded`).
+    /// The page's resolved scale; `ready` for every page of an open document.
     pub async fn page_scale(&self, page: PageRef) -> Result<MeasurementPageScale, ViewerError> {
         self.cap
             .call(move |c| {
@@ -864,7 +865,8 @@ impl MeasurementHandle {
         self.cap.call(|c| Ok(open(c)?.can_calibrate())).await
     }
 
-    /// Load the page's viewports. Shares a read in flight.
+    /// Resolves at once for a page that is there (its layout carries its
+    /// viewports); rejects `not-found` for one that isn't. Kept from 3.0.
     pub async fn ensure_loaded(
         &self,
         page: PageRef,

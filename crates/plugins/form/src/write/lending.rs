@@ -161,6 +161,24 @@ impl AnnotationLender for FormLender {
         Authority { update: may, delete: may, order: Default::default() }
     }
 
+    fn may_copy(&self, _record: &Object) -> bool {
+        self.core().is_some_and(|core| core.allows("doc.forms.modify"))
+    }
+
+    /// `copyOps(refs, placement)`: by hand, a copy is the question, not
+    /// what someone filled in.
+    fn copy_ops(
+        &self,
+        refs: &[Value],
+        page: Option<Value>,
+        offset: Option<Value>,
+    ) -> Promise<(Vec<Value>, Vec<Value>)> {
+        let Some(core) = self.core() else {
+            return Promise::rejected(Error::new("[form] closed"));
+        };
+        core.copy_ops(refs.to_vec(), page, offset, false).map(|(ops, copies, _)| Ok((ops, copies)))
+    }
+
     fn picture_epoch(&self, page: &Value) -> String {
         self.core().map(|core| core.get_appearance_epoch(page)).unwrap_or_default()
     }

@@ -7,7 +7,7 @@
   "original-link.ts.txt": "1b93c7d7597cf50ee503b2be67a1769502880260456b353a666f69a9ed3bb29e",
   "original-runtime.json": "4c0944fcbc1b405d03534dc88f9f9df1de3ba9518603676cffb0f5ede075eaa7",
   "pre-4fc1a32af-controller.ts.txt": "7fc5c3ef735aad74edcc0c2470e588ee071a58be063b153ab7a9b58e824f6634",
-  "preservation.json": "afa2a9627e17a34aac239cfa44c0e10a6b2b09d267e9a906b0765a455c22a2b8",
+  "preservation.json": "06c0f112b66952d8c937a17959d994bbc97523e4f1e33e668351791e22aeec70",
   "diagnostics.json": "fcf775732dda9330bcf4f1dff0c287ed116b4d45bee23d99f8a8750958fd1457",
   "returned-refusals.json": "f60d0751aff3094a865919f8194a8530648f1524fe41e76482ba7d27346c1f2c",
   "base-actions-current.test.ts.txt": "d1f1f8256d9efc7e6bf33f9443a1541ab3a021abfded473a323909c1ab706f0a",
@@ -19,7 +19,7 @@
   "pre-4fc1a32af-model.ts.txt": "5241235624b05e04a6bbbc2f870658a47644c76a687709b57bb6c10bfb4b6c14",
   "source-evidence.json": "0ff46df1ec7e670718ea048765523e93bf68e37fecc4e6ffcf91d8c9fbe89311",
   "task11-current-drift.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
-  "fix1-preservation.json": "2c1ae5ad8258c3bc56b6acf07079d6431613f4589384c750c91eb547760a65ba",
+  "fix1-preservation.json": "393de74f800b6348440f2b988b014aa70376612f8e560ce75bd12ecdb1e37eef",
   "prelude-restoration.json": "a7bb2540076c34d32871425f296e473b4e94802eb5a10daf74b289d7de873df5",
   "base-commands-current.test.ts.txt": "98819b93b3948551321c7e89c69a2cb492d563ea06285bd8ed7d37dceb3bfe53",
   "base-source-authority.json": "b6093b72cd810cc3f49022e15c6ca02332c5f92115fa59d6b48f53f7265156a4"

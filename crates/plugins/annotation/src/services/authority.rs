@@ -4,6 +4,7 @@
 //! verb succeed?" through the same fused predicates the gestures and chrome
 //! consume (permissions.md).
 
+use epdf_annotation_core::engine::copy::plan_annotation_copies;
 use epdf_annotation_core::flags::{annot_deletable, annot_transformable};
 use serde_json::Value;
 
@@ -74,6 +75,26 @@ impl Core {
     /// `canDelete(ref)`: nothing keeps it, or what goes with it, from being deleted.
     pub fn can_delete(&self, reference: &Value) -> bool {
         self.blockers_of(reference).is_empty()
+    }
+
+    /// `canDuplicate(refs)`: whether a person may copy these annotations:
+    /// the right to create, each one here and copied whole by the engine's
+    /// own rule (`planAnnotationCopies`), and none locked. A copy of a locked
+    /// annotation is locked too, so a person could neither move nor delete it.
+    pub fn can_duplicate(&self, refs: &[Value]) -> bool {
+        if refs.is_empty() || !self.can_create() {
+            return false;
+        }
+        let model = self.model();
+        let mut sources = Vec::with_capacity(refs.len());
+        for reference in refs {
+            let Some(record) = model.by_id.get(&key_or_none(reference)) else { return false };
+            if epdf_annotation_core::json::truthy(record.annotation.get("locked")) {
+                return false;
+            }
+            sources.push((*record.annotation).clone());
+        }
+        plan_annotation_copies(&sources, None, None, |_| false).dropped.is_empty()
     }
 }
 

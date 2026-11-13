@@ -15,7 +15,7 @@
 //! owns each kind directly.
 
 use std::cell::{Cell, RefCell};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use epdf_annotation_core::types::{Effect, Id, Message, Model, UpdateResult};
@@ -31,7 +31,8 @@ use crate::controller::{CAPABILITY, Core};
 use crate::js::key_or_none;
 use crate::model::{AnnotationState, with_object_numbers, with_session, without_object_numbers};
 use crate::services::staging::{
-    StoreChange, checked_op_of, ids_of, label_of, model_after, model_over, without_covered_deletes,
+    StoreChange, checked_copy_of, checked_op_of, ids_of, label_of, model_after, model_over,
+    numbers_for, without_covered_deletes,
 };
 use crate::sync::records::{core_error, predict_records, undo_of};
 
@@ -107,6 +108,23 @@ pub struct StoreState {
     /// The model the selection, draft, editing and hover events last saw.
     announced: RefCell<Option<Rc<Model>>>,
     watching_lost: Cell<bool>,
+    /// `services/copy-sources.ts`: the annotation whose picture each copy
+    /// this session staged shows until the engine has drawn the copy, by the
+    /// copy's key.
+    copy_sources: RefCell<HashMap<String, Value>>,
+}
+
+/// `ApplyOptions`.
+#[derive(Clone, Default)]
+pub struct ApplyOptions {
+    /// The records the change names are selected as they show.
+    pub select: bool,
+    /// What the change does to lent records, worked out by their lender (the
+    /// copies of a form's widgets): its ops join the change after this
+    /// plugin's, and the ids are the records they make, named with the rest.
+    pub lent: Option<(Vec<Value>, Vec<Id>)>,
+    /// What the change is called, when its ops alone don't say.
+    pub label: Option<Value>,
 }
 
 impl StoreState {
@@ -117,6 +135,7 @@ impl StoreState {
             kept: RefCell::new(IndexMap::new()),
             announced: RefCell::new(None),
             watching_lost: Cell::new(false),
+            copy_sources: RefCell::default(),
         }
     }
 }
@@ -407,6 +426,7 @@ impl Core {
         ops: &[Value],
         before: &Rc<Value>,
         lent: &[Value],
+        label: Option<Value>,
     ) -> Result<PendingChange, Error> {
         let mut all = ops.to_vec();
         all.extend_from_slice(lent);
@@ -417,7 +437,7 @@ impl Core {
             undo.extend(lender.undo_of(lent));
         }
         undo.extend(undo_of(before, ops));
-        let mut staged = StagedChange::ops(label_of(&all), all);
+        let mut staged = StagedChange::ops(label.unwrap_or_else(|| label_of(&all)), all);
         staged.undo = undo;
         let change = self.changes()?.stage(staged)?;
         self.store.mine.borrow_mut().insert(change.op_id().to_string());
@@ -489,7 +509,7 @@ impl Core {
         }
         let mut written = Promise::resolved(NOTHING_WRITTEN());
         if !lent.is_empty() && into.is_none() {
-            let change = self.stage(&ops, &shown, &lent)?;
+            let change = self.stage(&ops, &shown, &lent, None)?;
             self.remember(change.op_id(), &before.selected, &result.session.selected);
             let mut all = ops.clone();
             all.extend(lent.iter().cloned());
@@ -507,7 +527,7 @@ impl Core {
                     written = written_of(&change, ids_of(&ops));
                 }
             } else {
-                let change = self.stage(&ops, &shown, &[])?;
+                let change = self.stage(&ops, &shown, &[], None)?;
                 self.remember(change.op_id(), &before.selected, &result.session.selected);
                 written = written_of(&change, ids_of(&ops));
             }
@@ -567,13 +587,43 @@ impl Core {
 
     /// `apply(changes, { select })`: changes stated in code, shown at once as one change.
     pub(crate) fn apply(&self, changes: &[StoreChange], select: bool) -> Result<Applied, Error> {
+        self.apply_with(changes, ApplyOptions { select, ..ApplyOptions::default() })
+    }
+
+    /// `copySources.note(copies)`: note the copies a staged copy makes, in
+    /// the order they are made: each shows the picture its original shows,
+    /// which is its original's source when that one was noted too.
+    fn note_copies(&self, copies: &[crate::sync::records::CopyOf]) {
+        // A copy that left the records (deleted, undone, refused) needs no source.
+        let view = self.records.view();
+        let byk = crate::sync::records::by_key(&view);
+        let mut sources = self.store.copy_sources.borrow_mut();
+        sources.retain(|key, _| byk.contains_key(key));
+        for copy in copies {
+            let of = key_or_none(&copy.of);
+            let source = sources.get(&of).cloned().unwrap_or_else(|| copy.of.clone());
+            sources.insert(key_or_none(&copy.reference), source);
+        }
+    }
+
+    /// `copySources.of(id)`: the annotation whose picture a noted copy shows.
+    pub(crate) fn copy_source_of(&self, id: &str) -> Option<Value> {
+        self.store.copy_sources.borrow().get(id).cloned()
+    }
+
+    /// `apply(changes, options)`.
+    pub(crate) fn apply_with(
+        &self,
+        changes: &[StoreChange],
+        options: ApplyOptions,
+    ) -> Result<Applied, Error> {
+        let select = options.select;
         let shown = self.records.view();
-        let creates = changes.iter().filter(|c| c.is_create()).count();
-        let mut taken = if creates > 0 {
-            self.take_numbers(creates).ok_or_else(no_numbers)?
-        } else {
-            Vec::new()
-        };
+        let needed = numbers_for(changes);
+        let mut taken =
+            if needed > 0 { self.take_numbers(needed).ok_or_else(no_numbers)? } else { Vec::new() };
+        // The copies the change makes, each with the annotation it copies.
+        let mut copied: Vec<crate::sync::records::CopyOf> = Vec::new();
         let mut ops: Vec<Value> = Vec::new();
         let mut lent: Vec<Value> = Vec::new();
         let mut op_index: Vec<Option<usize>> = Vec::new();
@@ -588,6 +638,20 @@ impl Core {
                     stated
                 {
                     self.lending.refuse_lent(reference)?;
+                }
+                if let StoreChange::Copy { refs, along, page, offset } = stated {
+                    // A lent record is its lender's to copy.
+                    for reference in refs.iter().chain(along) {
+                        self.lending.refuse_lent(reference)?;
+                    }
+                    let copy = checked_copy_of(refs, along, page, offset, &current, &mut taken)?;
+                    ids.extend(copy.ids);
+                    op_index.push(Some(ops.len()));
+                    vector.extend(copy.live);
+                    copied.extend(copy.copies);
+                    current = predict_records(current.clone(), &copy.op)?;
+                    ops.push(copy.op);
+                    continue;
                 }
                 let change = match stated {
                     StoreChange::Reorder { page, refs, position } => {
@@ -624,6 +688,10 @@ impl Core {
         if let Err(error) = run {
             return Err(to_plugin_error(CAPABILITY, &error));
         }
+        if let Some((lent_ops, lent_ids)) = &options.lent {
+            lent.extend(lent_ops.iter().cloned());
+            ids.extend(lent_ids.iter().cloned());
+        }
         if ops.is_empty() && lent.is_empty() {
             let annotations = changes.iter().map(|_| None).collect();
             return Ok(Applied {
@@ -655,7 +723,9 @@ impl Core {
         let mut all = ops.clone();
         all.extend(following);
         let staged_ops = without_covered_deletes(&shown, all);
-        let change = self.stage(&staged_ops, &shown, &lent)?;
+        // Before the copies show: a view reads their picture source as soon as they do.
+        self.note_copies(&copied);
+        let change = self.stage(&staged_ops, &shown, &lent, options.label.clone())?;
         let after: Vec<Id> = if select { ids.clone() } else { (*selected).clone() };
         self.remember(change.op_id(), &selected, &after);
         if !vector.is_empty() {
@@ -664,6 +734,23 @@ impl Core {
         }
         if select {
             self.commit_json(json!({ "type": "select", "ids": ids }))?;
+            // A record that only shows once the engine answered (a copy the
+            // view can't read beforehand) is selected then, with the others,
+            // unless the selection moved on meanwhile.
+            let model = self.model();
+            if ids.iter().any(|id| !model.by_id.contains_key(id)) {
+                let staged = model.selected.clone();
+                let (me, late, result) = (self.weak(), ids.clone(), change.result());
+                epdf_kernel::rt::spawn(async move {
+                    if result.await.is_err() {
+                        return;
+                    }
+                    let Some(core) = me.upgrade() else { return };
+                    if *core.model().selected == *staged {
+                        let _ = core.commit_json(json!({ "type": "select", "ids": late }));
+                    }
+                });
+            }
         }
         let mut named = ops.clone();
         named.extend(lent.iter().cloned());
@@ -690,7 +777,16 @@ impl Core {
         changes: Vec<StoreChange>,
         select: bool,
     ) -> Promise<Applied> {
-        let creates = changes.iter().filter(|c| c.is_create()).count();
+        self.apply_when_numbered_with(changes, ApplyOptions { select, ..ApplyOptions::default() })
+    }
+
+    /// `applyWhenNumbered(changes, options)` with every option.
+    pub(crate) fn apply_when_numbered_with(
+        &self,
+        changes: Vec<StoreChange>,
+        options: ApplyOptions,
+    ) -> Promise<Applied> {
+        let creates = numbers_for(&changes);
         let me = self.weak();
         Promise::spawn(async move {
             loop {
@@ -698,7 +794,7 @@ impl Core {
                     return Err(Error::new("[annotation] closed"));
                 };
                 if core.hold_numbers(creates) {
-                    return core.apply(&changes, select);
+                    return core.apply_with(&changes, options.clone());
                 }
                 let reserve = core.changes()?.reserve_object_numbers(creates as u32);
                 drop(core);
@@ -795,6 +891,7 @@ fn refs_named_by(op: &Value) -> Vec<Value> {
         "annotations.update" | "annotations.delete" => {
             vec![op.get("ref").cloned().unwrap_or(Value::Null)]
         }
+        "annotations.copy" => array("refs"),
         "forms.updateWidget" | "forms.deleteWidget" => {
             vec![op.get("widget").cloned().unwrap_or(Value::Null)]
         }

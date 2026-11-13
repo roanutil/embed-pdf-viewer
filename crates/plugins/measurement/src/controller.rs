@@ -7,7 +7,6 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use epdf_kernel::page_mirror::PageMirror;
 use epdf_kernel::plugin::ConnectFn;
 use epdf_kernel::settings::InstanceSettings;
 use epdf_kernel::{Controller, Error, Unsubscribe};
@@ -31,13 +30,8 @@ pub(crate) struct Core {
     pub(crate) annotation: AnnotationCapability,
     pub(crate) interaction: InteractionCapability,
     pub(crate) settings: InstanceSettings,
-    /// `sync/viewports.ts`: the page mirror of each page's viewports, and
-    /// the public scale memoized per page.
-    pub(crate) viewports: PageMirror,
+    /// `sync/viewports.ts`: the public scale memoized per page.
     pub(crate) scales: RefCell<HashMap<u32, ScaleMemo>>,
-    /// `write/scale.ts` `pageQueues`: each page's write queue, whose
-    /// `idle()` a download waits for.
-    pub(crate) queues: crate::write::scale::PageQueues,
 }
 
 /// `MeasurementHostCapability`, which is the public `MeasurementCapability`.
@@ -54,13 +48,6 @@ pub fn create_measurement_controller(
     let registry = Rc::new(Registry::new(cx.cx.clone()));
     let siblings = resolve_siblings(&cx)?;
     let settings = cx.settings()?;
-    let viewports = crate::sync::viewports::create_viewport_mirror(
-        &cx,
-        &registry,
-        &settings,
-        &siblings.annotation,
-    )?;
-    let queues = crate::write::scale::wire_settle(&cx)?;
     let api = MeasurementCapability(Rc::new(Core {
         cx,
         events,
@@ -68,9 +55,7 @@ pub fn create_measurement_controller(
         annotation: siblings.annotation,
         interaction: siblings.interaction,
         settings,
-        viewports,
         scales: RefCell::default(),
-        queues,
     }));
     let connected = api.clone();
     let connect: ConnectFn = Rc::new(move || {

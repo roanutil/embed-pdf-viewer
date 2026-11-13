@@ -101,7 +101,12 @@ pub fn read_points(annotation: &Object) -> Shape {
                         .collect()
                 })
                 .unwrap_or_default();
-            Shape::Ink(InkShape { ink_list: ink, rotation, order: Default::default() })
+            Shape::Ink(InkShape {
+                ink_list: ink,
+                rotation,
+                drawing: None,
+                order: Default::default(),
+            })
         }
     }
 }
@@ -516,6 +521,19 @@ fn ink_curves_of(strokes: &[Vec<Point>]) -> Vec<InkStrokeCurves> {
     strokes.iter().filter_map(|stroke| fit_ink_stroke(stroke, INK_CURVE_TOLERANCE)).collect()
 }
 
+/// `inkStrokesOf(shape, strokes)`: the strokes drawn as their curves, and the
+/// one the pen is still drawing (`InkShape.drawing`), drawn as its points. A
+/// stroke of one point is its dot either way.
+fn ink_strokes_of(shape: &Shape, strokes: &[Vec<Point>]) -> (Vec<Vec<Point>>, Option<Vec<Point>>) {
+    let drawing = matches!(shape, Shape::Ink(ink) if ink.drawing == Some(true));
+    match strokes.last() {
+        Some(last) if drawing && last.len() >= 2 => {
+            (strokes[..strokes.len() - 1].to_vec(), Some(last.clone()))
+        }
+        _ => (strokes.to_vec(), None),
+    }
+}
+
 /// `firstDirection(from, points)`: the unit direction from `from` to the
 /// first of `points` apart from it; none when all sit on it.
 fn first_direction(from: Point, points: &[Point]) -> Option<Point> {
@@ -629,9 +647,17 @@ fn ink_outline_points(curves: &InkStrokeCurves, stroke_width: f64) -> Vec<Point>
 pub fn points_drawn_bounds(shape: &Shape, stroke: Stroke) -> Rect {
     let strokes = drawn_strokes_of(shape);
     if matches!(shape, Shape::Ink(_)) {
+        // The stroke being drawn has round caps and joins: the pen reaches half the width past its points.
+        let (fitted, drawing) = ink_strokes_of(shape, &strokes);
         let mut all = strokes.concat();
-        for curves in ink_curves_of(&strokes) {
+        for curves in ink_curves_of(&fitted) {
             all.extend(ink_outline_points(&curves, stroke.stroke_width));
+        }
+        if let Some(drawing) = drawing {
+            all.extend(rect_corner_points(expand_rect(
+                union_rect(&drawing),
+                stroke.stroke_width / 2.0,
+            )));
         }
         return union_rect(&all);
     }
@@ -664,7 +690,8 @@ pub fn points_painted(shape: &Shape, stroke: Stroke, filled: bool) -> Vec<Painte
     let half_width = stroke.stroke_width / 2.0;
     let strokes = drawn_strokes_of(shape);
     if matches!(shape, Shape::Ink(_)) {
-        return ink_curves_of(&strokes)
+        let (fitted, drawing) = ink_strokes_of(shape, &strokes);
+        let mut pieces: Vec<PaintedPiece> = ink_curves_of(&fitted)
             .into_iter()
             .map(|curves| match curves {
                 InkStrokeCurves::Dot { center } => PaintedPiece::Oval {
@@ -682,6 +709,10 @@ pub fn points_painted(shape: &Shape, stroke: Stroke, filled: bool) -> Vec<Painte
                 },
             })
             .collect();
+        if let Some(points) = drawing {
+            pieces.push(PaintedPiece::Stroke { points, closed: false, half_width });
+        }
+        return pieces;
     }
     let closed = matches!(shape, Shape::Poly(p) if p.closed);
     let outline = strokes.first().cloned();
@@ -720,7 +751,8 @@ pub fn points_painted(shape: &Shape, stroke: Stroke, filled: bool) -> Vec<Painte
 pub fn points_scene(shape: &Shape, stroke: Stroke) -> Vec<RenderNode> {
     let strokes = drawn_strokes_of(shape);
     if matches!(shape, Shape::Ink(_)) {
-        return ink_curves_of(&strokes)
+        let (fitted, drawing) = ink_strokes_of(shape, &strokes);
+        let mut nodes: Vec<RenderNode> = ink_curves_of(&fitted)
             .into_iter()
             .map(|curves| match curves {
                 InkStrokeCurves::Dot { center } => RenderNode::ellipse(Rect {
@@ -734,6 +766,10 @@ pub fn points_scene(shape: &Shape, stroke: Stroke) -> Vec<RenderNode> {
                 }
             })
             .collect();
+        if let Some(points) = drawing {
+            nodes.push(RenderNode::poly(points, false));
+        }
+        return nodes;
     }
     let points = strokes.into_iter().next().unwrap_or_default();
     if let Shape::Poly(p) = shape

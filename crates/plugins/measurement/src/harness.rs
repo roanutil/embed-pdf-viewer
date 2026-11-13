@@ -8,15 +8,14 @@ use std::any::Any;
 use std::rc::Rc;
 
 use epdf_kernel::geometry::Point;
-use epdf_kernel::mirror::ResourceStatus;
 use epdf_kernel::{AnyPlugin, AnyToken, Error, Unsubscribe, is_undefined, undefined};
 use plugin_conformance::js::{from_value, to_value};
 use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome};
 use serde_json::{Value, json};
 
 use crate::model::{
-    MeasurementState, PageScaleInputs, PageSize, begin_scale_change, clear_load_error,
-    end_scale_change, set_calibration, set_local_viewports, set_reports,
+    MeasurementState, PageSize, begin_scale_change, end_scale_change, set_calibration,
+    set_local_viewports, set_reports,
 };
 use crate::write::scale::reports_json;
 use crate::*;
@@ -345,10 +344,6 @@ fn set_local_viewports_fn(args: &[Value]) -> Result<Value, Error> {
     state_out(set_local_viewports(&state_arg(args, 0)?, pon_arg(args, 1)?, arg(args, 2)))
 }
 
-fn clear_load_error_fn(args: &[Value]) -> Result<Value, Error> {
-    state_out(clear_load_error(&state_arg(args, 0)?, pon_arg(args, 1)?))
-}
-
 fn default_presets_fn(_: &[Value]) -> Result<Value, Error> {
     Ok(to_value(&default_presets()))
 }
@@ -374,31 +369,6 @@ fn select_page_scale_fn(args: &[Value]) -> Result<Value, Error> {
     Ok(select_page_scale(list, size, &arg(args, 2), persistent).to_json())
 }
 
-fn status_of(value: Option<&Value>) -> ResourceStatus {
-    match value.and_then(Value::as_str) {
-        Some("loading") => ResourceStatus::Loading,
-        Some("ready") => ResourceStatus::Ready,
-        Some("forbidden") => ResourceStatus::Forbidden,
-        Some("error") => ResourceStatus::Error,
-        _ => ResourceStatus::Idle,
-    }
-}
-
-fn page_scale_of_fn(args: &[Value]) -> Result<Value, Error> {
-    let inputs = arg(args, 0);
-    let member = |key: &str| inputs.get(key).filter(|v| !is_undefined(v));
-    let fallback = member("fallback").cloned().unwrap_or_else(undefined);
-    Ok(page_scale_of(&PageScaleInputs {
-        viewports: member("viewports"),
-        status: status_of(member("status")),
-        error: member("error"),
-        size: member("size").and_then(size_of),
-        fallback: &fallback,
-        persistent: epdf_annotation_core::json::truthy(member("persistent")),
-    })
-    .to_json())
-}
-
 fn with_unit_fn(args: &[Value]) -> Result<Value, Error> {
     let area = present(args, 2).and_then(Value::as_str);
     with_unit(&arg(args, 0), &str_arg(args, 1), area)
@@ -421,11 +391,9 @@ pub fn functions() -> FunctionTable {
         ("setCalibration", set_calibration_fn),
         ("setReports", set_reports_fn),
         ("setLocalViewports", set_local_viewports_fn),
-        ("clearLoadError", clear_load_error_fn),
         ("DEFAULT_PRESETS", default_presets_fn),
         ("defaultMeasure", default_measure_fn),
         ("selectPageScale", select_page_scale_fn),
-        ("pageScaleOf", page_scale_of_fn),
         ("withUnit", with_unit_fn),
         ("withAreaUnit", with_area_unit_fn),
         ("withPrecision", with_precision_fn),

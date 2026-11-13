@@ -115,7 +115,7 @@ For form (13.18), link, measurement, redaction, signature and stamp, and viewer-
 | `QuarterTurn`, `TextFormat` | `f64` degrees, `&str` format |
 | `widget_appearance_from_props`, `color_to_css`, `css_to_color` | `epdf_annotation_core::record::widget_appearance_of`; colors are CSS strings in the engine's records, so the two converters have no counterpart |
 | `HoverFlags`, `LinkNavItem` | `list_link_items(page)` as `Value` |
-| `RecalibrationReport`, `SkipReason`, `PageMeasurementViewport` | `remeasure_page(page, scale) -> Promise<Value>`, `set_page_viewports(page, viewports, fallback)` |
+| `RecalibrationReport`, `SkipReason`, `PageMeasurementViewport` | `when_remeasurable() -> Promise<Value>`, `stage_remeasure(page, scale) -> Result<Value, Error>`, `set_page_viewports(page, viewports, fallback)` |
 | `annotation_key`, `repository::seam::annotation_key_of` | `js::key_of` (`epdf_annotation_core::record::annotation_key`) |
 | `value::{get, str_of, truthy, number}` | `epdf_annotation_core::json::{get, get_str, truthy, number}` |
 | `value::{pdf_rect_of, pdf_point_of}` | none: records are page space; convert with the kernel's page geometry (`PageSpace::page_rect_to_pdf`) |
