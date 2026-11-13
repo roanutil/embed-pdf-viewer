@@ -1044,6 +1044,9 @@ pub struct BatchCreate<'a> {
     pub file_dates: Option<(Option<String>, Option<String>)>,
     /// Names the create in an error, such as `import: item 3`.
     pub label: String,
+    /// The object number it gets, claimed by the caller; the next free one
+    /// when absent (a copy's `objectNumbers`).
+    pub object_number: Option<u32>,
 }
 
 /// What a batch made (`BatchCreateResult`): in the order of the creates,
@@ -1146,10 +1149,20 @@ pub fn create_batch(
     let mut placed = Vec::with_capacity(count);
     for (create, (page_index, draft)) in creates.iter().zip(&prepared) {
         cancel.check()?;
-        let annotation =
-            document.create_annotation_raw(*page_index, draft.subtype.code(), 0).ok_or_else(
-                || unknown(format!("{}: EPDFPage_CreateAnnotRaw returned NULL", create.label)),
-            )?;
+        // The page and subtype were checked: a numbered create refused is a
+        // number another object has.
+        let annotation = document
+            .create_annotation_raw(
+                *page_index,
+                draft.subtype.code(),
+                create.object_number.unwrap_or(0),
+            )
+            .ok_or_else(|| match create.object_number {
+                Some(number) => {
+                    crate::session::document::object_number_unavailable(number, "taken")
+                }
+                None => unknown(format!("{}: EPDFPage_CreateAnnotRaw returned NULL", create.label)),
+            })?;
         labelled(&create.label, || {
             apply_draft(document, &annotation, draft, &create.resources, services)
         })?;

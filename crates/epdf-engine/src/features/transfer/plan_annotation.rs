@@ -105,7 +105,8 @@ pub fn plan_annotation_import(input: PlanInput<'_>) -> Result<AnnotationImportPl
         let mut markers = field_markers_of(data);
         markers.extend(unwritable);
         let page = page_of(data).ok_or_else(|| item_refused(index, None, "the item has no ref"))?;
-        drafts.insert(index, draft_of(data, &markers, &map, index, page, check)?);
+        let refused = |field: Option<&str>, message: &str| item_refused(index, field, message);
+        drafts.insert(index, draft_of(data, &markers, &map, page, check, &refused)?);
         if !markers.is_empty() {
             field_drops.insert(index, markers);
         }
@@ -385,9 +386,9 @@ fn draft_of(
     data: &Value,
     markers: &[(String, &'static str)],
     map: &PageMap,
-    index: usize,
     page: PageRef,
     check: &mut DraftCheck<'_>,
+    refused: &dyn Fn(Option<&str>, &str) -> EngineError,
 ) -> Result<Map<String, Value>, EngineError> {
     let mut fields = data.as_object().cloned().unwrap_or_default();
     fields.remove("reply");
@@ -404,10 +405,25 @@ fn draft_of(
         Value::Object(mapped) => mapped,
         _ => Map::new(),
     };
+    // The page-space schema's boxes (`PageBoxSchema`): a rect read with its
+    // corners the other way round has a negative width, which a create
+    // refuses. The check below measures in the file's coordinates, where
+    // the box no longer says so.
+    for field in ["rect", "box"] {
+        let Some(found) = mapped.get(field).filter(|b| b.is_object()) else { continue };
+        for side in ["width", "height"] {
+            if found.get(side).and_then(Value::as_f64).is_some_and(|n| !n.is_finite() || n < 0.0) {
+                return Err(refused(
+                    Some(&format!("{field}.{side}")),
+                    "Number must be greater than or equal to 0",
+                ));
+            }
+        }
+    }
     // Checked with the popup's `parent`, which the import then links itself.
-    check(page, &mapped).map_err(|refused| {
-        let field = refused.details.as_ref().and_then(|d| d["field"].as_str()).map(str::to_owned);
-        item_refused(index, field.as_deref(), &refused.message)
+    check(page, &mapped).map_err(|error| {
+        let field = error.details.as_ref().and_then(|d| d["field"].as_str()).map(str::to_owned);
+        refused(field.as_deref(), &error.message)
     })?;
     let mut draft = mapped;
     if data["subtype"] == "popup" {
@@ -425,6 +441,188 @@ fn item_refused(index: usize, field: Option<&str>, message: &str) -> EngineError
     EngineError::with_message(
         EngineErrorCode::InvalidArg,
         format!("import: item {index}{at}: {message}"),
+    )
+    .with_details(details)
+}
+
+/// One annotation a copy creates (`PlannedCopyCreate`).
+#[derive(Debug, Clone, PartialEq)]
+pub struct PlannedCopy {
+    /// The annotation it copies, by its place among the ones given.
+    pub source: usize,
+    /// The page the copy goes on.
+    pub page: PageRef,
+    /// What `create` writes: the source's data, moved, without its name,
+    /// group, links and dropped fields. Page space.
+    pub draft: Map<String, Value>,
+    /// The copy it replies to or is grouped with, by its place in `creates`.
+    pub reply_to: Option<(usize, AnnotationReplyType)>,
+    /// For a popup: the copy it shows, by its place in `creates`.
+    pub parent: Option<usize>,
+}
+
+/// `AnnotationCopyCreates`.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct AnnotationCopyPlan {
+    /// In the order of the annotations given.
+    pub creates: Vec<PlannedCopy>,
+    /// What was left out, whole or one field of it, in the order given.
+    pub dropped: Vec<Value>,
+}
+
+/// What a copy of `sources` (reads, in page space) creates, and what it
+/// leaves out (`planAnnotationCopies` and `planAnnotationCopy`, 1481e4556).
+/// Nothing here writes, so a copy refuses before its first write:
+/// `InvalidArg` when a source's data isn't valid for its kind.
+///
+/// - A copy carries its source's data, moved by `offset` (page points from
+///   the top-left), on `page` when one is named, else on its own page.
+/// - A reply to an annotation that is copied too replies to that one's copy,
+///   on the same page; a reply to any other stands alone.
+/// - A popup comes with the annotation it shows, or not at all
+///   (`parent-missing`, `parent-dropped`, `popup-taken`).
+/// - A field that marks something the engine can't write is left out of its
+///   copy, as is a value a write can't make; a source whose required field
+///   holds one, a widget, and a kind the engine doesn't model are left out.
+///
+/// A source named twice is copied twice; a link to it points at its first
+/// copy.
+pub fn plan_annotation_copy(
+    sources: &[Value],
+    page: Option<PageRef>,
+    offset: (f64, f64),
+    check: &mut DraftCheck<'_>,
+) -> Result<AnnotationCopyPlan, EngineError> {
+    let mut drops: HashMap<usize, &'static str> = HashMap::new();
+    let mut markers: HashMap<usize, Vec<(String, &'static str)>> = HashMap::new();
+    for (index, data) in sources.iter().enumerate() {
+        match data["subtype"].as_str() {
+            Some("unsupported") => {
+                drops.insert(index, "unsupported-kind");
+            }
+            Some("widget") => {
+                drops.insert(index, "widget");
+            }
+            _ => match unwritable_values_of(data) {
+                None => {
+                    drops.insert(index, "unsupported-value");
+                }
+                Some(unwritable) => {
+                    let mut found = field_markers_of(data);
+                    found.extend(unwritable);
+                    markers.insert(index, found);
+                }
+            },
+        }
+    }
+
+    let mut first: HashMap<String, usize> = HashMap::new();
+    for (index, data) in sources.iter().enumerate() {
+        if let Some(reference) = ref_of(data) {
+            first.entry(reference.key()).or_insert(index);
+        }
+    }
+    let page_of = |index: usize| -> Option<PageRef> {
+        page.or_else(|| ref_of(&sources[index]).map(|r| PageRef::new(r.page())))
+    };
+    // A reply and a popup are on their parent's page (ISO 32000-2
+    // §12.5.6.2), so a link holds only between copies that land on one page.
+    let copied = |reference: &AnnotationRef,
+                  from: usize,
+                  drops: &HashMap<usize, &'static str>|
+     -> Option<usize> {
+        let found = *first.get(&reference.key())?;
+        if drops.contains_key(&found) {
+            return None;
+        }
+        (page_of(found).map(page_key) == page_of(from).map(page_key)).then_some(found)
+    };
+
+    let mut popups: HashSet<usize> = HashSet::new();
+    for (index, data) in sources.iter().enumerate() {
+        if drops.contains_key(&index) || data["subtype"] != "popup" {
+            continue;
+        }
+        let parent_ref = linked(data, "/parent");
+        let named = parent_ref.as_ref().and_then(|p| first.get(&p.key()).copied());
+        let parent = parent_ref.as_ref().and_then(|p| copied(p, index, &drops));
+        match parent {
+            None => {
+                let reason = if named.is_some_and(|n| drops.contains_key(&n)) {
+                    "parent-dropped"
+                } else {
+                    "parent-missing"
+                };
+                drops.insert(index, reason);
+            }
+            Some(parent) if !popups.insert(parent) => {
+                drops.insert(index, "popup-taken");
+            }
+            Some(_) => {}
+        }
+    }
+
+    let mut place: HashMap<usize, usize> = HashMap::new();
+    for index in 0..sources.len() {
+        if !drops.contains_key(&index) {
+            place.insert(index, place.len());
+        }
+    }
+    let identity = PageMap::identity();
+    let mut creates = Vec::with_capacity(place.len());
+    for (index, source) in sources.iter().enumerate() {
+        if drops.contains_key(&index) {
+            continue;
+        }
+        let reply_to = linked(source, "/reply/to")
+            .and_then(|to| copied(&to, index, &drops))
+            .map(|at| (place[&at], reply_type_of(source)));
+        let parent = (source["subtype"] == "popup")
+            .then(|| linked(source, "/parent"))
+            .flatten()
+            .and_then(|p| copied(&p, index, &drops))
+            .map(|at| place[&at]);
+        let found = markers.get(&index).cloned().unwrap_or_default();
+        let mut data = source.as_object().cloned().unwrap_or_default();
+        for key in ["nm", "groupId", "reply", "popup"] {
+            data.shift_remove(key);
+        }
+        for (field, _) in field_markers_of(source) {
+            data.shift_remove(&field);
+        }
+        crate::features::annotation::write::appearance::translated_annotation(
+            &mut data, offset.0, offset.1,
+        );
+        let target = page_of(index).ok_or_else(|| copy_refused(index, None, "no ref"))?;
+        let refused = |field: Option<&str>, message: &str| copy_refused(index, field, message);
+        let draft = draft_of(&Value::Object(data), &found, &identity, target, check, &refused)?;
+        creates.push(PlannedCopy { source: index, page: target, draft, reply_to, parent });
+    }
+
+    let mut dropped = Vec::new();
+    for (index, data) in sources.iter().enumerate() {
+        let reference = data.get("ref").cloned().unwrap_or(Value::Null);
+        match drops.get(&index) {
+            Some(reason) => dropped.push(json!({ "ref": reference, "reason": reason })),
+            None => {
+                for (field, reason) in markers.get(&index).into_iter().flatten() {
+                    dropped.push(json!({ "ref": reference, "field": field, "reason": reason }));
+                }
+            }
+        }
+    }
+    Ok(AnnotationCopyPlan { creates, dropped })
+}
+
+fn copy_refused(index: usize, field: Option<&str>, message: &str) -> EngineError {
+    let at = field.map(|f| format!(" field '{f}'")).unwrap_or_default();
+    let mut details = json!({ "annotation": index });
+    if let Some(field) = field {
+        details["field"] = json!(field);
+    }
+    EngineError::with_message(
+        EngineErrorCode::InvalidArg,
+        format!("copy: annotation {index}{at}: {message}"),
     )
     .with_details(details)
 }

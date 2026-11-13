@@ -798,6 +798,8 @@ pub fn update_widget(
     if let Some(expect) = expect {
         assert_expected(at, &current, expect)?;
     }
+    // A widget's new name must be free on its page too (756f8e56b).
+    super::annotations::assert_new_name_free(ctx, widget, &current, patch.get("nm"))?;
     let mut patch = patch.clone();
     patch.insert("subtype".into(), Value::String("widget".into()));
     super::annotations::write_update(
@@ -1171,6 +1173,202 @@ pub fn import_form(
         .then(|| order_after.iter().map(|n| FormFieldRef::ObjectNumber { field: *n }).collect());
     Ok(Done {
         item: ChangeItem::FormsImport {
+            fields: read.iter().map(to_value).collect::<Result<_, _>>()?,
+            widgets: rows,
+            ref_map,
+            dropped: plan.dropped,
+            calculation_order,
+            meta,
+        },
+        reverse,
+    })
+}
+
+/// `forms.copy`: new fields from fields of this document, created as one
+/// change (`copyFields` and `FormCopier.copy`, a390171cc, 2612ae1e1). The form
+/// is read as `forms.list` reads it, in page space; `plan_form_copy` works
+/// out the copies and what to leave out; each is written as a design
+/// import's field is, with its widgets' flags and, with `values`, its
+/// source's value, in the group its source was in when the caller may set
+/// it. Its reverse deletes each field it made, the last made first, when
+/// nobody changed it since.
+pub fn copy_fields(
+    ctx: &mut ChangeContext<'_>,
+    references: &[FormFieldRef],
+    widgets: Option<&[AnnotationRef]>,
+    page: Option<crate::identity::PageRef>,
+    offset: (f64, f64),
+    values: bool,
+    object_numbers: Option<&[u32]>,
+) -> Result<Done, EngineError> {
+    use crate::features::transfer::plan_form::{FormCopyInput, plan_form_copy};
+    ctx.cancel.check()?;
+    ctx.authority.require(DocCapability::DocFormsModify)?;
+    // Counted as asked, before anything is read.
+    crate::features::transfer::limits::assert_copy_within_limit(
+        "items",
+        ctx.limits.items,
+        references.len() as u64,
+    )?;
+    // A page the document doesn't have refuses the copy before anything is
+    // read.
+    if let Some(page) = page {
+        ctx.session.document()?.page_index(page.object_number())?;
+    }
+    let may_script =
+        ctx.authority.grants.as_ref().is_none_or(|g| g.allows(DocCapability::DocFormsScript));
+    let form = {
+        let owned = ctx.session.document()?;
+        let document = owned.document();
+        let model = crate::features::forms::write::load_model(document)?;
+        let form = crate::features::forms::widgets::read_form(document, &model, ctx.cancel)?;
+        drop(model);
+        let mut box_of = crate::features::pages::visible_box_reader(document);
+        to_value(&crate::page_space::forms::page_form_snapshot_of(form, &mut box_of)?)?
+    };
+    let plan = plan_form_copy(FormCopyInput {
+        form: &form,
+        fields: references,
+        widgets,
+        page,
+        offset,
+        values,
+        may_script,
+    })?;
+    let needed: usize = plan
+        .creates
+        .iter()
+        .map(|create| 1 + create.draft["widgets"].as_array().map_or(0, Vec::len))
+        .sum();
+    if let Some(numbers) = object_numbers
+        && numbers.len() != needed
+    {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            format!("copy: objectNumbers names {} objects of {needed}", numbers.len()),
+        )
+        .with_details(serde_json::json!({ "field": "objectNumbers" })));
+    }
+
+    let identity = ctx.authority.identity.clone();
+    let order_before = f::calculation_order_now(ctx.session.document()?.document())?;
+    let mut created = Vec::with_capacity(plan.creates.len());
+    let mut taken = 0;
+    for planned in &plan.creates {
+        ctx.cancel.check()?;
+        let count = 1 + planned.draft["widgets"].as_array().map_or(0, Vec::len);
+        let numbers = object_numbers.map(|numbers| &numbers[taken..taken + count]);
+        taken += count;
+        let mut box_of =
+            crate::features::pages::visible_box_reader(ctx.session.document()?.document());
+        let mut draft =
+            crate::page_space::forms::pdf_form_field_draft_of(planned.draft.clone(), &mut box_of)?;
+        drop(box_of);
+        let source_group = draft.remove("groupId").and_then(|g| g.as_str().map(str::to_owned));
+        // A copy is the caller's own create: it keeps its source's group
+        // when the caller may set it.
+        if let Some(group) = new_field_group(ctx, source_group)? {
+            draft.insert("groupId".into(), Value::String(group));
+        }
+        let draft: FormFieldDraft = serde_json::from_value(Value::Object(draft)).map_err(|e| {
+            EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!("copy: field {}: {e}", planned.source),
+            )
+        })?;
+        let (object_number, widget_numbers) = match numbers {
+            Some([own, rest @ ..]) => (Some(*own), Some(rest)),
+            _ => (None, None),
+        };
+        let plan_create = f::plan_create(ctx.session.document()?, &draft, widget_numbers)?;
+        for number in object_number.iter().chain(widget_numbers.into_iter().flatten()) {
+            ctx.session.claim_object_number(*number)?;
+        }
+        let written = {
+            let writer = field_writer(ctx)?;
+            f::create_field(
+                &writer,
+                &draft,
+                &plan_create,
+                object_number,
+                widget_numbers,
+                &identity,
+                ctx.cancel,
+            )?
+        };
+        let made = written.field.base.field_object_number();
+        // A create writes no flags: each widget gets its source's.
+        for (widget, flags) in written.field.widgets().zip(&planned.flags) {
+            write_widget_flags(ctx, widget, flags)?;
+        }
+        if let Some(value) = &planned.value {
+            let reference = FormFieldRef::ObjectNumber { field: made };
+            let now = crate::clock::format_pdf_timestamp(ctx.clock.now());
+            mutator(ctx)?.set_value(&reference, value, &identity, now.as_deref(), ctx.cancel)?;
+        }
+        created.push(made);
+    }
+    // Each create with a calculate script joined the order at its end; the
+    // form's order among their sources is put back there.
+    let calculating: Vec<FormFieldRef> = plan
+        .calculation_order
+        .iter()
+        .map(|at| FormFieldRef::ObjectNumber { field: created[*at] })
+        .collect();
+    if !calculating.is_empty() {
+        f::reorder_calculations(
+            ctx.session.document()?.document(),
+            &calculating,
+            &FieldPosition::END,
+            ctx.cancel,
+        )?;
+    }
+    let order_after = f::calculation_order_now(ctx.session.document()?.document())?;
+
+    let read: Vec<FormFieldDto> = created
+        .iter()
+        .map(|object_number| read_field_by_number(ctx, *object_number).map(|read| read.field))
+        .collect::<Result<_, _>>()?;
+    let meta = form_mutation_meta(
+        &ctx.session.write_stamp()?,
+        read.iter().map(|field| field.base.field_ref.clone()).collect(),
+        read.iter().flat_map(MetaWidget::of_field).collect(),
+        None,
+    );
+    let rows = rows(ctx, &meta)?;
+    let form_fields = form["fields"].as_array().cloned().unwrap_or_default();
+    let ref_map = plan
+        .creates
+        .iter()
+        .zip(&read)
+        .map(|(planned, field)| {
+            let from = form_fields
+                .iter()
+                .find(|candidate| {
+                    crate::features::transfer::form_export::field_matches(
+                        candidate,
+                        &references[planned.source],
+                    )
+                })
+                .map_or(Value::Null, |source| source["ref"].clone());
+            Ok(serde_json::json!({ "from": from, "to": to_value(&field.base.field_ref)? }))
+        })
+        .collect::<Result<_, EngineError>>()?;
+    let reverse = read
+        .iter()
+        .rev()
+        .map(|field| {
+            Ok(ReverseStep::FieldRemove(FieldRemoveStep {
+                object_number: field.base.field_object_number(),
+                left: to_value(field)?,
+                rights: None,
+            }))
+        })
+        .collect::<Result<_, EngineError>>()?;
+    let calculation_order = (!same_order(&order_before, &order_after))
+        .then(|| order_after.iter().map(|n| FormFieldRef::ObjectNumber { field: *n }).collect());
+    Ok(Done {
+        item: ChangeItem::FormsCopy {
             fields: read.iter().map(to_value).collect::<Result<_, _>>()?,
             widgets: rows,
             ref_map,

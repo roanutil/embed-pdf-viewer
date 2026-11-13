@@ -14,7 +14,7 @@
 pub mod derive;
 
 use pdfium::measure::{Measure, MeasureAxis, MeasureSubtype, MeasureText, Viewport};
-use pdfium::{Document, PageView, PointF, RectF};
+use pdfium::{Document, PointF, RectF};
 use serde_json::{Map, Value, json};
 
 use crate::cancel::CancelToken;
@@ -70,18 +70,22 @@ fn normalized(r: RectF) -> Value {
 
 // ── MeasureReader / readViewports ───────────────────────────────────────────
 
-/// `MeasureReader.viewports` over `readViewports`: every viewport in
-/// drawing order, in the file's coordinates, a malformed one or one whose
-/// `/BBox` doesn't read skipped. A viewport with no name or no measure
-/// reads `null` for it.
+/// `MeasureReader.viewports` over `readViewports`: every viewport of the
+/// page at `index` in drawing order, in the file's coordinates, a malformed
+/// one or one whose `/BBox` doesn't read skipped. A viewport with no name or
+/// no measure reads `null` for it. Read from the page dictionary through the
+/// fork's raw viewport functions (c7f8d75ff), so no page is loaded: cheap
+/// enough for every page of a layout.
 pub fn read_viewports(
-    page: &PageView<'_>,
+    document: &Document,
+    index: u32,
     cancel: &CancelToken,
 ) -> Result<Vec<Value>, EngineError> {
     cancel.check()?;
     let mut viewports = Vec::new();
-    for i in 0..page.viewport_count() {
-        let Some(viewport) = page.viewport(i) else { continue };
+    for i in 0..document.viewport_count_raw(index) {
+        let Some(raw) = document.viewport_raw(index, i) else { continue };
+        let viewport = raw.get();
         let Some(bbox) = viewport.bbox() else { continue };
         let name = text(viewport.name())?;
         let measure = read_measure(viewport.measure())?;
@@ -348,16 +352,15 @@ fn is_owned(viewport: &Viewport<'_>) -> Result<bool, EngineError> {
 /// `MeasureMutator.setScale`. `measure` is `None` for the wire's `null`:
 /// remove every owned viewport, highest index first. Otherwise update the
 /// last owned viewport, or append one over the visible page, and write the
-/// measure into a fresh `/Measure`.
+/// measure into a fresh `/Measure`. Through the page dictionary (the fork's
+/// raw viewport functions, c7f8d75ff): the page at `index` isn't loaded.
 ///
-/// The visible page is `pageBoxesOf`'s crop box (`readBoxes(...).crop`,
-/// `MeasureMutator.ts:52-56`): US Letter when the page has no media box,
-/// and the crop box cut to the media box. `document` and `index` are the
-/// page's, for that read.
+/// The visible page is `pageBoxesOf`'s crop box (`readBoxes(...).crop`):
+/// US Letter when the page has no media box, and the crop box cut to the
+/// media box.
 pub fn set_scale(
     document: &Document,
     index: u32,
-    page: &PageView<'_>,
     measure: Option<&Value>,
     cancel: &CancelToken,
 ) -> Result<(), EngineError> {
@@ -366,9 +369,9 @@ pub fn set_scale(
         assert_writable_measure(measure).map_err(invalid)?;
     }
     let mut owned = Vec::new();
-    for i in 0..page.viewport_count() {
-        let Some(viewport) = page.viewport(i) else { continue };
-        if is_owned(&viewport)? {
+    for i in 0..document.viewport_count_raw(index) {
+        let Some(raw) = document.viewport_raw(index, i) else { continue };
+        if is_owned(&raw.get())? {
             owned.push(i);
         }
     }
@@ -388,16 +391,32 @@ pub fn set_scale(
     // never rewrite /VP.
     let Some(measure) = measure else {
         for i in owned.into_iter().rev() {
-            require_measure_write(page.remove_viewport(i))?;
+            require_measure_write(document.remove_viewport_raw(index, i))?;
         }
         return Ok(());
     };
-    let viewport = match owned.last() {
-        Some(&i) => page.viewport(i),
-        None => page.add_viewport(bbox),
+    let raw = match owned.last() {
+        Some(&i) => document.viewport_raw(index, i),
+        None => document.add_viewport_raw(index, bbox),
     };
-    let Some(viewport) = viewport else { return require_measure_write(false) };
+    let Some(raw) = raw else { return require_measure_write(false) };
+    let viewport = raw.get();
     require_measure_write(viewport.set_bbox(bbox))?;
     require_measure_write(viewport.set_name(CALIBRATION_NAME))?;
     write_measure(viewport.add_measure(), measure)
+}
+
+/// The scale of the last viewport the engine owns on the page at `index`, in
+/// the file's coordinates, or `None` (`scaleChanges.ts` `ownScaleOf`).
+pub fn own_scale_of(
+    document: &Document,
+    index: u32,
+    cancel: &CancelToken,
+) -> Result<Option<Value>, EngineError> {
+    let own = read_viewports(document, index, cancel)?
+        .into_iter()
+        .rfind(|viewport| viewport["owned"] == json!(true));
+    Ok(own
+        .map(|viewport| viewport["measure"].clone())
+        .filter(|measure| measure["subtype"] == "rectilinear"))
 }

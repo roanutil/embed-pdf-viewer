@@ -348,6 +348,7 @@ pub fn import_annotations(
             attribution,
             file_dates,
             label: format!("import: item {}", planned.item),
+            object_number: None,
         });
     }
     for create in &creates {
@@ -368,4 +369,323 @@ pub fn import_annotations(
         })
         .collect();
     Ok(AnnotationImportResult { annotations, ref_map, dropped: plan.dropped, meta: created.meta })
+}
+
+/// What a copy checks of each create before the first write, answering
+/// whom the copy is attributed to (`authorizeCreate`).
+pub type AuthorizeCopy<'a> =
+    dyn FnMut(&Map<String, Value>) -> Result<Option<AnnotationActor>, EngineError> + 'a;
+
+/// A copy of annotations inside one document, as its op asks for it
+/// (`AnnotationCopyRequest`, 1481e4556).
+pub struct AnnotationCopyRequest<'a> {
+    /// The sources, each as it reads now, in the file's coordinates.
+    pub sources: &'a [Value],
+    /// The page the copies go on; each on its own page when absent.
+    pub page: Option<PageRef>,
+    /// How far each copy moves, in page points from the top-left.
+    pub offset: (f64, f64),
+    /// The object number each copy gets, in the order of the sources.
+    pub object_numbers: Option<&'a [u32]>,
+    /// What the copy may carry: what a bundle of the same annotations may.
+    pub limits: &'a BundleLimits,
+}
+
+/// A copy worked out and checked, before its first write: the creates, the
+/// bytes their drawings and files carry, and what was left out.
+pub struct PreparedCopy {
+    creates: Vec<PreparedCopyCreate>,
+    resources: Vec<(String, Vec<u8>)>,
+    ref_map_from: Vec<Value>,
+    dropped: Vec<Value>,
+}
+
+struct PreparedCopyCreate {
+    page: PageRef,
+    draft: Map<String, Value>,
+    reply_to: Option<(usize, crate::features::annotation::vocabulary::AnnotationReplyType)>,
+    parent: Option<usize>,
+    appearance: Option<String>,
+    file: Option<String>,
+    actor: Option<AnnotationActor>,
+    file_dates: Option<(Option<String>, Option<String>)>,
+    object_number: Option<u32>,
+    label: String,
+}
+
+impl PreparedCopy {
+    /// The object numbers the copies were given, for the caller to claim
+    /// before the write. A number given for a source left out isn't used.
+    pub fn object_numbers(&self) -> impl Iterator<Item = u32> + '_ {
+        self.creates.iter().filter_map(|create| create.object_number)
+    }
+}
+
+/// What `doc.annotations.copy` will create (`AnnotationCopier.copy`, up to
+/// its write): each source measured from the top-left of its page,
+/// [`plan_annotation_copy`] works out the copies and what to leave out, each
+/// copy is measured back on the page it goes to and checked as its create
+/// would be, and each drawing and file it carries is read and counted
+/// against `limits`. `authorize_create` sees each create's draft and
+/// answers whom it is attributed to.
+pub fn prepare_annotation_copy(
+    session: &DocumentSession,
+    request: AnnotationCopyRequest<'_>,
+    authorize_create: &mut AuthorizeCopy<'_>,
+    cancel: &CancelToken,
+) -> Result<PreparedCopy, EngineError> {
+    cancel.check()?;
+    let AnnotationCopyRequest { sources, page, offset, object_numbers, limits } = request;
+    let owned = session.document()?;
+    let document = owned.document();
+    let mut box_of = crate::features::pages::visible_box_reader(document);
+    let mut in_page_space = Vec::with_capacity(sources.len());
+    for source in sources {
+        in_page_space
+            .push(crate::page_space::annotations::page_annotation_of(source.clone(), &mut box_of)?);
+    }
+    let plan = {
+        let mut check = |page: PageRef, draft: &Map<String, Value>| -> Result<(), EngineError> {
+            let visible = box_of(page.object_number())?;
+            let converted = crate::page_space::annotations::pdf_annotation_draft_of(
+                draft.clone(),
+                visible,
+                &mut box_of,
+            )?;
+            check_draft(converted).map(|_| ())
+        };
+        crate::features::transfer::plan_annotation::plan_annotation_copy(
+            &in_page_space,
+            page,
+            offset,
+            &mut check,
+        )?
+    };
+
+    let mut collector = CopyResources::new(*limits);
+    let mut creates = Vec::with_capacity(plan.creates.len());
+    for planned in &plan.creates {
+        cancel.check()?;
+        let source = &sources[planned.source];
+        let visible = box_of(planned.page.object_number())?;
+        let draft = crate::page_space::annotations::pdf_annotation_draft_of(
+            planned.draft.clone(),
+            visible,
+            &mut box_of,
+        )?;
+        let actor = authorize_create(&draft)?;
+        let (appearance, file) = collector.of(owned, source)?;
+        let file_dates = (source["subtype"] == "file-attachment" && source["file"].is_object())
+            .then(|| {
+                let date = |key: &str| source["file"][key].as_str().map(str::to_owned);
+                (date("createdAt"), date("modifiedAt"))
+            });
+        creates.push(PreparedCopyCreate {
+            page: planned.page,
+            draft,
+            reply_to: planned.reply_to,
+            parent: planned.parent,
+            appearance,
+            file,
+            actor,
+            file_dates,
+            object_number: object_numbers.map(|numbers| numbers[planned.source]),
+            label: format!("copy: annotation {}", planned.source),
+        });
+    }
+    let ref_map_from =
+        plan.creates.iter().map(|planned| sources[planned.source]["ref"].clone()).collect();
+    Ok(PreparedCopy { creates, resources: collector.held, ref_map_from, dropped: plan.dropped })
+}
+
+/// The drawings and files a copy carries, read from its sources and counted
+/// against the bundle limits as they are read (`AnnotationCopier`'s
+/// `resourceReader`). A stamp's drawing is read and counted once however
+/// many copies place it; any other appearance, and each file, counts for
+/// every copy, which gets its own.
+struct CopyResources {
+    limits: BundleLimits,
+    /// The id each drawing (by object number) was read under.
+    drawings: HashMap<u32, String>,
+    held: Vec<(String, Vec<u8>)>,
+    count: u64,
+    total: u64,
+}
+
+impl CopyResources {
+    fn new(limits: BundleLimits) -> Self {
+        Self { limits, drawings: HashMap::new(), held: Vec::new(), count: 0, total: 0 }
+    }
+
+    /// `counted`: one more resource of `bytes`, within `resourceBytes`,
+    /// `resources` and `bundleBytes`.
+    fn counted(&mut self, bytes: Vec<u8>) -> Result<String, EngineError> {
+        use crate::features::transfer::limits::assert_copy_within_limit;
+        let size = bytes.len() as u64;
+        assert_copy_within_limit("resourceBytes", self.limits.resource_bytes, size)?;
+        self.count += 1;
+        assert_copy_within_limit("resources", self.limits.resources, self.count)?;
+        self.total += size;
+        assert_copy_within_limit("bundleBytes", self.limits.bundle_bytes, self.total)?;
+        let id = format!("copy-resource-{}", self.held.len());
+        self.held.push((id.clone(), bytes));
+        Ok(id)
+    }
+
+    /// The appearance and file `source` (a read, in the file's coordinates)
+    /// carries, by role: a stamp's drawing or appearance, a file
+    /// attachment's file.
+    fn of(
+        &mut self,
+        owned: &crate::access::OwnedDocument,
+        source: &Value,
+    ) -> Result<(Option<String>, Option<String>), EngineError> {
+        let subtype = source["subtype"].as_str().unwrap_or_default();
+        if subtype != "stamp" && subtype != "file-attachment" {
+            return Ok((None, None));
+        }
+        let reference = ref_of(source).ok_or_else(|| unserializable("a record names no ref"))?;
+        let document = owned.document();
+        let page_index = owned.page_index(reference.page())?;
+        let index =
+            super::write::resolve::resolve_annotation_index_raw(document, page_index, &reference)?;
+        let raw = document
+            .raw_annotation(page_index, index)
+            .ok_or_else(|| unserializable("an annotation is not where it was read"))?;
+        if subtype == "stamp" {
+            let drawing = raw.stamp_drawing();
+            if let Some(known) = drawing.and_then(|drawing| self.drawings.get(&drawing)) {
+                return Ok((Some(known.clone()), None));
+            }
+            let bytes = match drawing {
+                Some(drawing) => match document.export_drawing(drawing) {
+                    Some(exported) => {
+                        Some(exported.save_to_buffer(pdfium::PdfSaveMode::Full).map_err(|_| {
+                            EngineError::with_message(
+                                EngineErrorCode::DocOpenFailed,
+                                "failed to save a drawing",
+                            )
+                        })?)
+                    }
+                    None => None,
+                },
+                None => super::appearance::unturned_appearance(&raw)?,
+            };
+            let Some(bytes) = bytes else { return Ok((None, None)) };
+            let id = self.counted(bytes)?;
+            if let Some(drawing) = drawing {
+                self.drawings.insert(drawing, id.clone());
+            }
+            return Ok((Some(id), None));
+        }
+        let Some(attachment) = raw.file_attachment() else { return Ok((None, None)) };
+        let max = self.limits.resource_bytes;
+        // One larger than `resourceBytes` is refused before it is read (`fileOf`).
+        let bytes = attachment.extract(max).map_err(|error| match error {
+            pdfium::AttachmentExtractError::SizeLimitExceeded => past_limit(
+                format!("copy: an attached file is larger than {max} bytes"),
+                json!({ "limit": "resourceBytes", "max": max }),
+            ),
+            other => crate::features::files::attachments::extract_error(other, Some(max)),
+        })?;
+        Ok((None, Some(self.counted(bytes)?)))
+    }
+}
+
+/// The checks a copy makes before it reads anything: as many object
+/// numbers as refs, and no more refs than a bundle may carry items.
+pub fn check_annotation_copy_request(
+    refs: usize,
+    object_numbers: Option<&[u32]>,
+    limits: &BundleLimits,
+) -> Result<(), EngineError> {
+    if let Some(numbers) = object_numbers
+        && numbers.len() != refs
+    {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            format!("copy: objectNumbers names {} copies of {refs}", numbers.len()),
+        )
+        .with_details(json!({ "field": "objectNumbers" })));
+    }
+    // Counted as asked, before anything is read.
+    crate::features::transfer::limits::assert_copy_within_limit("items", limits.items, refs as u64)
+}
+
+/// The write of a prepared copy, all or nothing, as an import's
+/// ([`create_batch`]): `AnnotationCopyResult`, in the file's coordinates.
+pub fn write_annotation_copy(
+    session: &DocumentSession,
+    prepared: PreparedCopy,
+    services: &CreateServices<'_>,
+    cancel: &CancelToken,
+) -> Result<AnnotationImportResult, EngineError> {
+    let PreparedCopy { creates, resources, ref_map_from, dropped } = prepared;
+    let bytes = |id: &Option<String>| -> Option<&[u8]> {
+        let id = id.as_deref()?;
+        resources.iter().find(|(held, _)| held == id).map(|(_, bytes)| bytes.as_slice())
+    };
+    let batch: Vec<BatchCreate<'_>> = creates
+        .iter()
+        .map(|create| BatchCreate {
+            page: create.page.object_number(),
+            draft: create.draft.clone(),
+            reply_to: create.reply_to.map(|(at, reply_type)| (Planned(at), reply_type)),
+            parent: create.parent.map(Planned),
+            resources: DraftResources {
+                appearance: bytes(&create.appearance),
+                file: bytes(&create.file),
+            },
+            attribution: BatchAttribution::Stamp(create.actor.clone()),
+            file_dates: create.file_dates.clone(),
+            label: create.label.clone(),
+            object_number: create.object_number,
+        })
+        .collect();
+    let owned = session.document()?;
+    let created = create_batch(owned, &session.write_stamp()?, batch, services, cancel)?;
+    let annotations: Vec<Value> = created
+        .created
+        .iter()
+        .map(|record| serde_json::to_value(record).map_err(unserializable))
+        .collect::<Result<_, _>>()?;
+    let ref_map = ref_map_from
+        .into_iter()
+        .zip(&annotations)
+        .map(|(from, annotation)| json!({ "from": from, "to": annotation["ref"] }))
+        .collect();
+    Ok(AnnotationImportResult { annotations, ref_map, dropped, meta: created.meta })
+}
+
+#[cfg(test)]
+mod copy_resource_tests {
+    use super::CopyResources;
+    use crate::error::EngineErrorCode;
+    use crate::features::transfer::limits::DEFAULT_BUNDLE_LIMITS;
+    use serde_json::json;
+
+    /// Each resource read counts, the same bytes again included: a copy is
+    /// held to `resources`, `resourceBytes` and `bundleBytes` with
+    /// `assertCopyWithinLimit`'s message (5496eb084).
+    #[test]
+    fn every_read_counts_against_the_copy_limits() {
+        let limits = super::BundleLimits { resources: 1, ..DEFAULT_BUNDLE_LIMITS };
+        let mut resources = CopyResources::new(limits);
+        resources.counted(vec![1, 2, 3]).expect("one resource");
+        let refused =
+            resources.counted(vec![1, 2, 3]).expect_err("a second, though the same bytes");
+        assert_eq!(refused.code, EngineErrorCode::PayloadTooLarge);
+        assert_eq!(refused.message, "copy: past the resources limit: 2 > 1");
+        assert_eq!(refused.details, Some(json!({ "limit": "resources", "max": 1, "value": 2 })));
+
+        let limits = super::BundleLimits { resource_bytes: 2, ..DEFAULT_BUNDLE_LIMITS };
+        let refused = CopyResources::new(limits).counted(vec![0; 3]).expect_err("too large");
+        assert_eq!(refused.message, "copy: past the resourceBytes limit: 3 > 2");
+
+        let limits = super::BundleLimits { bundle_bytes: 5, ..DEFAULT_BUNDLE_LIMITS };
+        let mut resources = CopyResources::new(limits);
+        resources.counted(vec![0; 3]).expect("3 bytes");
+        let refused = resources.counted(vec![0; 3]).expect_err("6 bytes in all");
+        assert_eq!(refused.message, "copy: past the bundleBytes limit: 6 > 5");
+    }
 }

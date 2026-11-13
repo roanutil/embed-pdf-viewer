@@ -91,6 +91,12 @@ pub struct PageLayout<C: Coordinates = PdfCoordinates> {
     /// Open and close actions, absent when the page has neither.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub actions: Option<PageActions<C::Destination>>,
+    /// The page's measurement viewports (`/VP`): regions with a scale of
+    /// their own, in drawing order, as `measure.viewports` reads them;
+    /// absent for a page without any (c7f8d75ff). In the file's coordinates
+    /// here, in page space past the boundary (`pageViewportsOf`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub viewports: Option<Vec<serde_json::Value>>,
 }
 
 /// What a page asks a viewer to do when it opens or closes
@@ -224,6 +230,8 @@ pub fn list_pages(
             boxes,
             pdf_crop_box: boxes.crop,
             actions: actions_of(document, number.get(), &mut budget)?,
+            viewports: Some(crate::features::measure::read_viewports(document, index, cancel)?)
+                .filter(|viewports| !viewports.is_empty()),
         });
     }
 

@@ -45,6 +45,8 @@ pub enum ReverseStep {
     ObjectsRevert(ObjectsRevertStep),
     #[serde(rename = "pages.rotate")]
     PagesRotate(PageRotateStep),
+    #[serde(rename = "pages.setScale")]
+    PagesSetScale(PageScaleStep),
     #[serde(rename = "pages.reorder")]
     PagesReorder(PageReorderStep),
     #[serde(rename = "pages.restore")]
@@ -224,6 +226,18 @@ pub struct PageRotateStep {
     pub pages: Vec<u32>,
     pub rotation: crate::geom::PdfRotation,
     pub left: crate::geom::PdfRotation,
+}
+
+/// Gives pages `measure` as their own scale (`None`: none), each while it
+/// still has the scale the change left it with (`left`); both in the file's
+/// coordinates (`PageScaleStep`). A change that found several scales, or
+/// pages of several sizes, has one step for each.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageScaleStep {
+    pub pages: Vec<u32>,
+    pub measure: Option<serde_json::Value>,
+    pub left: Option<serde_json::Value>,
 }
 
 /// Where a page goes back to, or was left: right after `after`, by object
@@ -576,6 +590,7 @@ pub fn record_bytes(record: &ChangeRecord) -> usize {
             }
             ReverseStep::AnnotationReorder(_)
             | ReverseStep::PagesRotate(_)
+            | ReverseStep::PagesSetScale(_)
             | ReverseStep::PagesReorder(_)
             | ReverseStep::PagesRemove(_) => 0,
             ReverseStep::PagesRestore(step) => {

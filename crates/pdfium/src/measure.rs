@@ -153,6 +153,81 @@ impl PageView<'_> {
     }
 }
 
+/// A viewport read through the page dictionary of a page that isn't loaded
+/// (`EPDFPage_GetViewportRaw`, `EPDFPage_AddViewportRaw`). It is its own
+/// origin: dropping it closes it (`EPDFViewport_Close`), and with it every
+/// measure and format handle taken through [`RawViewport::get`], which the
+/// borrow keeps from outliving it.
+#[derive(Debug)]
+pub struct RawViewport<'doc> {
+    handle: pdfium_sys::EPDF_VIEWPORT,
+    _doc: PhantomData<&'doc ()>,
+    _not_send: PhantomData<*const ()>,
+}
+
+impl RawViewport<'_> {
+    /// The viewport, for as long as this handle is open.
+    pub fn get(&self) -> Viewport<'_> {
+        Viewport { handle: self.handle, _page: PhantomData, _not_send: PhantomData }
+    }
+}
+
+impl Drop for RawViewport<'_> {
+    fn drop(&mut self) {
+        // SAFETY: the handle came from a raw getter and is closed once.
+        unsafe { pdfium_sys::EPDFViewport_Close(self.handle) }
+    }
+}
+
+impl crate::Document {
+    fn raw_viewport(&self, handle: pdfium_sys::EPDF_VIEWPORT) -> Option<RawViewport<'_>> {
+        (!handle.is_null()).then_some(RawViewport {
+            handle,
+            _doc: PhantomData,
+            _not_send: PhantomData,
+        })
+    }
+
+    /// [`PageView::viewport_count`] for the page at `page_index`, without
+    /// loading it; 0 for an index no page has.
+    pub fn viewport_count_raw(&self, page_index: u32) -> u32 {
+        let Ok(index) = i32::try_from(page_index) else { return 0 };
+        // SAFETY: the document handle is live for the borrow.
+        let count = unsafe { pdfium_sys::EPDFPage_CountViewportsRaw(self.as_raw(), index) };
+        u32::try_from(count).unwrap_or(u32::MAX)
+    }
+
+    /// [`PageView::viewport`] without loading the page.
+    pub fn viewport_raw(&self, page_index: u32, index: u32) -> Option<RawViewport<'_>> {
+        let page_index = i32::try_from(page_index).ok()?;
+        // SAFETY: the document handle is live for the borrow.
+        let handle = unsafe {
+            pdfium_sys::EPDFPage_GetViewportRaw(self.as_raw(), page_index, c_ulong::from(index))
+        };
+        self.raw_viewport(handle)
+    }
+
+    /// [`PageView::add_viewport`] without loading the page.
+    pub fn add_viewport_raw(&self, page_index: u32, bbox: RectF) -> Option<RawViewport<'_>> {
+        let page_index = i32::try_from(page_index).ok()?;
+        let rect = rect_in(bbox);
+        // SAFETY: the document handle is live and `rect` outlives the call.
+        let handle =
+            unsafe { pdfium_sys::EPDFPage_AddViewportRaw(self.as_raw(), page_index, &rect) };
+        self.raw_viewport(handle)
+    }
+
+    /// [`PageView::remove_viewport`] without loading the page.
+    pub fn remove_viewport_raw(&self, page_index: u32, index: u32) -> bool {
+        let Ok(page_index) = i32::try_from(page_index) else { return false };
+        // SAFETY: the document handle is live for the borrow.
+        unsafe {
+            pdfium_sys::EPDFPage_RemoveViewportRaw(self.as_raw(), page_index, c_ulong::from(index))
+                != 0
+        }
+    }
+}
+
 impl<'page> Viewport<'page> {
     /// `/BBox`, as stored (not normalised), or `None` when it doesn't read.
     pub fn bbox(&self) -> Option<RectF> {

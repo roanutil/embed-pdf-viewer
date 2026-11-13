@@ -162,6 +162,59 @@ const TRANSLATABLE_GEOMETRY: &[(&str, &[&str])] = &[
     ("widget", &["box"]),
 ];
 
+/// `value` with every position in it moved by `(dx, dy)`, by its axis
+/// names, as [`shifted_by`] reads them (`shifted`).
+fn shifted(value: &Value, dx: f64, dy: f64) -> Value {
+    match value {
+        Value::Array(items) => Value::Array(items.iter().map(|v| shifted(v, dx, dy)).collect()),
+        Value::Object(fields) => Value::Object(
+            fields
+                .iter()
+                .map(|(key, field)| {
+                    let Some(n) = field.as_f64().filter(|_| field.is_number()) else {
+                        return (key.clone(), shifted(field, dx, dy));
+                    };
+                    let delta = match key.as_str() {
+                        "left" | "right" | "x" => dx,
+                        "bottom" | "top" | "y" => dy,
+                        _ => return (key.clone(), field.clone()),
+                    };
+                    (key.clone(), serde_json::json!(n + delta))
+                })
+                .collect(),
+        ),
+        _ => value.clone(),
+    }
+}
+
+/// `annotation` moved by `(dx, dy)`, in the coordinates its values are in:
+/// the geometry its kind moves by (`TRANSLATABLE_GEOMETRY`), a shape
+/// caption's own centre, and the `rect` the engine works out, each shifted
+/// the same distance (`translatedAnnotation`, 1481e4556). A kind the table
+/// doesn't have moves its `rect` alone.
+pub fn translated_annotation(annotation: &mut Map<String, Value>, dx: f64, dy: f64) {
+    if dx == 0.0 && dy == 0.0 {
+        return;
+    }
+    let subtype = annotation.get("subtype").and_then(Value::as_str).unwrap_or_default();
+    let own = TRANSLATABLE_GEOMETRY
+        .iter()
+        .find(|(name, _)| *name == subtype)
+        .map_or(&[][..], |(_, keys)| *keys);
+    let mut keys: Vec<&str> = vec!["rect", "captionCenter"];
+    for key in own {
+        if !keys.contains(key) {
+            keys.push(key);
+        }
+    }
+    for key in keys {
+        if let Some(field) = annotation.get(key).filter(|v| !v.is_null()) {
+            let moved = shifted(field, dx, dy);
+            annotation.insert(key.to_owned(), moved);
+        }
+    }
+}
+
 fn num_eq(a: f64, b: f64) -> bool {
     (a - b).abs() <= EPSILON
 }

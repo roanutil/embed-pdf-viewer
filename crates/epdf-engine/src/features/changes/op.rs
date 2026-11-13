@@ -19,6 +19,15 @@ use crate::features::forms::value::FormFieldValue;
 use crate::features::outline::OutlinePosition;
 use crate::identity::{OutlineItemRef, PageRef};
 
+/// How far a copy moves (`{ x, y }`), in page points from the top-left: `x`
+/// to the right, `y` down.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CopyOffset {
+    pub x: f64,
+    pub y: f64,
+}
+
 /// One change (`Change`): its ops in order, all of them or none; or the
 /// reverse of an earlier change, named by its `opId`.
 #[derive(Debug, Clone, PartialEq)]
@@ -114,11 +123,50 @@ pub enum ChangeOp {
         refs: Vec<crate::identity::AnnotationRef>,
         position: crate::mutation::list_position::AnnotationPosition,
     },
+    /// Copies of annotations of this document (`doc.annotations.copy`,
+    /// 1481e4556): each on its own page or on `page`, moved by `offset`, in
+    /// page points from the top-left. `objectNumbers` names each copy, in
+    /// the order of `refs`.
+    #[serde(rename = "annotations.copy", rename_all = "camelCase")]
+    AnnotationsCopy {
+        refs: Vec<crate::identity::AnnotationRef>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        page: Option<PageRef>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        offset: Option<CopyOffset>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        object_numbers: Option<Vec<u32>>,
+    },
+    /// Copies of fields of this document (`doc.forms.copy`, a390171cc): each
+    /// a new field with its source's widgets, or those `widgets` names, on
+    /// their own pages or on `page`, moved by `offset`. `values` (default
+    /// `true`) gives each copy its source's value. `objectNumbers`: for each
+    /// field in order, its own number, then one for each widget copied.
+    #[serde(rename = "forms.copy", rename_all = "camelCase")]
+    FormsCopy {
+        fields: Vec<FormFieldRef>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        widgets: Option<Vec<crate::identity::AnnotationRef>>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        page: Option<PageRef>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        offset: Option<CopyOffset>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        values: Option<bool>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        object_numbers: Option<Vec<u32>>,
+    },
     /// Every page gets `rotation`, its display rotation from now on. Kept
     /// as sent: a value that isn't 0, 90, 180 or 270 is the op's
     /// `InvalidArg`, as `PagesMutator.rotate` refuses it.
     #[serde(rename = "pages.rotate")]
     PagesRotate { pages: Vec<PageRef>, rotation: serde_json::Number },
+    /// Every page gets `measure` as its own scale: the one viewport the
+    /// engine writes, over the visible page; `null` removes it. Other
+    /// viewports stay as they are. `measure` is in page space (its origin):
+    /// each page takes it on its own visible box (c7f8d75ff).
+    #[serde(rename = "pages.setScale")]
+    PagesSetScale { pages: Vec<PageRef>, measure: Option<serde_json::Value> },
     /// The pages go together, in the order given, to `position`.
     #[serde(rename = "pages.reorder")]
     PagesReorder { pages: Vec<PageRef>, position: crate::features::pages_write::PagePosition },
@@ -582,7 +630,10 @@ pub fn resolve_payloads(change: &mut Change, payloads: &[Vec<u8>]) -> Result<(),
             | ChangeOp::AttachmentsDelete { .. }
             | ChangeOp::AnnotationsDelete { .. }
             | ChangeOp::AnnotationsReorder { .. }
+            | ChangeOp::AnnotationsCopy { .. }
+            | ChangeOp::FormsCopy { .. }
             | ChangeOp::PagesRotate { .. }
+            | ChangeOp::PagesSetScale { .. }
             | ChangeOp::PagesReorder { .. }
             | ChangeOp::PagesDelete { .. }
             | ChangeOp::PagesInsertBlank { .. }
@@ -644,7 +695,10 @@ impl ChangeOp {
             Self::AnnotationsUpdate { .. } => "annotations.update",
             Self::AnnotationsDelete { .. } => "annotations.delete",
             Self::AnnotationsReorder { .. } => "annotations.reorder",
+            Self::AnnotationsCopy { .. } => "annotations.copy",
+            Self::FormsCopy { .. } => "forms.copy",
             Self::PagesRotate { .. } => "pages.rotate",
+            Self::PagesSetScale { .. } => "pages.setScale",
             Self::PagesReorder { .. } => "pages.reorder",
             Self::PagesDelete { .. } => "pages.delete",
             Self::PagesInsertBlank { .. } => "pages.insertBlank",
@@ -768,7 +822,10 @@ pub fn parse_op(at: usize, op: &serde_json::Value) -> Result<ChangeOp, EngineErr
         | ChangeOp::AnnotationsUpdate { .. }
         | ChangeOp::AnnotationsDelete { .. }
         | ChangeOp::AnnotationsReorder { .. }
+        | ChangeOp::AnnotationsCopy { .. }
+        | ChangeOp::FormsCopy { .. }
         | ChangeOp::PagesRotate { .. }
+        | ChangeOp::PagesSetScale { .. }
         | ChangeOp::PagesReorder { .. }
         | ChangeOp::PagesDelete { .. }
         | ChangeOp::PagesInsertBlank { .. }
@@ -966,7 +1023,10 @@ mod tests {
             "annotations.update",
             "annotations.delete",
             "annotations.reorder",
+            "annotations.copy",
+            "forms.copy",
             "pages.rotate",
+            "pages.setScale",
             "pages.reorder",
             "pages.delete",
             "pages.insertBlank",

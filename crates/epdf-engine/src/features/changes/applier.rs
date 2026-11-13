@@ -196,6 +196,9 @@ pub struct ChangeServices<'a> {
     pub clock: &'a dyn Clock,
     pub ids: &'a dyn IdSource,
     pub fonts: Option<&'a crate::features::fonts::FontRegistry>,
+    /// What a copy inside the document may carry: the request's `limits`,
+    /// the defaults otherwise.
+    pub limits: crate::features::transfer::BundleLimits,
 }
 
 /// What every op and step of a change runs with (`ChangeContext`).
@@ -211,6 +214,10 @@ pub struct ChangeContext<'a> {
     pub fonts: Option<&'a crate::features::fonts::FontRegistry>,
     /// The fields the change fills in, for `fillsOwnField`.
     pub own_fill: OwnFill,
+    /// The deployment's bundle limits: an op that copies inside the
+    /// document (`annotations.copy`, `forms.copy`) carries what a bundle
+    /// may, and is refused past them (5496eb084, 2612ae1e1).
+    pub limits: crate::features::transfer::BundleLimits,
 }
 
 /// What running an op or a step did: its item, and the steps that reverse
@@ -283,9 +290,9 @@ pub fn apply(
     services: ChangeServices<'_>,
     space: ChangeSpace,
 ) -> Result<AppliedChange, EngineError> {
-    let ChangeServices { clock, ids, fonts } = services;
+    let ChangeServices { clock, ids, fonts, limits } = services;
     let own_fill = OwnFill::of_ops(&ops);
-    let mut ctx = ChangeContext { session, authority, cancel, clock, ids, fonts, own_fill };
+    let mut ctx = ChangeContext { session, authority, cancel, clock, ids, fonts, own_fill, limits };
     let mut collected = Collected::default();
     for (at, op) in ops.into_iter().enumerate() {
         cancel.check()?;
@@ -307,9 +314,9 @@ pub fn undo(
     services: ChangeServices<'_>,
     space: ChangeSpace,
 ) -> Result<AppliedChange, EngineError> {
-    let ChangeServices { clock, ids, fonts } = services;
+    let ChangeServices { clock, ids, fonts, limits } = services;
     let own_fill = OwnFill::of_steps(&record.steps);
-    let mut ctx = ChangeContext { session, authority, cancel, clock, ids, fonts, own_fill };
+    let mut ctx = ChangeContext { session, authority, cancel, clock, ids, fonts, own_fill, limits };
     let mut collected = Collected::default();
     for step in &record.steps {
         cancel.check()?;
@@ -445,8 +452,31 @@ fn run_op(ctx: &mut ChangeContext<'_>, op: &ChangeOp, at: usize) -> Result<Done,
         ChangeOp::AnnotationsReorder { page, refs, position } => {
             super::annotations::reorder_annotations(ctx, *page, refs, position)
         }
+        ChangeOp::FormsCopy { fields, widgets, page, offset, values, object_numbers } => {
+            super::fields::copy_fields(
+                ctx,
+                fields,
+                widgets.as_deref(),
+                *page,
+                offset.map_or((0.0, 0.0), |o| (o.x, o.y)),
+                values.unwrap_or(true),
+                object_numbers.as_deref(),
+            )
+        }
+        ChangeOp::AnnotationsCopy { refs, page, offset, object_numbers } => {
+            super::annotations::copy_annotations(
+                ctx,
+                refs,
+                *page,
+                offset.map_or((0.0, 0.0), |o| (o.x, o.y)),
+                object_numbers.as_deref(),
+            )
+        }
         ChangeOp::PagesRotate { pages, rotation } => {
             super::pages::rotate_pages(ctx, pages, rotation)
+        }
+        ChangeOp::PagesSetScale { pages, measure } => {
+            super::scale::set_page_scales(ctx, pages, measure.as_ref())
         }
         ChangeOp::PagesReorder { pages, position } => {
             super::pages::reorder_pages(ctx, pages, position)
@@ -560,6 +590,7 @@ fn run_step(ctx: &mut ChangeContext<'_>, step: &ReverseStep) -> Result<Done, Eng
         ReverseStep::AnnotationRestore(step) => super::annotations::restore_annotations(ctx, step),
         ReverseStep::AnnotationReorder(step) => super::annotations::reorder_back(ctx, step),
         ReverseStep::PagesRotate(step) => super::pages::rotate_pages_back(ctx, step),
+        ReverseStep::PagesSetScale(step) => super::scale::set_page_scales_back(ctx, step),
         ReverseStep::PagesReorder(step) => super::pages::reorder_pages_back(ctx, step),
         ReverseStep::PagesRestore(step) => super::pages::restore_pages(ctx, step),
         ReverseStep::PagesRemove(step) => super::pages::remove_pages(ctx, step),

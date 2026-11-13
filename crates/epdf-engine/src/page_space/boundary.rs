@@ -430,7 +430,8 @@ pub fn result_in_page_space(
 
         // The new layout (`pageListOf`), in the result and in the event that
         // carries it.
-        K::PagesSetName | K::PagesRemoveName => {
+        // `measure.setScale` answers the layout too since c7f8d75ff.
+        K::PagesSetName | K::PagesRemoveName | K::MeasureSetScale => {
             convert_result(response, |mut answer: serde_json::Value| {
                 for at in ["/result/layout", "/event/layout"] {
                     if let Some(layout) = answer.pointer_mut(at) {
@@ -549,7 +550,6 @@ pub fn result_in_page_space(
         | K::FormsReorderWidgets
         | K::FormsRepair
         | K::LayerClose
-        | K::MeasureSetScale
         | K::MetadataRead
         | K::MetadataReadCustom
         | K::MetadataUpdate
@@ -686,7 +686,15 @@ pub fn change_op_in_file_space(
         | ChangeOp::AttachmentsCreate { .. }
         | ChangeOp::AttachmentsDelete { .. }
         | ChangeOp::AnnotationsReorder { .. }
+        // A copy names annotations and a distance in page points: it
+        // measures each source on its page and each copy on the page it goes
+        // to.
+        | ChangeOp::AnnotationsCopy { .. }
+        | ChangeOp::FormsCopy { .. }
         | ChangeOp::PagesRotate { .. }
+        // Each page takes the scale on its own visible box as it's written
+        // (`scaleChanges.ts`).
+        | ChangeOp::PagesSetScale { .. }
         | ChangeOp::PagesReorder { .. }
         | ChangeOp::PagesDelete { .. }
         | ChangeOp::PagesInsertBlank { .. }
@@ -741,8 +749,32 @@ pub fn change_item_in_page_space(
                 meta,
             })
         }
+        ChangeItem::AnnotationsCopy { annotations, ref_map, dropped, meta } => {
+            Ok(ChangeItem::AnnotationsCopy {
+                annotations: annotations
+                    .into_iter()
+                    .map(|annotation| page_annotation_of(annotation, box_of))
+                    .collect::<Result<_, _>>()?,
+                ref_map,
+                dropped,
+                meta,
+            })
+        }
         ChangeItem::FormsImport { fields, widgets, ref_map, dropped, calculation_order, meta } => {
             Ok(ChangeItem::FormsImport {
+                fields: fields
+                    .into_iter()
+                    .map(|field| super::forms::page_form_field_value(field, box_of))
+                    .collect::<Result<_, _>>()?,
+                widgets: page_widgets(widgets, box_of)?,
+                ref_map,
+                dropped,
+                calculation_order,
+                meta,
+            })
+        }
+        ChangeItem::FormsCopy { fields, widgets, ref_map, dropped, calculation_order, meta } => {
+            Ok(ChangeItem::FormsCopy {
                 fields: fields
                     .into_iter()
                     .map(|field| super::forms::page_form_field_value(field, box_of))
@@ -782,6 +814,15 @@ pub fn change_item_in_page_space(
             layout: page_layout_value(layout)?,
             meta,
         }),
+        ChangeItem::PagesSetScale { pages, measure, page, layout, meta } => {
+            Ok(ChangeItem::PagesSetScale {
+                pages,
+                measure,
+                page,
+                layout: page_layout_value(layout)?,
+                meta,
+            })
+        }
         ChangeItem::PagesReorder { pages, layout, meta } => {
             Ok(ChangeItem::PagesReorder { pages, layout: page_layout_value(layout)?, meta })
         }

@@ -256,6 +256,81 @@ pub fn import_annotations(
     })
 }
 
+/// `annotations.copy`: copies of the document's annotations, created as the
+/// copy plans them (`AnnotationCopier`), each checked as its create would
+/// be (`copyAnnotations`, 1481e4556). Reading the sources takes
+/// `doc.annotate.read`; each copy is the caller's own create, in the
+/// caller's group. Its reverse removes what it made, as an import's does.
+pub fn copy_annotations(
+    ctx: &mut ChangeContext<'_>,
+    refs: &[AnnotationRef],
+    page: Option<crate::identity::PageRef>,
+    offset: (f64, f64),
+    object_numbers: Option<&[u32]>,
+) -> Result<Done, EngineError> {
+    use crate::features::annotation::transfer::{
+        AnnotationCopyRequest, check_annotation_copy_request, prepare_annotation_copy,
+        write_annotation_copy,
+    };
+    ctx.authority.require(DocCapability::DocAnnotateRead)?;
+    let limits = ctx.limits;
+    check_annotation_copy_request(refs.len(), object_numbers, &limits)?;
+    // A page the document doesn't have refuses the copy before anything is
+    // read.
+    if let Some(page) = page {
+        ctx.session.document()?.page_index(page.object_number())?;
+    }
+    let sources = refs
+        .iter()
+        .map(|reference| read_annotation(ctx, reference).map(Value::Object))
+        .collect::<Result<Vec<_>, _>>()?;
+    let prepared = {
+        let ctx_ref = &*ctx;
+        let mut authorize =
+            |_draft: &Map<String, Value>| -> Result<Option<AnnotationActor>, EngineError> {
+                ctx_ref.authority.require_unprotected(DocCapability::DocAnnotateModify)?;
+                authorize_create(ctx_ref, None)
+            };
+        prepare_annotation_copy(
+            ctx_ref.session,
+            AnnotationCopyRequest {
+                sources: &sources,
+                page,
+                offset,
+                object_numbers,
+                limits: &limits,
+            },
+            &mut authorize,
+            ctx_ref.cancel,
+        )?
+    };
+    let numbers: Vec<u32> = prepared.object_numbers().collect();
+    for number in numbers {
+        ctx.session.claim_object_number(number)?;
+    }
+    let result = {
+        let session = &*ctx.session;
+        let context = AnnotationWriteContext { fonts: ctx.fonts, resources: None };
+        let services = CreateServices {
+            context: &context,
+            drawings: session.drawing_index()?,
+            clock: ctx.clock,
+            ids: ctx.ids,
+        };
+        write_annotation_copy(session, prepared, &services, ctx.cancel)?
+    };
+    let reverse = import_reverse(ctx, &result.annotations, None)?;
+    Ok(Done {
+        item: ChangeItem::AnnotationsCopy {
+            annotations: result.annotations,
+            ref_map: result.ref_map,
+            dropped: result.dropped,
+            meta: result.meta,
+        },
+        reverse,
+    })
+}
+
 /// The undo of an import (`importReverse`): one remove per imported
 /// annotation that no other imported one takes with it (a note takes its
 /// popup and its imported replies), the last made first, each holding its
@@ -901,7 +976,36 @@ pub fn update_annotation(
     if let Some(expect) = expect {
         super::applier::assert_expected(at, &current, expect)?;
     }
+    assert_new_name_free(ctx, reference, &current, patch.get("nm"))?;
     write_update(ctx, reference, patch.clone(), resources, "annotations.update")
+}
+
+/// A new name must be free on the annotation's page (ISO 32000-2 §12.5.2),
+/// checked against the page as the change's earlier ops left it
+/// (`assertNewNameFree`, 756f8e56b). Only an op checks it: an undo puts back
+/// the name an annotation had, as the undo of a delete brings back the
+/// deleted one's. A name sent back as it reads is no change.
+pub(super) fn assert_new_name_free(
+    ctx: &ChangeContext<'_>,
+    reference: &AnnotationRef,
+    current: &Map<String, Value>,
+    nm: Option<&Value>,
+) -> Result<(), EngineError> {
+    let Some(Value::String(nm)) = nm else { return Ok(()) };
+    if nm.is_empty() || current.get("nm").and_then(Value::as_str) == Some(nm.as_str()) {
+        return Ok(());
+    }
+    let owned = ctx.session.document()?;
+    let page = reference.page();
+    let page_index = owned.page_index(page)?;
+    if crate::features::annotation::write::create::name_taken(owned.document(), page_index, nm) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            format!("nm '{nm}' is already used on page {}", page.get()),
+        )
+        .with_details(serde_json::json!({ "field": "nm" })));
+    }
+    Ok(())
 }
 
 /// The keys whose objects an update's capture of an annotation holds

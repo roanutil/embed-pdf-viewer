@@ -127,7 +127,10 @@ pub fn plan_form_import(input: FormPlanInput<'_>) -> Result<FormImportPlan, Engi
             .iter()
             .map(|at| placement_of(field, widget_data[*at], &map, input.may_script, &mut dropped))
             .collect();
-        let draft = draft_of(field, actions, placements, index)?;
+        let label = format!("import: field {index}");
+        let name = field["name"].as_str().unwrap_or_default();
+        let draft = field_draft_of(field, name, actions, placements, &label)?;
+        checked_field_draft(&draft, &label, index)?;
         let value = (input.values && holds_value(field)).then(|| field_value_of(field)).flatten();
         creates.push(PlannedFormField {
             field: index,
@@ -158,6 +161,231 @@ pub fn plan_form_import(input: FormPlanInput<'_>) -> Result<FormImportPlan, Engi
         })
         .collect();
     Ok(FormImportPlan { creates, calculation_order, dropped })
+}
+
+/// One field a copy makes (`PlannedFieldCopy`).
+#[derive(Debug, Clone, PartialEq)]
+pub struct PlannedFieldCopy {
+    /// The field it copies, by its place among the fields given.
+    pub source: usize,
+    /// What the create writes: the source's settings and scripts under its
+    /// new name, and each copied widget, moved. Page space.
+    pub draft: Map<String, Value>,
+    /// Each copied widget's flags, in `draft.widgets` order.
+    pub flags: Vec<[Option<bool>; 10]>,
+    /// The value it gets; `None` when the copy writes none.
+    pub value: Option<FormFieldValue>,
+}
+
+/// `FormCopyPlan`.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct FormCopyPlan {
+    /// In the order of the fields given.
+    pub creates: Vec<PlannedFieldCopy>,
+    /// The calculation order among the creates, by their place in
+    /// `creates`, as the form has their sources.
+    pub calculation_order: Vec<usize>,
+    /// What was left out, a field whole or one member of it, in the order
+    /// given.
+    pub dropped: Vec<Value>,
+}
+
+/// What [`plan_form_copy`] reads: the form as `forms.list` reads it, in
+/// page space, and the op's fields.
+pub struct FormCopyInput<'a> {
+    /// The form's fields, widget rows and calculation order.
+    pub form: &'a Value,
+    pub fields: &'a [crate::features::forms::snapshot::FormFieldRef],
+    /// The widgets to copy, when it isn't every widget of the fields.
+    pub widgets: Option<&'a [crate::identity::AnnotationRef]>,
+    pub page: Option<PageRef>,
+    /// Page points from the top-left: `x` to the right, `y` down.
+    pub offset: (f64, f64),
+    pub values: bool,
+    pub may_script: bool,
+}
+
+/// Whether a new field named `name` can't join a form whose fields are
+/// `names`: one has that name, one sits under it, or one is its parent
+/// (`fieldNameTaken`).
+pub fn field_name_taken(names: &HashSet<String>, name: &str) -> bool {
+    names.contains(name)
+        || names.iter().any(|other| {
+            other.starts_with(&format!("{name}.")) || name.starts_with(&format!("{other}."))
+        })
+}
+
+/// The name a copy of the field `name` gets: its last part with the next
+/// free number (`copyNameOf`). `email` becomes `email_2`, `text_1` becomes
+/// `text_2`, and `billing.name` becomes `billing.name_2`.
+pub fn copy_name_of(name: &str, taken: impl Fn(&str) -> bool) -> String {
+    let (group, last) = match name.rfind('.') {
+        Some(dot) => (&name[..=dot], &name[dot + 1..]),
+        None => ("", name),
+    };
+    let numbered = last.rfind('_').and_then(|at| {
+        let digits = &last[at + 1..];
+        (!digits.is_empty() && digits.bytes().all(|b| b.is_ascii_digit()))
+            .then(|| (&last[..at], digits.parse::<u64>().ok()))
+    });
+    let (stem, mut count) = match numbered {
+        Some((stem, Some(n))) => (stem, n + 1),
+        _ => (last, 2),
+    };
+    while taken(&format!("{group}{stem}_{count}")) {
+        count += 1;
+    }
+    format!("{group}{stem}_{count}")
+}
+
+/// The copies of `fields`, fields of `form`, in the order given
+/// (`planFormCopies` then `planFormCopy`'s check, a390171cc). A copy is a
+/// new field with its source's settings and scripts under the name
+/// [`copy_name_of`] gives it, and the source's widgets (or those `widgets`
+/// names), each with its look, flags and actions, moved by `offset` and on
+/// `page` when one is named. With `values` it gets its source's value; a
+/// signature never does. A field of a kind the engine doesn't model is left
+/// out, as is each script, submit or link without `may_script`, and each
+/// action a write can't make. A field named twice is copied twice.
+///
+/// `NotFound` for a field the form doesn't have; `InvalidArg` when
+/// `widgets` names a widget of none of the fields or none of a field's, or
+/// a copy isn't valid for its family.
+pub fn plan_form_copy(input: FormCopyInput<'_>) -> Result<FormCopyPlan, EngineError> {
+    let list = |key: &str| input.form[key].as_array().cloned().unwrap_or_default();
+    let (form_fields, form_widgets, form_order) =
+        (list("fields"), list("widgets"), list("calculationOrder"));
+    let row_by_key = |key: &str| {
+        form_widgets.iter().find(|row| annotation_key_of(&row["ref"]).as_deref() == Some(key))
+    };
+    let only: Option<Vec<String>> =
+        input.widgets.map(|widgets| widgets.iter().map(|w| w.key()).collect());
+    let mut names: HashSet<String> =
+        form_fields.iter().filter_map(|field| field["name"].as_str().map(str::to_owned)).collect();
+    let identity = PageMap::identity();
+    let (dx, dy) = input.offset;
+
+    let mut dropped = Vec::new();
+    let mut creates = Vec::new();
+    let mut sources: Vec<&Value> = Vec::new();
+    let mut copied: HashSet<String> = HashSet::new();
+    for (index, reference) in input.fields.iter().enumerate() {
+        let field = form_fields
+            .iter()
+            .find(|candidate| super::form_export::field_matches(candidate, reference))
+            .ok_or_else(|| {
+                EngineError::with_message(
+                    EngineErrorCode::NotFound,
+                    format!(
+                        "copy: no form field {}",
+                        crate::features::transfer::form_export::field_ref_key(reference)
+                    ),
+                )
+                .with_details(json!({ "item": index }))
+            })?;
+        let rows: Vec<&Value> = field["widgets"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|widget| annotation_key_of(widget.get("ref")?))
+            .filter_map(|key| row_by_key(&key))
+            .filter(|row| {
+                only.as_ref().is_none_or(|only| {
+                    annotation_key_of(&row["ref"]).is_some_and(|key| only.contains(&key))
+                })
+            })
+            .collect();
+        for row in &rows {
+            if let Some(key) = annotation_key_of(&row["ref"]) {
+                copied.insert(key);
+            }
+        }
+        if only.is_some() && rows.is_empty() {
+            return Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!("copy: 'widgets' names no widget of field {index}"),
+            )
+            .with_details(json!({ "item": index, "field": "widgets" })));
+        }
+        if field["kind"] == "unknown" {
+            dropped.push(json!({ "ref": field["ref"], "reason": "unsupported-kind" }));
+            continue;
+        }
+        let name = copy_name_of(field["name"].as_str().unwrap_or_default(), |candidate| {
+            field_name_taken(&names, candidate)
+        });
+        names.insert(name.clone());
+        let actions = field_actions_of(field, input.may_script, &mut dropped);
+        let widgets: Vec<Value> = rows
+            .iter()
+            .map(|row| {
+                let mut placement =
+                    placement_of(field, row, &identity, input.may_script, &mut dropped);
+                if let Some(page) = input.page {
+                    placement["page"] = json!(page);
+                }
+                if let Some(rect) = placement.get_mut("rect").filter(|r| r.is_object()) {
+                    for (axis, delta) in [("x", dx), ("y", dy)] {
+                        if let Some(n) = rect[axis].as_f64() {
+                            rect[axis] = json!(n + delta);
+                        }
+                    }
+                }
+                placement
+            })
+            .collect();
+        let value = (input.values && field["kind"] != "signature" && holds_value(field))
+            .then(|| field_value_of(field))
+            .flatten();
+        let label = format!("copy: field {index}");
+        let draft = field_draft_of(field, &name, actions, widgets, &label)?;
+        sources.push(field);
+        creates.push(PlannedFieldCopy {
+            source: index,
+            draft,
+            flags: rows.iter().map(|row| flags_of(row)).collect(),
+            value,
+        });
+    }
+    for key in only.iter().flatten() {
+        if !copied.contains(key) {
+            return Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!("copy: widget {key} is a widget of none of the fields"),
+            )
+            .with_details(json!({ "field": "widgets" })));
+        }
+    }
+    for create in &creates {
+        checked_field_draft(
+            &create.draft,
+            &format!("copy: field {}", create.source),
+            create.source,
+        )?;
+    }
+
+    // The order the form gives the sources that kept their calculate script.
+    let calculation_order = form_order
+        .iter()
+        .filter_map(|reference| {
+            serde_json::from_value::<crate::features::forms::snapshot::FormFieldRef>(
+                reference.clone(),
+            )
+            .ok()
+        })
+        .flat_map(|reference| {
+            creates
+                .iter()
+                .enumerate()
+                .filter(|(at, create)| {
+                    super::form_export::field_matches(sources[*at], &reference)
+                        && create.draft.get("actions").is_some_and(|a| a.get("calculate").is_some())
+                })
+                .map(|(at, _)| at)
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    Ok(FormCopyPlan { creates, calculation_order, dropped })
 }
 
 /// One value a values import writes (`PlannedValueWrite`).
@@ -330,6 +558,9 @@ fn placement_of(
     for (key, value) in [
         ("color", row["color"].clone()),
         ("interiorColor", row["interiorColor"].clone()),
+        // A dash and a check style come along since a390171cc.
+        ("dashArray", row["dashArray"].clone()),
+        ("checkStyle", row["checkStyle"].clone()),
         ("fontFamily", row["fontFamily"].clone()),
         ("fontSize", row["fontSize"].clone()),
         ("fontColor", row["fontColor"].clone()),
@@ -353,17 +584,18 @@ fn flags_of(row: &Value) -> [Option<bool>; 10] {
     WIDGET_FLAG_NAMES.map(|name| row[name].as_bool())
 }
 
-/// The create a field row becomes, checked against the create schema
-/// (`draftOf`).
-fn draft_of(
+/// The create a field becomes under `name`, not yet checked against the
+/// create schema (`fieldDraftOf`); `label` names it in a refusal.
+fn field_draft_of(
     field: &Value,
+    name: &str,
     actions: Map<String, Value>,
     widgets: Vec<Value>,
-    index: usize,
+    label: &str,
 ) -> Result<Map<String, Value>, EngineError> {
     let mut draft = Map::new();
     let family = field["kind"].as_str().unwrap_or_default();
-    draft.insert("name".into(), field["name"].clone());
+    draft.insert("name".into(), json!(name));
     for key in ["readOnly", "required", "noExport"] {
         draft.insert(key.into(), field[key].clone());
     }
@@ -430,23 +662,28 @@ fn draft_of(
         _ => {
             return Err(EngineError::with_message(
                 EngineErrorCode::InvalidArg,
-                format!("import: field {index} has no family"),
+                format!("{label} has no family"),
             ));
         }
     }
-    check_field_draft(&draft).map_err(|(path, message)| {
+    Ok(draft)
+}
+
+/// `draft` checked against the create schema (`checkedFieldDraft`).
+fn checked_field_draft(
+    draft: &Map<String, Value>,
+    label: &str,
+    item: usize,
+) -> Result<(), EngineError> {
+    check_field_draft(draft).map_err(|(path, message)| {
         let at = if path.is_empty() { String::new() } else { format!(" member '{path}'") };
-        let mut details = json!({ "item": index });
+        let mut details = json!({ "item": item });
         if !path.is_empty() {
             details["field"] = json!(path);
         }
-        EngineError::with_message(
-            EngineErrorCode::InvalidArg,
-            format!("import: field {index}{at}: {message}"),
-        )
-        .with_details(details)
-    })?;
-    Ok(draft)
+        EngineError::with_message(EngineErrorCode::InvalidArg, format!("{label}{at}: {message}"))
+            .with_details(details)
+    })
 }
 
 /// The members a family's draft takes besides the base ones

@@ -692,8 +692,9 @@ fn apply_kind_patch(
     Ok(())
 }
 
-/// `applyAnnotationBasePatch`: contents and subject (tri-state), and the
-/// flags the patch names.
+/// `applyAnnotationBasePatch`: contents, subject and name (tri-state), and
+/// the flags the patch names. An empty name names nothing: it removes `/NM`,
+/// as a create given one writes none (756f8e56b).
 fn apply_base(annotation: &Annotation<'_>, f: &DraftFields) -> Result<(), EngineError> {
     if let Some(contents) = &f.contents {
         // `/Contents` spells a line break `\r`, as Acrobat writes them.
@@ -704,6 +705,9 @@ fn apply_base(annotation: &Annotation<'_>, f: &DraftFields) -> Result<(), Engine
     }
     if let Some(subject) = &f.subject {
         p::set_string_or_clear(annotation, "Subj", subject.as_deref())?;
+    }
+    if let Some(nm) = &f.nm {
+        p::set_string_or_clear(annotation, "NM", nm.as_deref().filter(|nm| !nm.is_empty()))?;
     }
     if f.flags.iter().any(Option::is_some) {
         p::set_flags(annotation, &f.flags)?;

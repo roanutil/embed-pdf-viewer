@@ -79,8 +79,13 @@ fn set_scale_keeps_a_foreign_viewport() {
         "page": page_ref(pon), "opId": "scale-1", "measure": rl_measure() });
     let response = host.call_filled(&request.to_string(), Vec::new());
     let written: Value = serde_json::from_str(&response.json).unwrap();
+    // Since c7f8d75ff the result carries the new layout, whose page carries
+    // both viewports.
+    let mut result = written["result"]["result"].clone();
+    let layout = result.as_object_mut().and_then(|r| r.remove("layout")).expect("a layout");
+    assert_eq!(layout["pages"][0]["viewports"].as_array().map(Vec::len), Some(2), "{layout}");
     assert_eq!(
-        written["result"]["result"],
+        result,
         json!({
             "page": page_ref(pon),
             "meta": { "affectedPages": [], "cacheDelta": null, "opId": "scale-1", "undoable": false }

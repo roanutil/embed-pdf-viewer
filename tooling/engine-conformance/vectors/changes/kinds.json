@@ -1,0 +1,360 @@
+{
+  "schemaVersion": 1,
+  "kind": "wire.changeKinds",
+  "apiVersion": "3.2",
+  "since": {
+    "annotations.create": "3.0",
+    "annotations.update": "3.0",
+    "annotations.delete": "3.0",
+    "annotations.reorder": "3.0",
+    "annotations.copy": "3.2",
+    "forms.setValue": "3.0",
+    "forms.setDisplay": "3.0",
+    "forms.setAppearanceText": "3.0",
+    "forms.reset": "3.0",
+    "forms.create": "3.0",
+    "forms.copy": "3.2",
+    "forms.update": "3.0",
+    "forms.delete": "3.0",
+    "forms.addWidget": "3.0",
+    "forms.removeWidget": "3.0",
+    "forms.deleteWidget": "3.0",
+    "forms.reorderCalculations": "3.0",
+    "forms.reorderWidgets": "3.0",
+    "forms.updateWidget": "3.0",
+    "forms.setSignatureAppearance": "3.0",
+    "metadata.update": "3.0",
+    "metadata.updateCustom": "3.0",
+    "outline.create": "3.0",
+    "outline.update": "3.0",
+    "outline.move": "3.0",
+    "outline.delete": "3.0",
+    "pages.rotate": "3.0",
+    "pages.setScale": "3.1",
+    "pages.reorder": "3.0",
+    "pages.delete": "3.0",
+    "pages.insertBlank": "3.0",
+    "pages.insert": "3.0",
+    "pages.copy": "3.0",
+    "attachments.create": "3.0",
+    "attachments.delete": "3.0",
+    "annotations.restore": "3.0",
+    "forms.restore": "3.0",
+    "forms.restoreWidget": "3.0",
+    "outline.restore": "3.0",
+    "pages.restore": "3.0",
+    "attachments.restore": "3.0"
+  },
+  "rows": {
+    "pages.setScale": "3.1",
+    "annotations.copy": "3.2",
+    "forms.copy": "3.2"
+  },
+  "asked": [
+    "annotations.create",
+    "annotations.update",
+    "annotations.delete",
+    "annotations.reorder",
+    "annotations.copy",
+    "forms.setValue",
+    "forms.setDisplay",
+    "forms.setAppearanceText",
+    "forms.reset",
+    "forms.create",
+    "forms.copy",
+    "forms.update",
+    "forms.delete",
+    "forms.addWidget",
+    "forms.removeWidget",
+    "forms.deleteWidget",
+    "forms.reorderCalculations",
+    "forms.reorderWidgets",
+    "forms.updateWidget",
+    "forms.setSignatureAppearance",
+    "metadata.update",
+    "metadata.updateCustom",
+    "outline.create",
+    "outline.update",
+    "outline.move",
+    "outline.delete",
+    "pages.rotate",
+    "pages.setScale",
+    "pages.reorder",
+    "pages.delete",
+    "pages.insertBlank",
+    "pages.insert",
+    "pages.copy",
+    "attachments.create",
+    "attachments.delete",
+    "annotations.restore",
+    "forms.restore",
+    "forms.restoreWidget",
+    "outline.restore",
+    "pages.restore",
+    "attachments.restore",
+    "pages.someKindFromANewerServer"
+  ],
+  "unknownTo": [
+    {
+      "version": null,
+      "unknown": [
+        "pages.someKindFromANewerServer"
+      ]
+    },
+    {
+      "version": "2.9",
+      "unknown": [
+        "annotations.create",
+        "annotations.update",
+        "annotations.delete",
+        "annotations.reorder",
+        "annotations.copy",
+        "forms.setValue",
+        "forms.setDisplay",
+        "forms.setAppearanceText",
+        "forms.reset",
+        "forms.create",
+        "forms.copy",
+        "forms.update",
+        "forms.delete",
+        "forms.addWidget",
+        "forms.removeWidget",
+        "forms.deleteWidget",
+        "forms.reorderCalculations",
+        "forms.reorderWidgets",
+        "forms.updateWidget",
+        "forms.setSignatureAppearance",
+        "metadata.update",
+        "metadata.updateCustom",
+        "outline.create",
+        "outline.update",
+        "outline.move",
+        "outline.delete",
+        "pages.rotate",
+        "pages.setScale",
+        "pages.reorder",
+        "pages.delete",
+        "pages.insertBlank",
+        "pages.insert",
+        "pages.copy",
+        "attachments.create",
+        "attachments.delete",
+        "annotations.restore",
+        "forms.restore",
+        "forms.restoreWidget",
+        "outline.restore",
+        "pages.restore",
+        "attachments.restore",
+        "pages.someKindFromANewerServer"
+      ]
+    },
+    {
+      "version": "3.0",
+      "unknown": [
+        "annotations.copy",
+        "forms.copy",
+        "pages.setScale",
+        "pages.someKindFromANewerServer"
+      ]
+    },
+    {
+      "version": "3.1",
+      "unknown": [
+        "annotations.copy",
+        "forms.copy",
+        "pages.someKindFromANewerServer"
+      ]
+    },
+    {
+      "version": "3.2",
+      "unknown": [
+        "pages.someKindFromANewerServer"
+      ]
+    },
+    {
+      "version": "3.3",
+      "unknown": []
+    },
+    {
+      "version": "4.0",
+      "unknown": []
+    }
+  ],
+  "lacks": [
+    {
+      "version": null,
+      "since": null,
+      "lacks": true
+    },
+    {
+      "version": null,
+      "since": "3.0",
+      "lacks": false
+    },
+    {
+      "version": null,
+      "since": "3.1",
+      "lacks": false
+    },
+    {
+      "version": null,
+      "since": "3.2",
+      "lacks": false
+    },
+    {
+      "version": null,
+      "since": "3.3",
+      "lacks": false
+    },
+    {
+      "version": "2.9",
+      "since": null,
+      "lacks": true
+    },
+    {
+      "version": "2.9",
+      "since": "3.0",
+      "lacks": true
+    },
+    {
+      "version": "2.9",
+      "since": "3.1",
+      "lacks": true
+    },
+    {
+      "version": "2.9",
+      "since": "3.2",
+      "lacks": true
+    },
+    {
+      "version": "2.9",
+      "since": "3.3",
+      "lacks": true
+    },
+    {
+      "version": "3.0",
+      "since": null,
+      "lacks": true
+    },
+    {
+      "version": "3.0",
+      "since": "3.0",
+      "lacks": false
+    },
+    {
+      "version": "3.0",
+      "since": "3.1",
+      "lacks": true
+    },
+    {
+      "version": "3.0",
+      "since": "3.2",
+      "lacks": true
+    },
+    {
+      "version": "3.0",
+      "since": "3.3",
+      "lacks": true
+    },
+    {
+      "version": "3.1",
+      "since": null,
+      "lacks": true
+    },
+    {
+      "version": "3.1",
+      "since": "3.0",
+      "lacks": false
+    },
+    {
+      "version": "3.1",
+      "since": "3.1",
+      "lacks": false
+    },
+    {
+      "version": "3.1",
+      "since": "3.2",
+      "lacks": true
+    },
+    {
+      "version": "3.1",
+      "since": "3.3",
+      "lacks": true
+    },
+    {
+      "version": "3.2",
+      "since": null,
+      "lacks": true
+    },
+    {
+      "version": "3.2",
+      "since": "3.0",
+      "lacks": false
+    },
+    {
+      "version": "3.2",
+      "since": "3.1",
+      "lacks": false
+    },
+    {
+      "version": "3.2",
+      "since": "3.2",
+      "lacks": false
+    },
+    {
+      "version": "3.2",
+      "since": "3.3",
+      "lacks": false
+    },
+    {
+      "version": "3.3",
+      "since": null,
+      "lacks": false
+    },
+    {
+      "version": "3.3",
+      "since": "3.0",
+      "lacks": false
+    },
+    {
+      "version": "3.3",
+      "since": "3.1",
+      "lacks": false
+    },
+    {
+      "version": "3.3",
+      "since": "3.2",
+      "lacks": false
+    },
+    {
+      "version": "3.3",
+      "since": "3.3",
+      "lacks": false
+    },
+    {
+      "version": "4.0",
+      "since": null,
+      "lacks": false
+    },
+    {
+      "version": "4.0",
+      "since": "3.0",
+      "lacks": false
+    },
+    {
+      "version": "4.0",
+      "since": "3.1",
+      "lacks": false
+    },
+    {
+      "version": "4.0",
+      "since": "3.2",
+      "lacks": false
+    },
+    {
+      "version": "4.0",
+      "since": "3.3",
+      "lacks": false
+    }
+  ]
+}

@@ -141,9 +141,10 @@ fn kind_after(
 }
 
 /// `annotationPatchForTarget`: the patch as the kind it leaves the
-/// annotation (`kindAfter`). A subtype the annotation can't become, a
-/// changed name, a field the kind doesn't declare, or any change to an
-/// annotation of a type the engine doesn't model is refused.
+/// annotation (`kindAfter`). A subtype the annotation can't become, a field
+/// the kind doesn't declare, or any change to an annotation of a type the
+/// engine doesn't model is refused. A new name is not (756f8e56b): the
+/// update writes it, once its page has it free.
 fn patch_for_target(
     current: &Map<String, Value>,
     mut patch: Map<String, Value>,
@@ -152,11 +153,6 @@ fn patch_for_target(
     let subtype = kind_after(current, own, patch.get("subtype"))?;
     if own == AnnotationSubtype::Unsupported {
         return Err(invalid("an annotation of a type the engine doesn't model can't be updated"));
-    }
-    if let Some(nm) = patch.get("nm")
-        && nm != current.get("nm").unwrap_or(&Value::Null)
-    {
-        return Err(invalid("an annotation's nm can't change after create"));
     }
     assert_declared_fields(subtype, &patch)?;
     patch.insert("subtype".into(), Value::String(subtype.as_str().to_owned()));
@@ -763,11 +759,14 @@ mod tests {
     }
 
     #[test]
-    fn a_subtype_or_name_change_is_refused() {
-        for patch in [json!({ "subtype": "ink" }), json!({ "nm": "other" })] {
-            let refused = pdf_prepare_annotation_patch(&square(), map(patch)).unwrap_err();
-            assert_eq!(refused.code, EngineErrorCode::InvalidArg);
-        }
+    fn a_subtype_change_is_refused_and_a_name_change_is_not() {
+        let refused =
+            pdf_prepare_annotation_patch(&square(), map(json!({ "subtype": "ink" }))).unwrap_err();
+        assert_eq!(refused.code, EngineErrorCode::InvalidArg);
+        // An update renames since 756f8e56b.
+        let (_, renamed) =
+            pdf_prepare_annotation_patch(&square(), map(json!({ "nm": "other" }))).unwrap();
+        assert_eq!(renamed.get("nm"), Some(&json!("other")));
         let unknown =
             pdf_prepare_annotation_patch(&square(), map(json!({ "vertices": [] }))).unwrap_err();
         assert!(unknown.message.contains("square has no field 'vertices'"), "{unknown}");

@@ -96,6 +96,16 @@ pub enum ChangeItem {
         dropped: Vec<serde_json::Value>,
         meta: AnnotationMutationMeta,
     },
+    /// `AnnotationCopyResult`: the copies, in the order of the refs given,
+    /// each read back; each source's ref and its copy's; and what was left
+    /// out (1481e4556).
+    #[serde(rename = "annotations.copy", rename_all = "camelCase")]
+    AnnotationsCopy {
+        annotations: Vec<serde_json::Value>,
+        ref_map: Vec<serde_json::Value>,
+        dropped: Vec<serde_json::Value>,
+        meta: AnnotationMutationMeta,
+    },
     /// Only in an undo: what a delete removed, back, in `/Annots` order,
     /// each read as a listing reads it.
     #[serde(rename = "annotations.restore")]
@@ -113,6 +123,19 @@ pub enum ChangeItem {
         rotation: crate::geom::PdfRotation,
         /// The new `PageListSnapshot`: in the file's coordinates as the op
         /// answers it, in page space once the boundary measured it.
+        layout: serde_json::Value,
+        meta: MutationMeta,
+    },
+    /// `PageScaleResult`, with the pages and the scale each has now
+    /// (`null`: none), in page space: the op's own, or the step's measured
+    /// on its first page.
+    #[serde(rename = "pages.setScale")]
+    PagesSetScale {
+        pages: Vec<PageRef>,
+        measure: Option<serde_json::Value>,
+        /// The first page.
+        page: PageRef,
+        /// The new `PageListSnapshot`, whose pages carry their viewports.
         layout: serde_json::Value,
         meta: MutationMeta,
     },
@@ -282,6 +305,18 @@ pub enum ChangeItem {
         calculation_order: Option<Vec<crate::features::forms::snapshot::FormFieldRef>>,
         meta: FormMutationMeta,
     },
+    /// `FormCopyResult`: what a design import of the same fields answers
+    /// (a390171cc).
+    #[serde(rename = "forms.copy", rename_all = "camelCase")]
+    FormsCopy {
+        fields: Vec<serde_json::Value>,
+        widgets: Vec<serde_json::Value>,
+        ref_map: Vec<serde_json::Value>,
+        dropped: Vec<serde_json::Value>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        calculation_order: Option<Vec<crate::features::forms::snapshot::FormFieldRef>>,
+        meta: FormMutationMeta,
+    },
     /// `FormValuesImportResult`: the fields a values import filled, the
     /// rows of the widgets whose look changed, and what it left out.
     #[serde(rename = "forms.importValues")]
@@ -343,8 +378,10 @@ impl ChangeItem {
             | Self::AnnotationsDelete { meta, .. }
             | Self::AnnotationsReorder { meta, .. }
             | Self::AnnotationsImport { meta, .. }
+            | Self::AnnotationsCopy { meta, .. }
             | Self::AnnotationsRestore { meta, .. } => &meta.meta,
             Self::PagesRotate { meta, .. }
+            | Self::PagesSetScale { meta, .. }
             | Self::PagesReorder { meta, .. }
             | Self::PagesDelete { meta, .. }
             | Self::PagesInsertBlank { meta, .. }
@@ -368,6 +405,7 @@ impl ChangeItem {
             | Self::FormsReorderWidgets { meta, .. }
             | Self::FormsReorderCalculations { meta, .. }
             | Self::FormsImport { meta, .. }
+            | Self::FormsCopy { meta, .. }
             | Self::FormsImportValues { meta, .. }
             | Self::FormsUpdateWidget { meta, .. } => &meta.meta,
             Self::OutlineCreate { meta, .. }
@@ -390,8 +428,10 @@ impl ChangeItem {
             | Self::AnnotationsDelete { meta, .. }
             | Self::AnnotationsReorder { meta, .. }
             | Self::AnnotationsImport { meta, .. }
+            | Self::AnnotationsCopy { meta, .. }
             | Self::AnnotationsRestore { meta, .. } => &mut meta.meta,
             Self::PagesRotate { meta, .. }
+            | Self::PagesSetScale { meta, .. }
             | Self::PagesReorder { meta, .. }
             | Self::PagesDelete { meta, .. }
             | Self::PagesInsertBlank { meta, .. }
@@ -415,6 +455,7 @@ impl ChangeItem {
             | Self::FormsReorderWidgets { meta, .. }
             | Self::FormsReorderCalculations { meta, .. }
             | Self::FormsImport { meta, .. }
+            | Self::FormsCopy { meta, .. }
             | Self::FormsImportValues { meta, .. }
             | Self::FormsUpdateWidget { meta, .. } => &mut meta.meta,
             Self::OutlineCreate { meta, .. }
@@ -431,10 +472,11 @@ impl ChangeItem {
     pub fn wrote(&self) -> bool {
         match self {
             Self::Skipped { .. } => false,
-            Self::AnnotationsImport { annotations, .. } => !annotations.is_empty(),
-            Self::FormsImport { fields, .. } | Self::FormsImportValues { fields, .. } => {
-                !fields.is_empty()
-            }
+            Self::AnnotationsImport { annotations, .. }
+            | Self::AnnotationsCopy { annotations, .. } => !annotations.is_empty(),
+            Self::FormsImport { fields, .. }
+            | Self::FormsCopy { fields, .. }
+            | Self::FormsImportValues { fields, .. } => !fields.is_empty(),
             _ => true,
         }
     }
@@ -485,14 +527,15 @@ impl ChangeItem {
                     "order": to_value(order)?, "meta": to_value(meta)? }),
             ),
             // One `annotations.created` per annotation (`annotationImportFacts`).
-            Self::AnnotationsImport { annotations, meta, .. } => {
+            Self::AnnotationsImport { annotations, meta, .. }
+            | Self::AnnotationsCopy { annotations, meta, .. } => {
                 return Ok(crate::features::transfer::plan_annotation::annotation_import_facts(
                     annotations,
                     &to_value(meta)?,
                 ));
             }
             // One `forms.created` per field (`formImportFacts`).
-            Self::FormsImport { .. } => {
+            Self::FormsImport { .. } | Self::FormsCopy { .. } => {
                 return Ok(crate::features::transfer::plan_form::form_import_facts(&to_value(
                     self,
                 )?));
@@ -512,6 +555,11 @@ impl ChangeItem {
                 "pages.rotated",
                 serde_json::json!({ "pages": pages, "rotation": rotation, "layout": layout,
                     "meta": to_value(meta)? }),
+            ),
+            Self::PagesSetScale { pages, measure, page, layout, meta } => (
+                "pages.scaleSet",
+                serde_json::json!({ "pages": pages, "measure": measure, "page": page,
+                    "layout": layout, "meta": to_value(meta)? }),
             ),
             Self::PagesReorder { pages, layout, meta } => (
                 "pages.reordered",

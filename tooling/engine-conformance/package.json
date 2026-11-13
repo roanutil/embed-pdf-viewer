@@ -73,7 +73,9 @@
     "form-apply": "tsx --conditions=development src/generate-form-apply-vectors.ts",
     "form-apply:check": "tsx --conditions=development src/generate-form-apply-vectors.ts --check",
     "fonts": "tsx --conditions=development src/generate-font-vectors.ts",
-    "fonts:check": "tsx --conditions=development src/generate-font-vectors.ts --check"
+    "fonts:check": "tsx --conditions=development src/generate-font-vectors.ts --check",
+    "changes": "tsx --conditions=development src/generate-change-vectors.ts",
+    "changes:check": "tsx --conditions=development src/generate-change-vectors.ts --check"
   },
   "devDependencies": {
     "@embedpdf/engine": "workspace:*",
