@@ -418,21 +418,28 @@ impl CopyPlacement {
     }
 }
 
+/// The parts of a form's snapshot `planFormCopies` reads.
+#[derive(Clone, Copy)]
+pub struct FormParts<'a> {
+    pub fields: &'a [Value],
+    pub widgets: &'a [Value],
+    pub calculation_order: &'a [Value],
+}
+
 /// `planFormCopies(input)`: the copies of `fields`, fields of the form whose
 /// fields, widget rows and calculation order are given, in the order given.
 /// A field named twice is copied twice. `NotFound` for a field the form
 /// doesn't have; `InvalidArg` when `widgets` names a widget of none of the
 /// fields, or none of a field's.
 pub fn plan_form_copies(
-    form_fields: &[Value],
-    form_widgets: &[Value],
-    calculation_order: &[Value],
+    form: FormParts<'_>,
     fields: &[Value],
     widgets: Option<&[Value]>,
     placement: &CopyPlacement,
     values: bool,
     may_script: bool,
 ) -> Result<FormCopyPlan, Error> {
+    let FormParts { fields: form_fields, widgets: form_widgets, calculation_order } = form;
     let row_of = |key: &str| {
         form_widgets.iter().find(|row| get(row, "ref").map(annotation_key).as_deref() == Some(key))
     };

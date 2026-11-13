@@ -236,7 +236,7 @@ pub fn plan_annotation_copies(
             continue;
         }
         let parent_ref = data.get("parent").filter(|p| json::truthy(Some(p)));
-        let named = parent_ref.and_then(|p| annotation_key(p)).and_then(|k| first.get(&k).copied());
+        let named = parent_ref.and_then(annotation_key).and_then(|k| first.get(&k).copied());
         let parent = parent_ref.and_then(|p| copied(&drops, p, index));
         match parent {
             None => {

@@ -14,7 +14,7 @@ use serde_json::{Map, Value, json};
 
 use crate::engine::annotation_key;
 use crate::engine::copy::{
-    CopyPlacement, FormCopyPlan, plan_form_copies, widget_flags_of, widget_placement_of,
+    CopyPlacement, FormCopyPlan, FormParts, plan_form_copies, widget_flags_of, widget_placement_of,
 };
 use crate::model::{FieldIndex, field_for_widget, field_key_of, widget_row_of};
 use crate::value::{get, items, str_of};
@@ -85,9 +85,11 @@ pub fn plan_over(
     let form_fields: Vec<Value> = snapshot.fields().iter().map(|f| (**f).clone()).collect();
     let form_widgets: Vec<Value> = snapshot.widgets().iter().map(|w| (**w).clone()).collect();
     plan_form_copies(
-        &form_fields,
-        &form_widgets,
-        snapshot.items("calculationOrder"),
+        FormParts {
+            fields: &form_fields,
+            widgets: &form_widgets,
+            calculation_order: snapshot.items("calculationOrder"),
+        },
         fields,
         widgets,
         placement,
