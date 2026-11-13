@@ -102,6 +102,8 @@ function decodeCommandValue(value: unknown, env: PluginEnv): unknown {
   if (value === null || typeof value !== 'object') return value;
   const object = value as Record<string, unknown>;
   if ('$undefined' in object) return undefined;
+  // A number JSON can't hold, written as canonical.ts writes it, so the Rust side reads it too.
+  if ('$number' in object) return Number(object.$number);
   if ('$fn' in object) return commandFn(object as unknown as CommandFnSpec, env);
   const out: Record<string, unknown> = {};
   for (const [key, member] of Object.entries(object)) out[key] = decodeCommandValue(member, env);
@@ -471,6 +473,7 @@ type CallbackMember =
   | 'iconAccent'
   | 'run'
   | 'allowed'
+  | 'locked'
   | 'labelParams';
 type VectorDef = Omit<CommandDefinition, CallbackMember> & {
   [K in CallbackMember]?: CommandFnSpec;
@@ -511,6 +514,30 @@ const withPluralI18n = {
           pages: {
             delete: { one: 'Delete {count} page', other: 'Delete {count} pages' },
             rotate: 'Rotate {count} pages by {degrees}°',
+          },
+        },
+      },
+    ],
+    locale: 'en',
+  },
+};
+
+/** Sentences for refusals (7af98f4df): each key falls back to the next, then to the built-in text. */
+const withSentenceI18n = {
+  factory: 'commands-current-i18n',
+  config: {
+    locales: [
+      {
+        code: 'en',
+        name: 'English',
+        translations: {
+          commands: {
+            notAllowed: {
+              default: '{label} is not permitted here',
+              'doc-print': 'This file does not let you {label}',
+            },
+            locked: { default: '{label} is held', 'held-by-app': 'The app holds {label}' },
+            turnedOff: '{label} is switched off',
           },
         },
       },
@@ -841,6 +868,83 @@ const cases: ScenarioCase[] = [
       cmd('resolveCommand', 'rotate'),
       cmd('resolveCommand', 'untranslated'),
       cmd('resolveCommand', 'no-params'),
+    ],
+  },
+  {
+    name: 'label-params-that-are-not-finite',
+    covers:
+      "A labelParams number that isn't finite reaches a resolved label as null: the answers keep labelParams as JSON and the label is translated from that JSON parsed back (7af98f4df), so a slot shows null and a null count picks no plural form, falling back to label; getRefusal reads labelParams directly and shows the number as it is.",
+    plugins: [
+      withPluralI18n,
+      commands([
+        vdef('nan', {
+          label: '{count} selected',
+          labelParams: fn('nan.labelParams', { returns: { count: { $number: 'NaN' } } }),
+        }),
+        vdef('infinite', {
+          label: '{count} of {total}',
+          labelParams: fn('infinite.labelParams', {
+            returns: { count: { $number: 'Infinity' }, total: { $number: '-Infinity' } },
+          }),
+        }),
+        vdef('plural', {
+          label: 'Delete {count} (no plural)',
+          labelKey: 'pages.delete',
+          labelParams: fn('plural.labelParams', { returns: { count: { $number: 'NaN' } } }),
+        }),
+        vdef('off', {
+          label: 'Print {count}',
+          labelParams: fn('off.labelParams', { returns: { count: { $number: 'NaN' } } }),
+        }),
+      ]),
+    ],
+    steps: [
+      cmd('resolveCommand', 'nan'),
+      cmd('resolveCommand', 'infinite'),
+      cmd('resolveCommand', 'plural'),
+      cmd('disableCommand', 'off'),
+      cmd('getRefusal', 'off'),
+      cmd('resolveCommand', 'off'),
+    ],
+  },
+  {
+    name: 'refusal-sentences-with-i18n',
+    covers:
+      "With i18n, a refusal's sentence is translated (7af98f4df): turned-off under commands.turnedOff; not-allowed under the missing permission's key, else the command's notAllowedKey, each falling back to commands.notAllowed.default; locked under the lock's reasonKey, else commands.locked.default; a locked that throws is no lock. A resolved command that shows disabled carries the same sentence as its disabledReason.",
+    plugins: [
+      withSentenceI18n,
+      commands([
+        vdef('print', { label: 'Print', requires: ['doc.print'] }),
+        vdef('fill', { label: 'Fill', requires: ['doc.forms.fill'] }),
+        vdef('custom', {
+          label: 'Custom',
+          allowed: no('custom.allowed'),
+          notAllowedKey: 'commands.notAllowed.custom',
+        }),
+        vdef('held', {
+          label: 'Held',
+          locked: fn('held.locked', { returns: { by: 'app', reasonKey: 'commands.locked.held-by-app' } }),
+        }),
+        vdef('held-default', {
+          label: 'Also held',
+          locked: fn('held-default.locked', { returns: { by: 'app' } }),
+        }),
+        vdef('held-throws', { label: 'Never held', locked: boom('held-throws.locked') }),
+        vdef('off', { label: 'Off' }),
+      ]),
+    ],
+    engine: { documents: { a: doc({ security: { allows: [] } }) } },
+    steps: [
+      start,
+      open('a'),
+      cmd('updateSettings', { notAllowed: 'disable' }),
+      ...['print', 'fill', 'custom', 'held', 'held-default', 'held-throws'].flatMap((id) => [
+        cmd('resolveCommand', id),
+        cmd('getRefusal', id),
+      ]),
+      cmd('disableCommand', 'off'),
+      cmd('getRefusal', 'off'),
+      cmd('execute', 'held'),
     ],
   },
   {

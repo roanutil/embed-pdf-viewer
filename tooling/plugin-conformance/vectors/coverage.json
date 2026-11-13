@@ -1,7 +1,7 @@
 {
   "total": {
-    "statements": "72838/77093",
-    "branches": "14349/15706",
+    "statements": "72853/77093",
+    "branches": "14365/15719",
     "unsnapshottedOnlyLines": 935,
     "unloadedFiles": 36
   },
@@ -5537,8 +5537,8 @@
       "uncoveredBranches": []
     },
     "packages/plugin/commands/src/controller.ts": {
-      "statements": "545/572",
-      "branches": "184/196",
+      "statements": "546/572",
+      "branches": "186/197",
       "uncoveredLines": [
         184,
         185,
@@ -5558,7 +5558,6 @@
         249,
         250,
         251,
-        352,
         399,
         400,
         401,
@@ -5572,7 +5571,6 @@
         "151:15#0",
         "177:63#0",
         "205:11#0",
-        "351:28#0",
         "445:8#0",
         "445:25#0",
         "460:10#0",
@@ -5604,41 +5602,25 @@
       ]
     },
     "packages/plugin/commands/src/services/availability.ts": {
-      "statements": "180/198",
-      "branches": "49/61",
+      "statements": "194/198",
+      "branches": "63/73",
       "uncoveredLines": [
         81,
-        96,
-        104,
-        105,
-        106,
-        107,
-        108,
-        113,
         135,
         136,
-        147,
-        148,
-        149,
-        150,
-        151,
-        152,
-        173,
-        194
+        173
       ],
       "uncoveredBranches": [
         "65:65#0",
         "71:58#0",
         "80:17#0",
-        "95:2#0",
-        "112:2#0",
+        "105:10#0",
         "131:29#0",
         "134:4#0",
-        "146:4#0",
+        "152:20#0",
         "166:42#0",
         "167:17#0",
-        "172:42#0",
-        "193:8#0"
+        "172:42#0"
       ]
     },
     "packages/plugin/commands/src/token.ts": {
