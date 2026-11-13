@@ -109,21 +109,63 @@ Reason: upstream's `ChangeApplier` takes the request's limits with the defaults 
 Cost: none.
 Reverse: n/a.
 
-## CU-C4-D11. An annotation copy reads its drawings and files through the export's collector
+## CU-C4-D11. An annotation copy counts its resources as `AnnotationCopier` does
 
-Decision: `prepare_annotation_copy` reads a stamp's drawing and an attachment's file through the
-export's `ResourceCollector` (`d09e505e4`).
-Reason: it already reads both from raw handles, once per shared drawing, and counts them against the
-limits.
-Cost: the collector keeps resources by content id, so two copies of one attachment count once against
-`resources` and `bundleBytes`, where `AnnotationCopier` counts each copy's file. The answer differs
-only when a copy is at those limits. Listed as a known gap; no vector reaches it.
-Reverse: count files per copy in `prepare_annotation_copy`.
+Decision: `prepare_annotation_copy` reads and counts a copy's drawings and files in `CopyResources`:
+a stamp's drawing once per drawing however many copies place it, any other appearance and every file
+once per copy, each refusal `copy: past the <limit> limit: v > max` with `{ limit, max, value }`, and an
+oversized file `copy: an attached file is larger than <max> bytes` (`23da089d9`, review finding R2).
+Reason: the first version (`d09e505e4`) went through the export's resource store, which keeps equal
+bytes once. That counted less than upstream whenever two copies carried the same bytes, and refused
+with the bundle's wording. The port can match upstream, so it does.
+Cost: none known. No fixture stamp carries a drawing or an appearance and no fixture has an attached
+file, so a unit test in `transfer.rs` covers the counting and the messages, not a vector.
+Reverse: n/a.
 
 ## CU-C4-D12. Rewrite only my own unshared commits
 
 Decision: the vectors commit's message was amended (34 kinds to 41) and two engine commits were folded
 into `dc1581ac5` so every commit builds.
 Reason: both were local to this job's branch, before any bundle left the container.
+Cost: none.
+Reverse: n/a.
+
+## CU-C4-D13. Each apply step records the events its change publishes
+
+Decision: the generator records `changeEvents(result)` for every `doc.apply` step, and
+`tests/change_ops.rs` compares it with the `events` the `Host` answers, each without the `origin` the
+host stamps (`416479d65`, `cfecbbd55`, `23da089d9`, review finding R3).
+Reason: upstream derives the events on the main thread, so they are in no worker answer, but the Rust
+`Host` publishes them itself, and `pages.scaleSet`, the copies' `annotations.created` and
+`forms.created` were otherwise unchecked.
+Cost: the comparison drops `origin`, which `document_events.rs` already covers.
+Reverse: drop the `events` field and its comparison.
+
+## CU-C4-D14. Count distinct copy names rather than number them
+
+Decision: each exchange records how many distinct UUIDv7 names its `<uuid>` masks stand for, and the
+runner counts its own (review finding R4).
+Reason: numbering masks by first appearance would depend on key order, which the two engines don't
+share (`pdfCropBox` alone lists its sides in a different order). A count shows whether copies got
+names of their own (`one-named-twice-is-copied-twice` records 2) without that dependence.
+Cost: a count can't tell which copy got which name.
+Reverse: drop `uuids` from the generator and the runner.
+
+## CU-C4-D15. Copies onto another page go onto a page the same change inserts
+
+Decision: `copies-on-another-page` in `annotation-copy.json` and `form-copy.json` runs one change of
+`pages.insertBlank` (object 60, from the reserved range) and a copy with `page` 60 (review finding R3).
+Reason: both copy fixtures have one page. Inserting the target in the same change exercises `page`
+placement and the same-page link rule without a new fixture.
+Cost: the case also depends on `pages.insertBlank`, which `pages/mutate.json` already covers.
+Reverse: n/a.
+
+## CU-C4-D16. `kinds.json` records the order it asks in
+
+Decision: the generator writes `asked`, and the runner asks `change_kinds_unknown_to` in that order,
+compares each answer as an ordered list, and checks `CHANGE_KINDS` against the same order (review
+finding R5).
+Reason: upstream promises "each once, in the order given"; a set comparison couldn't see an order
+regression, and a JSON object's key order is not something either side should rely on.
 Cost: none.
 Reverse: n/a.
