@@ -37,7 +37,9 @@ mod prelude;
 /// `camera/`: the write path, motion and direct manipulation.
 pub mod camera {
     pub mod animation;
+    pub(crate) mod coasting;
     pub mod gestures;
+    pub mod wheel;
     pub mod write;
 }
 

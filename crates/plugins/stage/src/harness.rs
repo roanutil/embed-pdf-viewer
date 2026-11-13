@@ -240,6 +240,8 @@ const MEMBERS: &[&str] = &[
     "beginGesture",
     "endGesture",
     "fling",
+    // camera/wheel
+    "wheelBy",
     // navigation/arrive
     "goToPage",
     "goToFirstPage",
@@ -416,6 +418,8 @@ fn call_stage(
             done(cap.set_camera_object(CameraObject::new(camera, order)))
         }
         "panBy" => done(cap.pan_by(arg(args, 0)?, arg(args, 1)?)),
+        // camera/wheel
+        "wheelBy" => returned(cap.wheel_by(arg(args, 0)?, arg(args, 1)?, arg(args, 2)?)),
         "scrollTo" => done(cap.scroll_to(arg(args, 0)?)),
         "scrollBy" => done(cap.scroll_by(arg(args, 0)?)),
         "zoomAround" => done(cap.zoom_around(arg(args, 0)?, arg(args, 1)?)),
