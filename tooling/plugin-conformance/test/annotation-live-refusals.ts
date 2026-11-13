@@ -77,4 +77,7 @@ export const expectedRefusals: Readonly<
     [8, 'settled', ['intended stamp refusal']],
     [8, 'callbacks', ['intended stamp refusal']],
   ],
+  // 1481e4556: an unknown ref, and a copy the engine refuses.
+  'duplicate-copies-as-one-change': [[12, 'settled', ['no annotation obj:9']]],
+  'selection-duplicate-lands-beside': [[8, 'settled', ['copy refused']]],
 };

@@ -239,6 +239,12 @@ import { annotationAfter } from '../../../packages/core/annotation/src/record';
 import type { AnnotationModel } from '../../../packages/plugin/annotation/src/model';
 const owned = [...apiSuites, ...crudSuites, ...hydrationSuites, ...reconciliationSuites];
 const currentCases = owned.flatMap((s) => (s.kind === 'scenario' ? s.cases : []));
+/** Cases the 2026-11-12 catch-up added after the migration archive, for new upstream behaviour. */
+const caughtUp: Record<string, string[]> = {
+  // 1481e4556: annotation duplicate.
+  'plugins/annotation-crud.json': ['duplicate-copies-as-one-change', 'selection-duplicate-lands-beside'],
+};
+const caughtUpCount = Object.values(caughtUp).flat().length;
 const runs = new Map<string, { input: ScenarioCase; trace: TraceEntry[] }>();
 function messages(value: unknown): string[] {
   if (Array.isArray(value)) return value.flatMap(messages);
@@ -334,7 +340,7 @@ test('all82 current live scenarios execute with exact named refusals and no unex
       assert.deepEqual(diagnostics(r.trace), expectedRefusals[c.name] ?? [], c.name);
       runs.set(c.name, { input: c, trace: r.trace });
     }
-    assert.equal(seen.size, 82);
+    assert.equal(seen.size, 82 + caughtUpCount);
     assert.deepEqual(unexpectedConsole, []);
   } finally {
     console.error = saved;
@@ -360,6 +366,28 @@ test('every successful apply has matching current ops/items/events/opId/birth re
       const result = response.value as ChangeResult;
       assert.equal(call.args[1].opId, result.meta.opId, name);
       assert.equal(result.items.length, call.args[0].ops.length, name);
+      // A copy (1481e4556) is one item and one annotations.created per copy, under the op's numbers.
+      const [copyOp] = call.args[0].ops;
+      if (copyOp?.type === 'annotations.copy') {
+        const item = result.items[0]!;
+        assert.ok(item.type === 'annotations.copy', name);
+        assert.deepEqual(
+          item.annotations.map((a) => (a.ref.kind === 'objectNumber' ? a.ref.objectNumber : null)),
+          copyOp.objectNumbers,
+          name,
+        );
+        assert.equal(response.events!.length, item.annotations.length, name);
+        response.events!.forEach((event, k) => {
+          assert.ok(event.type === 'annotations.created' && 'origin' in event);
+          assert.deepEqual(event.origin.transaction, {
+            id: result.meta.opId,
+            index: k,
+            count: item.annotations.length,
+          });
+          assert.equal(AnnotationSchema.safeParse(event.annotation).success, true, name);
+        });
+        return;
+      }
       assert.equal(response.events!.length, result.items.length, name);
       call.args[0].ops.forEach((op, j) => {
         const item = result.items[j]!;
@@ -1214,7 +1242,8 @@ test('the original49 live definitions, all3 renames,33 additions and27 historica
     assert.ok(suite && suite.kind === 'scenario');
     assert.equal(row.before, row.cases.length);
     assert.equal(new Set(row.cases.map((c) => c.before)).size, row.before);
-    assert.equal(row.after, suite.cases.length);
+    const later = caughtUp[row.file] ?? [];
+    assert.equal(row.after + later.length, suite.cases.length);
     const original = await readFile(
       new URL(`${row.file.slice('plugins/'.length, -'.json'.length)}.ts.txt`, root),
       'utf8',
@@ -1234,7 +1263,7 @@ test('the original49 live definitions, all3 renames,33 additions and27 historica
     assert.deepEqual(
       suite.cases
         .map((c) => c.name)
-        .filter((n) => !row.cases.some((c) => c.after === n))
+        .filter((n) => !row.cases.some((c) => c.after === n) && !later.includes(n))
         .sort(),
       row.added,
     );
