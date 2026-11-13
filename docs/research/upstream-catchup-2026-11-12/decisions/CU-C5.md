@@ -11,8 +11,9 @@ Decision: four changes to `crates/epdf-kernel`, which is CU-C6's crate: the page
 (`51a07da98`, `c7f8d75ff`), and copies naming their object numbers (`ece09927b`, `1481e4556`).
 Reason: annotation hydration, form fill, signature, measurement and duplicate can't match their
 vectors without them, and the brief allows the smallest change in its own commit. The manager was
-told (kkt 1701, 1703).
-Cost: if CU-C6 ports the same upstream commits, CU-C7 has to keep one copy of each.
+told, and CU-C6 took the commits as they are.
+Cost: none now that CU-C6 cherry-picked them; a later change to these kernel files goes through
+CU-C6.
 Reverse: revert the four commits and take CU-C6's.
 
 ## CU-C5-D2. The engine verb's `send` gets no capability-scoped handle
@@ -80,7 +81,7 @@ Decision: annotation duplicate (`1481e4556`, `9eead5531`, `db8b5ffb1`, `f8ac5a35
 with two vector cases (`ef5b91e19`..`f74c06c6d`), with an interim form-lender `copy_ops` that
 refuses. Form field duplicate (`a390171cc`) follows in this job (`6c5a3b51d`..`d11e3e250`) and
 replaces that refusal. An earlier draft deferred it to a follow-up; the manager ruled against
-splitting (kkt 1711), since a separate job would edit the same crates.
+splitting (manager decision), since a separate job would edit the same crates.
 Reason: the manager's ruling; a split job would conflict in `form`.
 Cost: engine-core's `planFormCopies` and the `formFieldCreates` rules it reads now have a JSON copy
 in `crates/plugins/form/src/engine/copy.rs`, beside `epdf-engine`'s typed one: two ports of one rule
@@ -108,16 +109,27 @@ layout viewports are CU-C4's port of `c7f8d75ff`.
 Cost: 2 red tests until CU-C4's work is integrated.
 Reverse: not applicable.
 
-## CU-C5-D11. List the remaining coverage gaps rather than chase each line
+## CU-C5-D11. Cover the reachable new lines with cases; list the rest
 
-Decision: added cases for the tool remover (`26227a437`) and duplicate; the measurement plugin's
-no-service branches (`viewportsOf`, `writeLocal`, the `whenSettled` path) and its aborted-signal
-line stay without a case, as do the copy picture-source lines in `read/render.ts` and
-`selection.duplicate()` over a selection that holds a form's widgets in design mode (the lent path
-through the form's `copyOps`, which `duplicateWidgets` covers on the form's side).
-Reason: the no-service branches are the defensive ones the crate README already lists (no vector
-reaches them; `tests/ffi.rs` `without_a_service_the_scale_is_in_memory` covers them in Rust), and a
-stamp copy's preview needs a pending stamp placement plus a render, a case of its own.
+Decision: cases cover the new upstream lines a scenario can reach: the tool remover and an
+extending tool's afterCreate (annotation-tools), duplicate, its refusals and the staged import
+(annotation-crud), whole-field and widget duplicate, the no-field drop, a hidden and locked radio
+copy, the lent `selection.duplicate`, an `addWidget` on a choice field (form-design) and a
+`defaultScale` change (measurement). These lines stay without a case:
+
+| Upstream lines | Why no case reaches them |
+|---|---|
+| measurement `sync/viewports.ts` `viewportsOf`'s no-service branch; `write/scale.ts` `writeLocal`, its `: null` and the `whenSettled` path | A page without the page measure service: the fake gives every page the service, as the crate README says. `tests/ffi.rs` `without_a_service_the_scale_is_in_memory` covers them in Rust |
+| measurement `write/scale.ts` aborted-signal refusal | The harness passes no abort signal to the measurement verbs |
+| annotation `read/render.ts` copy pictures (`originalsOf`, `previewOf`, `keptOf` for a copy) | A stamp copy's picture needs a pending stamp placement and a render of the page; no annotation scenario renders |
+| annotation `services/staging.ts` `opOfStated`'s copy branch | Only `write/links.ts` calls `opOfStated`, with a link's child changes, which are never copies |
+| annotation `sync/records.ts` 301-302 and `services/store.ts` 531-536 | A copy whose read as a create throws, then selected once the engine answers: every kind the plan keeps reads as a create |
+| form `sync/predict.ts` 272-273 | `planFormCopies` throwing while a copy is pending: `duplicate()` plans before staging, so it throws only if the source field leaves the form while the copy waits |
+| form `sync/predict.ts` 430 | A `forms.addWidget` with no object number: the plugin always names one |
+| form `write/duplicate.ts` 134 | A radio button copied from a row with no `rect`: every widget row has one |
+| annotation `services/store.ts` 288-294 | Not new behaviour: `1481e4556` re-indented the `writeFailed` refs chain to put `annotations.copy` first, which `import-staged-and-copy-answers` reaches; these lines are the older `forms.*` and reorder branches |
+
+Reason: each listed line needs a state the plugin never makes, or a host the harness lacks.
 Cost: those lines stay unreached by vectors.
 Reverse: add the cases.
 
