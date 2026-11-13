@@ -754,6 +754,7 @@ test('scale changes remeasure actual refs skip locked records and clear back to 
     const events = response.events ?? [];
     assert.equal(events.length, opsOf(i).length);
     events.forEach((event, j) => {
+      assert.ok('origin' in event);
       assert.deepEqual(event.origin.transaction, { id: opId, index: j, count: events.length });
     });
     assert.equal(events[0]!.type, 'pages.scaleSet');
