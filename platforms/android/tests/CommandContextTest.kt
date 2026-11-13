@@ -83,6 +83,8 @@ suspend fun main() {
             hooks = listOf(CommandHook.ENABLED, CommandHook.ICON_ACCENT)
         ), replace = false)
         repeat(3) {
+            // Derivations are asked once per store change, so each resolve follows one.
+            commands.setAppStateJson("{\"resolve\":$it}")
             val refused = commands.resolveCommand("app:callback-failure", null)!!
             check(!refused.enabled) { "A failed derivation must disable the command" }
             check(refused.iconAccent == null) { "A failed accent must have no colors" }

@@ -89,7 +89,8 @@ extension BaseSuite {
         expectNoDifference(result, .executed)
         expectNoDifference(resolved?.active, json == #"{"status":"approved"}"#)
         expectNoDifference(resolved?.iconAccent?.primary, json == #"{"status":"approved"}"# ? "#0f0" : "#f00")
-        #expect(seen.value.count >= 9)
+        // Each derivation is asked at most once per store change (upstream 7af98f4df).
+        #expect(seen.value.count >= 7)
         for value in seen.value { expectNoDifference(value, json) }
         expectNoDifference(runs.value.last?.argsJson, #"{"copy":true}"#)
         let disabled = try await commands.disabledCategories()
