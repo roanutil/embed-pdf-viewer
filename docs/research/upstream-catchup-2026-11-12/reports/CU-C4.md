@@ -100,7 +100,7 @@ empty): plugin conformance replays owned by CU-C5 (10) and CU-C6 (13). None is i
 One existing test changed: `tests/measure.rs::set_scale_keeps_a_foreign_viewport` now expects the
 `layout` that `measure.setScale` answers since `c7f8d75ff`.
 
-The manager routed CU-C5's two `epdf-viewer-host` failures here (kkt 1713):
+The manager routed CU-C5's two `epdf-viewer-host` failures here:
 `a_measurement_scale_persists_through_the_native_engine` and
 `a_foreign_scale_is_read_and_kept_through_the_native_engine`. On a scratch merge of this branch with
 `research/catchup-2026-11-12-c5` at `f74c06c6d` (head `cf660b6bd`, scratch worktree removed), both

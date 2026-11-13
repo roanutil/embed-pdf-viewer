@@ -16,7 +16,7 @@ needed. Reverse: commit in the container and bundle as the brief describes. Comm
 
 ## CU-C6-D2: CU-C5's four kernel commits taken, my own ports of them dropped
 
-On the manager's instruction (kkt 1712, 1720) I reverted my uncommitted ports of `a4805a492`,
+On the manager's instruction I reverted my uncommitted ports of `a4805a492`,
 `b3f1c447e` and `c7f8d75ff` and cherry-picked CU-C5's commits unchanged: `c00f1d345` as `ad34b9960`,
 `bbd9bebf8` as `9aac78c70`, `51a07da98` as `b42c7b80e`, `ece09927b` as `7d9a633b5`. My dropped diff
 is kept at `/tmp/cu1112/logs/CU-C6/own-kernel-reports-superseded.diff`. Reason: CU-C7 merges one copy.
